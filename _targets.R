@@ -51,19 +51,21 @@ lapply(list.files("R", full.names = TRUE), source) # source all scripts in the R
 # Replace the target list below with your own:
 list(
   # Prepare data
+  tar_target(geofences, get_geofences()),
+  tar_target(tag_sns_file, "data/geofence_tags_6Aug23_45.xlsx", format = "file"),
+  tar_target(tag_sns, get_sns(tag_sns_file)),
   tar_target(pw, "movebankCredentials/pw.Rda", format = "file"),
   tar_target(loginObject, get_loginObject(pw)),
-  tar_target(inpa, get_inpa(loginObject)),
   tar_target(ornitela, get_ornitela(loginObject)),
-  tar_target(joined0, join_inpa_ornitela(inpa, ornitela)),
   tar_target(ww_file, "data/whoswho_vultures_20230920_new.xlsx", format = "file"),
-  tar_target(fixed_names, fix_names(joined0, ww_file)),
+  tar_target(fixed_names, fix_names(ornitela, ww_file)),
   tar_target(removed_periods, remove_periods(ww_file, fixed_names)),
   tar_target(cleaned, clean_data(removed_periods)),
   tar_target(capture_sites, "data/capture_sites.csv", format = "file"),
   tar_target(carmel, "data/all_captures_carmel_2010-2021.csv", format = "file"),
   tar_target(removed_captures, remove_captures(capture_sites, carmel, cleaned)),
-  tar_target(with_age_sex, attach_age_sex(removed_captures, ww_file))
+  tar_target(with_age_sex, attach_age_sex(removed_captures, ww_file)),
+  tar_target(hires_tags, get_hires_tags(with_age_sex, tag_sns))
 )
 
 
