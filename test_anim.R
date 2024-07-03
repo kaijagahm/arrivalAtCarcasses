@@ -4,6 +4,8 @@ library(ggmap)
 library(move2)
 library(moveVis)
 library(targets)
+library(tidyverse)
+library(sf)
 
 # Let's just get one day of data
 tar_load(hires_tags)
