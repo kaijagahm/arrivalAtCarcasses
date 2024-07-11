@@ -8,12 +8,12 @@ fix_names|function|4198d0507560cd38|||||||||||||||
 fixed_names|stem|724d8b943b615fd4|09f4b58ba170823a|4f64fa47a549e80a|256723716||t19830.7479392706s|2a008ac3018f7867|98128310|rds|local|vector|||7.03||
 geofences|stem|5ad2e0bf9fdf3c3d|bd8deb52de3bcc17|cc4e72b0c6a33bb4|775947020||t19830.7550981488s|d623cff4abb33f35|118|rds|local|vector|||9.1||
 get_geofences|function|355a5d3964188c15|||||||||||||||
-get_hires_tags|function|02af9fe754c86a4d|||||||||||||||
+get_hires_tags|function|ac182b9eac8e3c6f|||||||||||||||
 get_inpa|function|5acd16cb4e3c3337|||||||||||||||
 get_loginObject|function|ff8577da5e02b605|||||||||||||||
 get_ornitela|function|21dd23f495e1b0b3|||||||||||||||
 get_sns|function|f658d8df44ecc71a|||||||||||||||
-hires_tags|stem|9624d299dcaf43f1|9deed12193659a91|3b123b4a7f201ce6|-1529780690||t19831.0054063724s|e0b4c3fd9f5c7b14|73636562|rds|local|vector|||5.05||
+hires_tags|stem|9516fe292bed39f4|9deed12193659a91|24d5e8740b82b03f|-1529780690||t19913.8801172391s|d44f9985de19c6d3|75890677|rds|local|vector|||5.74||
 join_inpa_ornitela|function|9a6d14884f21b4cd|||||||||||||||
 loginObject|stem|3eba871de1887eb7|2dbacb60eb142169|3003aa8808f9919f|-1147792597||t19818.7544368576s|44cdcadae072abff|249|rds|local|vector|||0||
 ornitela|stem|98e10f6cc88eeeea|349904ead563c9b7|746112fa8b08e3f8|503979122||t19830.7470555772s|3fb18648ccdfb0b3|103872206|rds|local|vector|||528.42||
