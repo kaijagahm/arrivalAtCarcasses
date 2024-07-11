@@ -85,18 +85,6 @@ carcass_data <- map(carcass_data, ~.x %>%
 
 test <- carcass_data[[10]]
 
-test_zoomed <- test %>%
-  filter(location_long > 35.02, location_long < 35.1, 
-         location_lat < 31.0, location_lat > 30.8) %>%
-  ggplot(aes(x = location_long, y = location_lat))+
-  geom_point(size = 3, aes(col = state, group = Nili_id), alpha = 0.5)+
-  theme_classic()+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
-  geom_point(data = hires_carcasses[10,], aes(x = long, y = lat), size = 1, col = "magenta")+
-  guides(color = guide_legend(override.aes = list(size = 3)))+
-  theme(legend.position = "bottom")
-ggsave(test_zoomed, filename = here("behavior_around_carcass_10.png"), width = 5, height = 5)
-
 # What about time series for individuals?
 test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
