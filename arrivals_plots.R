@@ -39,15 +39,16 @@ hires_carcasses <- carcasses_sf %>%
                 merhavRTG, "\n",
                 RTGDistrict))
 dim(hires_carcasses) # 70 carcasses were placed during this time. That's going to be our maximum sample size.
+write_csv(hires_carcasses, file = here("data/hires_carcasses.csv"))
 
 # for each carcass, get the data to go with it. Let's go to the beginning of the day when the carcass was placed, since we know 1) the times reported may not be exact and 2) the vultures sometimes circle when they can see the car coming.
-
+# 
 # fn <- function(idx){
 #   carcass <- hires_carcasses[idx,]
 #   carcass_date <- carcass$date
 #   carcass_label <- carcass$lab
 #   dat <-  hires_tags %>%
-#     filter(dateOnly_il %in% 
+#     filter(dateOnly_il %in%
 #              seq.Date(from = carcass_date-1, to = carcass_date+10, by = "day")) %>%
 #     mutate(time_relative = difftime(timestamp_il, carcass$datetime, units = "hours")) %>%
 #     mutate(lab = carcass_label)
@@ -58,10 +59,22 @@ dim(hires_carcasses) # 70 carcasses were placed during this time. That's going t
 #     dat$dist_m <- distances_m
 #   }
 #   dat <- dat %>%
-#     mutate(vis_flying = ifelse(dist_m <= 1000 & behavior == "flying", TRUE, FALSE),
-#            approach_flying = ifelse(dist_m <= 500 & behavior == "flying", TRUE, FALSE),
-#            approach_ground = ifelse(dist_m <= 150 & behavior == "ground", TRUE, FALSE),
-#            near_ground = ifelse(dist_m <= 50 & behavior == "ground", TRUE, FALSE))
+#     mutate(state = case_when(dist_m > 1000 & behavior == "flying" ~ "far_flying",
+#                              dist_m <= 1000 & dist_m > 500 & behavior == "flying" ~ "vis_flying",
+#                              dist_m <= 500 & behavior == "flying" ~ "approach_flying",
+#                              dist_m > 1000 & behavior == "ground" ~ "far_ground",
+#                              dist_m <= 1000 & dist_m > 300 & behavior == "ground" ~ "vis_ground",
+#                              dist_m <= 300 & dist_m > 50 & behavior == "ground" ~ "near_ground",
+#                              dist_m <= 50 & behavior == "ground" ~ "at_carcass"),
+#            state_description = case_when(state == "far_flying"~ "Out of sight flying\n(fl. >1000m)",
+#                                          state == "vis_flying"~ "In sight flying\n(fl. 500-1000m)",
+#                                          state == "approach_flying" ~ "Approaching\n(fl. <=500m)",
+#                                          state == "far_ground" ~ "Out of sight ground\n(gr. >1000m)",
+#                                          state == "vis_ground" ~ "In sight ground\n(gr. 300-1000m)",
+#                                          state == "near_ground" ~ "Near ground\n(gr. 50-300m)",
+#                                          state == "at_carcass" ~ "At carcass\n(gr. <=50m)"),
+#            state = factor(state, levels = c("far_flying", "vis_flying", "approach_flying", "far_ground", "vis_ground", "near_ground", "at_carcass")),
+#            state_description = factor(state_description, levels = c("Out of sight flying\n(fl. >1000m)", "In sight flying\n(fl. 500-1000m)", "Approaching\n(fl. <=500m)", "Out of sight ground\n(gr. >1000m)", "In sight ground\n(gr. 300-1000m)", "Near ground\n(gr. 50-300m)", "At carcass\n(gr. <=50m)")))
 #   return(dat)
 # }
 # 
@@ -72,17 +85,6 @@ load(here("data/carcass_data.Rda"))
 
 
 # Add behavior states -----------------------------------------------------
-carcass_data <- map(carcass_data, ~.x %>% 
-      mutate(state = case_when(vis_flying & !approach_flying ~ "vis_flying",
-                               approach_flying ~ "approach_flying",
-                               approach_ground & !near_ground ~ "approach_ground",
-                               near_ground ~ "near_ground",
-                               behavior == "flying" & !vis_flying & 
-                                 !approach_flying ~ "far_flying",
-                               behavior == "ground" & !approach_ground & 
-                                 !near_ground ~ "far_ground",
-                               .default = NA)))
-
 test <- carcass_data[[10]]
 
 # What about time series for individuals?
@@ -199,6 +201,7 @@ walk(time_summaries, ~.x %>%
        geom_bar(position = "stack", stat = "identity")+
        scale_fill_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
        theme_minimal())
+save(time_summaries, file = here("data/time_summaries.Rda"))
 
 # Now let's just pay attention to the near categories
 for(i in 1:length(time_summaries)){
@@ -212,12 +215,7 @@ for(i in 1:length(time_summaries)){
     filter(state %in% c("approach_flying",
                         "approach_ground",
                         "near_ground", 
-                        "vis_flying")) %>%
-    mutate(state_description = case_when(state == "approach_flying" ~ "Approaching\n(fl. <= 500m)",
-                                         state == "vis_flying" ~ "In sight\n(fl. 500-1000m)",
-                                         state == "approach_ground" ~ "Nearby\n(gr. 50-150m)",
-                                         state == "near_ground" ~ "At carcass\n(gr. < 50m)")) %>%
-    mutate(state_description = factor(state_description, levels = c("In sight\n(fl. 500-1000m)", "Approaching\n(fl. <= 500m)", "Nearby\n(gr. 50-150m)", "At carcass\n(gr. < 50m)")))
+                        "vis_flying"))
   if(nrow(ts) > 0){
     p <- ts %>%
       ggplot(aes(x = tenmin, y = n_vultures, fill = state_description))+
@@ -232,3 +230,4 @@ for(i in 1:length(time_summaries)){
     ggsave(filename = here::here(filename), plot = p, width = 7, height = 6)
   }
 }
+
