@@ -251,6 +251,10 @@ roosts <- target_carcass_data %>%
   ungroup() %>%
   group_by(roost_date) %>%
   group_split() %>%
+  map(., ~.x %>% arrange(Nili_id))
+
+vultures <- map(roosts, ~.x$Nili_id)
+dists <- roosts %>%
   map(., ~as.numeric(st_distance(.x))) %>%
   map(., ~{
     close <- which(.x <= 500)
@@ -258,7 +262,16 @@ roosts <- target_carcass_data %>%
     test[close] <- "close"
     test[far] <- "far"
     return(test)
-  })
+  }) %>%
+  map(., ~matrix(.x, nrow = sqrt(length(.x)), ncol = sqrt(length(.x)))) %>%
+  map2(., vultures, ~{setNames(as.data.frame(.x), .y) %>%
+      mutate(vulture = .y)}) %>%
+  map(., ~{
+    out <- pivot_longer(.x, cols = -"vulture", names_to = "vulture2", values_to = "value")
+    out$value <- unlist(out$value)
+    return(out)})
+length(dists)
+names(dists) <- c("2023-06-12", "2023-06-13", "2023-06-14", "2023-06-15")
 
 # Nobody went to this carcass after it was placed on the first afternoon (6/13), so let's consider 6/14 to be the first day.
 states <- target_carcass_data %>%
@@ -302,3 +315,37 @@ thirdday_arrived <- states %>%
   pull(Nili_id) %>%
   unique() %>%
   sort() # nobody arrived on the third day, so no need to parse it out by informed vs. not.
+
+secondday_prev_roosts <- dists[["2023-06-14"]] %>%
+  filter(value == "close",
+         vulture != vulture2)
+roostbuddies <- map(secondday_arrived_uninformed, ~{
+  dat <- secondday_prev_roosts %>%
+    filter(vulture == .x | vulture2 == .x)
+  all <- unique(c(dat$vulture, dat$vulture2))
+  buddies <- all[all != .x]
+  return(buddies)
+})
+prop_buddies_informed <- map_dbl(roostbuddies, ~{
+  sum(.x %in% firstday_informed)/length(.x)
+}) # proportion of roost buddies that were informed
+
+# Ok now can we do the same thing for the vultures that did not go to the carcass on either the first or second day? Did *anyone* not go to the carcass on the first or second day?
+allvultures <- unique(carcass_data[[4]]$Nili_id)
+allinformed <- sort(unique(c(firstday_informed, secondday_informed)))
+length(allvultures)
+length(allinformed) # okay so not all of them are informed
+uninformed <- allvultures[!(allvultures %in% allinformed)]
+
+uninformed_roostbuddies <- map(uninformed, ~{
+  dat <- secondday_prev_roosts %>%
+    filter(vulture == .x | vulture2 == .x)
+  all <- unique(c(dat$vulture, dat$vulture2))
+  buddies <- all[all != .x]
+  return(buddies)
+})
+uninformed_prop_buddies_informed <- map_dbl(uninformed_roostbuddies, ~{
+  sum(.x %in% firstday_informed)/length(.x)
+}) # hmm so just on first glance there does not appear to be a difference in the proportion of informed roost buddies between individuals that did not go to the carcass vs. individuals that arrived for the first time on the second day. Obviously tiny sample size, just one carcass, need to look more carefully.
+
+
