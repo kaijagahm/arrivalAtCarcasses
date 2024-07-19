@@ -231,3 +231,74 @@ for(i in 1:length(time_summaries)){
   }
 }
 
+# Examining one specific carcass ------------------------------------------
+hires_carcasses
+target_carcass <- hires_carcasses[4,] # placed at 15:05, so afternoon.
+target_carcass_data <- carcass_data[[4]]
+glimpse(target_carcass_data)
+
+# Need to figure out where everyone roosted on the night of 6/12-6/13, 6/13-6/14, and 6/14-6/15.
+roosts <- target_carcass_data %>%
+  filter(dateOnly_il %in% c("2023-06-12", "2023-06-13", "2023-06-14", "2023-06-15"),
+         lubridate::hour(timestamp_il) %in% c(21:23, 0:7)) %>%
+  select(Nili_id, dateOnly_il, timestamp_il, location_lat, location_long) %>%
+  mutate(roost_date = case_when(lubridate::hour(timestamp_il) %in% 0:7 ~ dateOnly_il-1,
+                                .default = dateOnly_il)) %>%
+  filter(roost_date %in% c("2023-06-12", "2023-06-13", "2023-06-14", "2023-06-15")) %>%
+  group_by(Nili_id, roost_date) %>%
+  summarise(geometry = st_union(geometry)) %>%
+  st_centroid() %>%
+  ungroup() %>%
+  group_by(roost_date) %>%
+  group_split() %>%
+  map(., ~as.numeric(st_distance(.x))) %>%
+  map(., ~{
+    close <- which(.x <= 500)
+    far <- which(.x > 500)
+    test[close] <- "close"
+    test[far] <- "far"
+    return(test)
+  })
+
+# Nobody went to this carcass after it was placed on the first afternoon (6/13), so let's consider 6/14 to be the first day.
+states <- target_carcass_data %>%
+  group_by(dateOnly_il) %>%
+  select(Nili_id, dateOnly_il, dist_m, state, timestamp_il) %>%
+  filter(timestamp_il > lubridate::ymd_hms("2023-06-13 15:00:00")) %>%
+  arrange(timestamp_il) %>%
+  group_by(dateOnly_il, Nili_id, state) %>%
+  slice(1)
+
+allvultures <- sort(unique(target_carcass_data$Nili_id))
+
+firstday_informed <- states %>%
+  filter(dateOnly_il == "2023-06-14" & state %in% c("approach_flying", "near_ground", "at_carcass", "vis_flying", "vis_ground")) %>%
+  pull(Nili_id) %>%
+  unique() %>%
+  sort()
+
+firstday_arrived <- states %>%
+  filter(dateOnly_il == "2023-06-14" & state %in% c("at_carcass")) %>%
+  pull(Nili_id) %>%
+  unique() %>%
+  sort()
+
+secondday_arrived <- states %>%
+  filter(dateOnly_il == "2023-06-15" & state %in% c("at_carcass")) %>%
+  pull(Nili_id) %>%
+  unique() %>%
+  sort()
+secondday_arrived_informed <- secondday_arrived[secondday_arrived %in% firstday_informed]
+secondday_arrived_uninformed <- secondday_arrived[!(secondday_arrived %in% firstday_informed)]
+
+secondday_informed <-  states %>%
+  filter(dateOnly_il %in% c("2023-06-14", "2023-06-15") & state %in% c("approach_flying", "near_ground", "at_carcass", "vis_flying", "vis_ground")) %>%
+  pull(Nili_id) %>%
+  unique() %>%
+  sort()
+
+thirdday_arrived <- states %>%
+  filter(dateOnly_il == "2023-06-16" & state %in% c("at_carcass")) %>%
+  pull(Nili_id) %>%
+  unique() %>%
+  sort() # nobody arrived on the third day, so no need to parse it out by informed vs. not.
