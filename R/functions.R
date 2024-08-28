@@ -84,7 +84,7 @@ clean_data <- function(removed_periods){
 remove_captures <- function(capture_sites, carmel, cleaned){
   cs <- read.csv(capture_sites)
   cml <- read.csv(carmel)
-  removed_captures <- removeCaptures(data = cleaned, 
+  removed_captures <- vultureUtils::removeCaptures(data = cleaned, 
                                      captureSites = cs, 
                                      AllCarmelDates = cml, 
                                      distance = 500, idCol = "Nili_id")
@@ -121,6 +121,8 @@ get_sns <- function(tag_sns_file){
 
 get_hires_tags <- function(with_age_sex, tag_sns){
   hires_tags <- with_age_sex %>%
-    filter(tag_local_identifier %in% tag_sns)
+    filter(tag_local_identifier %in% tag_sns) %>%
+    mutate(timestamp_il = as_datetime(timestamp, tz = "Israel"),
+           dateOnly_il = lubridate::date(timestamp_il)) 
   return(hires_tags)
 }
