@@ -131,6 +131,7 @@ prepare_full_dataset <- function(x, stat_feats, bout_duration = 5, acc_frequency
   full <- left_join(full, 
                     stat_feats,
                     by = c("device_id", "bout_id"))
+  full$start_int <- as.character(full$UTC_datetime)
   return(full)
 }
 
