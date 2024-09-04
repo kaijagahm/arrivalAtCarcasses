@@ -22,12 +22,12 @@ calibrate <- function(x, calibration_data){
   
   # If there are no calibration values of a tag, add the mean value for all tags
   joined <- joined %>% 
-    mutate(slopex = ifelse(is.na(slopex), mean(calibration$slopex), slopex),
-           intx = ifelse(is.na(intx), mean(calibration$intx), intx),
-           slopey = ifelse(is.na(slopey), mean(calibration$slopey), slopey),
-           inty = ifelse(is.na(inty), mean(calibration$inty), inty),
-           slopez = ifelse(is.na(slopez), mean(calibration$slopez), slopez),
-           intz = ifelse(is.na(intz), mean(calibration$intz), intz))
+    mutate(slopex = replace_na(slopex, mean(calibration_data$slopex)),
+           intx = replace_na(intx, mean(calibration_data$intx)),
+           slopey = replace_na(slopey, mean(calibration_data$slopey)),
+           inty = replace_na(inty, mean(calibration_data$inty)),
+           slopez = replace_na(slopez, mean(calibration_data$slopez)),
+           intz = replace_na(intz, mean(calibration_data$intz)))
   transformed <- joined %>%
     mutate(acc_x = (acc_x - intx) * slopex,
            acc_y = (acc_y - inty) * slopey,
