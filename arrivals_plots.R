@@ -6,6 +6,7 @@ library(mapview)
 library(moveVis)
 library(future)
 library(targets)
+library(patchwork)
 
 # allow moveVis to use multiple cores for faster processing
 use_multicore(n_cores = 10, verbose = TRUE)
@@ -86,13 +87,14 @@ load(here("data/carcass_data.Rda"))
 
 # Add behavior states -----------------------------------------------------
 test <- carcass_data[[10]]
+statecolors <- c("navy", "skyblue", "blue", "black", "darkorange4", "orange", "red")
 
 # What about time series for individuals?
 test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
   geom_line(aes(group = Nili_id))+
   geom_vline(data = hires_carcasses[10,], aes(xintercept = datetime), col = "magenta", linetype = 2)+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_color_manual(values = statecolors)+
   theme_classic()+
   theme(legend.position = "bottom")+
   guides(color = guide_legend(override.aes = list(linewidth = 3))) # this is much more informative, and very similar to the plots I made before. 
@@ -104,7 +106,7 @@ test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
   geom_line(aes(group = Nili_id))+
   geom_vline(data = hires_carcasses[10,], aes(xintercept = datetime), col = "magenta", linetype = 2)+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_color_manual(values = statecolors)+
   theme_classic()+
   theme(legend.position = "bottom")+
   guides(color = guide_legend(override.aes = list(linewidth = 3))) # this is much better. Note the red lines going up--this is because the segments are getting colored according to their first point, so if a bird starts nearby on the ground but then changes to e.g. far_flying at the next timepoint, the line between the two timepoints will be red, not navy.
@@ -116,7 +118,7 @@ test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
   geom_line(aes(group = Nili_id))+
   geom_vline(data = hires_carcasses[10,], aes(xintercept = datetime), col = "magenta", linetype = 2)+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_color_manual(values = statecolors)+
   theme_classic()+
   theme(legend.position = "bottom")+
   guides(color = guide_legend(override.aes = list(linewidth = 3))) 
@@ -128,7 +130,7 @@ test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
   geom_line(aes(group = Nili_id))+
   geom_vline(data = hires_carcasses[10,], aes(xintercept = datetime), col = "magenta", linetype = 2)+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_color_manual(values = statecolors)+
   theme_classic()+
   theme(legend.position = "bottom")+
   guides(color = guide_legend(override.aes = list(linewidth = 3)))+
@@ -142,7 +144,7 @@ test %>%
   ggplot(aes(x = timestamp, y = dist_m, col = state))+
   geom_line(aes(group = Nili_id))+
   geom_vline(data = hires_carcasses[10,], aes(xintercept = datetime), col = "magenta", linetype = 2)+
-  scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_color_manual(values = statecolors)+
   theme_classic()+
   theme(legend.position = "bottom")+
   guides(color = guide_legend(override.aes = list(linewidth = 3)))
@@ -156,7 +158,7 @@ timeplot <- function(idx){
     ggplot(aes(x = timestamp, y = dist_m, col = state))+
     geom_line(aes(group = Nili_id))+
     geom_vline(data = carc, aes(xintercept = datetime), col = "magenta", linetype = 2)+
-    scale_color_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+    scale_color_manual(values = statecolors)+
     theme_classic()+
     theme(legend.position = "bottom")+
     labs(subtitle = carc$lab)+
@@ -192,14 +194,14 @@ time_summaries <- map(carcass_data, ~.x %>%
 time_summaries[[4]] %>%
   ggplot(aes(x = tenmin, y = n_vultures, fill = state))+
   geom_bar(position = "stack", stat = "identity")+
-  scale_fill_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+  scale_fill_manual(values = statecolors)+
   theme_minimal()+
   labs(subtitle = time_summaries[[4]]$lab[1])
 
 walk(time_summaries, ~.x %>%
        ggplot(aes(x = tenmin, y = n_vultures, fill = state))+
        geom_bar(position = "stack", stat = "identity")+
-       scale_fill_manual(values = c("skyblue", "orange", "navy", "black", "red", "blue"))+
+       scale_fill_manual(values = statecolors)+
        theme_minimal())
 save(time_summaries, file = here("data/time_summaries.Rda"))
 
@@ -230,6 +232,69 @@ for(i in 1:length(time_summaries)){
     ggsave(filename = here::here(filename), plot = p, width = 7, height = 6)
   }
 }
+
+# Cumulative counts for each carcass over time
+test <- carcass_data[[4]]
+
+acc_fun <- function(dat){
+  firsts <- dat %>%
+    st_drop_geometry() %>%
+    filter(time_relative > 0) %>%
+    select(Nili_id, state, state_description, time_relative) %>%
+    arrange(time_relative) %>%
+    group_by(Nili_id, state) %>%
+    slice(1)
+  
+  firsts_summ <- firsts %>%
+    group_by(state) %>%
+    arrange(time_relative, .by_group = T) %>%
+    mutate(rn = 1:n())
+  return(firsts_summ)
+}
+
+summs <- imap(carcass_data, ~acc_fun(.x) %>% mutate(carcass = .y)) %>% purrr::list_rbind()
+
+# restrict to 5 days, and calculate proportions
+# 5 days = 5*24 = 120 hours
+summs <- summs %>%
+  filter(time_relative <= 120) %>%
+  group_by(carcass, state_description) %>%
+  mutate(prop = rn/max(rn))
+
+abs <- summs %>%
+  filter(!(state %in% c("far_flying", "far_ground"))) %>%
+  ggplot(aes(x = time_relative, y = rn, group = carcass, 
+             col = state_description))+
+  facet_wrap(~state_description)+
+  geom_line(alpha = 0.3)+
+  theme_classic()+
+  scale_color_manual(name = "", 
+                     values = statecolors[c(2, 3, 5, 6, 7)])+
+  ggtitle("Absolute numbers of vultures")+
+  ylab("Number of vultures")+
+  xlab("Time since carcass deposition")+
+  guides(color = guide_legend(position = "inside",
+                              override.aes = list(alpha = 1, linewidth = 1.5)))+
+  theme(legend.position.inside = c(0.85, 0.26))
+
+rel <- summs %>%
+  filter(!(state %in% c("far_flying", "far_ground"))) %>%
+  ggplot(aes(x = time_relative, y = prop, group = carcass, 
+             col = state_description))+
+  facet_wrap(~state_description)+
+  geom_line(alpha = 0.3)+
+  theme_classic()+
+  scale_color_manual(name = "", 
+                     values = statecolors[c(2, 3, 5, 6, 7)])+
+  ggtitle("Relative numbers of vultures")+
+  ylab("Proportion of total")+
+  xlab("Time since carcass deposition")+
+  guides(color = guide_legend(position = "inside", 
+                              override.aes = list(alpha = 1, linewidth = 1.5)))+
+  theme(legend.position.inside = c(0.85, 0.26))
+
+abs_rel <- (abs+theme(legend.position = "none")) + rel + plot_layout(ncol = 2)
+ggsave(abs_rel, filename = here("fig/accumulation_curves_abs_rel.png"), width = 12, height = 7)
 
 # Examining one specific carcass ------------------------------------------
 hires_carcasses
