@@ -37,11 +37,23 @@ calibration_data <- read.csv(here("ACC_algo_Marta_draft/Data/example_calibration
 # Now, one at a time, read in a file, classify it, write it out.
 files <- list.files(here("data/ACC/2024_hf_period/created/devices/"), pattern = ".csv", full.names = T)
 
-for(i in 1:length(files)){
-  cat("Working on file", i, "of", length(files), "######################", "\n")
-  file <- data.table::fread(files[i])
+future::plan(future::multisession(workers = 5))
+furrr::future_map(files, ~{
+  library(moments)
+  library(tidymodels)
+  library(ranger)
+  library(parsnip)
+  library(caret)
+  library(zoo)
+  file <- data.table::fread(.x)
   prepared <- prepare_dataset(file, calibration = calibration_data)
   cat("Predicting\n")
+  bouts <- prepared %>%
+    select(bout_id, device_id, start_int) %>%
+    group_by(device_id, bout_id) %>%
+    summarize(start = min(start_int),
+              end = max(start_int)) %>%
+    ungroup()
   predictions <- stats::predict(unobs_fit, prepared)
   scores <- stats::predict(unobs_fit, prepared, type='prob')
   bouts_predictions <- prepared %>%
@@ -49,12 +61,39 @@ for(i in 1:length(files)){
     dplyr::select(bout_id, device_id) %>%
     bind_cols(predictions) %>%
     bind_cols(scores) %>%
-    rename("pred" = ".pred_class")
+    rename("pred" = ".pred_class") %>%
+    left_join(bouts, by = c("device_id", "bout_id"))
   cat("Writing predictions to file\n")
   filename <- paste0("/", bouts_predictions$device_id[1], ".csv")
   data.table::fwrite(bouts_predictions, file = here("data/ACC/2024_hf_period/created/predictions/", filename))
-  cat("Done!\n")
-}
+}, .progress = T)
+
+
+# for(i in 1:length(files)){
+#   cat("Working on file", i, "of", length(files), "######################", "\n")
+#   file <- data.table::fread(files[i])
+#   prepared <- prepare_dataset(file, calibration = calibration_data)
+#   cat("Predicting\n")
+#   bouts <- prepared %>%
+#     select(bout_id, device_id, start_int) %>%
+#     group_by(device_id, bout_id) %>%
+#     summarize(start = min(start_int),
+#               end = max(start_int)) %>%
+#     ungroup()
+#   predictions <- stats::predict(unobs_fit, prepared)
+#   scores <- stats::predict(unobs_fit, prepared, type='prob')
+#   bouts_predictions <- prepared %>%
+#     ungroup() %>%
+#     dplyr::select(bout_id, device_id) %>%
+#     bind_cols(predictions) %>%
+#     bind_cols(scores) %>%
+#     rename("pred" = ".pred_class") %>%
+#     left_join(bouts, by = c("device_id", "bout_id"))
+#   cat("Writing predictions to file\n")
+#   filename <- paste0("/", bouts_predictions$device_id[1], ".csv")
+#   data.table::fwrite(bouts_predictions, file = here("data/ACC/2024_hf_period/created/predictions/", filename))
+#   cat("Done!\n")
+# }
 # Hooray, now all of the 2024 high-frequency ACC data is classified!
 # Examine a test file
 testfile <- read_csv(here("data/ACC/2024_hf_period/created/predictions/202364.csv"))
