@@ -48,7 +48,6 @@ tar_option_set(
 lapply(list.files("R", full.names = TRUE), source) # source all scripts in the R directory
 # tar_source("other_functions.R") # Source other scripts as needed.
 
-# Replace the target list below with your own:
 list(
   # Prepare data
   tar_target(geofences, get_geofences()),
