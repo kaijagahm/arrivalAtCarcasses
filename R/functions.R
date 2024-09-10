@@ -320,3 +320,43 @@ get_bouts_predictions <- function(prepared, predictions,
     dplyr::rename("pred" = ".pred_class") %>%
     dplyr::left_join(bouts, by = c("device_id", "bout_id"))
 }
+
+get_matches <- function(df, foc){
+  with_middles <- df %>%
+    mutate(start = lubridate::ymd_hms(start),
+           end = lubridate::ymd_hms(end),
+           middle = start + difftime(end, start)/2) %>%
+    group_by(bout_id) %>%
+    group_split()
+  
+  within_5min <- map(with_middles, ~{
+    foc[(.x$start[1] - minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),] 
+  }, .progress = T)
+  
+  within_5min_speed <- map(within_5min, ~.x[.x$ground_speed <= 4,])
+  
+  within_11min_speed <- map(with_middles, ~{
+    foc[(.x$start[1] - minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(11)) & foc$ground_speed < 4,] 
+  }, .progress = T)
+  
+  keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
+    if(nrow(..2) > 0){
+      match <- ..2
+    }else if(nrow(..3) > 0){
+      match <- ..3
+    }else if(nrow(..1) > 0){
+      match <- ..1
+    }
+    if(nrow(match) > 1){
+      match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
+    }
+    if(nrow(match) > 0){
+      match$bout_id <- ..4$bout_id[1]
+      return(match)
+    }else{
+      return(NULL)
+    }
+  })
+  keep_df <- purrr::list_rbind(keep)
+  return(keep_df)
+}

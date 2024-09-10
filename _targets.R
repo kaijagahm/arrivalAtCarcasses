@@ -13,8 +13,8 @@ tar_option_set(
   garbage_collection = TRUE,
   format = "qs",
   error = "null",
-  seconds_meta_append = 15,
-  seconds_reporter = 0.5,
+  # seconds_meta_append = 15,
+  # seconds_reporter = 0.5,
   packages = c("vultureUtils", "sf", "tidyverse", "move", "feather", "readxl", "elevatr", "here", "furrr", "future", "purrr", "igraph", "mapview", "parallel",   "ggplot2", "ggraph", "tidygraph", "moments", "tidymodels", "ranger", "parsnip", "caret", "zoo", "readxl", "data.table") # Packages that your targets need for their tasks.
   
   # Pipelines that take a long time to run may benefit from
@@ -65,9 +65,9 @@ list(
                                      filename))
   }),
   tar_target(split_files_2024, list.files(here("data/ACC/2024_hf_period/created/devices/"), pattern = ".csv", full.names = T)),
-  tar_target(split_subset, split[6:7]),
+  #tar_target(split_subset, split[6:7]),
   ### Classify data
-  tar_target(prepared_2024, prepare_forloop(split_subset, cal = calibration_data)),
+  tar_target(prepared_2024, prepare_forloop(split, cal = calibration_data)),
   tar_target(bouts_2024, purrr::map(prepared_2024, ~{
     .x %>%
       dplyr::select(bout_id, device_id, start_int) %>%
@@ -94,54 +94,9 @@ list(
   tar_target(focal_gps, purrr::map(device_ids, ~gps %>%
                                      filter(tag_local_identifier == .x))),
   tar_target(bouts_predictions_2024_distinct, map(bouts_predictions_2024, distinct)),
-  tar_target(matches, map2(bouts_predictions_2024_distinct, focal_gps, ~{
-    gps_matches <- vector(mode = "list", length = nrow(.x))
-    for(i in 1:nrow(.x)){
-      bout <- .x$bout_id[i]
-      start_time <- lubridate::ymd_hms(.x$start[i])
-      end_time <- lubridate::ymd_hms(.x$end[i])
-      middle <- start_time + difftime(end_time, start_time)/2
-      # "First, if they were collected within 5 min of each other, and if the GPS ground speed was below 4m/sec (indicating the bird was not flying)."
-      before_5min <- start_time-minutes(5)
-      after_5min <- end_time+minutes(5)
-      within_5min_gs <- .y %>%
-        filter(before_5min <= timestamp & timestamp <= after_5min) %>%
-        filter(ground_speed < 4)
-      if(nrow(within_5min_gs) > 0){
-        match <- within_5min_gs
-      }else{
-        #Second, if no GPS position matched these criteria, we matched ACC bouts with GPS locations if they were collected within 11 min of each other (while maintaining the ground speed criteria).
-        before_11min <- start_time-minutes(11)
-        after_11min <- end_time+minutes(11)
-        within_11min_gs <- .y %>%
-          filter(before_11min <= timestamp & timestamp <= after_11min) %>%
-          filter(ground_speed < 4)
-        if(nrow(within_11min_gs) > 0){
-          match <- within_11min_gs
-        }else{
-          # Third, if no position matched the previous two filters, we used the 5 min time frame, but excluded the ground speed filter (rarely, very short feeding events may occur during the interval between two GPS locations indicating flight, or between two GPS locations when one was on the ground and the following was flying).
-          within_5min <- .y %>%
-            filter(before_5min <= timestamp & timestamp <= after_5min)
-          if(nrow(within_5min) > 0){
-            match <- within_5min
-          }else{
-            match <- .y[0,]
-            cat("No match found\n")
-          }
-        }
-      }
-      match <- match %>%
-        mutate(bout_id = bout)
-      if(nrow(match) > 1){
-        match <- match[which.min(abs(match$timestamp - middle)),]
-      }
-      gps_matches[[i]] <- match
-      cat("Completed bout", i, "\n")
-    }
-    return(gps_matches)
-  })),
-  tar_target(matches_df, map(matches, ~purrr::list_rbind(.x))),
-  tar_target(joined, map2(bouts_predictions_2024_distinct, matches_df, ~{
+  tar_target(matches, map2(bouts_predictions_2024_distinct, focal_gps,
+                           ~get_matches(df = .x, foc = .y))),
+  tar_target(joined, map2(bouts_predictions_2024_distinct, matches, ~{
     left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
                              "bout_id"))
   })),
