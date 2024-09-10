@@ -346,6 +346,8 @@ get_matches <- function(df, foc){
       match <- ..3
     }else if(nrow(..1) > 0){
       match <- ..1
+    }else{
+      match <- foc[0,]
     }
     if(nrow(match) > 1){
       match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
