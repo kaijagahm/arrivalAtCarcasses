@@ -109,13 +109,16 @@ list(
              iteration = "list"),
   tar_target(focal_gps, filter(gps, tag_local_identifier == device_ids),
              pattern = map(device_ids),
+             iteration = "list"),
+  tar_target(matches, get_matches(bouts_predictions_2024_distinct, focal_gps),
+             pattern = map(bouts_predictions_2024_distinct, focal_gps),
+             iteration = "list"),
+  tar_target(joined, left_join(bouts_predictions_2024_distinct, matches,
+                               by = c("device_id" = "tag_local_identifier",
+                                      "bout_id")),
+             pattern = map(bouts_predictions_2024_distinct, matches),
              iteration = "list")#,
-  # tar_target(matches, map2(bouts_predictions_2024_distinct, focal_gps,
-  #                          ~get_matches(df = .x, foc = .y))),
-  # tar_target(joined, map2(bouts_predictions_2024_distinct, matches, ~{
-  #   left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
-  #                            "bout_id"))
-  # })),
+  # XXX I HAVE JUST REALIZED THESE MIGHT NOT BE KEEPING THE SAME ORDER, OMG.
   # ### Get feeding bouts
   # tar_target(feeding_bouts_certain, map(joined, ~filter(.x, pred == "Eating" & 
   #                                                         !is.na(location_lat) &
