@@ -1,8 +1,9 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|c445b4910aa26044|||||||||||||||
+.Random.seed|object|7a56e19631483872|||||||||||||||
 .RProtoBuf_libname|object|6a6a24b6dc0f27b3|||||||||||||||
 .x|object|37ffb607f12643e2|||||||||||||||
 add_bout_ids|function|53d5b472825bf038|||||||||||||||
+assign_fs|function|9663d2978d8d1380|||||||||||||||
 attach_age_sex|function|54851878732a890d|||||||||||||||
 bouts_2024|pattern|580d5ae73a76c3cb|649df39630337315||15169253||||58341|qs|local|list||bouts_2024_1dad9564*bouts_2024_1eedd2e0*bouts_2024_ea8e23c6|24.188||
 bouts_2024_1dad9564|branch|2e14cd1b14ba8557|649df39630337315|86c9dc67935784e0|-1472889486||t19977.0590481256s|553a0c9bf509fb6a|13033|qs|local|list|bouts_2024||11.86||
@@ -27,8 +28,14 @@ data_files_2024|stem|62e96b1e611d8574|e456d3e9210d6586|ef46db3751d8e999|18111947
 device_ids|stem|9571669dbc3ae29a|c55e54b9177f42f1|3cc7e616adfd3fd1|1556935669||t19977.0631528717s|383bd5e2f277cce6|122|qs|local|list|||11.625||
 df|object|2a6deca09cc00aa5|||||||||||||||
 exclude_incomplete_bouts|function|14101d3200cc1272|||||||||||||||
-feeding_bouts_certain|stem|f90d5d0cae9ccfe3|faaa2f3fe489b4f3|f31bc3175a77247c|-2131790756||t19976.8853874846s|9899f9fbdcfa916f|38|qs|local|vector|||0||
-feeding_bouts_station|stem|f90d5d0cae9ccfe3|7d6f2716d596baf0|c1e36fa387f32c46|139161385||t19976.8853945335s|9899f9fbdcfa916f|38|qs|local|vector|||0||
+feeding_bouts_certain|pattern|933b59f4a472d78e|ad4582645455112d||-2131790756||||22949|qs|local|list||feeding_bouts_certain_6e3ca5ad*feeding_bouts_certain_b681ae56*feeding_bouts_certain_124c51af|22.798||
+feeding_bouts_certain_124c51af|branch|8c49ab0aa1328e72|ad4582645455112d|bd006b4135587c0b|588404735||t19978.7172964467s|af2c64b2a2801dbe|4139|qs|local|list|feeding_bouts_certain||0||
+feeding_bouts_certain_6e3ca5ad|branch|2c5d9bb84b490b60|ad4582645455112d|38accf93739af038|1331794230||t19978.7172891549s|fd37d35fe13f8c8a|4231|qs|local|list|feeding_bouts_certain||11.36||
+feeding_bouts_certain_b681ae56|branch|9fc996bc4b01cfa2|ad4582645455112d|e5e80c641eca4f7b|2014830556||t19978.7172907842s|fd00023f6da4a83b|14579|qs|local|list|feeding_bouts_certain||11.438||
+feeding_bouts_station|pattern|e1039c1029798bae|b2df0db949863baa||139161385||||23054|qs|local|list||feeding_bouts_station_4f0460d2*feeding_bouts_station_a2357eea*feeding_bouts_station_dbab30ae|23.267||
+feeding_bouts_station_4f0460d2|branch|fef96db459672bc4|b2df0db949863baa|c509a0f4959916ce|1700269503||t19978.7206045765s|7fd8de4e328977a3|4254|qs|local|list|feeding_bouts_station||11.454||
+feeding_bouts_station_a2357eea|branch|e6848006bd5167da|b2df0db949863baa|30eb51f73e2e0a35|-1720969607||t19978.7206093088s|381abfc40a681ac1|14637|qs|local|list|feeding_bouts_station||11.766||
+feeding_bouts_station_dbab30ae|branch|8a8e68a9fde39354|b2df0db949863baa|4d3b1711299fc4fc|8831217||t19978.7206116898s|f7a18d5b94e89741|4163|qs|local|list|feeding_bouts_station||0.047||
 fix_names|function|4198d0507560cd38|||||||||||||||
 fixed_names|stem|8b714db9a552bbea|09f4b58ba170823a|ad9bca15ec5d2a59|256723716||t19975.9854506509s|26a27338ab06abb8|99989480|qs|local|vector|||8.843||
 foc|object|234c1898771e1694|||||||||||||||

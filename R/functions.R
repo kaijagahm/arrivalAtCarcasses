@@ -362,3 +362,8 @@ get_matches <- function(df, foc){
   keep_df <- purrr::list_rbind(keep)
   return(keep_df)
 }
+
+assign_fs <- function(data, fs){
+  data$station <- !is.na(as.numeric(st_intersects(data, fs)))
+  return(data)
+}

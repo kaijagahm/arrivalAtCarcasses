@@ -117,31 +117,31 @@ list(
                                by = c("device_id" = "tag_local_identifier",
                                       "bout_id")),
              pattern = map(bouts_predictions_2024_distinct, matches),
-             iteration = "list")#,
-  # XXX I HAVE JUST REALIZED THESE MIGHT NOT BE KEEPING THE SAME ORDER, OMG.
-  # ### Get feeding bouts
-  # tar_target(feeding_bouts_certain, map(joined, ~filter(.x, pred == "Eating" & 
-  #                                                         !is.na(location_lat) &
-  #                                                         .pred_Eating > 0.5) %>% 
-  #                                         sf::st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84"))),
-  # ### Classify feeding station vs. not
-  # tar_target(fs, readxl::read_excel(here("data/FeedingData from 2018_2024_Translated.xlsx")) %>%
-  #              dplyr::select(contains("LONG") | contains("LAT")) %>%
-  #              rename("itmLong" = `ITM - LONG`,
-  #                     "itmLat" = `ITM - LAT`,
-  #                     "long" = `WGS84 - LONG`,
-  #                     "lat" = `WGS84 - LAT`) %>%
-  #              select(long, lat, itmLong, itmLat) %>%
-  #              distinct() %>%
-  #              st_as_sf(coords = c("long", "lat"), crs = "WGS84") %>%
-  #              st_transform(32636)),
-  # tar_target(fs_buffered, sf::st_buffer(fs, dist = 100)),
-  # tar_target(fs_union, sf::st_union(fs_buffered) %>% st_transform("WGS84")),
-  # tar_target(feeding_bouts_station, map(feeding_bouts_certain, ~{
-  #   .x$station <- !is.na(as.numeric(st_intersects(.x, fs_union)))
-  #   return(.x)
-  # }))
-  # # XXX START HERE--need to properly clean the GPS data before classifying it.
+             iteration = "list"),
+  ### Get feeding bouts
+  tar_target(feeding_bouts_certain, filter(joined, pred == "Eating" &
+                                             !is.na(location_lat) &
+                                             .pred_Eating > 0.5) %>%
+               sf::st_as_sf(coords = c("location_long", "location_lat"),
+                            crs = "WGS84"),
+             pattern = map(joined),
+             iteration = "list"),
+  ### Classify feeding station vs. not
+  tar_target(fs, readxl::read_excel(here("data/FeedingData from 2018_2024_Translated.xlsx")) %>%
+               dplyr::select(contains("LONG") | contains("LAT")) %>%
+               rename("itmLong" = `ITM - LONG`,
+                      "itmLat" = `ITM - LAT`,
+                      "long" = `WGS84 - LONG`,
+                      "lat" = `WGS84 - LAT`) %>%
+               select(long, lat, itmLong, itmLat) %>%
+               distinct() %>%
+               st_as_sf(coords = c("long", "lat"), crs = "WGS84") %>%
+               st_transform(32636)),
+  tar_target(fs_buffered, sf::st_buffer(fs, dist = 100)),
+  tar_target(fs_union, sf::st_union(fs_buffered) %>% st_transform("WGS84")),
+  tar_target(feeding_bouts_station, assign_fs(feeding_bouts_certain, fs_union),
+             pattern = map(feeding_bouts_certain),
+             iteration = "list")
 )
 
 
