@@ -1,0 +1,87 @@
+---
+title: "Locating feeding events"
+format: html
+editor: source
+---
+
+```{r}
+library(targets)
+library(tidyverse)
+library(here)
+library(lubridate)
+library(sf)
+library(viridis)
+library(mapview)
+source(here("R/functions.R"))
+```
+
+Load carcass placements and feeding bouts
+```{r}
+# Classified feeding bouts
+# XXX this part can be replaced with tar_load(feeding_bouts_station) when I have the pipeline updated.
+tar_load(feeding_bouts_certain)
+feeding_bouts_station <- purrr::map(feeding_bouts_certain, ~assign_fs(.x, fs_union))
+
+# combine all individuals into one
+bouts <- purrr::list_rbind(feeding_bouts_station) %>%
+  st_as_sf(crs = "WGS84") %>%
+  st_transform(32636)
+      
+length(unique(bouts$device_id)) # only 3 individuals represented right now, but we'll have more later.
+
+# Load known carcass placements
+tar_load(fs)
+```
+
+Restrict to carcass placements during the time of year
+```{r}
+max(fs$datetime) # we only have placements through 4/16/24 because of when I requested the data from Gideon. # XXX Write to Gideon and ask for the more up to date data.
+# In the meantime, I'll analyze any that occurred during this interval
+
+mindate <- min(bouts$start)
+maxdate <- max(bouts$end)
+
+fs_focal <- fs %>% filter(datetime >= mindate, datetime <= maxdate) # we have 11 feeding occurrences.
+
+# Let's see if these individuals fed at these carcasses at all. If not, then I'll need more data for either individuals or carcasses.
+```
+
+For each carcass, let's look at feeding bouts within 1000m and 1 day of the carcass.
+```{r}
+carcass_bouts <- map(1:nrow(fs_focal), ~{
+  carcass <- fs_focal[.x,]
+  distances <- as.numeric(st_distance(bouts, carcass))
+  bouts <- bouts %>%
+    mutate(dist_to_carcass = distances)
+  keep_distance <- bouts %>%
+    filter(dist_to_carcass <= 1000)
+  keep_time <- keep_distance %>%
+    filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass
+           end <= (carcass$datetime + hours(24))) %>% # allow 24 hours after carcass
+    mutate(time_since_carcass = difftime(start, carcass$datetime))
+  return(keep_time)
+}) # only one of these carcasses has a couple feeding bouts. We can look at this for now.
+```
+
+```{r}
+map_dbl(carcass_bouts, nrow)
+
+cbtest <- carcass_bouts[[10]]
+
+# Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
+nrow(fs_focal)
+carc <- fs_focal[10,]
+
+toplot <- bind_rows(carc %>%
+                      mutate(type = "carcass"),
+                    cbtest %>%
+                      mutate(type = "feeding_bout"))
+ggplot(toplot)+
+  geom_sf(aes(shape = type, col = dist_to_carcass),
+          size = 5)+
+  scale_color_viridis(name = "Distance\nto carcass", limits = c(0, 100))+
+  scale_shape_manual(name = "", values = c(4, 19))+
+  theme_bw()
+```
+
+
