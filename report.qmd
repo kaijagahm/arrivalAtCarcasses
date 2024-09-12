@@ -1,10 +1,34 @@
-# Understanding the frequency with which carcasses are placed
+---
+title: "Report"
+author: "Kaija Gahm"
+format: html
+editor: source
+---
+
+## How often are carcasses placed at feeding stations?
+
+Coordinates of feeding stations in the south: XXX READ IN
+
+Coordinates of feeding stations in the north: XXX STILL NEED THIS FILE
+
+Until we have a full list of feeding station coordinates, let's use the real carcass data to infer the position of feeding stations.
+
+Let's first see where carcasses were recorded as being placed.
+
+```{r}
+#| echo: false
+#| message: false
 library(tidyverse)
 library(sf)
 library(mapview)
 library(here)
 library(readxl)
+```
 
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
 feed <- read_excel(here("data/FeedingData from 2018_2024_Translated.xlsx")) %>% 
   select(contains("RTG"), contains("WGS84"), "date" = `Date Event`, "time" = `Event time`) %>%
   rename("inspectionArea" = `Inspection area - RTG`,
@@ -19,19 +43,32 @@ feed_sf <- feed %>%
   st_as_sf(coords = c("long", "lat"), crs = "WGS84") %>%
   st_transform(32636)
 
+ggplot(feed_sf)+
+  geom_sf(alpha = 0.2, size = 2, col = "blue")+
+  theme_minimal()+
+  ggtitle("Carcass locations, 2018-2024")
+```
+
+We notice that there are definitely a lot of repeat placements. As a quick and dirty way of quantifying feeding stations, let's cluster them together.
+
+Buffering by 300m (arbitrary) and then clustering and intersecting and coloring by cluster gives us this:
+
+```{r}
+#| echo: false
 fs_buffered <- st_buffer(feed_sf, 300)
 parts <- st_cast(st_union(fs_buffered),"POLYGON")
 clust <- unlist(st_intersects(fs_buffered, parts))
 diss <- cbind(fs_buffered, clust) %>%
-  group_by(clust)
+  group_by(clust) %>%
+  st_transform("WGS84")
 
-ggplot(diss)+
-  geom_sf(aes(col = factor(clust), fill = factor(clust)))
+#mapview(diss, zcol = "clust")
+```
 
-mapview(feed_sf, zcol = "inspectionArea")
-mapview(feed_sf, zcol = "merhavRTG")
-mapview(feed_sf, zcol = "district")
-
+Examine the carcass placement over time at these "stations"
+```{r}
+#| echo: false
+#| message: false
 ggplot(diss, aes(x = datetime, y = clust, col = factor(clust)))+
   geom_point()+
   theme_bw()+
@@ -46,8 +83,12 @@ ggplot(diss, aes(x = datetime, y = clust, col = factor(clust)))+
        caption = "Feeding stations created by buffering and merging nearby coordinates.")+
   scale_x_datetime(date_breaks = "6 months",
                    date_labels = "%m/%y")
+```
 
-# Zooming in year by year
+...and by year:
+```{r}
+#| echo: false
+#| message: false
 diss %>%
   group_by(year, clust) %>%
   filter(n() > 4) %>%
@@ -67,8 +108,12 @@ diss %>%
        caption = "Feeding stations created by buffering and merging nearby coordinates.")+
   scale_x_datetime(date_breaks = "2 months",
                    date_labels = "%b")
+```
 
-# now let's get some stats for this
+Let's take a look at the intervals between carcass depositions
+```{r}
+#| echo: false
+#| message: false
 stats <- diss %>%
   arrange(clust, datetime) %>%
   group_by(clust) %>%
@@ -88,23 +133,12 @@ stats %>%
         panel.grid.minor.x = element_blank())+
   ylab("Interval (days)")+
   xlab("Feeding station")
+```
 
-stats %>%
-  group_by(clust) %>%
-  filter(n() > 4) %>%
-  filter(!is.na(interval)) %>%
-  ggplot(aes(x = fct_reorder(factor(clust), interval, .fun = median), 
-             y = interval))+
-  geom_boxplot(outlier.shape = NA)+
-  theme_minimal()+
-  geom_jitter(alpha = 0.3, aes(col = factor(clust)), width = 0.2)+
-  theme(legend.position = "none",
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  ylab("Interval (days)")+
-  xlab("Feeding station")+
-  facet_wrap(~year, scales = "free_y")
-
+Top 5 by year:
+```{r}
+#| echo: false
+#| message: false
 # Now picking the top 5
 stats %>%
   filter(!is.na(interval)) %>%
@@ -123,8 +157,13 @@ stats %>%
         panel.grid.minor.x = element_blank())+
   ylab("Interval (days)")+
   xlab("Feeding station")+
-  facet_wrap(~year, scales = "free_y")
+  facet_wrap(~year, scales = "free_y")+
+  ggtitle("Top 5 most frequent overall feeding stations")
+```
 
+```{r}
+#| echo: false
+#| message: false
 lines <- stats %>%
   st_drop_geometry() %>%
   filter(!is.na(interval)) %>%
@@ -153,3 +192,25 @@ stats %>%
   geom_vline(data = lines, aes(xintercept = mean, col = factor(clust)), linetype = 2, linewidth = 0.5)+
   labs(title = "Frequency at 5 overall most provisioned feeding stations, by year")+
   ylab("")
+```
+
+So, depending on the feeding station, carcasses are typically deposited every 5-100 days. At the top/most frequent feeding stations, carcasses are placed about every 3-40 days.
+
+How often do we see carcasses being placed less than 5 days apart?
+```{r}
+threshes <- seq(from = 1, to = 5, by = 1)
+dat <- purrr::map(threshes, ~stats %>% filter(interval <= .x) %>% mutate(thresh = .x)) %>% purrr::list_rbind()
+
+dat %>%
+  st_drop_geometry() %>%
+  group_by(clust, thresh) %>%
+  add_count() %>%
+  ggplot(aes(x = thresh, y = n, group = factor(clust), col = factor(clust)))+
+  geom_line()+
+  scale_x_continuous(breaks = threshes)+
+  theme_minimal()+
+  ylab("Number of carcass placements")+
+  xlab("<= n days apart")
+```
+
+So, while most carcasses are provisioned less often than every 5 days, there are some sites where food is often available every day!
