@@ -12,22 +12,21 @@ library(lubridate)
 library(sf)
 library(viridis)
 library(mapview)
+library(ggspatial)
 source(here("R/functions.R"))
 ```
 
 Load carcass placements and feeding bouts
 ```{r}
 # Classified feeding bouts
-# XXX this part can be replaced with tar_load(feeding_bouts_station) when I have the pipeline updated.
-tar_load(feeding_bouts_certain)
-feeding_bouts_station <- purrr::map(feeding_bouts_certain, ~assign_fs(.x, fs_union))
+tar_load(feeding_bouts_station)
 
 # combine all individuals into one
 bouts <- purrr::list_rbind(feeding_bouts_station) %>%
   st_as_sf(crs = "WGS84") %>%
   st_transform(32636)
-      
-length(unique(bouts$device_id)) # only 3 individuals represented right now, but we'll have more later.
+
+length(unique(bouts$device_id)) # 43 individuals are represented now
 
 # Load known carcass placements
 tar_load(fs)
@@ -41,7 +40,7 @@ max(fs$datetime) # we only have placements through 4/16/24 because of when I req
 mindate <- min(bouts$start)
 maxdate <- max(bouts$end)
 
-fs_focal <- fs %>% filter(datetime >= mindate, datetime <= maxdate) # we have 11 feeding occurrences.
+fs_focal <- fs %>% filter(datetime >= mindate, datetime <= maxdate) # we have 12 feeding occurrences.
 
 # Let's see if these individuals fed at these carcasses at all. If not, then I'll need more data for either individuals or carcasses.
 ```
@@ -54,34 +53,55 @@ carcass_bouts <- map(1:nrow(fs_focal), ~{
   bouts <- bouts %>%
     mutate(dist_to_carcass = distances)
   keep_distance <- bouts %>%
-    filter(dist_to_carcass <= 1000)
+    filter(dist_to_carcass <= 500)
   keep_time <- keep_distance %>%
     filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass
            end <= (carcass$datetime + hours(24))) %>% # allow 24 hours after carcass
-    mutate(time_since_carcass = difftime(start, carcass$datetime))
+    mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
   return(keep_time)
 }) # only one of these carcasses has a couple feeding bouts. We can look at this for now.
 ```
 
 ```{r}
-map_dbl(carcass_bouts, nrow)
+map_dbl(carcass_bouts, nrow) # okay, a few of these carcasses now have a bunch of feeding events
 
-cbtest <- carcass_bouts[[10]]
+cbtest <- carcass_bouts[[7]]
 
 # Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
 nrow(fs_focal)
-carc <- fs_focal[10,]
+carc <- fs_focal[7,]
 
-toplot <- bind_rows(carc %>%
-                      mutate(type = "carcass"),
-                    cbtest %>%
-                      mutate(type = "feeding_bout"))
-ggplot(toplot)+
-  geom_sf(aes(shape = type, col = dist_to_carcass),
-          size = 5)+
-  scale_color_viridis(name = "Distance\nto carcass", limits = c(0, 100))+
-  scale_shape_manual(name = "", values = c(4, 19))+
-  theme_bw()
+makeplots <- function(bouts, carc, type = "distance"){
+  toplot <- bind_rows(carc %>%
+                        mutate(type = "carcass"),
+                      bouts %>%
+                        mutate(type = "feeding_bout"))
+  if(type == "time"){
+    p <- ggplot(toplot)+
+      geom_sf(aes(shape = type, col = time_since_carcass),
+              size = 5, alpha = 0.5)+
+      scale_color_viridis(name = "Time\nsince carcass", limits = c(-1, 25))+
+      scale_shape_manual(name = "", values = c(4, 19))+
+      theme_bw()+
+      annotation_scale(location = "br")
+  }else if(type == "distance"){
+    p <- ggplot(toplot)+
+      geom_sf(aes(shape = type, col = dist_to_carcass),
+              size = 5, alpha = 0.5)+
+      scale_color_viridis(name = "Distance\nto carcass", limits = c(0, 100))+
+      scale_shape_manual(name = "", values = c(4, 19))+
+      theme_bw()+
+      annotation_scale(location = "br")
+  }else(stop("`type` must be either 'time' or 'distance'"))
+  return(p)
+}
+distanceplots <- map(as.list(1:nrow(fs_focal)), ~{
+  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "distance")
+})
+
+timeplots <- map(as.list(1:nrow(fs_focal)), ~{
+  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "time")
+})
 ```
 
 

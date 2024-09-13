@@ -85,9 +85,9 @@ remove_captures <- function(capture_sites, carmel, cleaned){
   cs <- read.csv(capture_sites)
   cml <- read.csv(carmel)
   removed_captures <- vultureUtils::removeCaptures(data = cleaned, 
-                                     captureSites = cs, 
-                                     AllCarmelDates = cml, 
-                                     distance = 500, idCol = "Nili_id")
+                                                   captureSites = cs, 
+                                                   AllCarmelDates = cml, 
+                                                   distance = 500, idCol = "Nili_id")
   return(removed_captures)
 }
 
@@ -311,7 +311,7 @@ prepare_parallel <- function(x, cal){
 }
 
 get_bouts_predictions <- function(prepared, predictions, 
-         scores, bouts){
+                                  scores, bouts){
   prepared %>%
     dplyr::ungroup() %>%
     dplyr::select(bout_id, device_id) %>%
@@ -366,4 +366,14 @@ get_matches <- function(df, foc){
 assign_fs <- function(data, fs){
   data$station <- !is.na(as.numeric(st_intersects(data, fs)))
   return(data)
+}
+
+split_data_fun_forloop <- function(data){
+  devices <- unique(data$device_id)
+  out <- vector(mode = "list", length = length(devices))
+  for(i in 1:length(devices)){
+    cat("Starting", i, "\n")
+    out[[i]] <- data[data$device_id == devices[i],]
+  }
+  return(out)
 }
