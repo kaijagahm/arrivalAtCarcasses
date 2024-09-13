@@ -214,3 +214,46 @@ dat %>%
 ```
 
 So, while most carcasses are provisioned less often than every 5 days, there are some sites where food is often available every day!
+
+## Are there days when more than one carcass is placed?
+```{r}
+head(stats)
+carcasses_per_day <- stats %>%
+  st_drop_geometry() %>%
+  group_by(year, date) %>%
+  summarize(carc_per_day = n())
+carcasses_per_day %>%
+  ggplot(aes(x = factor(carc_per_day)))+
+  geom_bar()+
+  theme_minimal()+
+  ylab("Days")+
+  xlab("Carcasses per day")+
+  facet_wrap(~year)+
+  labs(caption = "Sometimes, more than one carcass\nis deposited per day\n(anywhere in the country)")
+```
+
+## Overall visualization of carcasses placed over time
+```{r}
+over_time <- stats %>%
+  st_drop_geometry() %>%
+  mutate(month = lubridate::month(datetime),
+         day = lubridate::day(datetime)) %>%
+  group_by(month, day, year, date) %>%
+  summarize(n = n())
+
+over_time %>%
+  ggplot(aes(y = n, x = lubridate::ymd(date)))+
+  geom_line(alpha = 0.2)+
+  geom_point(aes(col = n))+
+  scale_color_viridis_c(name = "")+
+  theme_minimal()+
+  facet_wrap(~year, scales = "free_x", ncol = 2)+
+  scale_x_date(date_breaks = "3 months",
+               date_labels = "%b")+
+  ggtitle("Carcasses over time")+
+  ylab("Number of carcasses")+
+  xlab("Date")
+```
+
+## Summary stats for how long carcasses last
+We can do this either by looking at the vultures that are nearby the stated location, or we can look at feeding bouts nearby. It would be better to look at feeding bouts in order to quantify duration, I think, so I'm going to wait on this until I have the data processed.
