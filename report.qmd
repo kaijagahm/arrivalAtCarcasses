@@ -80,7 +80,7 @@ ggplot(diss, aes(x = datetime, y = clust, col = factor(clust)))+
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank())+
   labs(title = "Carcass placement at ~feeding stations",
-       caption = "Feeding stations created by buffering and merging nearby coordinates.")+
+       caption = "Feeding station locations defined by buffering and merging nearby coordinates.")+
   scale_x_datetime(date_breaks = "6 months",
                    date_labels = "%m/%y")
 ```
