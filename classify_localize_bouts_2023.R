@@ -138,7 +138,6 @@ matches_2023 <- map2(bouts_predictions_2023, focal_gps_2023, ~{
 }, .progress = T)
 write_rds(matches_2023, here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
 matches_2023 <- readRDS(here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
-# XXX start here
 
 joined_2023 <- map2(bouts_predictions_2023, matches_2023, ~{
   if(!is.null(.y)){
@@ -164,7 +163,8 @@ feeding_bouts_certain_2023 <- map(joined_2023, ~{
 write_rds(feeding_bouts_certain_2023, here("data/ACC/2023_hf_period/created/feeding_bouts_certain_2023.RDS"))
 feeding_bouts_certain_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_certain_2023.RDS"))
 
-tar_load(fs_union)
+targets::tar_load(fs_union)
+library(sf)
 
 feeding_bouts_station_2023 <- map(feeding_bouts_certain_2023, ~{
   if(!is.null(.x)){

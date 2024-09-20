@@ -20,13 +20,23 @@ Load carcass placements and feeding bouts
 ```{r}
 # Classified feeding bouts
 tar_load(feeding_bouts_station)
+fbs24 <- feeding_bouts_station
+fbs23 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
 
-# combine all individuals into one
-bouts <- purrr::list_rbind(feeding_bouts_station) %>%
-  st_as_sf(crs = "WGS84") %>%
-  st_transform(32636)
+fbs <- purrr::list_rbind(fbs24) %>%
+  mutate(year = 2024,
+         start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         dateOnly = lubridate::ymd(dateOnly)) %>%
+  bind_rows(purrr::list_rbind(fbs23) %>%
+              mutate(year = 2023,
+                     tag_id = as.numeric(tag_id),
+                     dateOnly = lubridate::ymd(dateOnly),
+                     individual_id = as.numeic(individual_id))) %>%
+  sf::st_as_sf(crs = "WGS84") %>%
+  sf::st_transform(32636)
 
-length(unique(bouts$device_id)) # 43 individuals are represented now
+length(unique(fbs$device_id)) # 77 individuals are represented now
 
 # Load known carcass placements
 tar_load(fs)
