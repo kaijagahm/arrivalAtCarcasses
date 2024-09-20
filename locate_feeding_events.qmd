@@ -2,6 +2,7 @@
 title: "Locating feeding events"
 format: html
 editor: source
+self-contained: true
 ---
 
 ```{r}
@@ -32,7 +33,7 @@ fbs <- purrr::list_rbind(fbs24) %>%
               mutate(year = 2023,
                      tag_id = as.numeric(tag_id),
                      dateOnly = lubridate::ymd(dateOnly),
-                     individual_id = as.numeic(individual_id))) %>%
+                     individual_id = as.numeric(individual_id))) %>%
   sf::st_as_sf(crs = "WGS84") %>%
   sf::st_transform(32636)
 
@@ -40,6 +41,10 @@ length(unique(fbs$device_id)) # 77 individuals are represented now
 
 # Load known carcass placements
 tar_load(fs)
+
+# Add carcass IDs
+fs <- fs %>%
+  mutate(carcass_id = 1:n())
 ```
 
 Restrict to carcass placements during the time of year
@@ -47,10 +52,10 @@ Restrict to carcass placements during the time of year
 max(fs$datetime) # we only have placements through 4/16/24 because of when I requested the data from Gideon. # XXX Write to Gideon and ask for the more up to date data.
 # In the meantime, I'll analyze any that occurred during this interval
 
-mindate <- min(bouts$start)
-maxdate <- max(bouts$end)
+mindate <- min(fbs$start)
+maxdate <- max(fbs$end)
 
-fs_focal <- fs %>% filter(datetime >= mindate, datetime <= maxdate) # we have 12 feeding occurrences.
+fs_focal <- fs %>% filter(datetime >= mindate, datetime <= maxdate) # we have 404 feeding occurrences.
 
 # Let's see if these individuals fed at these carcasses at all. If not, then I'll need more data for either individuals or carcasses.
 ```
@@ -59,10 +64,12 @@ For each carcass, let's look at feeding bouts within 1000m and 1 day of the carc
 ```{r}
 carcass_bouts <- map(1:nrow(fs_focal), ~{
   carcass <- fs_focal[.x,]
-  distances <- as.numeric(st_distance(bouts, carcass))
-  bouts <- bouts %>%
-    mutate(dist_to_carcass = distances)
-  keep_distance <- bouts %>%
+  id <- fs_focal$carcass_id[.x]
+  distances <- as.numeric(st_distance(fbs, carcass))
+  fbs <- fbs %>%
+    mutate(carcass_id = id,
+           dist_to_carcass = distances)
+  keep_distance <- fbs %>%
     filter(dist_to_carcass <= 500)
   keep_time <- keep_distance %>%
     filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass
@@ -73,18 +80,16 @@ carcass_bouts <- map(1:nrow(fs_focal), ~{
 ```
 
 ```{r}
-map_dbl(carcass_bouts, nrow) # okay, a few of these carcasses now have a bunch of feeding events
+#map_dbl(carcass_bouts, nrow) # okay, a few of these carcasses now have a bunch of feeding events. Unfortunately, many carcasses still don't have any feeding events.
 
-cbtest <- carcass_bouts[[7]]
+toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
 
 # Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
-nrow(fs_focal)
-carc <- fs_focal[7,]
 
-makeplots <- function(bouts, carc, type = "distance"){
+makeplots <- function(fbs, carc, type = "distance"){
   toplot <- bind_rows(carc %>%
                         mutate(type = "carcass"),
-                      bouts %>%
+                      fbs %>%
                         mutate(type = "feeding_bout"))
   if(type == "time"){
     p <- ggplot(toplot)+
@@ -105,13 +110,53 @@ makeplots <- function(bouts, carc, type = "distance"){
   }else(stop("`type` must be either 'time' or 'distance'"))
   return(p)
 }
-distanceplots <- map(as.list(1:nrow(fs_focal)), ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "distance")
+distanceplots <- map(toinclude, ~{
+  makeplots(fbs = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "distance")
 })
 
-timeplots <- map(as.list(1:nrow(fs_focal)), ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "time")
+timeplots <- map(toinclude, ~{
+  makeplots(fbs = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "time")
 })
 ```
 
+Let's summarize: how far away are these bouts?
+```{r}
+all_carcass_bouts <- purrr::list_rbind(carcass_bouts)
+all_carcass_bouts %>%
+  group_by(carcass_id) %>%
+  mutate(mn = mean(dist_to_carcass)) %>%
+  ggplot(aes(x = fct_reorder(factor(carcass_id), dist_to_carcass, mean), y = dist_to_carcass, fill = mn))+
+  geom_boxplot(outlier.size = 0.5)+
+  theme_bw()+
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())+
+  scale_fill_viridis(name = "Mean distance\nto carcass", limits = c(0, 100))+
+  labs(x = "Carcass",
+       y = "Distance (m)",
+       title = "Distance from feeding bouts to recorded carcass location",
+       sutbtitle = "For feeding bouts within 500m",
+       caption = "Includes carcasses that had at least 1 feeding bout within 500m.\n Includes feeding bouts from 1 hour before through 24 hours after carcass placement.")
+```
+
+Does the distance of the bouts from the carcass change over time?
+```{r}
+#| warning: false
+all_carcass_bouts %>%
+  group_by(carcass_id) %>%
+  filter(n() > 1) %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass, group = carcass_id))+
+  theme_bw()+
+  geom_smooth(method = "lm")+
+  geom_point(alpha = 0.5, pch = 1)+
+  facet_wrap(~carcass_id, scales = "free_x")+
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())+
+  labs(y = "Distance (m)",
+       x = "Time since carcass placement (hours)",
+       caption = "Includes carcasses that had at least 2 feeding bouts within 500m.\n Includes feeding bouts from 1 hour before through 24 hours after carcass placement.")
+```
 
