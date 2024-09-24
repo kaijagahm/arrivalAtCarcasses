@@ -277,9 +277,9 @@ ggplot(feeding_cropped_south)+
 ns_bouts <- feeding_cropped_south %>%
   filter(station == FALSE) %>%
   arrange(timestamp) %>%
-  st_transform(32636) %>%
-  mutate(x = st_coordinates(.)[1],
-         y = st_coordinates(.)[2])
+  st_transform(32636)
+ns_bouts$x <- st_coordinates(ns_bouts)[1,]
+ns_bouts$y <- st_coordinates(ns_bouts)[2,]
 dim(ns_bouts)
 
 # Prepare data for analysis with spatsoc
@@ -288,16 +288,60 @@ ns_bouts <- data.table::data.table(ns_bouts)
 class(ns_bouts$timestamp)
 
 group_times(ns_bouts, datetime = 'timestamp', threshold = '24 hours') # group into 24 hour groups
+# group_pts(ns_bouts, threshold = 0.1, id ='fake_id', coords = c('x', 'y'), timegroup = 'timegroup')
+ns_bouts <- as.data.frame(ns_bouts)
+ns_bouts <- st_as_sf(ns_bouts, crs = 32636, remove = F, sf_column_name = "geometry")
+ #XXX WHAT IS GOING WRONG HERE?? THESE DISTANCES MAKE NO SENSE.
 
-group_pts(ns_bouts, threshold = 100, id ='device_id', coords = c('x', 'y'), timegroup = 'timegroup')
+distMatrix <- as.matrix(stats::dist(cbind(ns_bouts$x, 
+            ns_bouts$y), method = "euclidean"))
+thresh <- 100 # units will be meters bc coordinates are in UTM
+test <- distMatrix[1:100, 1:100]
+test[test >= thresh] <- NA
+g <- igraph::graph_from_adjacency_matrix(test, weighted = T, mode = "undirected")
+plot(g)
+graphAdj <- igraph::graph_from_adjacency_matrix(distMatrix)
+
+DT[, `:=`(withinGroup, {
+        distMatrix <- as.matrix(stats::dist(cbind(get(..coords[1]), 
+            get(..coords[2])), method = "euclidean"))
+        graphAdj <- igraph::graph_from_adjacency_matrix(distMatrix <= 
+            threshold)
+        igraph::clusters(graphAdj)$membership
+    }), by = c(splitBy, timegroup), .SDcols = c(coords, id)]
+    DT[, `:=`(group, .GRP), by = c(splitBy, timegroup, 
+        "withinGroup")]
 
 length(unique(ns_bouts$timegroup)) 
-length(unique(ns_bouts$group))
+length(unique(ns_bouts$dateOnly)) # okay, we only have 67 days of data, so it makes sense that this is how many groups we ended up with.
+length(unique(ns_bouts$group)) # more groups than days--this is as expected!
 
-# this is suspicious. Do we really only have 68 days when non-feeding bouts were recorded? Do we really not have multiple aggregations on the same day?
-# XXX START HERE
+ns_bouts <- as.data.frame(ns_bouts) %>%
+  st_as_sf(crs = 32636, remove = F) %>%
+  rename("ns_carcass" = group)
+
+mapview(ns_bouts %>% filter(ns_carcass == 3))
 ```
 
+```{r}
+ns_carcasses <- ns_bouts %>%
+  group_by(year, ns_carcass) %>%
+  summarize(geometry = st_union(geometry),
+            dateOnly = dateOnly[1]) %>%
+  st_centroid() %>%
+  ungroup()
+dim(ns_bouts)
+dim(ns_carcasses)
+head(ns_carcasses)
+```
+
+```{r}
+ggplot()+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(data = ns_bouts, alpha = 0.5, pch = 1, col = "black")+
+  geom_sf(data = ns_carcasses, alpha = 0.9, pch = 8, col = "red", size = 2)+
+  facet_wrap(~year) # this is clearly not right! We expect the black and red points to be on top of each other.
+```
 
 ## Visualizing station vs. non-station carcasses
 
