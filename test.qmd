@@ -26,6 +26,7 @@ library(ggspatial)
 library(readr)
 source(here("R/functions.R"))
 library(patchwork)
+library(spatsoc)
 
 tar_load(fs)
 # tar_load(feeding_bouts_station)
@@ -182,6 +183,9 @@ all_carcass_bouts %>%
        caption = "Includes carcasses that had at least 5 feeding bouts within 750m.\n Includes feeding bouts from 1 hour before through 24 hours after carcass placement.")
 ```
 
+## Looks like the carcass locations are generally pretty accurate, and the carcass doesn't necessarily get dragged farther away over time!
+A 100m distance threshold seems like a decent buffer for the INPA-provided locations.
+
 ## Let's understand more about the dynamics of carcasses at feeding stations.
 
 - How often are carcasses placed at feeding stations?
@@ -190,36 +194,18 @@ all_carcass_bouts %>%
 
 ## Strangely, the INPA carcass data includes some points in the sea
 
-:::: {.columns}
-
-::: {.column width="30%"}
-(Includes all carcass placements between `r min(fs$date)`` and `r max(fs$date)`, not just the ones during the high-frequency ACC periods.
-:::
-
-::: {.column width="70%"}
 ```{r}
 bbox <- st_bbox(fs)
 
 ggplot(fs) +
-    annotation_map_tile(zoom = 7, type = "cartolight") +
-    geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
-            col = "blue")+
+  annotation_map_tile(zoom = 7, type = "cartolight") +
+  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2,
+          col = "blue")+
   ggtitle("Carcass locations, 2018-2024")
 ```
-:::
 
-::::
+## After removing those points:
 
-
-## 
-
-:::: {.columns}
-
-::: {.column width="30%"}
-After removing those points, here's a map of the placed carcasses:
-:::
-
-::: {.column width="70%"}
 ```{r}
 fs_edited <- fs %>%
   filter(!(long < 34.5 & lat > 33.0))
@@ -227,24 +213,92 @@ fs_edited <- fs %>%
 bbox <- st_bbox(fs_edited)
 
 ggplot(fs_edited) +
-    annotation_map_tile(zoom = 7, type = "cartolight") +
-    geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
-            col = "blue")+
+  annotation_map_tile(zoom = 7, type = "cartolight") +
+  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
+          col = "blue")+
   ggtitle("Carcass locations, 2018-2024")
 ```
-:::
-
-::::
-
 
 ## The carcasses in the sea are all from two dates on August 2024. Typo?
 ```{r}
 fs %>%
   filter(long < 34.5 & lat > 33.0)
 ```
+## Feeding bouts, both at and outside of feeding stations
+```{r}
+targets::tar_load(feeding_bouts_station) # these were already assigned station vs. not using a 100m threshold, so I'm glad that the above analysis confirms that is a reasonable threshold!
+feeding_bouts_station_2024 <- purrr::list_rbind(feeding_bouts_station) %>%
+  mutate(start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         timestamp = lubridate::ymd_hms(timestamp),
+         dateOnly = lubridate::ymd(dateOnly))
+feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS")) %>%
+  purrr::list_rbind() %>% mutate(tag_id = as.numeric(tag_id),
+                                 individual_id = as.numeric(individual_id),
+                                 dateOnly = lubridate::ymd(dateOnly))
 
+feeding_bouts_station <- bind_rows(feeding_bouts_station_2023, feeding_bouts_station_2024) %>% mutate(year = lubridate::year(timestamp)) %>%
+  select(bout_id, device_id, pred, .pred_Eating, start, end, tag_id, timestamp, dateOnly, ground_speed, individual_id, geometry, station, year) %>%
+  st_as_sf(crs = "WGS84")
+#head(feeding_bouts_station)
+```
 
+```{r}
+# All carcasses
+#mapview(feeding_bouts_station, zcol = "station") # we have lots of feeding information for a really wide area!
 
-## What about non-station carcasses?
+feeding_cropped <- st_crop(feeding_bouts_station, st_bbox(st_transform(fs_edited, "WGS84")))
+
+# Let's make a plot requesting tiles just for the bbox
+ggplot(feeding_cropped)+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
+  scale_color_manual(name = "Station", values = c("red", "blue"))+
+  facet_wrap(~year) # lovely!
+```
+
+## Zooming in on the south
+```{r}
+new_bbox <- st_bbox(feeding_cropped)
+new_bbox[4] <- 31.501
+new_bbox[2] <- 30.401
+
+feeding_cropped_south <- st_crop(feeding_cropped, new_bbox)
+
+#rosm::osm.types()
+ggplot(feeding_cropped_south)+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
+  scale_color_manual(name = "Station", values = c("red", "blue"))+
+  facet_wrap(~year) # lovely!
+```
+## Can we use spatsoc to group the feeding bouts together into non-station carcass locations?
+```{r}
+ns_bouts <- feeding_cropped_south %>%
+  filter(station == FALSE) %>%
+  arrange(timestamp) %>%
+  st_transform(32636) %>%
+  mutate(x = st_coordinates(.)[1],
+         y = st_coordinates(.)[2])
+dim(ns_bouts)
+
+# Prepare data for analysis with spatsoc
+ns_bouts$timestamp <- as.POSIXct(ns_bouts$timestamp)
+ns_bouts <- data.table::data.table(ns_bouts)
+class(ns_bouts$timestamp)
+
+group_times(ns_bouts, datetime = 'timestamp', threshold = '24 hours') # group into 24 hour groups
+
+group_pts(ns_bouts, threshold = 100, id ='device_id', coords = c('x', 'y'), timegroup = 'timegroup')
+
+length(unique(ns_bouts$timegroup)) 
+length(unique(ns_bouts$group))
+
+# this is suspicious. Do we really only have 68 days when non-feeding bouts were recorded? Do we really not have multiple aggregations on the same day?
+# XXX START HERE
+```
+
 
 ## Visualizing station vs. non-station carcasses
+
+## XXX insert carcass frequencies here (from report.qmd)
