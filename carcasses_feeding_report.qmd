@@ -29,60 +29,66 @@ source(here("R/functions.R"))
 library(patchwork)
 library(spatsoc)
 
-tar_load(fs)
-# tar_load(feeding_bouts_station)
-# bouts24 <- feeding_bouts_station
-# bouts23 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-# 
-# bouts <- purrr::list_rbind(bouts24) %>%
-#   mutate(year = 2024,
-#          start = lubridate::ymd_hms(start),
-#          end = lubridate::ymd_hms(end),
-#          dateOnly = lubridate::ymd(dateOnly)) %>%
-#   bind_rows(purrr::list_rbind(bouts23) %>%
-#               mutate(year = 2023,
-#                      tag_id = as.numeric(tag_id),
-#                      dateOnly = lubridate::ymd(dateOnly),
-#                      individual_id = as.numeric(individual_id))) %>%
-#   sf::st_as_sf(crs = "WGS84") %>%
-#   sf::st_transform(32636)
-# write_rds(bouts, here("data/bouts.RDS"))
-bouts <- readRDS(here("data/bouts.RDS"))
+carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
+stations <- readRDS(here("data/created/stations.RDS"))
+feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
+fbs_2023 <- feeding_bouts_station_2023[!map_lgl(feeding_bouts_station_2023, is.null)]
 
-# Restrict to carcass placements during the time of year
-mindate_23 <- bouts %>% filter(year == 2023) %>% pull(start) %>% min()
-maxdate_23 <- bouts %>% filter(year == 2023) %>% pull(start) %>% max()
+feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
+fbs_2024 <- feeding_bouts_station_2024[!map_lgl(feeding_bouts_station_2024, is.null)]
 
-mindate_24 <- bouts %>% filter(year == 2024) %>% pull(start) %>% min()
-maxdate_24 <- bouts %>% filter(year == 2024) %>% pull(start) %>% max()
+bouts23 <- purrr::list_rbind(fbs_2023) %>%
+  mutate(year = 2023,
+         start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         dateOnly = lubridate::ymd(dateOnly),
+         tag_id = as.numeric(tag_id),
+         individual_id = as.numeric(individual_id))
+bouts24 <- fbs_2024 %>%
+  map(., ~.x %>% mutate(tag_id = as.numeric(tag_id),
+                        individual_id = as.numeric(individual_id))) %>%
+  purrr::list_rbind() %>%
+  mutate(year = 2024,
+         start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         dateOnly = lubridate::ymd(dateOnly))
+bouts <- bind_rows(bouts23, bouts24) %>%
+  sf::st_as_sf(crs = 32636)
 
-fs_focal_23 <- fs %>% filter(datetime >= mindate_23, datetime <= maxdate_23)
-fs_focal_24 <- fs %>% filter(datetime >= mindate_24, datetime <= maxdate_24)
-fs_focal <- bind_rows(fs_focal_23, fs_focal_24)
+write_rds(bouts, here("data/created/bouts.RDS"))
+bouts <- readRDS(here("data/created/bouts.RDS"))
 
-# nrow(fs_focal) #104 feeding occurrences during the high-frequency ACC periods.
+# Restrict to carcass placements during the time of year when we have hf-acc data
+minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 
-# For each carcass, let's look at feeding bouts within 750m and ~1 day of the carcass.
-# carcass_bouts <- map(1:nrow(fs_focal), ~{
-#   carcass <- fs_focal[.x,]
-#   id <- fs_focal$carcass_id[.x]
-#   distances <- as.numeric(st_distance(bouts, carcass))
-#   bouts <- bouts %>%
-#     mutate(carcass_id = id,
-#            dist_to_carcass = distances)
-#   keep_distance <- bouts %>%
-#     filter(dist_to_carcass <= 750)
-#   keep_time <- keep_distance %>%
-#     filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass
-#            end <= (carcass$datetime + hours(24))) %>% # allow 24 hours after carcass
-#     mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
-#   return(keep_time)
-# }) # only one of these carcasses has a couple feeding bouts. We can look at this for now.
-# write_rds(carcass_bouts, here("data/carcass_bouts.RDS"))
-carcass_bouts <- readRDS(here("data/carcass_bouts.RDS"))
+carcasses_23 <- carcasses_inpa %>% filter(datetime >= minmax_dates[1], datetime <= minmax_dates[2])
+carcasses_24 <- carcasses_inpa %>% filter(datetime >= minmax_dates[3], datetime <= minmax_dates[4])
+carcasses_focal <- bind_rows(carcasses_23, carcasses_24)
+
+nrow(carcasses_focal) #104 feeding occurrences during the high-frequency ACC periods.
+
+#For each carcass, let's look at feeding bouts within 750m and ~1 day of the carcass.
+carcass_bouts <- map(1:nrow(carcasses_focal), ~{
+  carcass <- carcasses_focal[.x,]
+  id <- carcasses_focal$carcass_id[.x]
+  distances <- as.numeric(st_distance(bouts, carcass))
+  bouts <- bouts %>%
+    mutate(carcass_id = id,
+           dist_to_carcass = distances)
+  keep_distance <- bouts %>%
+    filter(dist_to_carcass <= 750)
+  keep_time <- keep_distance %>%
+    filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass
+           end <= (carcass$datetime + hours(24))) %>% # allow 24 hours after carcass
+    mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
+  return(keep_time)
+}) # only one of these carcasses has a couple feeding bouts. We can look at this for now.
+map_dbl(carcass_bouts, nrow) # varying numbers of feeding bouts for each carcass--many don't have any feeding bouts at all.
+
+write_rds(carcass_bouts, here("data/created/carcass_bouts.RDS"))
+carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
 
 # Create plots of feeding bouts relative to carcass locations, with feeding bouts colored by either distance or time
-toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
 
 # Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
 
@@ -115,14 +121,44 @@ makeplots <- function(bouts, carc, type = "distance"){
   }else(stop("`type` must be either 'time' or 'distance'"))
   return(p)
 }
+
+# Include the ones that have corresponding feeding bouts
+toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
 distanceplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "distance")
+  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "distance")
 })
 
 timeplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = fs_focal[.x,], type = "time")
+  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "time")
 })
 ```
+
+## Many carcasses don't have any recorded feeding bouts within 24 hours
+```{r}
+c_bouts <- purrr::list_rbind(carcass_bouts)
+
+c_bouts %>%
+  group_by(carcass_id) %>%
+  summarize(bouts = n(),
+            vultures = length(unique(individual_id)))
+# XXX START HERE--need to formally merge carcass data with bout data by doing a left_join
+
+carcasses_focal <- carcasses_focal %>%
+  mutate(n_bouts = map_dbl(carcass_bouts, nrow))
+
+carcasses_focal %>%
+  ggplot(aes(x = n_bouts))+
+  geom_histogram()+
+  theme_classic()+
+  labs(y = "Frequency",
+       x = "Number of feeding bouts")
+```
+
+## Map of carcasses by number of feeding bouts
+```{r}
+
+```
+
 
 ## How accurate are the INPA's recorded carcass placement locations?
 
@@ -199,9 +235,9 @@ A 100m distance threshold seems like a decent buffer for the INPA-provided locat
 ## Strangely, the INPA carcass data includes some points in the sea
 
 ```{r}
-bbox <- st_bbox(fs)
+bbox <- st_bbox(carc_inpa)
 
-ggplot(fs) +
+ggplot(carc_inpa) +
   annotation_map_tile(zoom = 7, type = "cartolight") +
   geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2,
           col = "blue")+
@@ -211,12 +247,12 @@ ggplot(fs) +
 ## After removing those points:
 
 ```{r}
-fs_edited <- fs %>%
+carc_inpa_edited <- carc_inpa %>%
   filter(!(long < 34.5 & lat > 33.0))
 
-bbox <- st_bbox(fs_edited)
+bbox <- st_bbox(carc_inpa_edited)
 
-ggplot(fs_edited) +
+ggplot(carc_inpa_edited) +
   annotation_map_tile(zoom = 7, type = "cartolight") +
   geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
           col = "blue")+
@@ -225,27 +261,16 @@ ggplot(fs_edited) +
 
 ## The carcasses in the sea are all from two dates on August 2024. Typo? GPS scrambling?
 ```{r}
-fs %>%
+carc_inpa %>%
   filter(long < 34.5 & lat > 33.0) # Most are Carmel, one is Tzaror
 ```
+
 ## Feeding bouts, both at and outside of feeding stations
 ```{r}
-targets::tar_load(feeding_bouts_station) # these were already assigned station vs. not using a 100m threshold, so I'm glad that the above analysis confirms that is a reasonable threshold!
-feeding_bouts_station_2024 <- purrr::list_rbind(feeding_bouts_station) %>%
-  mutate(start = lubridate::ymd_hms(start),
-         end = lubridate::ymd_hms(end),
-         timestamp = lubridate::ymd_hms(timestamp),
-         dateOnly = lubridate::ymd(dateOnly))
-feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS")) %>%
-  purrr::list_rbind() %>% mutate(tag_id = as.numeric(tag_id),
-                                 individual_id = as.numeric(individual_id),
-                                 dateOnly = lubridate::ymd(dateOnly))
-
-feeding_bouts_station <- bind_rows(feeding_bouts_station_2023, feeding_bouts_station_2024) %>% mutate(year = lubridate::year(timestamp)) %>%
-  select(bout_id, device_id, pred, .pred_Eating, start, end, tag_id, timestamp, dateOnly, ground_speed, individual_id, geometry, station, year) %>%
-  st_as_sf(crs = "WGS84") %>%
-  st_transform(32636) %>%
-  bind_cols(st_coordinates(.))
+bouts <- bouts %>%
+  bind_cols(st_coordinates(.)) # here is all our feeding bout information
+table(bouts$station) # includes bouts at and away from feeding stations
+# XXX need to go back to the targets pipeline and change how we define station locations.
 #head(feeding_bouts_station)
 ```
 
@@ -253,7 +278,7 @@ feeding_bouts_station <- bind_rows(feeding_bouts_station_2023, feeding_bouts_sta
 # All carcasses
 #mapview(feeding_bouts_station, zcol = "station") # we have lots of feeding information for a really wide area!
 
-feeding_cropped <- st_crop(feeding_bouts_station, st_bbox(fs_edited))
+feeding_cropped <- st_crop(feeding_bouts_station, st_bbox(carc_inpa_edited))
 
 # Let's make a plot requesting tiles just for the bbox
 ggplot(feeding_cropped)+
@@ -342,7 +367,7 @@ ggplot()+
 ## With the at-station carcasses added
 
 ```{r}
-s_carcasses_match <- fs %>%
+s_carcasses_match <- carc_inpa %>%
   bind_cols(st_coordinates(.)) %>%
   filter(Y >= min(ns_carcasses$Y), Y <= max(ns_carcasses$Y))
 
@@ -405,10 +430,10 @@ Buffering by 300m (arbitrary) and then clustering and intersecting and coloring 
 
 ```{r}
 #| echo: false
-fs_buffered <- st_buffer(feed_sf, 300)
-parts <- st_cast(st_union(fs_buffered),"POLYGON")
-clust <- unlist(st_intersects(fs_buffered, parts))
-diss <- cbind(fs_buffered, clust) %>%
+carc_inpa_buffered <- st_buffer(feed_sf, 300)
+parts <- st_cast(st_union(carc_inpa_buffered),"POLYGON")
+clust <- unlist(st_intersects(carc_inpa_buffered, parts))
+diss <- cbind(carc_inpa_buffered, clust) %>%
   group_by(clust) %>%
   st_transform("WGS84")
 
