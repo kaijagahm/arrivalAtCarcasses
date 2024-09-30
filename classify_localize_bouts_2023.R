@@ -9,6 +9,7 @@ library(moments)
 library(parsnip)
 library(caret)
 library(zoo)
+library(sf)
 source(here("R/functions.R"))
 
 # data_files_2023 <- list.files(here("data/ACC/2023_hf_period/raw/"), full.names = T, pattern = ".csv")
@@ -211,49 +212,50 @@ minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 focal_gps_2023 <- readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))
 focal_gps_2024 <- readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))
 
-future::plan(future::multisession(workers = 10))
-matches_2023 <- furrr::future_map2(bouts_predictions_2023, focal_gps_2023, ~{
-  if(!is.null(.x)){
-    get_matches(.x, .y)
-  }else{NULL}
-}, .progress = T)
-matches_2024 <- furrr::future_map2(bouts_predictions_2024, focal_gps_2024, ~{
-  if(!is.null(.x)){
-    get_matches(.x, .y)
-  }else{NULL}
-}, .progress = T)
-write_rds(matches_2023, here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
-write_rds(matches_2024, here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
+# future::plan(future::multisession(workers = 10))
+# matches_2023 <- furrr::future_map2(bouts_predictions_2023, focal_gps_2023, ~{
+#   if(!is.null(.x)){
+#     get_matches(.x, .y)
+#   }else{NULL}
+# }, .progress = T)
+# matches_2024 <- furrr::future_map2(bouts_predictions_2024, focal_gps_2024, ~{
+#   if(!is.null(.x)){
+#     get_matches(.x, .y)
+#   }else{NULL}
+# }, .progress = T)
+# write_rds(matches_2023, here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
+# write_rds(matches_2024, here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
 
 matches_2023 <- readRDS(here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
 matches_2024 <- readRDS(here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
 
 # xxx START HERE ERROR
-joined_2023 <- map2(bouts_predictions_2023, matches_2023, ~{
-  if(nrow(.y) > 0){
-    left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
-                             "bout_id"))
-  }else{NULL}
-})
-
-joined_2024 <- map2(bouts_predictions_2024, matches_2024, ~{
-  if(nrow(.y) > 0){
-    left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
-                             "bout_id"))
-  }else{NULL}
-})
-write_rds(joined_2023, here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
-write_rds(joined_2024, here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
+# joined_2023 <- map2(bouts_predictions_2023, matches_2023, ~{
+#   if(nrow(.y) > 0){
+#     left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
+#                              "bout_id"))
+#   }else{NULL}
+# })
+# 
+# joined_2024 <- map2(bouts_predictions_2024, matches_2024, ~{
+#   if(nrow(.y) > 0){
+#     left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
+#                              "bout_id"))
+#   }else{NULL}
+# })
+# write_rds(joined_2023, here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
+#write_rds(joined_2024, here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
 
 joined_2023 <- readRDS(here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
 joined_2024 <- readRDS(here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
 
-# XXX START HERE
 ### define function to get the feeding bouts
 getfeeding <- function(x){
   out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > 0.5)
   out <- sf::st_as_sf(out, coords = c("location_long", "location_lat"),
-                      crs = "WGS84", remove = F)
+                      crs = "WGS84", remove = F) %>%
+    st_transform(32636)
+  return(out)
 }
 
 feeding_bouts_certain_2023 <- map(joined_2023, ~{
@@ -274,14 +276,23 @@ feeding_bouts_certain_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feed
 feeding_bouts_certain_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_certain_2024.RDS"))
 
 # XXX START HERE
-targets::tar_load(fs_union)
-library(sf)
-
+stations <- readRDS(here("data/created/stations.RDS"))
+stations_buffered <- sf::st_buffer(stations, dist = 100)
+stations_union <- sf::st_union(stations_buffered)
 feeding_bouts_station_2023 <- map(feeding_bouts_certain_2023, ~{
   if(!is.null(.x)){
-    assign_fs(.x, fs_union)
+    assign_fs(.x, stations_union)
+  }else{NULL}
+})
+
+feeding_bouts_station_2024 <- map(feeding_bouts_certain_2024, ~{
+  if(!is.null(.x)){
+    assign_fs(.x, stations_union)
   }else{NULL}
 })
 
 write_rds(feeding_bouts_station_2023, here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
+write_rds(feeding_bouts_station_2024, here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
+
 feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
+feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
