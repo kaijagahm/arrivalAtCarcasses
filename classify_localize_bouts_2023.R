@@ -277,7 +277,7 @@ feeding_bouts_certain_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feed
 
 # XXX START HERE
 stations <- readRDS(here("data/created/stations.RDS"))
-stations_buffered <- sf::st_buffer(stations, dist = 100)
+stations_buffered <- sf::st_buffer(stations, dist = 500)
 stations_union <- sf::st_union(stations_buffered)
 feeding_bouts_station_2023 <- map(feeding_bouts_certain_2023, ~{
   if(!is.null(.x)){
