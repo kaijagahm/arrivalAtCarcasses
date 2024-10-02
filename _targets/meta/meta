@@ -1,17 +1,24 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
 a|stem|3b56b8ffa0e62a6f|82acdf08749cbb4d|6f00064c89f32481|-142220961||t19993.9168611556s|28e76c0917097715|38|qs|local|list|||0.047|no nonmissing arguments to max returning Inf|could not find packages ggraph, tidygraph, moments, tidymodels, ranger, parsnip, caret, zoo in library paths
+capture_sites|stem|11b111ecadaa6502|dc101a78135d18d5|2c530c1562a7fbd1|696627442|data/capture_sites.csv|t19503.7296096253s|fe51d37b9c2ffbfd|161|file|local|vector|||12.141||
 carcasses_buffered|stem|error|606f119eac798f80|fd4997e5726b034c|-671077069||t19993.9182599022s|28e76c0917097715|38|qs|local|vector|||0.031|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 carcasses_inpa|stem|error|df3c567a52d2c5e9|2c530c1562a7fbd1|-1030602108||t19993.9182537025s|28e76c0917097715|38|qs|local|vector|||13.015|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 carcasses_union|stem|error|bfafe46b3dec07f8|020b506144c91b55|-1129900381||t19993.9184056352s|28e76c0917097715|38|qs|local|vector|||0.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
+carmel|stem|error|f587ad9d17c352f2|2c530c1562a7fbd1|1557024397|data/all_captures_carmel_2010-2021.csv|t19993.9214018511s||0|file|local|vector|||||_paths_ missing files dataall_captures_carmel_20102021.csv
+geofences|stem|394d680a34823313|9d88934a7d92516e|9223a1c1fa20f421|775947020||t19993.9213971381s|da7f33a0f827466a|104|qs|local|vector|||11.688||
 ornitela|stem|error|ba176f4d546e209d|bcd7b3860872e867|503979122||t19993.9184043525s|28e76c0917097715|38|qs|local|vector|||0.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
+pw|stem|c004d56cab4ad004|27e4d6e31d138f35|2c530c1562a7fbd1|-1536787549|movebankCredentials/pw.Rda|t18907.7359670883s|36d9ea1c8315d78b|96|file|local|vector|||11.969||
 stations|stem|error|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t19993.9182534368s|28e76c0917097715|38|qs|local|vector|||13.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 stations_buffered|stem|error|3f3e3cced5ea1b15|e2ed221cfdfe0f7c|-589618395||t19993.9182596711s|28e76c0917097715|38|qs|local|vector|||0.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 stations_union|stem|error|450ef4bd38a707e3|d8a019f24b66e97f|-1315683075||t19993.9184048956s|28e76c0917097715|38|qs|local|vector|||0.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
+tag_sns|stem|277320904593e80f|1ed21147db19ae3b|f4f7d625ab854e3e|-806792356||t19993.9214081737s|b7d4d37884c593be|120|qs|local|vector|||0.031||
+tag_sns_file|stem|4498760e609e0ade|5c759391bfb7f738|2c530c1562a7fbd1|-118616188|data/geofence_tags_6Aug23_45.xlsx|t19830.7412418725s|39689d3e12872170|10343|file|local|vector|||12.078||
 test_23|stem|error|ebeaed93f4f68863|94d32e40edc80de6|1472872981||t19993.9184058778s|28e76c0917097715|38|qs|local|vector|||0.047|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 unobs_raw_acc_2023|stem|error|0aabaf4f69b72bcc|f957c34372e66d55|1608401731||t19993.9182600755s|28e76c0917097715|38|qs|local|vector|||0.046|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
 unobs_raw_acc_2024|stem|error|38e8f121af231d95|6a019a79f42b6956|-407091731||t19993.9182641431s|28e76c0917097715|38|qs|local|vector|||0.046|no nonmissing arguments to max returning Inf|could not find packages zoo in library paths
+ww_file|stem|1df606100b00afbb|00e23e87f189570c|2c530c1562a7fbd1|-814932461|data/whoswho_vultures_20230920_new.xlsx|t19741.0464367943s|eeadd3240311275a|441300|file|local|vector|||12.172||
 get_bouts_predictions|function|801ed5c4975fcd93|||||||||||||||
-.Random.seed|object|16e86666f34118fa|||||||||||||||
+.Random.seed|object|3245c49a402e3579|||||||||||||||
 fix_names|function|552429cdeaa613d4|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 prepare_full_dataset|function|b109f9773b98162d|||||||||||||||
@@ -37,20 +44,13 @@ get_stat_feats|function|f7defc6f4304d34f|||||||||||||||
 prepare_dataset|function|0e7e5107d5748166|||||||||||||||
 prepare_parallel|function|20ae831d48a367a1|||||||||||||||
 prepare_forloop|function|78b4c874f6b087d2|||||||||||||||
-data_files_2024|stem|f23f12725c45470b|85c2a93bd1c1dc8f|2c530c1562a7fbd1|18111947||t19993.9213960519s|b298abed6ea12980|165|qs|local|vector|||11.578||
-data_files_2023|stem|35ce36061a08eb05|2c2d11b1b3bfcd07|2c530c1562a7fbd1|1438014956||t19993.921396387s|bb6c9b28161a1211|143|qs|local|vector|||11.656||
-geofences|stem|394d680a34823313|9d88934a7d92516e|9223a1c1fa20f421|775947020||t19993.9213971381s|da7f33a0f827466a|104|qs|local|vector|||11.688||
-pw|stem|c004d56cab4ad004|27e4d6e31d138f35|2c530c1562a7fbd1|-1536787549|movebankCredentials/pw.Rda|t18907.7359670883s|36d9ea1c8315d78b|96|file|local|vector|||11.969||
-carmel|stem|error|f587ad9d17c352f2|2c530c1562a7fbd1|1557024397|data/all_captures_carmel_2010-2021.csv|t19993.9214018511s||0|file|local|vector|||||_paths_ missing files dataall_captures_carmel_20102021.csv
-tag_sns_file|stem|4498760e609e0ade|5c759391bfb7f738|2c530c1562a7fbd1|-118616188|data/geofence_tags_6Aug23_45.xlsx|t19830.7412418725s|39689d3e12872170|10343|file|local|vector|||12.078||
-ww_file|stem|1df606100b00afbb|00e23e87f189570c|2c530c1562a7fbd1|-814932461|data/whoswho_vultures_20230920_new.xlsx|t19741.0464367943s|eeadd3240311275a|441300|file|local|vector|||12.172||
-capture_sites|stem|11b111ecadaa6502|dc101a78135d18d5|2c530c1562a7fbd1|696627442|data/capture_sites.csv|t19503.7296096253s|fe51d37b9c2ffbfd|161|file|local|vector|||12.141||
-calibration_data|stem|3f0e66947266f547|9fd1a41cf0a786ba|2c530c1562a7fbd1|27869678||t19993.9214067292s|c15152fa574de4db|1700|qs|local|vector|||12.453||
-tag_sns|stem|277320904593e80f|1ed21147db19ae3b|f4f7d625ab854e3e|-806792356||t19993.9214081737s|b7d4d37884c593be|120|qs|local|vector|||0.031||
-loginObject|stem|7cd9940a3d402f99|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t19993.921413628s|1c6e0254741e6e6b|199|qs|local|vector|||0.625||
-gv_model|stem|b45e0d62172efec1|b82ad08a194d265c|2c530c1562a7fbd1|1414761773||t19993.9214405936s|24726f4c60a668f3|31375955|qs|local|vector|||12.968||
+data_files_2023|stem|35ce36061a08eb05|2c2d11b1b3bfcd07|2c530c1562a7fbd1|1438014956||t19993.9356452487s|bb6c9b28161a1211|143|qs|local|vector|||12.125||
+data_files_2024|stem|f23f12725c45470b|85c2a93bd1c1dc8f|2c530c1562a7fbd1|18111947||t19993.9356489927s|b298abed6ea12980|165|qs|local|vector|||12.078||
+calibration_data|stem|3f0e66947266f547|9fd1a41cf0a786ba|2c530c1562a7fbd1|27869678||t19993.9356532683s|c15152fa574de4db|1700|qs|local|vector|||12.453||
+loginObject|stem|7cd9940a3d402f99|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t19993.9356541119s|1c6e0254741e6e6b|199|qs|local|vector|||12.61||
+gv_model|stem|b45e0d62172efec1|b82ad08a194d265c|2c530c1562a7fbd1|1414761773||t19993.9356873805s|24726f4c60a668f3|31375955|qs|local|vector|||13.11||
 get_bouts_predictions|function|801ed5c4975fcd93
-.Random.seed|object|f107711919568586
+.Random.seed|object|be7629bbaef4a49f
 fix_names|function|552429cdeaa613d4
 remove_periods|function|9cdf1954c1717169
 prepare_full_dataset|function|b109f9773b98162d
@@ -76,3 +76,6 @@ get_stat_feats|function|f7defc6f4304d34f
 prepare_dataset|function|0e7e5107d5748166
 prepare_parallel|function|20ae831d48a367a1
 prepare_forloop|function|78b4c874f6b087d2
+feeding_bouts_certain_2024|stem|3b56b8ffa0e62a6f|bf765dc19acefa5c|2c530c1562a7fbd1|-2045546539||t19996.8935792601s|28e76c0917097715|38|qs|local|vector|||12.265|cannot open compressed file CUsersKaijaDesktopprojectsarrivalAtCarcassesdataACC2024_hf_periodcreatedfeeding_bouts_certain_2024.RDS, probable reason No such file or directory|cannot open the connection
+feeding_bouts_certain_2024|stem|error|bf765dc19acefa5c|2c530c1562a7fbd1|-2045546539||t19996.8935792601s|28e76c0917097715|38|qs|local|vector|||12.265|cannot open compressed file CUsersKaijaDesktopprojectsarrivalAtCarcassesdataACC2024_hf_periodcreatedfeeding_bouts_certain_2024.RDS, probable reason No such file or directory|cannot open the connection
+feeding_bouts_certain_2023|stem|235c5e1912d6abcb|c32ebe5d060009a1|2c530c1562a7fbd1|973503422||t19996.8935806005s|04ede908759cae3b|466415|qs|local|vector|||12.375||
