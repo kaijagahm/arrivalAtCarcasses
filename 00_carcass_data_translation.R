@@ -4,7 +4,7 @@ library(here)
 library(readxl)
 
 old <- read_excel(here("data/raw/translated/FeedingData from 2018_2024_Translated_9_25_2024 (1).xlsx")) %>%
-  select("carcass_id" = ID, 
+  select("carcID" = ID, 
          "date" = `Date Event`, 
          "time" = `Event time`, 
          "itmLong" = `ITM - LONG`, 
@@ -33,7 +33,7 @@ old <- read_excel(here("data/raw/translated/FeedingData from 2018_2024_Translate
          "n_Sheep" = "number of sheep carcasses") %>%
   select(-"number of warnings")
 new <- read_excel(here("data/raw/translated/Feeding 2024 update - translated (1).xlsx")) %>%
-  select("carcass_id" = Identifier, 
+  select("carcID" = Identifier, 
          date, time, 
          "itmLong" = `ITM - LONG`, 
          "itmLat" = `ITM - LAT`, 
@@ -67,9 +67,9 @@ names(new[!(names(new) %in% names(old))])
 names(old[!(names(old) %in% names(new))])
 
 # Check for duplicates
-any(old$carcass_id %in% new$carcass_id)
-which(old$carcass_id %in% new$carcass_id)
-old <- old[-which(old$carcass_id %in% new$carcass_id),]
+any(old$carcID %in% new$carcID)
+which(old$carcID %in% new$carcID)
+old <- old[-which(old$carcID %in% new$carcID),]
 
 carcasses_inpa <- bind_rows(old, new)
 
@@ -85,7 +85,7 @@ carcasses_inpa <- carcasses_inpa %>%
 carcasses_inpa <- st_as_sf(carcasses_inpa, coords = c("long", "lat"), crs = "WGS84", remove = F) %>%
   st_transform(32636)
 
-carcasses_inpa %>% group_by(carcass_id) %>% filter(n() > 1) # 0 rows, good.
+carcasses_inpa %>% group_by(carcID) %>% filter(n() > 1) # 0 rows, good.
 
 write_rds(carcasses_inpa, here("data/created/carcasses_inpa.RDS"))
 
@@ -125,13 +125,13 @@ mapview(carcasses_inpa, label = "stationName", color = "blue", col.regions = "bl
 
 
 # TEMPORARY: BECAUSE TARGETS PIPELINE WON'T RUN ---------------------------
-tar_load(data_files_2024)
-tar_load(data_files_2023)
-
-unobs_raw_acc_2024 <- purrr::list_rbind(purrr::map(data_files_2024, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
-
-unobs_raw_acc_2023 <- purrr::list_rbind(purrr::map(data_files_2023, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
-
-readr::write_rds(unobs_raw_acc_2024, here("data/created/unobs_raw_acc_2024.RDS"))
-readr::write_rds(unobs_raw_acc_2023, here("data/created/unobs_raw_acc_2023.RDS"))
+# tar_load(data_files_2024)
+# tar_load(data_files_2023)
+# 
+# unobs_raw_acc_2024 <- purrr::list_rbind(purrr::map(data_files_2024, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
+# 
+# unobs_raw_acc_2023 <- purrr::list_rbind(purrr::map(data_files_2023, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
+# 
+# readr::write_rds(unobs_raw_acc_2024, here("data/created/unobs_raw_acc_2024.RDS"))
+# readr::write_rds(unobs_raw_acc_2023, here("data/created/unobs_raw_acc_2023.RDS"))
 

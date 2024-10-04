@@ -274,40 +274,17 @@ write_rds(feeding_bouts_certain_2024, here("data/ACC/2024_hf_period/created/feed
 
 feeding_bouts_certain_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_certain_2023.RDS"))
 feeding_bouts_certain_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_certain_2024.RDS"))
+keep_2023 <- which(!map_lgl(feeding_bouts_certain_2023, is.null))
+keep_2024 <- which(!map_lgl(feeding_bouts_certain_2024, is.null))
 
-# XXX START HERE
-stations <- readRDS(here("data/created/stations.RDS"))
-stations_buffered <- sf::st_buffer(stations, dist = 500)
-stations_union <- sf::st_union(stations_buffered)
-feeding_bouts_station_2023 <- map(feeding_bouts_certain_2023, ~{
-  if(!is.null(.x)){
-    assign_fs(.x, stations_union)
-  }else{NULL}
-})
-
-feeding_bouts_station_2024 <- map(feeding_bouts_certain_2024, ~{
-  if(!is.null(.x)){
-    assign_fs(.x, stations_union)
-  }else{NULL}
-})
-
-write_rds(feeding_bouts_station_2023, here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-write_rds(feeding_bouts_station_2024, here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
-
-feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-fbs_2023 <- feeding_bouts_station_2023[!map_lgl(feeding_bouts_station_2023, is.null)]
-
-feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
-fbs_2024 <- feeding_bouts_station_2024[!map_lgl(feeding_bouts_station_2024, is.null)]
-
-bouts23 <- purrr::list_rbind(fbs_2023) %>%
+bouts23 <- purrr::list_rbind(feeding_bouts_certain_2023[keep_2023]) %>%
   mutate(year = 2023,
          start = lubridate::ymd_hms(start),
          end = lubridate::ymd_hms(end),
          dateOnly = lubridate::ymd(dateOnly),
          tag_id = as.numeric(tag_id),
          individual_id = as.numeric(individual_id))
-bouts24 <- fbs_2024 %>%
+bouts24 <- feeding_bouts_certain_2024[keep_2024] %>%
   map(., ~.x %>% mutate(tag_id = as.numeric(tag_id),
                         individual_id = as.numeric(individual_id))) %>%
   purrr::list_rbind() %>%
@@ -315,9 +292,8 @@ bouts24 <- fbs_2024 %>%
          start = lubridate::ymd_hms(start),
          end = lubridate::ymd_hms(end),
          dateOnly = lubridate::ymd(dateOnly))
-bouts <- bind_rows(bouts23, bouts24) %>%
+feeding_bouts <- bind_rows(bouts23, bouts24) %>%
   sf::st_as_sf(crs = 32636)
-bouts <- bouts %>%
+feeding_bouts <- feeding_bouts %>%
   bind_cols(st_coordinates(.))
-write_rds(bouts, here("data/created/bouts.RDS"))
-bouts <- readRDS(here("data/created/bouts.RDS"))
+write_rds(feeding_bouts, here("data/created/feeding_bouts.RDS"))

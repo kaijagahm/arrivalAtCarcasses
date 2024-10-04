@@ -321,50 +321,50 @@ get_bouts_predictions <- function(prepared, predictions,
     dplyr::left_join(bouts, by = c("device_id", "bout_id"))
 }
 
-get_matches <- function(df, foc){
-  with_middles <- df %>%
-    mutate(start = lubridate::ymd_hms(start),
-           end = lubridate::ymd_hms(end),
-           middle = start + difftime(end, start)/2) %>%
-    group_by(bout_id) %>%
-    group_split()
-  
-  within_5min <- map(with_middles, ~{
-    foc[(.x$start[1] - minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),] 
-  }, .progress = T)
-  
-  within_5min_speed <- map(within_5min, ~.x[.x$ground_speed <= 4,])
-  
-  within_11min_speed <- map(with_middles, ~{
-    foc[(.x$start[1] - minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(11)) & foc$ground_speed < 4,] 
-  }, .progress = T)
-  
-  keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
-    if(nrow(..2) > 0){
-      match <- ..2
-    }else if(nrow(..3) > 0){
-      match <- ..3
-    }else if(nrow(..1) > 0){
-      match <- ..1
-    }else{
-      match <- foc[0,]
-    }
-    if(nrow(match) > 1){
-      match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
-    }
-    if(nrow(match) > 0){
-      match$bout_id <- ..4$bout_id[1]
-      return(match)
-    }else{
-      return(NULL)
-    }
-  })
-  keep_df <- purrr::list_rbind(keep)
-  return(keep_df)
-}
+# get_matches <- function(df, foc){
+#   with_middles <- df %>%
+#     mutate(start = lubridate::ymd_hms(start),
+#            end = lubridate::ymd_hms(end),
+#            middle = start + difftime(end, start)/2) %>%
+#     group_by(bout_id) %>%
+#     group_split()
+#   
+#   within_5min <- map(with_middles, ~{
+#     foc[(.x$start[1] - minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),] 
+#   }, .progress = T)
+#   
+#   within_5min_speed <- map(within_5min, ~.x[.x$ground_speed <= 4,])
+#   
+#   within_11min_speed <- map(with_middles, ~{
+#     foc[(.x$start[1] - minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(11)) & foc$ground_speed < 4,] 
+#   }, .progress = T)
+#   
+#   keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
+#     if(nrow(..2) > 0){
+#       match <- ..2
+#     }else if(nrow(..3) > 0){
+#       match <- ..3
+#     }else if(nrow(..1) > 0){
+#       match <- ..1
+#     }else{
+#       match <- foc[0,]
+#     }
+#     if(nrow(match) > 1){
+#       match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
+#     }
+#     if(nrow(match) > 0){
+#       match$bout_id <- ..4$bout_id[1]
+#       return(match)
+#     }else{
+#       return(NULL)
+#     }
+#   })
+#   keep_df <- purrr::list_rbind(keep)
+#   return(keep_df)
+# }
 
 assign_fs <- function(data, fs){
-  data$station <- !is.na(as.numeric(st_intersects(data, fs)))
+  data$station <- !is.na(as.numeric(sf::st_intersects(data, fs)))
   return(data)
 }
 
@@ -377,3 +377,98 @@ split_data_fun_forloop <- function(data){
   }
   return(out)
 }
+
+get_focal <- function(carcasses, times){
+  focal <- carcasses %>% 
+    filter(datetime >= times[1],
+           datetime <= times[2]) %>%
+    bind_rows(carcasses %>%
+                filter(datetime >= times[3],
+                       datetime <= times[4]))
+  return(focal)
+}
+
+get_focal2 <- function(carcasses, times){
+  focal <- carcasses %>% 
+    filter(dateOnly >= times[1],
+           dateOnly <= times[2]) %>%
+    bind_rows(carcasses %>%
+                filter(dateOnly >= times[3],
+                       dateOnly <= times[4]))
+  return(focal)
+}
+
+get_carcass_bouts <- function(bouts, carcasses, dist, hours_before, hours_after){
+  carcass_bouts <- map(1:nrow(carcasses), ~{
+    carcass <- carcasses[.x,]
+    id <- carcasses$carcID[.x]
+    distances <- as.numeric(sf::st_distance(bouts, carcass))
+    bouts <- bouts %>%
+      mutate(carcID = id,
+             dist_to_carcass = distances)
+    keep_distance <- bouts %>%
+      filter(dist_to_carcass <= dist)
+    keep_time <- keep_distance %>%
+      filter(start >= (carcass$datetime - hours(hours_before)), 
+             end <= (carcass$datetime + hours(hours_after))) %>% 
+      mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
+    return(keep_time)
+  })
+  return(carcass_bouts)
+}
+
+
+# Clustering --------------------------------------------------------------
+cluster_carcasses <- function(carcasses, dist){
+  buffered <- sf::st_buffer(carcasses, dist)
+  parts <- sf::st_cast(st_union(buffered), "POLYGON")
+  clust <- unlist(sf::st_intersects(buffered, parts))
+  diss <- cbind(buffered, clust)
+  
+  cluster_centroids <- diss %>%
+    group_by(clust) %>%
+    summarize(geometry = sf::st_union(geometry)) %>%
+    sf::st_centroid() %>%
+    ungroup() %>%
+    bind_cols(sf::st_coordinates(.))
+  return(cluster_centroids)
+}
+
+get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100){
+  remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
+  remaining_bouts <- data.table::data.table(remaining_bouts)
+  
+  spatsoc::group_times(remaining_bouts, 
+                       datetime = 'timestamp', 
+                       threshold = time)
+  spatsoc::group_pts(remaining_bouts, threshold = dist, 
+                     id ='boutID', coords = c('X', 'Y'), 
+                     timegroup = 'timegroup')
+  
+  # convert back to sf object for mapping
+  wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
+    rename("carcID" = group) %>%
+    sf::st_as_sf(crs = 32636)
+  
+  return(wild_carcass_bouts_df)
+}
+
+get_wild_carcasses <- function(wild_carcass_bouts_df){
+  # Get carcasses
+  wild_carcasses <- wild_carcass_bouts_df %>%
+    group_by(year, carcID) %>%
+    summarize(geometry = sf::st_union(geometry),
+              dateOnly = dateOnly[1],
+              nBouts = n()) %>%
+    sf::st_centroid() %>%
+    ungroup() %>%
+    bind_cols(sf::st_coordinates(.)) 
+  return(wild_carcasses)
+}
+# "Limitations of threshold
+# The threshold of group_times is considered only within the scope of 24 hours and this poses limitations on it:
+# 
+# threshold must evenly divide into 60 minutes or 24 hours
+# multi-day blocks are consistent across years and timegroups from these are by year.
+# number of minutes cannot exceed 60
+# threshold cannot be fractional"
