@@ -1,0 +1,533 @@
+---
+title: "Carcasses and vulture feeding behavior"
+author: "Kaija Gahm"
+date: today
+format:
+  revealjs:
+    slide-number: c
+    embed-resources: true
+editor: source
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+# SETUP
+library(targets)
+library(tidyverse)
+library(here)
+library(lubridate)
+library(ggmap)
+library(sf)
+library(viridis)
+library(mapview)
+library(ggspatial)
+library(readr)
+source(here("R/functions.R"))
+library(patchwork)
+library(spatsoc)
+
+bouts <- readRDS(here("data/created/bouts.RDS"))
+carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
+carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
+carcasses_focal <- readRDS(here("data/created/carcasses_focal.RDS"))
+carcasses_bouts <- readRDS(here("data/created/carcasses_bouts.RDS"))
+carcass_stats <- readRDS(here("data/created/carcass_stats.RDS"))
+ns_bouts <- readRDS(here("data/created/ns_bouts.RDS"))
+ns_carcasses <- readRDS(here("data/created/ns_carcasses.RDS"))
+
+## BOUNDING BOXES FOR MAPPING
+### AREA OF ALL FEEDING BOUTS IN THE HF-ACC PERIODS
+bbox_bouts_hf <- st_bbox(bouts)
+### AREA OF ALL INPA CARCASSES 2018-2024
+bbox_inpa_carcasses <- st_bbox(carcasses_inpa)
+### AREA OF ALL INPA CARCASSES IN HF-ACC PERIODS
+bbox_inpa_carcasses_hf <- st_bbox(carcasses_focal)
+### SOUTHERN REGION ONLY
+bbox_south <- bbox_inpa_carcasses_hf
+bbox_south[4] <- 3500000
+bbox_south[2] <- 3350000
+```
+
+```{r}
+# Create plots of feeding bouts relative to carcass locations, with feeding bouts colored by either distance or time
+# Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
+# Function to make time and distance plots
+makeplots <- function(bouts, carc, type = "distance"){
+  toplot <- bind_rows(carc %>%
+                        mutate(type = "carcass"),
+                      bouts %>%
+                        mutate(type = "feeding_bout"))
+  if(type == "time"){
+    p <- ggplot(bouts)+
+      geom_sf(aes(col = time_since_carcass),
+              size = 5, alpha = 0.5, pch = 19)+
+      scale_color_viridis(name = "Time since\nplacement (hr)", 
+                          limits = c(-1, 25),
+                          direction = -1)+
+      theme_bw()+
+      annotation_scale(location = "br")+
+      geom_sf(data = carc, size = 5, pch = 8, col = "black")
+  }else if(type == "distance"){
+    p <- ggplot(bouts)+
+      geom_sf(aes(col = dist_to_carcass),
+              size = 5, alpha = 0.5, pch = 19)+
+      scale_color_viridis(name = "Distance\nto carcass (m)", 
+                          limits = c(0, 100),
+                          option = "B",
+                          direction = -1)+
+      theme_bw()+
+      annotation_scale(location = "br")+
+      geom_sf(data = carc, size = 5, pch = 8, col = "black")
+  }else(stop("`type` must be either 'time' or 'distance'"))
+  return(p)
+}
+
+# Include the ones that have corresponding feeding bouts
+toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
+distanceplots <- map(toinclude, ~{
+  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "distance")
+})
+
+timeplots <- map(toinclude, ~{
+  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "time")
+})
+```
+
+## INPA carcasses (2018-2024)
+
+```{r}
+ggplot(carcasses_inpa) +
+  annotation_map_tile(zoom = 7, type = "cartolight") +
+  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2,
+          col = "blue")+
+  ggtitle("Carcass locations, 2018-2024")
+```
+
+## Removed jammed points
+
+```{r}
+carcasses_inpa_edited <- carcasses_inpa %>%
+  filter(!(long < 34.5 & lat > 33.0))
+
+ggplot(carcasses_inpa_edited) +
+  annotation_map_tile(zoom = 7, type = "cartolight") +
+  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
+          col = "blue")+
+  ggtitle("Carcass locations, 2018-2024")
+```
+
+## GPS scrambling
+```{r}
+carcasses_inpa %>%
+  filter(long < 34.5 & lat > 33.0) # Most are Carmel, one is Tzaror
+```
+
+## Timing of feeding bouts
+```{r}
+carcasses_bouts %>%
+  ggplot(aes(x = time_since_carcass))+
+  geom_histogram(binwidth = 1)+
+  theme_classic()+
+  labs(y = "# feeding bouts (all carcasses)",
+       x = "Time since carcass placed (hours)")+
+  geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
+```
+## Most carcasses don't have associated feeding bouts
+```{r}
+carcass_stats %>%
+  ggplot(aes(x = bouts))+
+  geom_histogram()+
+  theme_classic()+
+  labs(y = "Frequency",
+       x = "Number of feeding bouts",
+       caption = "Includes feeding bouts within 750m and -1:48 hours from carcass.")+
+  facet_wrap(~year)
+```
+
+## Central carcasses have more feeding bouts
+```{r}
+ggplot(st_crop(carcass_stats, bbox_south))+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(aes(col = bouts), pch = 16, size = 3, alpha = 0.5)+
+  scale_color_viridis(option = "B")+
+  coord_sf(datum = st_crs(32636))+
+  facet_wrap(~year)+
+  labs(caption = "Includes feeding bouts within 750m and -1:48 hours from carcass.",
+       color = "# associated\nfeeding bouts")
+```
+
+## But feeding bouts are all over the place!
+```{r}
+ggplot(st_crop(bouts, bbox_south))+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
+  scale_color_manual(name = "Station", values = c("red", "blue"))+
+  facet_wrap(~year)+
+  coord_sf(datum = st_crs(32636))+
+  labs(caption = "'Station' = within 500m of feeding station location",
+       title = "Feeding bouts, hf-ACC periods")
+```
+
+## Inferred non-station carcass locations
+```{r}
+# To plot this, we're going to need to focus in on the south only, since otherwise the maps will take way too long to load.
+ggplot()+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(data = st_crop(ns_bouts, bbox_south), alpha = 0.5, pch = 4, col = "black")+
+  geom_sf(data = st_crop(ns_carcasses, bbox_south), alpha = 0.5, pch = 1, col = "red")+
+  facet_wrap(~year)+
+  labs(caption = "Black x's represent feeding bouts. Red points represent the centroids\nof groups of feeding bouts (48 hours, 100m clusters), i.e. putative\ncarcass locations.")+
+  theme(plot.caption = element_text(hjust = 0))+
+  coord_sf(datum = st_crs(32636))
+```
+
+## Number of non-station carcasses
+```{r}
+ns_bouts %>%
+  group_by(year, dateOnly) %>%
+  summarize(n_ns_carcasses = length(unique(group)), .groups = "drop") %>%
+  arrange(dateOnly) %>%
+  ggplot(aes(x = dateOnly, y = n_ns_carcasses))+
+  geom_line()+
+  geom_point()+
+  facet_wrap(~year, scales = "free_x")+
+  theme_classic()+
+  labs(y = "# non-station carcasses",
+       x = "Date")
+```
+
+## Vultures alternate between station and non-station food sources
+```{r}
+bouts %>%
+  group_by(year, dateOnly, station) %>%
+  summarize(n = n(), .groups = "drop") %>%
+  ggplot(aes(x = dateOnly, y = n, col = station))+
+  geom_line()+
+  geom_point()+
+  facet_wrap(~year, scales = "free_x")+
+  theme_classic()+
+  labs(y = "# feeding bouts",
+       x = "Date",
+       col = "Station",
+       caption = "'Station' = within 500m of feeding station location")+
+  scale_color_manual(values = c("red", "blue"))
+```
+
+## With at-station carcasses
+```{r}
+ggplot()+
+  annotation_map_tile(zoom = 9, type = "hotstyle") +
+  geom_sf(data = st_crop(ns_bouts, bbox_south), alpha = 0.5, pch = 4, col = "black")+
+  geom_sf(data = st_crop(ns_carcasses, bbox_south), alpha = 0.5, pch = 1, col = "red")+
+  facet_wrap(~year)+
+  theme(plot.caption = element_text(hjust = 0))+
+  coord_sf(datum = st_crs(32636))+
+  geom_sf(data = st_crop(carcasses_focal, bbox_south), alpha = 0.5, pch = 1, col = "blue")+
+    labs(caption = "Black x's represent feeding bouts. Red points represent the centroids\nof groups of feeding bouts (48 hours, 100m clusters), i.e. putative\ncarcass locations. Blue points\nrepresent INPA-deposited carcasses.\nNot pictured: Feeding bouts near known carcasses.")
+```
+
+## Zooming in on that high-density area
+```{r}
+bbox_highDensity <- c("xmin" = 660000, "ymin" = 3400000, "xmax" = 690000, "ymax" = 3420000)
+ggplot()+
+  annotation_map_tile(zoom = 11, type = "hotstyle") +
+  geom_sf(data = st_crop(ns_bouts, bbox_highDensity), 
+          alpha = 0.5, pch = 4, col = "black")+
+  geom_sf(data = st_crop(ns_carcasses, bbox_highDensity), 
+          alpha = 0.5, pch = 1, col = "red")+
+  geom_sf(data = st_crop(carcasses_focal, bbox_highDensity), 
+          alpha = 0.5, pch = 1, col = "blue")+ # these are just station carcasses, because by definition if it was deposited by the INPA, it was deposited at a feeding station. (XXX RIGHT??)
+  facet_wrap(~year)+
+  theme(plot.caption = element_text(hjust = 0))+
+  coord_sf(datum = st_crs(32636))+
+  annotation_scale()
+```
+
+## How accurate are the INPA's recorded carcass locations?
+
+## Some examples:
+```{r}
+distanceplots[[1]] + timeplots[[1]]
+```
+
+## Some examples:
+```{r}
+distanceplots[[4]] + timeplots[[4]]
+```
+
+## Some examples:
+```{r}
+distanceplots[[11]] + timeplots[[11]]
+```
+
+## How far away are the bouts in general?
+```{r}
+carcasses_bouts %>%
+  group_by(carcass_id) %>%
+  filter(length(unique(boutID)) > 1) %>%
+  mutate(mn = mean(dist_to_carcass)) %>%
+  ggplot(aes(x = fct_reorder(factor(carcass_id), dist_to_carcass, mean), y = dist_to_carcass, fill = mn))+
+  geom_boxplot(outlier.size = 0.5)+
+  theme_bw()+
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())+
+  scale_fill_viridis(name = "Mean distance\nto carcass", limits = c(0, 400))+
+  labs(x = "Carcass",
+       y = "Distance (m)",
+       title = "Distance from feeding bouts to recorded carcass location",
+       sutbtitle = "For feeding bouts within 500m",
+       caption = "Includes carcasses that had at least 2 feeding bouts within 750m\n Includes feeding bouts from 1 hour before through 48 hours after carcass placement.")
+```
+
+## Does the distance of bouts from the recorded carcass location change over time?
+```{r}
+#| warning: false
+carcasses_bouts %>%
+  group_by(carcass_id) %>%
+  filter(n() > 4) %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass, group = carcass_id))+
+  theme_bw()+
+  geom_smooth(method = "lm")+
+  geom_point(alpha = 0.5, pch = 1)+
+  facet_wrap(~carcass_id, scales = "free")+
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())+
+  labs(y = "Distance (m)",
+       x = "Time since carcass placement (hours)",
+       caption = "Includes carcasses that had at least 5 feeding bouts within 750m.\n Includes feeding bouts from 1 hour before through 48 hours after carcass placement.")
+```
+## Let's understand more about the dynamics of carcasses at feeding stations.
+# xxx start here
+
+- How often are carcasses placed at feeding stations?
+- How regular is the carcass placement?
+- How much does carcass cadence vary between feeding stations?
+
+## How often are carcasses placed at feeding stations?
+
+Coordinates of feeding stations in the south: XXX READ IN
+
+Coordinates of feeding stations in the north: XXX STILL NEED THIS FILE
+
+Until we have a full list of feeding station coordinates, let's use the real carcass data to infer the position of feeding stations.
+
+## Let's first see where carcasses were recorded as being placed.
+
+There are definitely a lot of repeat carcass placements. Let's compare clusters of carcass placements to recorded feeding station locations.
+
+Buffering by 300m (arbitrary) and then clustering and intersecting and coloring by cluster gives us this:
+
+```{r}
+carcasses_focal_buffered <- st_buffer(carcasses_focal, 500)
+parts <- st_cast(st_union(carcasses_focal_buffered),"POLYGON")
+clust <- unlist(st_intersects(carcasses_focal_buffered, parts))
+diss <- cbind(carcasses_focal_buffered, clust) %>%
+  group_by(clust)
+
+ggplot(st_crop(diss, bbox_south))+
+  annotation_map_tile(zoom = 9, type = "cartolight") +
+  geom_sf(aes(col = factor(clust)))+
+  coord_sf(datum = st_crs(32636))+
+  annotation_scale()+
+  theme(legend.position = "none")
+```
+
+<!-- Examine the carcass placement over time at these "stations" -->
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| message: false -->
+<!-- ggplot(diss, aes(x = datetime, y = clust, col = factor(clust)))+ -->
+<!--   geom_point()+ -->
+<!--   theme_bw()+ -->
+<!--   ylab("Feeding Station")+ -->
+<!--   theme(legend.position = "none", -->
+<!--         axis.title.x = element_blank(), -->
+<!--         panel.grid.major.x = element_blank(), -->
+<!--         panel.grid.minor.x = element_blank(), -->
+<!--         axis.text.y = element_blank(), -->
+<!--         axis.ticks.y = element_blank())+ -->
+<!--   labs(title = "Carcass placement at ~feeding stations", -->
+<!--        caption = "Feeding station locations defined by buffering and merging nearby coordinates.")+ -->
+<!--   scale_x_datetime(date_breaks = "6 months", -->
+<!--                    date_labels = "%m/%y") -->
+<!-- ``` -->
+
+<!-- ...and by year: -->
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| message: false -->
+<!-- diss %>% -->
+<!--   group_by(year, clust) %>% -->
+<!--   filter(n() > 4) %>% -->
+<!--   ggplot(aes(x = datetime, y = factor(clust),  -->
+<!--              col = factor(clust)))+ -->
+<!--   geom_point()+ -->
+<!--   facet_wrap(~year, scales = "free") + -->
+<!--   theme_bw()+ -->
+<!--   ylab("Feeding Station")+ -->
+<!--   theme(legend.position = "none", -->
+<!--         axis.title.x = element_blank(), -->
+<!--         axis.text.y = element_blank(), -->
+<!--         axis.ticks.y = element_blank(), -->
+<!--         panel.grid.major.x = element_blank(), -->
+<!--         panel.grid.minor.x = element_blank())+ -->
+<!--   labs(title = "Carcass placement at ~feeding stations, by year", -->
+<!--        caption = "Feeding stations created by buffering and merging nearby coordinates.")+ -->
+<!--   scale_x_datetime(date_breaks = "2 months", -->
+<!--                    date_labels = "%b") -->
+<!-- ``` -->
+
+<!-- Let's take a look at the intervals between carcass depositions -->
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| message: false -->
+<!-- stats <- diss %>% -->
+<!--   arrange(clust, datetime) %>% -->
+<!--   group_by(clust) %>% -->
+<!--   mutate(interval = difftime(datetime, lag(datetime), units = "days")) -->
+
+<!-- stats %>% -->
+<!--   group_by(clust) %>% -->
+<!--   filter(n() > 4) %>% -->
+<!--   filter(!is.na(interval)) %>% -->
+<!--   ggplot(aes(x = fct_reorder(factor(clust), interval, .fun = median),  -->
+<!--              y = interval))+ -->
+<!--   geom_boxplot(outlier.shape = NA)+ -->
+<!--   theme_minimal()+ -->
+<!--   geom_jitter(alpha = 0.3, aes(col = factor(clust)), width = 0.2)+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.grid.major.x = element_blank(), -->
+<!--         panel.grid.minor.x = element_blank())+ -->
+<!--   ylab("Interval (days)")+ -->
+<!--   xlab("Feeding station") -->
+<!-- ``` -->
+
+<!-- Top 5 by year: -->
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| message: false -->
+<!-- # Now picking the top 5 -->
+<!-- stats %>% -->
+<!--   filter(!is.na(interval)) %>% -->
+<!--   group_by(clust) %>% -->
+<!--   mutate(size = n()) %>% -->
+<!--   ungroup() %>% -->
+<!--   filter(size >= sort(unique(size), TRUE)[5])  %>% -->
+<!--   arrange(desc(size)) %>% -->
+<!--   ggplot(aes(x = fct_reorder(factor(clust), interval, .fun = median),  -->
+<!--              y = interval))+ -->
+<!--   geom_boxplot(outlier.shape = NA)+ -->
+<!--   theme_minimal()+ -->
+<!--   geom_jitter(alpha = 0.3, aes(col = factor(clust)), width = 0.2)+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.grid.major.x = element_blank(), -->
+<!--         panel.grid.minor.x = element_blank())+ -->
+<!--   ylab("Interval (days)")+ -->
+<!--   xlab("Feeding station")+ -->
+<!--   facet_wrap(~year, scales = "free_y")+ -->
+<!--   ggtitle("Top 5 most frequent overall feeding stations") -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- #| echo: false -->
+<!-- #| message: false -->
+<!-- lines <- stats %>% -->
+<!--   st_drop_geometry() %>% -->
+<!--   filter(!is.na(interval)) %>% -->
+<!--   group_by(clust) %>% -->
+<!--   mutate(size = n()) %>% -->
+<!--   ungroup() %>% -->
+<!--   filter(size >= sort(unique(size), TRUE)[5]) %>% -->
+<!--   group_by(clust, year) %>% -->
+<!--   summarize(mean = mean(interval)) -->
+
+<!-- stats %>% -->
+<!--   filter(!is.na(interval)) %>% -->
+<!--   group_by(clust) %>% -->
+<!--   mutate(size = n()) %>% -->
+<!--   ungroup() %>% -->
+<!--   filter(size >= sort(unique(size), TRUE)[5])  %>% -->
+<!--   arrange(desc(size)) %>% -->
+<!--   ggplot(aes(x = interval, group = clust, col = factor(clust)))+ -->
+<!--   geom_density(linewidth = 1)+ -->
+<!--   theme_minimal()+ -->
+<!--   theme(legend.position = "none", -->
+<!--         panel.grid = element_blank(), -->
+<!--         axis.text.y = element_blank())+ -->
+<!--   xlab("Interval (days)")+ -->
+<!--   facet_wrap(~year, scales = "free")+ -->
+<!--   geom_vline(data = lines, aes(xintercept = mean, col = factor(clust)), linetype = 2, linewidth = 0.5)+ -->
+<!--   labs(title = "Frequency at 5 overall most provisioned feeding stations, by year")+ -->
+<!--   ylab("") -->
+<!-- ``` -->
+
+<!-- So, depending on the feeding station, carcasses are typically deposited every 5-100 days. At the top/most frequent feeding stations, carcasses are placed about every 3-40 days. -->
+
+<!-- How often do we see carcasses being placed less than 5 days apart? -->
+<!-- ```{r} -->
+<!-- threshes <- seq(from = 1, to = 5, by = 1) -->
+<!-- dat <- purrr::map(threshes, ~stats %>% filter(interval <= .x) %>% mutate(thresh = .x)) %>% purrr::list_rbind() -->
+
+<!-- dat %>% -->
+<!--   st_drop_geometry() %>% -->
+<!--   group_by(clust, thresh) %>% -->
+<!--   add_count() %>% -->
+<!--   ggplot(aes(x = thresh, y = n, group = factor(clust), col = factor(clust)))+ -->
+<!--   geom_line()+ -->
+<!--   scale_x_continuous(breaks = threshes)+ -->
+<!--   theme_minimal()+ -->
+<!--   ylab("Number of carcass placements")+ -->
+<!--   xlab("<= n days apart") -->
+<!-- ``` -->
+
+<!-- So, while most carcasses are provisioned less often than every 5 days, there are some sites where food is often available every day! -->
+
+<!-- ## Are there days when more than one carcass is placed? -->
+<!-- ```{r} -->
+<!-- head(stats) -->
+<!-- carcasses_per_day <- stats %>% -->
+<!--   st_drop_geometry() %>% -->
+<!--   group_by(year, date) %>% -->
+<!--   summarize(carc_per_day = n()) -->
+<!-- carcasses_per_day %>% -->
+<!--   ggplot(aes(x = factor(carc_per_day)))+ -->
+<!--   geom_bar()+ -->
+<!--   theme_minimal()+ -->
+<!--   ylab("Days")+ -->
+<!--   xlab("Carcasses per day")+ -->
+<!--   facet_wrap(~year)+ -->
+<!--   labs(caption = "Sometimes, more than one carcass\nis deposited per day\n(anywhere in the country)") -->
+<!-- ``` -->
+
+<!-- ## Overall visualization of carcasses placed over time -->
+<!-- ```{r} -->
+<!-- over_time <- stats %>% -->
+<!--   st_drop_geometry() %>% -->
+<!--   mutate(month = lubridate::month(datetime), -->
+<!--          day = lubridate::day(datetime)) %>% -->
+<!--   group_by(month, day, year, date) %>% -->
+<!--   summarize(n = n()) -->
+
+<!-- over_time %>% -->
+<!--   ggplot(aes(y = n, x = lubridate::ymd(date)))+ -->
+<!--   geom_line(alpha = 0.2)+ -->
+<!--   geom_point(aes(col = n))+ -->
+<!--   scale_color_viridis_c(name = "")+ -->
+<!--   theme_minimal()+ -->
+<!--   facet_wrap(~year, scales = "free_x", ncol = 2)+ -->
+<!--   scale_x_date(date_breaks = "3 months", -->
+<!--                date_labels = "%b")+ -->
+<!--   ggtitle("Carcasses over time")+ -->
+<!--   ylab("Number of carcasses")+ -->
+<!--   xlab("Date") -->
+<!-- ``` -->
+
+<!-- ## Summary stats for how long carcasses last -->
+<!-- We can do this either by looking at the vultures that are nearby the stated location, or we can look at feeding bouts nearby. It would be better to look at feeding bouts in order to quantify duration, I think, so I'm going to wait on this until I have the data processed. -->

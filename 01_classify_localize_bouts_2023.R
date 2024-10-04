@@ -295,4 +295,29 @@ write_rds(feeding_bouts_station_2023, here("data/ACC/2023_hf_period/created/feed
 write_rds(feeding_bouts_station_2024, here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
 
 feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
+fbs_2023 <- feeding_bouts_station_2023[!map_lgl(feeding_bouts_station_2023, is.null)]
+
 feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
+fbs_2024 <- feeding_bouts_station_2024[!map_lgl(feeding_bouts_station_2024, is.null)]
+
+bouts23 <- purrr::list_rbind(fbs_2023) %>%
+  mutate(year = 2023,
+         start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         dateOnly = lubridate::ymd(dateOnly),
+         tag_id = as.numeric(tag_id),
+         individual_id = as.numeric(individual_id))
+bouts24 <- fbs_2024 %>%
+  map(., ~.x %>% mutate(tag_id = as.numeric(tag_id),
+                        individual_id = as.numeric(individual_id))) %>%
+  purrr::list_rbind() %>%
+  mutate(year = 2024,
+         start = lubridate::ymd_hms(start),
+         end = lubridate::ymd_hms(end),
+         dateOnly = lubridate::ymd(dateOnly))
+bouts <- bind_rows(bouts23, bouts24) %>%
+  sf::st_as_sf(crs = 32636)
+bouts <- bouts %>%
+  bind_cols(st_coordinates(.))
+write_rds(bouts, here("data/created/bouts.RDS"))
+bouts <- readRDS(here("data/created/bouts.RDS"))
