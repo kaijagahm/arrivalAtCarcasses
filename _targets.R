@@ -57,7 +57,7 @@ list(
   ### Only spatial, not time-restricted.
   tar_target(carcasses_inpa, readRDS(here("data/created/carcasses_inpa.RDS"))),
   tar_target(dist_stations_inferred, 500),
-  tar_target(stations_inferred, cluster_carcasses(carcasses_inpa, dist_stations_inferred)),
+  tar_target(stations_inferred, cluster_carcasses(carcasses_inpa, dist_stations_inferred) %>% rename("stn_inf" = clust)),
   
   ## Focal carcasses
   ### During the 2023 and 2024 HF-ACC periods
@@ -83,7 +83,8 @@ list(
   tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
                                                            dist = dist_bouts_wild_carcass_cluster)),
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df)),
+  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df) %>%
+               mutate(carcType = "wild")),
   tar_target(remaining_bouts_2, left_join(remaining_bouts, 
                                           sf::st_drop_geometry(wild_carcass_bouts_df) %>%
                                             select(boutID, carcID),
@@ -113,7 +114,6 @@ list(
                                         mutate(carcType = "wild"))),
 
   ## Assign carcasses (INPA and wild) to stations (documented and inferred)
-  tar_target(dist_carcass_station, 500),
   tar_target(carcasses_split, group_by(all_carcasses, carcID) %>% group_split()),
   tar_target(bouts_split, sf::st_as_sf(all_bouts_assigned, coords = c("X", "Y"), crs = 32636, remove = F) %>%
                group_by(boutID) %>%
@@ -127,13 +127,9 @@ list(
                mutate(dist_stn = stn_min_dists_carc,
                       dist_stn_inf = stn_inf_min_dists_carc) %>%
                bind_cols(st_drop_geometry(closest_stn_carc) %>%
-                           select("stn" = stationName,
-                                  "stn_X" = itmLong,
-                                  "stn_Y" = itmLat)) %>%
+                           select("stn" = stationName)) %>%
                bind_cols(st_drop_geometry(closest_stn_inf_carc) %>%
-                           select("stn_inf" = clust,
-                                  "stn_inf_X" = X,
-                                  "stn_inf_Y" = Y))),
+                           select(stn_inf))),
   ### Bouts
   tar_target(stn_min_dists_bouts, map_dbl(bouts_split, ~min(st_distance(.x, stations)))),
   tar_target(closest_stn_bouts, purrr::list_rbind(map(bouts_split, ~stations[which.min(st_distance(.x, stations)),]))),
@@ -144,40 +140,8 @@ list(
                mutate(dist_stn = stn_min_dists_bouts,
                       dist_stn_inf = stn_inf_min_dists_bouts) %>%
                bind_cols(st_drop_geometry(closest_stn_bouts) %>%
-                           select("stn" = stationName,
-                                  "stn_X" = itmLong,
-                                  "stn_Y" = itmLat)) %>%
+                           select("stn" = stationName)) %>%
                bind_cols(st_drop_geometry(closest_stn_inf_bouts) %>%
-                           select("stn_inf" = clust,
-                                  "stn_inf_X" = X,
-                                  "stn_inf_Y" = Y)))
+                           select(stn_inf)) %>%
+               select(-c(individualID, prob, start, end, location_lat, location_long)))
 )
-
-
-
-
-# XXX START HERE
-# stations <- readRDS(here("data/created/stations.RDS"))
-# stations_buffered <- sf::st_buffer(stations, dist = 500)
-# stations_union <- sf::st_union(stations_buffered)
-# feeding_bouts_station_2023 <- map(feeding_bouts_certain_2023, ~{
-#   if(!is.null(.x)){
-#     assign_fs(.x, stations_union)
-#   }else{NULL}
-# })
-# 
-# feeding_bouts_station_2024 <- map(feeding_bouts_certain_2024, ~{
-#   if(!is.null(.x)){
-#     assign_fs(.x, stations_union)
-#   }else{NULL}
-# })
-# 
-# write_rds(feeding_bouts_station_2023, here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-# write_rds(feeding_bouts_station_2024, here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
-# 
-# feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-# fbs_2023 <- feeding_bouts_station_2023[!map_lgl(feeding_bouts_station_2023, is.null)]
-# 
-# feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
-# fbs_2024 <- feeding_bouts_station_2024[!map_lgl(feeding_bouts_station_2024, is.null)]
-
