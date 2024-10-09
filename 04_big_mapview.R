@@ -9,6 +9,7 @@ tar_load(carcasses_focal)
 tar_load(feeding_bouts)
 tar_load(all_bouts_annotated)
 tar_load(all_carcasses_annotated)
+source(here("R/functions.R"))
 
 aba <- sf::st_as_sf(all_bouts_annotated)
 aca <- sf::st_as_sf(all_carcasses_annotated)
@@ -34,7 +35,8 @@ bbox_south[2] <- 3350000
 mapview(st_buffer(st_crop(stations, bbox_south), 500), 
         col.regions = "gray30",
         layer.name = "Feeding stations")+
-  mapview(st_buffer(st_crop(aca, bbox_south), 500), 
+  mapview(st_buffer(st_crop(aca %>% filter(nIndivs > 1 |  # only including wild carcasses that have more than one individual
+                                             is.na(nIndivs)), bbox_south), 500), 
           zcol = "carcType",
           layer.name = "Carcasses",
           col.regions = c("lightblue", "pink"))+
@@ -42,3 +44,59 @@ mapview(st_buffer(st_crop(stations, bbox_south), 500),
           zcol = "carcType",
           layer.name = "Feeding bouts",
           col.regions = c("blue", "red"))
+
+# Now let's map all the wild carcasses, by time and number of bouts
+aca %>%
+  dg() %>% # shortcut for st_drop_geometry defined in functions.R
+  group_by(year, carcType) %>%
+  summarize(n = n()) # This is so far off that it suggests our definitions still are not stringent enough.
+# Let's look at how many of these wild "carcasses" are visited by more than one individual. 
+# Also need to give it a 48 hour threshold instead of 24 hours.
+
+st_crop(aca, bbox_south) %>%
+  ggplot()+
+  annotation_map_tile(zoom = 9, type = "cartolight")+
+  geom_sf(aes(col = carcType))
+
+st_crop(aca, bbox_south) %>%
+  filter(carcType == "wild") %>%
+  ggplot()+
+  annotation_map_tile(zoom = 9, type = "cartolight")+
+  geom_sf(aes(col = nIndivs))+
+  scale_color_viridis()
+
+st_crop(aca, bbox_south) %>%
+  filter(carcType == "wild") %>%
+  ggplot()+
+  annotation_map_tile(zoom = 9, type = "cartolight")+
+  geom_sf(aes(col = nBouts))+
+  scale_color_viridis()
+
+st_crop(aca, bbox_south) %>%
+  filter(carcType == "wild") %>%
+  ggplot()+
+  annotation_map_tile(zoom = 9, type = "cartolight")+
+  geom_sf(aes(col = nIndivs, size = nBouts), alpha = 0.5)+
+  scale_color_viridis()
+
+# How many of these are just a single individual?
+aca %>%
+  filter(carcType == "wild") %>%
+  ggplot(aes(x = nIndivs))+
+  geom_histogram()+
+  theme_classic()
+
+aca %>%
+  filter(carcType == "wild") %>%
+  ggplot(aes(x = nIndivs, y = nBouts))+
+  geom_point(alpha = 0.1, size = 2)+
+  theme_classic()
+ # grouping in space and time is actually really not trivial!
+
+aca %>%
+  filter(carcType == "wild", nBouts < 50, nIndivs < 10) %>%
+  ggplot(aes(x = nIndivs, y = nBouts))+
+  geom_point(alpha = 0.1, size = 2)+
+  theme_classic() # yeah there are just no obvious cutoff points.
+
+# 2024-10-09 At this point I emailed Gideon to ask how he's done this in the past, since I'm sure he has some criteria and I don't want to reinvent the wheel.

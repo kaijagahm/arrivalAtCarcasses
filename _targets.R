@@ -111,7 +111,7 @@ list(
                                                year = lubridate::year(datetime)),
                                       wild_carcasses %>%
                                         select(carcID, X, Y,
-                                               year, dateOnly, nBouts) %>%
+                                               year, dateOnly, nBouts, nIndivs) %>%
                                         mutate(carcType = "wild"))),
 
   ## Assign carcasses (INPA and wild) to stations (documented and inferred)

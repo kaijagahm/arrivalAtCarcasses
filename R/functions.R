@@ -464,7 +464,8 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
     group_by(year, carcID) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = dateOnly[1],
-              nBouts = n()) %>%
+              nBouts = n(),
+              nIndivs = length(unique(individualID))) %>%
     sf::st_centroid() %>%
     ungroup() %>%
     bind_cols(sf::st_coordinates(.)) 
@@ -477,3 +478,9 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
 # multi-day blocks are consistent across years and timegroups from these are by year.
 # number of minutes cannot exceed 60
 # threshold cannot be fractional"
+
+
+# Shortcuts ---------------------------------------------------------------
+dg <- function(x){
+  return(sf::st_drop_geometry(x))
+}
