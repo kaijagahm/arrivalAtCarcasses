@@ -82,7 +82,8 @@ list(
   tar_target(time_bouts_wild_carcass_cluster, '24 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way.
   tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
-                                                           dist = dist_bouts_wild_carcass_cluster)),
+                                                           dist = dist_bouts_wild_carcass_cluster,
+                                                           minBouts = 3)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df) %>%
                mutate(carcType = "wild")),
   tar_target(remaining_bouts_2, left_join(remaining_bouts, 

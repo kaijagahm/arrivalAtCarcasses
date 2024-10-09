@@ -251,7 +251,7 @@ joined_2024 <- readRDS(here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
 
 ### define function to get the feeding bouts
 getfeeding <- function(x){
-  out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > 0.6)
+  out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > 0.75)
   out <- sf::st_as_sf(out, coords = c("location_long", "location_lat"),
                       crs = "WGS84", remove = F) %>%
     st_transform(32636)

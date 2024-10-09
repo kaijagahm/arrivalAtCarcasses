@@ -434,7 +434,7 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100){
+get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3){
   remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
   remaining_bouts <- data.table::data.table(remaining_bouts)
   
@@ -446,7 +446,9 @@ get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 10
                      timegroup = 'timegroup')
   
   # Restrict to groups that have at least 3 bouts
-  
+  remaining_bouts <- remaining_bouts %>%
+    group_by(group) %>%
+    filter(n() >= minBouts)
   
   # convert back to sf object for mapping
   wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
