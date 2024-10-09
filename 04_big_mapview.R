@@ -3,7 +3,7 @@ library(here)
 library(sf)
 library(mapview)
 
-bouts <- readRDS(here("data/created/bouts.RDS"))
+bouts <- readRDS(here("data/created/feeding_bouts.RDS"))
 carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
 carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
 carcasses_focal <- readRDS(here("data/created/carcasses_focal.RDS"))
@@ -12,6 +12,11 @@ carcass_stats <- readRDS(here("data/created/carcass_stats.RDS"))
 ns_bouts <- readRDS(here("data/created/ns_bouts.RDS"))
 ns_carcasses <- readRDS(here("data/created/ns_carcasses.RDS"))
 stations <- readRDS(here("data/created/stations.RDS"))
+tar_load(all_bouts_annotated)
+tar_load(all_carcasses_annotated)
+
+aba <- sf::st_as_sf(all_bouts_annotated)
+aca <- sf::st_as_sf(all_carcasses_annotated)
 
 ## BOUNDING BOXES FOR MAPPING
 ### AREA OF ALL FEEDING BOUTS IN THE HF-ACC PERIODS
@@ -32,16 +37,13 @@ bbox_south[2] <- 3350000
 # 4. Non-station feeding events identified from feeding bouts, buffered so they show up
 
 mapview(st_buffer(st_crop(stations, bbox_south), 500), 
-        col.regions = "skyblue4",
+        col.regions = "gray30",
         layer.name = "Feeding stations")+
-  mapview(st_buffer(st_crop(carcasses_focal, bbox_south), 500), 
-          col.regions = "skyblue1",
-          layer.name = "INPA carcasses")+
-  mapview(st_buffer(st_crop(bouts, bbox_south) %>% filter(station == TRUE), 10), 
-          col.regions = "blue",
-          layer.name = "Feeding bouts (station)")+
-  mapview(st_buffer(st_crop(bouts, bbox_south) %>% filter(station == FALSE), 10), 
-          col.regions = "darkred",
-          layer.name = "Feeding bouts (non-station)")+
-  mapview(st_buffer(st_crop(ns_carcasses, bbox_south), 500), col.regions = "red",
-          layer.name = "Non-station carcasses (inferred)")
+  mapview(st_buffer(st_crop(aca, bbox_south), 500), 
+          zcol = "carcType",
+          layer.name = "Carcasses",
+          col.regions = c("lightblue", "pink"))+
+  mapview(st_buffer(st_crop(aba, bbox_south), 10), 
+          zcol = "carcType",
+          layer.name = "Feeding bouts",
+          col.regions = c("blue", "red"))

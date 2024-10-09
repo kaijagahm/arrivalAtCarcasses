@@ -29,7 +29,7 @@ source(here("R/functions.R"))
 library(patchwork)
 library(spatsoc)
 
-bouts <- readRDS(here("data/created/bouts.RDS"))
+bouts <- readRDS(here("data/created/feeding_bouts.RDS"))
 carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
 carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
 carcasses_focal <- readRDS(here("data/created/carcasses_focal.RDS"))
@@ -127,7 +127,8 @@ carcasses_inpa %>%
 
 ## Timing of feeding bouts
 ```{r}
-carcasses_bouts %>%
+tar_load(all_bouts_annotated)
+all_bouts_annotated %>%
   ggplot(aes(x = time_since_carcass))+
   geom_histogram(binwidth = 1)+
   theme_classic()+
@@ -135,6 +136,7 @@ carcasses_bouts %>%
        x = "Time since carcass placed (hours)")+
   geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
 ```
+
 ## Most carcasses don't have associated feeding bouts
 ```{r}
 carcass_stats %>%
@@ -159,17 +161,63 @@ ggplot(st_crop(carcass_stats, bbox_south))+
        color = "# associated\nfeeding bouts")
 ```
 
-## But feeding bouts are all over the place!
+## Feeding bouts are widely spread
 ```{r}
-ggplot(st_crop(bouts, bbox_south))+
+tar_load(all_bouts_annotated)
+all_bouts_annotated <- sf::st_as_sf(all_bouts_annotated, crs = 32636)
+ggplot(st_crop(all_bouts_annotated, bbox_south))+
   annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
-  scale_color_manual(name = "Station", values = c("red", "blue"))+
+  geom_sf(aes(col = carcType), alpha = 0.8, pch = 4)+
+  scale_color_manual(name = "Carcass type",
+                     values = c("blue", "red"))+
   facet_wrap(~year)+
-  coord_sf(datum = st_crs(32636))+
-  labs(caption = "'Station' = within 500m of feeding station location",
-       title = "Feeding bouts, hf-ACC periods")
+  coord_sf(datum = st_crs(32636))
 ```
+## Feeding bout statistics by year
+```{r}
+#| message: false
+#| warning: false
+all_bouts_annotated %>%
+  st_drop_geometry() %>%
+  group_by(year, carcType) %>%
+  summarize(count = n()) %>%
+  mutate(Region = "Entire region") %>%
+  bind_rows(st_crop(all_bouts_annotated, bbox_south) %>%
+              st_drop_geometry() %>%
+              group_by(year, carcType) %>%
+              summarize(count = n()) %>%
+              mutate(Region = "South only")) %>%
+  ggplot(aes(x = factor(year), y = count, fill = carcType))+
+  geom_col(position = position_dodge())+
+  theme_classic()+
+  scale_fill_manual(name = "Carcass\ntype", values = c("blue", "red"))+
+  labs(y = "Number of feeding bouts",
+       x = "Year")+
+  facet_wrap(~Region)
+```
+## Feeding bouts over time, southern region
+```{r}
+st_crop(all_bouts_annotated, bbox_south) %>%
+  st_drop_geometry() %>%
+  group_by(year, dateOnly, carcType) %>%
+  summarize(count = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x = dateOnly, y = count, col = carcType))+
+  facet_wrap(~year, scales = "free_x")+
+  geom_line()+
+  geom_point()+
+  theme_classic()+
+  scale_x_date(date_breaks = "1 month",
+                 date_labels = "%b")+
+  labs(y = "Number of feeding bouts",
+       x = "Date")+
+  scale_color_manual(name = "Carcass\ntype", values = c("blue", "red"))
+
+# How many INPA-provided carcasses per year (non-cage, south only)
+head(all_carcasses_annotated)
+st_crop(all_carcasses_annotated, bbox_south) %>% filter(carcType == "inpa", !cage) %>% group_by(year) %>% summarize(n = n())
+```
+
 
 ## Inferred non-station carcass locations
 ```{r}
@@ -186,36 +234,23 @@ ggplot()+
 
 ## Number of non-station carcasses
 ```{r}
-ns_bouts %>%
-  group_by(year, dateOnly) %>%
-  summarize(n_ns_carcasses = length(unique(group)), .groups = "drop") %>%
-  arrange(dateOnly) %>%
-  ggplot(aes(x = dateOnly, y = n_ns_carcasses))+
+tar_load(all_carcasses_annotated)
+all_carcasses_annotated <- sf::st_as_sf(all_carcasses_annotated)
+all_carcasses_annotated %>%
+  st_drop_geometry() %>%
+  group_by(year, dateOnly, carcType) %>%
+  summarize(count = n()) %>%
+  ggplot(aes(x = dateOnly, y = count, col = carcType))+
   geom_line()+
   geom_point()+
   facet_wrap(~year, scales = "free_x")+
   theme_classic()+
-  labs(y = "# non-station carcasses",
-       x = "Date")
+  labs(y = "Number of carcasses",
+       x = "Date")+
+  scale_color_manual(name = "Carcass\ntype", values = c("blue", "red"))
 ```
 
-## Vultures alternate between station and non-station food sources
-```{r}
-bouts %>%
-  group_by(year, dateOnly, station) %>%
-  summarize(n = n(), .groups = "drop") %>%
-  ggplot(aes(x = dateOnly, y = n, col = station))+
-  geom_line()+
-  geom_point()+
-  facet_wrap(~year, scales = "free_x")+
-  theme_classic()+
-  labs(y = "# feeding bouts",
-       x = "Date",
-       col = "Station",
-       caption = "'Station' = within 500m of feeding station location")+
-  scale_color_manual(values = c("red", "blue"))
-```
-
+# XXX start here
 ## With at-station carcasses
 ```{r}
 ggplot()+
