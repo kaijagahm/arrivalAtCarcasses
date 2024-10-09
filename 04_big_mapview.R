@@ -3,15 +3,10 @@ library(here)
 library(sf)
 library(mapview)
 
-bouts <- readRDS(here("data/created/feeding_bouts.RDS"))
-carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
-carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
-carcasses_focal <- readRDS(here("data/created/carcasses_focal.RDS"))
-carcasses_bouts <- readRDS(here("data/created/carcasses_bouts.RDS"))
-carcass_stats <- readRDS(here("data/created/carcass_stats.RDS"))
-ns_bouts <- readRDS(here("data/created/ns_bouts.RDS"))
-ns_carcasses <- readRDS(here("data/created/ns_carcasses.RDS"))
-stations <- readRDS(here("data/created/stations.RDS"))
+tar_load(stations)
+tar_load(carcasses_inpa)
+tar_load(carcasses_focal)
+tar_load(feeding_bouts)
 tar_load(all_bouts_annotated)
 tar_load(all_carcasses_annotated)
 
@@ -20,7 +15,7 @@ aca <- sf::st_as_sf(all_carcasses_annotated)
 
 ## BOUNDING BOXES FOR MAPPING
 ### AREA OF ALL FEEDING BOUTS IN THE HF-ACC PERIODS
-bbox_bouts_hf <- st_bbox(bouts)
+bbox_bouts_hf <- st_bbox(feeding_bouts)
 ### AREA OF ALL INPA CARCASSES 2018-2024
 bbox_inpa_carcasses <- st_bbox(carcasses_inpa)
 ### AREA OF ALL INPA CARCASSES IN HF-ACC PERIODS

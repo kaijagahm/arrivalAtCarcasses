@@ -445,6 +445,9 @@ get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 10
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
   
+  # Restrict to groups that have at least 3 bouts
+  
+  
   # convert back to sf object for mapping
   wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
     rename("carcID" = group) %>%
