@@ -384,8 +384,9 @@ get_focal <- function(carcasses, times){
            datetime <= times[2]) %>%
     bind_rows(carcasses %>%
                 filter(datetime >= times[3],
-                       datetime <= times[4]))
-  return(focal)
+                       datetime <= times[4])) %>%
+    filter(!cage) # remove carcasses placed in cages 
+  return(focal) 
 }
 
 get_focal2 <- function(carcasses, times){
@@ -434,7 +435,7 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100){
+get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3){
   remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
   remaining_bouts <- data.table::data.table(remaining_bouts)
   
@@ -444,6 +445,11 @@ get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 10
   spatsoc::group_pts(remaining_bouts, threshold = dist, 
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
+  
+  # Restrict to groups that have at least 3 bouts
+  remaining_bouts <- remaining_bouts %>%
+    group_by(group) %>%
+    filter(n() >= minBouts)
   
   # convert back to sf object for mapping
   wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
@@ -459,7 +465,8 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
     group_by(year, carcID) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = dateOnly[1],
-              nBouts = n()) %>%
+              nBouts = n(),
+              nIndivs = length(unique(individualID))) %>%
     sf::st_centroid() %>%
     ungroup() %>%
     bind_cols(sf::st_coordinates(.)) 
@@ -472,3 +479,9 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
 # multi-day blocks are consistent across years and timegroups from these are by year.
 # number of minutes cannot exceed 60
 # threshold cannot be fractional"
+
+
+# Shortcuts ---------------------------------------------------------------
+dg <- function(x){
+  return(sf::st_drop_geometry(x))
+}

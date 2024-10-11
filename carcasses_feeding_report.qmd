@@ -29,39 +29,43 @@ source(here("R/functions.R"))
 library(patchwork)
 library(spatsoc)
 
-bouts <- readRDS(here("data/created/feeding_bouts.RDS"))
-carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
-carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
-carcasses_focal <- readRDS(here("data/created/carcasses_focal.RDS"))
-carcasses_bouts <- readRDS(here("data/created/carcasses_bouts.RDS"))
-carcass_stats <- readRDS(here("data/created/carcass_stats.RDS"))
-ns_bouts <- readRDS(here("data/created/ns_bouts.RDS"))
-ns_carcasses <- readRDS(here("data/created/ns_carcasses.RDS"))
+tar_load(feeding_bouts)
+tar_load(carcasses_inpa)
+tar_load(carcasses_focal)
+tar_load(carcass_bouts)
+tar_load(all_bouts_annotated)
+tar_load(all_carcasses_annotated)
+tar_load(carcass_bouts_df)
 
-## BOUNDING BOXES FOR MAPPING
-### AREA OF ALL FEEDING BOUTS IN THE HF-ACC PERIODS
-bbox_bouts_hf <- st_bbox(bouts)
-### AREA OF ALL INPA CARCASSES 2018-2024
-bbox_inpa_carcasses <- st_bbox(carcasses_inpa)
-### AREA OF ALL INPA CARCASSES IN HF-ACC PERIODS
-bbox_inpa_carcasses_hf <- st_bbox(carcasses_focal)
-### SOUTHERN REGION ONLY
-bbox_south <- bbox_inpa_carcasses_hf
-bbox_south[4] <- 3500000
-bbox_south[2] <- 3350000
+nrow(carcasses_focal) == length(carcass_bouts) # should be TRUE
+nBouts <- map_dbl(carcass_bouts, nrow)
+df <- carcasses_focal %>%
+  dplyr::select(carcID, date) %>%
+  mutate(year = lubridate::year(date),
+         bouts = nBouts)
+carcass_stats <- carcass_bouts_df %>%
+  group_by(carcID) %>%
+  summarize(nIndivs = length(unique(individualID))) %>%
+  right_join(df) %>%
+  sf::st_as_sf(crs = 32636)
+
+tar_load(bbox_bouts_hf)
+tar_load(bbox_inpa_carcasses)
+tar_load(bbox_inpa_carcasses_hf)
+tar_load(bbox_south)
 ```
 
 ```{r}
 # Create plots of feeding bouts relative to carcass locations, with feeding bouts colored by either distance or time
 # Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
 # Function to make time and distance plots
-makeplots <- function(bouts, carc, type = "distance"){
+makeplots <- function(feeding_bouts, carc, type = "distance"){
   toplot <- bind_rows(carc %>%
                         mutate(type = "carcass"),
-                      bouts %>%
+                      feeding_bouts %>%
                         mutate(type = "feeding_bout"))
   if(type == "time"){
-    p <- ggplot(bouts)+
+    p <- ggplot(feeding_bouts)+
       geom_sf(aes(col = time_since_carcass),
               size = 5, alpha = 0.5, pch = 19)+
       scale_color_viridis(name = "Time since\nplacement (hr)", 
@@ -71,7 +75,7 @@ makeplots <- function(bouts, carc, type = "distance"){
       annotation_scale(location = "br")+
       geom_sf(data = carc, size = 5, pch = 8, col = "black")
   }else if(type == "distance"){
-    p <- ggplot(bouts)+
+    p <- ggplot(feeding_bouts)+
       geom_sf(aes(col = dist_to_carcass),
               size = 5, alpha = 0.5, pch = 19)+
       scale_color_viridis(name = "Distance\nto carcass (m)", 
@@ -88,18 +92,20 @@ makeplots <- function(bouts, carc, type = "distance"){
 # Include the ones that have corresponding feeding bouts
 toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
 distanceplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "distance")
+  makeplots(feeding_bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "distance")
 })
 
 timeplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "time")
+  makeplots(feeding_bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "time")
 })
 ```
 
-## INPA carcasses (2018-2024)
+## INPA carcasses (2018-2024), excluding cages
 
 ```{r}
-ggplot(carcasses_inpa) +
+carcasses_inpa %>%
+  filter(!cage) %>%
+  ggplot() +
   annotation_map_tile(zoom = 7, type = "cartolight") +
   geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2,
           col = "blue")+
@@ -110,7 +116,7 @@ ggplot(carcasses_inpa) +
 
 ```{r}
 carcasses_inpa_edited <- carcasses_inpa %>%
-  filter(!(long < 34.5 & lat > 33.0))
+  filter(!cage, !(long < 34.5 & lat > 33.0))
 
 ggplot(carcasses_inpa_edited) +
   annotation_map_tile(zoom = 7, type = "cartolight") +
@@ -123,11 +129,11 @@ ggplot(carcasses_inpa_edited) +
 ```{r}
 carcasses_inpa %>%
   filter(long < 34.5 & lat > 33.0) # Most are Carmel, one is Tzaror
+# all except Tzaror are in cages
 ```
 
-## Timing of feeding bouts
+## Timing of feeding bouts (-1:48 hr)
 ```{r}
-tar_load(all_bouts_annotated)
 all_bouts_annotated %>%
   ggplot(aes(x = time_since_carcass))+
   geom_histogram(binwidth = 1)+
@@ -140,7 +146,7 @@ all_bouts_annotated %>%
 ## Most carcasses don't have associated feeding bouts
 ```{r}
 carcass_stats %>%
-  ggplot(aes(x = bouts))+
+  ggplot(aes(x = nBouts))+
   geom_histogram()+
   theme_classic()+
   labs(y = "Frequency",
@@ -173,6 +179,11 @@ ggplot(st_crop(all_bouts_annotated, bbox_south))+
   facet_wrap(~year)+
   coord_sf(datum = st_crs(32636))
 ```
+
+## Can we assign the wild "carcasses" (really events) to actual carcasses?
+XXX I don't know how to do this.
+
+
 ## Feeding bout statistics by year
 ```{r}
 #| message: false
