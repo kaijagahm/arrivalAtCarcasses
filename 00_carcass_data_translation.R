@@ -1,10 +1,10 @@
 # Script to read in and aggregate the carcass data
-library(tidyverse)
 library(here)
 library(readxl)
+library(tidyverse)
 
 old <- read_excel(here("data/raw/translated/FeedingData from 2018_2024_Translated_9_25_2024 (1).xlsx")) %>%
-  select("carcID" = ID, 
+  dplyr::select("carcID" = ID, 
          "date" = `Date Event`, 
          "time" = `Event time`, 
          "itmLong" = `ITM - LONG`, 
@@ -31,9 +31,9 @@ old <- read_excel(here("data/raw/translated/FeedingData from 2018_2024_Translate
          "n_Turkeys" = "Number of turkey carcasses",
          "n_Pigs" = "Number of pig carcasses",
          "n_Sheep" = "number of sheep carcasses") %>%
-  select(-"number of warnings")
+  dplyr::select(-"number of warnings")
 new <- read_excel(here("data/raw/translated/Feeding 2024 update - translated (1).xlsx")) %>%
-  select("carcID" = Identifier, 
+  dplyr::select("carcID" = Identifier, 
          date, time, 
          "itmLong" = `ITM - LONG`, 
          "itmLat" = `ITM - LAT`, 
@@ -61,7 +61,7 @@ new <- read_excel(here("data/raw/translated/Feeding 2024 update - translated (1)
          "n_WildDonkeys" = "number of wild donkeys", 
          "n_Gazelles" = "number of gazels", 
          "n_Cows" = "number of cow carcasses") %>%
-  select(-"number of carcases(automatic)")
+  dplyr::select(-"number of carcases(automatic)")
 
 names(new[!(names(new) %in% names(old))])
 names(old[!(names(old) %in% names(new))])
@@ -114,24 +114,5 @@ mapview(carcasses_inpa, label = "stationName", color = "blue", col.regions = "bl
 
 # Looking at this map shows us that 1) not all INPA carcasses are deposited at feeding stations (what's up with that? is this not a complete list of feeding stations?) # XXX add this to the report
 
-# Correspondence in names based on overlapping dots
-# 1. Ben_Yair_view = observation ben-Yair
-# 2. Gorni_hill = Gorni hill
-# 3. North_Golan = north golan
-# 4. Hai_Bar_Carmel = Carmel - cage or Hai-bar feeding station
-# Hever doesn't seem to be included on the total list of feeding stations
-# 5. Amiaz = Other (one of the "Other"s)
-# this is going to take forever--I need to show this to them in the report.
 
-
-# TEMPORARY: BECAUSE TARGETS PIPELINE WON'T RUN ---------------------------
-# tar_load(data_files_2024)
-# tar_load(data_files_2023)
-# 
-# unobs_raw_acc_2024 <- purrr::list_rbind(purrr::map(data_files_2024, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
-# 
-# unobs_raw_acc_2023 <- purrr::list_rbind(purrr::map(data_files_2023, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
-# 
-# readr::write_rds(unobs_raw_acc_2024, here("data/created/unobs_raw_acc_2024.RDS"))
-# readr::write_rds(unobs_raw_acc_2023, here("data/created/unobs_raw_acc_2023.RDS"))
 

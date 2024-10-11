@@ -78,7 +78,7 @@ list(
   tar_target(remaining_bouts, filter(feeding_bouts, !(boutID %in% carcass_bouts_df$boutID))),
   
   ## Cluster the remaining bouts
-  tar_target(dist_bouts_wild_carcass_cluster, 100),
+  tar_target(dist_bouts_wild_carcass_cluster, 250), # updated to 250 to match Gideon's thresholds
   tar_target(time_bouts_wild_carcass_cluster, '24 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way.
   tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
@@ -144,5 +144,10 @@ list(
                            select("stn" = stationName)) %>%
                bind_cols(st_drop_geometry(closest_stn_inf_bouts) %>%
                            select(stn_inf)) %>%
-               select(-c(individualID, prob, start, end, location_lat, location_long)))
+               select(-c(individualID, prob, start, end, location_lat, location_long))),
+  tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
+  tar_target(bbox_inpa_carcasses, st_bbox(carcasses_inpa)),
+  tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
+  tar_target(a, st_crs(bbox_bouts_hf)),
+  tar_target(bbox_south, st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]), "ymin" = 3350000, "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]), "ymax" = 3500000)), a))
 )

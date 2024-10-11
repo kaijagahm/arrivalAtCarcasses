@@ -384,8 +384,9 @@ get_focal <- function(carcasses, times){
            datetime <= times[2]) %>%
     bind_rows(carcasses %>%
                 filter(datetime >= times[3],
-                       datetime <= times[4]))
-  return(focal)
+                       datetime <= times[4])) %>%
+    filter(!cage) # remove carcasses placed in cages 
+  return(focal) 
 }
 
 get_focal2 <- function(carcasses, times){

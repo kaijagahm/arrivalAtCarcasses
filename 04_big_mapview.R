@@ -14,17 +14,10 @@ source(here("R/functions.R"))
 aba <- sf::st_as_sf(all_bouts_annotated)
 aca <- sf::st_as_sf(all_carcasses_annotated)
 
-## BOUNDING BOXES FOR MAPPING
-### AREA OF ALL FEEDING BOUTS IN THE HF-ACC PERIODS
-bbox_bouts_hf <- st_bbox(feeding_bouts)
-### AREA OF ALL INPA CARCASSES 2018-2024
-bbox_inpa_carcasses <- st_bbox(carcasses_inpa)
-### AREA OF ALL INPA CARCASSES IN HF-ACC PERIODS
-bbox_inpa_carcasses_hf <- st_bbox(carcasses_focal)
-### SOUTHERN REGION ONLY
-bbox_south <- bbox_inpa_carcasses_hf
-bbox_south[4] <- 3500000
-bbox_south[2] <- 3350000
+tar_load(bbox_bouts_hf)
+tar_load(bbox_inpa_carcasses)
+tar_load(bbox_inpa_carcasses_hf)
+tar_load(bbox_south)
 
 # Map with the following
 # 1. Known feeding station coordinates, buffered by 500m
@@ -32,11 +25,12 @@ bbox_south[2] <- 3350000
 # 3. Known carcass depositions (blue)
 # 4. Non-station feeding events identified from feeding bouts, buffered so they show up
 
-mapview(st_buffer(st_crop(stations, bbox_south), 500), 
+mapview(st_buffer(st_crop(stations, bbox_south), 250), 
         col.regions = "gray30",
         layer.name = "Feeding stations")+
-  mapview(st_buffer(st_crop(aca %>% filter(nIndivs > 1 |  # only including wild carcasses that have more than one individual
-                                             is.na(nIndivs)), bbox_south), 500), 
+  mapview(st_buffer(st_crop(aca %>% 
+                              filter(nIndivs > 1|is.na(nIndivs)), 
+                            bbox_south), 250), 
           zcol = "carcType",
           layer.name = "Carcasses",
           col.regions = c("lightblue", "pink"))+
