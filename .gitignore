@@ -6,3 +6,4 @@ data/FeedingData from 2018_2024.xlsx
 data/
 arrivals_plots.R
 *.gif
+*.html
