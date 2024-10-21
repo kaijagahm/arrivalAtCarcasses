@@ -2,6 +2,7 @@ library(tidyverse)
 library(here)
 library(sf)
 library(mapview)
+library(targets)
 
 tar_load(stations)
 tar_load(carcasses_inpa)
