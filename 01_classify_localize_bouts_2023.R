@@ -222,7 +222,9 @@ gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")
 # gc()
 # 
 bouts_predictions_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_predictions_2023.RDS"))
+merged_2023 <- purrr::list_rbind(bouts_predictions_2023)
 bouts_predictions_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_predictions_2024.RDS"))
+merged_2024 <- purrr::list_rbind(bouts_predictions_2024)
 
 ## full.movestack is a movestack file converted to df, with a "study" column ("TAU" or INPA")
 ## merged is the classification output file (Filtered for Feeding only)
@@ -238,66 +240,98 @@ gps_2024 <- gps_2024 %>%
 
 gps_2023$sensor <- "GPS"
 gps_2024$sensor <- "GPS"
-bouts_predictions_2024$sensor <- "ACC"
+merged_2023$sensor <- "ACC"
+merged_2024$sensor <- "ACC"
 
-names(merged)
-colnames(merged)[c(1,4)] <- c("timestamp","tag_local_identifier") #make sure the colnames match time and device_id respectively
+merged_2023 <- merged_2023 %>%
+  rename("tag_local_identifier" = device_id,
+         "timestamp" = start)
+merged_2024 <- merged_2024 %>%
+  rename("tag_local_identifier" = device_id,
+         "timestamp" = start)#make sure the colnames match time and device_id respectively # KG note: I'm assuming we should use the start, not end, column here, but I'm not sure exactly which column was column 4.
 
 #attach/detach plyr, combine predictions with movestack
-
-full.move.2 <- rbind.fill(full.movestack, merged)
-detach("package:plyr", unload=TRUE)
-
-
+full_2023 <- plyr::rbind.fill(gps_2023, merged_2023)
+full_2024 <- plyr::rbind.fill(gps_2024, merged_2024)
 
 #check if last chunk worked
-nrow(full.move.2) == nrow(full.movestack) + nrow(merged)
+nrow(full_2023) == nrow(gps_2023) + nrow(merged_2023)
+nrow(full_2024) == nrow(gps_2024) + nrow(merged_2024)
 
 ####prepare data for gps crossref#####
-full.move.2 <- full.move.2 %>%
+full_2023 <- full_2023 %>%
+  group_by(tag_local_identifier) %>%
+  arrange(timestamp) %>%
+  mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+  ungroup()
+
+full_2024 <- full_2024 %>%
   group_by(tag_local_identifier) %>%
   arrange(timestamp) %>%
   mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
   ungroup()
 
 #####attach GPS point to ACC #####
+attach_gps <- function(x){
+  out <- x %>% 
+    group_by(tag_local_identifier) %>%
+    arrange(timestamp) %>%
+    mutate(
+      location_long_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_long),
+                                  is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_long),
+                                  is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_long),
+                                  is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_long),TRUE ~  location_long),
+      location_lat_2 = case_when(is.na(location_lat) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_lat),
+                                 is.na(location_lat) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_lat),
+                                 is.na(location_lat) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_lat),
+                                 is.na(location_lat) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_lat),TRUE ~  location_lat),
+      ground_speed_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(ground_speed),
+                                 is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(ground_speed),
+                                 is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(ground_speed),
+                                 is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(ground_speed),TRUE ~  ground_speed)
+    )%>% 
+    mutate(
+      location_long_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(location_long),
+                                  is.na(location_long_2) & time_diff < 300 ~ lead(location_long), TRUE ~  location_long_2),
+      location_lat_3 = case_when(is.na(location_lat_2) & lag(time_diff) <= 300 ~ lag(location_lat),
+                                 is.na(location_lat_2) & time_diff < 300 ~ lead(location_lat), TRUE ~  location_lat_2),
+      ground_speed_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(ground_speed),
+                                 is.na(location_long_2) & time_diff < 300 ~ lead(ground_speed), TRUE ~  ground_speed_2)
+    ) %>%
+    ungroup()
+  return(out)
+}
+full_2023 <- attach_gps(full_2023)
+full_2024 <- attach_gps(full_2024)
 
-#16.4.23 - this should really be a function.
-full.move.2 <- full.move.2 %>% 
-  group_by(tag_local_identifier) %>%
-  arrange(timestamp) %>%
-  mutate(
-    location_long_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_long),
-                                is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_long),
-                                is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_long),
-                                is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_long),TRUE ~  location_long),
-    location_lat_2 = case_when(is.na(location_lat) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_lat),
-                               is.na(location_lat) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_lat),
-                               is.na(location_lat) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_lat),
-                               is.na(location_lat) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_lat),TRUE ~  location_lat),
-    ground_speed_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(ground_speed),
-                               is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(ground_speed),
-                               is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(ground_speed),
-                               is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(ground_speed),TRUE ~  ground_speed)
-  )%>% 
-  mutate(
-    location_long_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(location_long),
-                                is.na(location_long_2) & time_diff < 300 ~ lead(location_long), TRUE ~  location_long_2),
-    location_lat_3 = case_when(is.na(location_lat_2) & lag(time_diff) <= 300 ~ lag(location_lat),
-                               is.na(location_lat_2) & time_diff < 300 ~ lead(location_lat), TRUE ~  location_lat_2),
-    ground_speed_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(ground_speed),
-                               is.na(location_long_2) & time_diff < 300 ~ lead(ground_speed), TRUE ~  ground_speed_2)
-  ) %>%
-  ungroup()
+# the _2 _1 after the coords were initially kept to compare how many points were caught/missed between different stages, no real reason to keep it that way -GV
+
+# KG: Now I assume that the next thing to do is keep the highest gps pair possible?
+full_2023_bouts <- full_2023 %>%
+  filter(sensor == "ACC") %>%
+  mutate(location_long = case_when(!is.na(location_long_2) ~ location_long_2,
+                                   is.na(location_long_2) & !is.na(location_long_3) ~ location_long_3,
+                                   .default = location_long),
+         location_lat = case_when(!is.na(location_lat_2) ~ location_lat_2,
+                                   is.na(location_lat_2) & !is.na(location_lat_3) ~ location_lat_3,
+                                   .default = location_lat))
+
+full_2024_bouts <- full_2024 %>%
+  filter(sensor == "ACC") %>%
+  mutate(location_long = case_when(!is.na(location_long_2) ~ location_long_2,
+                                   is.na(location_long_2) & !is.na(location_long_3) ~ location_long_3,
+                                   .default = location_long),
+         location_lat = case_when(!is.na(location_lat_2) ~ location_lat_2,
+                                  is.na(location_lat_2) & !is.na(location_lat_3) ~ location_lat_3,
+                                  .default = location_lat))
 
 # End matching to GPS data ------------------------------------------------
 
 # Matching to GPS data (Kaija code) ---------------------------------------
 
-# 
 # device_ids_2023 <- purrr::map(bouts_predictions_2023, ~.x$device_id[1])
 # device_ids_2024 <- purrr::map(bouts_predictions_2024, ~.x$device_id[1])
-# 
+
 # focal_gps_2023 <- map(device_ids_2023, ~{
 #   if(length(.x) > 0){
 #     filter(gps_2023, tag_local_identifier == .x)
@@ -308,10 +342,10 @@ full.move.2 <- full.move.2 %>%
 #   }else{NULL}})
 # write_rds(focal_gps_2023, here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))
 # write_rds(focal_gps_2024, here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))
-
-focal_gps_2023 <- readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))
-focal_gps_2024 <- readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))
-
+# 
+# focal_gps_2023 <- readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))
+# focal_gps_2024 <- readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))
+#
 # future::plan(future::multisession(workers = 10))
 # matches_2023 <- furrr::future_map2(bouts_predictions_2023, focal_gps_2023, ~{
 #   if(!is.null(.x)){
@@ -325,11 +359,10 @@ focal_gps_2024 <- readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.R
 # }, .progress = T)
 # write_rds(matches_2023, here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
 # write_rds(matches_2024, here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
-
-matches_2023 <- readRDS(here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
-matches_2024 <- readRDS(here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
-
-# xxx START HERE ERROR
+# 
+# matches_2023 <- readRDS(here("data/ACC/2023_hf_period/created/matches_2023.RDS"))
+# matches_2024 <- readRDS(here("data/ACC/2024_hf_period/created/matches_2024.RDS"))
+#
 # joined_2023 <- map2(bouts_predictions_2023, matches_2023, ~{
 #   if(nrow(.y) > 0){
 #     left_join(.x, .y, by = c("device_id" = "tag_local_identifier",
@@ -345,9 +378,9 @@ matches_2024 <- readRDS(here("data/ACC/2024_hf_period/created/matches_2024.RDS")
 # })
 # write_rds(joined_2023, here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
 #write_rds(joined_2024, here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
-
-joined_2023 <- readRDS(here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
-joined_2024 <- readRDS(here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
+# 
+# joined_2023 <- readRDS(here("data/ACC/2023_hf_period/created/joined_2023.RDS"))
+# joined_2024 <- readRDS(here("data/ACC/2024_hf_period/created/joined_2024.RDS"))
 
 ### define function to get the feeding bouts
 getfeeding <- function(x){
@@ -358,40 +391,29 @@ getfeeding <- function(x){
   return(out)
 }
 
-feeding_bouts_certain_2023 <- map(joined_2023, ~{
-  if(!is.null(.x)){
-    getfeeding(.x)
-  }else{NULL}
-})
-feeding_bouts_certain_2024 <- map(joined_2024, ~{
-  if(!is.null(.x)){
-    getfeeding(.x)
-  }else{NULL}
-})
+feeding_bouts_certain_2023 <- getfeeding(full_2023_bouts)
+feeding_bouts_certain_2024 <- getfeeding(full_2024_bouts)
 
 write_rds(feeding_bouts_certain_2023, here("data/ACC/2023_hf_period/created/feeding_bouts_certain_2023.RDS"))
 write_rds(feeding_bouts_certain_2024, here("data/ACC/2024_hf_period/created/feeding_bouts_certain_2024.RDS"))
 
 feeding_bouts_certain_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_certain_2023.RDS"))
 feeding_bouts_certain_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_certain_2024.RDS"))
-keep_2023 <- which(!map_lgl(feeding_bouts_certain_2023, is.null))
-keep_2024 <- which(!map_lgl(feeding_bouts_certain_2024, is.null))
 
-bouts23 <- purrr::list_rbind(feeding_bouts_certain_2023[keep_2023]) %>%
+bouts23 <- feeding_bouts_certain_2023 %>%
+  rename("start" = timestamp) %>%
   mutate(year = 2023,
          start = lubridate::ymd_hms(start),
          end = lubridate::ymd_hms(end),
-         dateOnly = lubridate::ymd(dateOnly),
-         tag_id = as.numeric(tag_id),
-         individual_id = as.numeric(individual_id))
-bouts24 <- feeding_bouts_certain_2024[keep_2024] %>%
-  map(., ~.x %>% mutate(tag_id = as.numeric(tag_id),
-                        individual_id = as.numeric(individual_id))) %>%
-  purrr::list_rbind() %>%
+         dateOnly = lubridate::date(start),
+         tag_local_identifier = as.numeric(tag_local_identifier))
+bouts24 <- feeding_bouts_certain_2024 %>%
+  rename("start" = timestamp) %>%
   mutate(year = 2024,
          start = lubridate::ymd_hms(start),
          end = lubridate::ymd_hms(end),
-         dateOnly = lubridate::ymd(dateOnly))
+         dateOnly = lubridate::date(start),
+         tag_local_identifier = as.numeric(tag_local_identifier))
 feeding_bouts <- bind_rows(bouts23, bouts24) %>%
   sf::st_as_sf(crs = 32636)
 feeding_bouts <- feeding_bouts %>%
