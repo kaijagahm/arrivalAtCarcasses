@@ -2,7 +2,6 @@
 ### Get data
 library(tidyverse)
 library(data.table)
-library(here)
 library(ranger)
 library(tidymodels)
 library(moments)
@@ -10,6 +9,9 @@ library(parsnip)
 library(caret)
 library(zoo)
 library(sf)
+library(ggmap)
+library(move)
+library(here)
 source(here("R/functions.R"))
 
 # data_files_2023 <- list.files(here("data/ACC/2023_hf_period/raw/"), full.names = T, pattern = ".csv")
@@ -194,6 +196,8 @@ source(here("R/functions.R"))
 
 targets::tar_load(loginObject)
 minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
+
+# Matching to GPS data (Gideon code, merged with Kaija code) --------------------------------------
 # ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
 #                                           removeDup = T, dfConvert = T,
 #                                           quiet = T,
@@ -213,12 +217,83 @@ minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 # 
 # data.table::fwrite(gps_2023, file = here("data/ACC/2023_hf_period/created/gps_2023.csv"))
 # data.table::fwrite(gps_2024, file = here("data/ACC/2024_hf_period/created/gps_2024.csv"))
-# gps_2023 <- data.table::fread(here("data/ACC/2023_hf_period/created/gps_2023.csv"))
-# gps_2024 <- data.table::fread(here("data/ACC/2024_hf_period/created/gps_2024.csv"))
+gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
+gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")
 # gc()
 # 
-# bouts_predictions_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_predictions_2023.RDS"))
-# bouts_predictions_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_predictions_2024.RDS"))
+bouts_predictions_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_predictions_2023.RDS"))
+bouts_predictions_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_predictions_2024.RDS"))
+
+## full.movestack is a movestack file converted to df, with a "study" column ("TAU" or INPA")
+## merged is the classification output file (Filtered for Feeding only)
+#fix timestamp
+gps_2023$timestamp <- as.POSIXct(gps_2023$timestamp, tz = "UTC", format = "%Y-%m-%d %H:%M:%s")
+gps_2024$timestamp <- as.POSIXct(gps_2024$timestamp, tz = "UTC", format = "%Y-%m-%d %H:%M:%s")
+
+# keep only relevant 
+gps_2023 <- gps_2023 %>% 
+  dplyr::select(timestamp, tag_local_identifier, location_long,location_lat, ground_speed)
+gps_2024 <- gps_2024 %>% 
+  dplyr::select(timestamp, tag_local_identifier, location_long,location_lat, ground_speed)
+
+gps_2023$sensor <- "GPS"
+gps_2024$sensor <- "GPS"
+bouts_predictions_2024$sensor <- "ACC"
+
+names(merged)
+colnames(merged)[c(1,4)] <- c("timestamp","tag_local_identifier") #make sure the colnames match time and device_id respectively
+
+#attach/detach plyr, combine predictions with movestack
+
+full.move.2 <- rbind.fill(full.movestack, merged)
+detach("package:plyr", unload=TRUE)
+
+
+
+#check if last chunk worked
+nrow(full.move.2) == nrow(full.movestack) + nrow(merged)
+
+####prepare data for gps crossref#####
+full.move.2 <- full.move.2 %>%
+  group_by(tag_local_identifier) %>%
+  arrange(timestamp) %>%
+  mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+  ungroup()
+
+#####attach GPS point to ACC #####
+
+#16.4.23 - this should really be a function.
+full.move.2 <- full.move.2 %>% 
+  group_by(tag_local_identifier) %>%
+  arrange(timestamp) %>%
+  mutate(
+    location_long_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_long),
+                                is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_long),
+                                is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_long),
+                                is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_long),TRUE ~  location_long),
+    location_lat_2 = case_when(is.na(location_lat) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(location_lat),
+                               is.na(location_lat) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(location_lat),
+                               is.na(location_lat) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(location_lat),
+                               is.na(location_lat) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(location_lat),TRUE ~  location_lat),
+    ground_speed_2 = case_when(is.na(location_long) & lag(time_diff) <= 300 & lag(ground_speed <= 4) ~ lag(ground_speed),
+                               is.na(location_long) & time_diff < 300 & lead(ground_speed <= 4) ~ lead(ground_speed),
+                               is.na(location_long) & lag(time_diff) <= 700 & lag(ground_speed <= 4) ~ lag(ground_speed),
+                               is.na(location_long) & time_diff < 700 & lead(ground_speed <= 4) ~ lead(ground_speed),TRUE ~  ground_speed)
+  )%>% 
+  mutate(
+    location_long_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(location_long),
+                                is.na(location_long_2) & time_diff < 300 ~ lead(location_long), TRUE ~  location_long_2),
+    location_lat_3 = case_when(is.na(location_lat_2) & lag(time_diff) <= 300 ~ lag(location_lat),
+                               is.na(location_lat_2) & time_diff < 300 ~ lead(location_lat), TRUE ~  location_lat_2),
+    ground_speed_3 = case_when(is.na(location_long_2) & lag(time_diff) <= 300 ~ lag(ground_speed),
+                               is.na(location_long_2) & time_diff < 300 ~ lead(ground_speed), TRUE ~  ground_speed_2)
+  ) %>%
+  ungroup()
+
+# End matching to GPS data ------------------------------------------------
+
+# Matching to GPS data (Kaija code) ---------------------------------------
+
 # 
 # device_ids_2023 <- purrr::map(bouts_predictions_2023, ~.x$device_id[1])
 # device_ids_2024 <- purrr::map(bouts_predictions_2024, ~.x$device_id[1])
