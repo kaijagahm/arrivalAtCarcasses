@@ -54,16 +54,13 @@ list(
   
   ## INPA carcasses
   ### Created in 00_carcass_data_translation.R
-  ### Only spatial, not time-restricted.
-  tar_target(carcasses_inpa, readRDS(here("data/created/carcasses_inpa.RDS"))),
-  tar_target(dist_stations_inferred, 500),
-  tar_target(stations_inferred, cluster_carcasses(carcasses_inpa, dist_stations_inferred) %>% rename("stn_inf" = clust)),
+  tar_target(carcasses_audited, readRDS(here("data/created/carcasses_audited.RDS"))),
   
   ## Focal carcasses
   ### During the 2023 and 2024 HF-ACC periods
   ### Created in 01_classify_localize_bouts.2023.R
   tar_target(dates, readRDS(here("data/created/minmax_dates.RDS"))),
-  tar_target(carcasses_focal, get_focal(carcasses_inpa, dates)),
+  tar_target(carcasses_focal, get_focal(carcasses_audited, dates)),
   
   ## Match bouts to carcasses
   tar_target(dist_bouts_carcasses, 750),
@@ -146,7 +143,7 @@ list(
                            select(stn_inf)) %>%
                select(-c(individualID, prob, start, end, location_lat, location_long))),
   tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
-  tar_target(bbox_inpa_carcasses, st_bbox(carcasses_inpa)),
+  tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
   tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
   tar_target(a, st_crs(bbox_bouts_hf)),
   tar_target(bbox_south, st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]), "ymin" = 3350000, "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]), "ymax" = 3500000)), a))

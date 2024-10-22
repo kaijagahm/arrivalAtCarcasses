@@ -116,6 +116,10 @@ stations <- stations %>%
   group_by(stationName) %>%
   slice(1)
 
+View(stations) # remove the two doubled up HaMakhtesh ones, since they are already accounted for with Hatzera_drill and Ashmedai (and no points are actually assigned to these stations right now)
+stations <- stations %>%
+  filter(!grepl("HaMakhtesh", stationName))
+
 write_rds(stations, here("data/created/stations.RDS"))
 
 fs <- sort(unique(stations$stationName))
@@ -202,7 +206,7 @@ toreassign <- audited %>%
 
 reassign_coords <- stations %>%
   dg() %>%
-  select(stationName, lat, long) %>%
+  dplyr::select(stationName, lat, long) %>%
   rename("lat_fixed" = lat, "long_fixed" = long)
 
 all(toreassign$reassign_to %in% reassign_coords$stationName)
@@ -284,7 +288,7 @@ stations_buffered_list <- stations_buffered %>%
   group_by(stationName) %>%
   group_split()
 intersections <- map(stations_buffered_list, ~st_intersection(audited, .x) %>%
-                       select(carcID, date, time, long, lat, stationName))
+                       dplyr::select(carcID, date, time, long, lat, stationName))
 map_dbl(intersections, nrow)
 names <- map_chr(stations_buffered_list, ~.x$stationName[1])
 names_intersections <- map(intersections, ~sort(.x$stationName))
@@ -341,3 +345,4 @@ audited$stationName[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- 
 # Write out the audited carcass data --------------------------------------
 carcasses_audited <- audited
 write_rds(audited, file = here("data/created/carcasses_audited.RDS"))
+
