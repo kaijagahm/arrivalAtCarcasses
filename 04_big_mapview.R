@@ -28,7 +28,8 @@ tar_load(bbox_south)
 
 mapview(st_buffer(st_crop(stations, bbox_south), 250), 
         col.regions = "gray30",
-        layer.name = "Feeding stations")+
+        layer.name = "Feeding stations",
+        label = "stationName")+
   mapview(st_buffer(st_crop(aca %>% 
                               filter(nIndivs > 1|is.na(nIndivs)), 
                             bbox_south), 250), 

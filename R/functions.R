@@ -437,7 +437,14 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3){
+get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3, stations, stationDist = 750){
+  # Remove any that are within a certain distance of a known station
+  stations_buffered <- st_buffer(stations, stationDist) %>%
+    st_union()
+  tokeep <- map_dbl(st_intersects(remaining_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
+  remaining_bouts <- remaining_bouts[tokeep,]
+  
+  # Format appropriately for spatsoc
   remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
   remaining_bouts <- data.table::data.table(remaining_bouts)
   
@@ -448,10 +455,11 @@ get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 10
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
   
-  # Restrict to groups that have at least 3 bouts
+  # Restrict to groups that have at least 3 bouts and at least 2 individuals
   remaining_bouts <- remaining_bouts %>%
     group_by(group) %>%
-    filter(n() >= minBouts)
+    filter(n() >= minBouts,
+           length(unique(individualID)) > 1)
   
   # convert back to sf object for mapping
   wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%

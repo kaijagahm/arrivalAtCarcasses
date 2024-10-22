@@ -80,14 +80,17 @@ list(
   tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
                                                            dist = dist_bouts_wild_carcass_cluster,
-                                                           minBouts = 3)),
+                                                           minBouts = 3,
+                                                           stations = stations,
+                                                           stationDist = 750)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df) %>%
                mutate(carcType = "wild")),
   tar_target(remaining_bouts_2, left_join(remaining_bouts,
                                           sf::st_drop_geometry(wild_carcass_bouts_df) %>%
                                             select(boutID, carcID),
                                           by = "boutID") %>%
-               mutate(carcType = "wild")),
+               mutate(carcType = case_when(!is.na(carcID) ~"wild",
+                                           .default = NA))),
   tar_target(bouts_double_assigned, group_by(carcass_bouts_df, boutID) %>%
                filter(n() > 1) %>%
                pull(boutID)),
@@ -131,7 +134,7 @@ list(
                mutate(dist_stn = stn_min_dists_bouts) %>%
                bind_cols(st_drop_geometry(closest_stn_bouts) %>%
                            select("stn" = stationName)) %>%
-               select(-c(individualID, prob, start, end, location_lat, location_long))),
+               select(-c(prob, start, end, location_lat, location_long))),
   tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
   tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
   tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
