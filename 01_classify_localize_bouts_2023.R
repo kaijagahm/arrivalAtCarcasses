@@ -462,5 +462,6 @@ bouts24 <- feeding_bouts_certain_2024 %>%
 feeding_bouts <- bind_rows(bouts23, bouts24) %>%
   sf::st_as_sf(crs = 32636)
 feeding_bouts <- feeding_bouts %>%
-  bind_cols(st_coordinates(.))
+  bind_cols(st_coordinates(.)) %>%
+  rename("device_id" = "tag_local_identifier")
 write_rds(feeding_bouts, here("data/created/feeding_bouts.RDS"))

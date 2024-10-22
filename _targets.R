@@ -31,7 +31,7 @@ lapply(list.files("R", full.names = TRUE), source) # source all scripts in the R
 list(
   tar_target(pw, "movebankCredentials/pw.Rda", format = "file"),
   tar_target(loginObject, get_loginObject(pw)),
-  tar_target(ww_file, "data/whoswho_vultures_20230920_new.xlsx", format = "file"),
+  tar_target(ww_file, "data/raw/whoswho_vultures_20230920_new.xlsx", format = "file"),
   
   ## GPS data for the focal periods (in case we need it later)
   tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
@@ -65,7 +65,7 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bouts_carcasses, 750),
   tar_target(hours_before_carcass, 1),
-  tar_target(hours_after_carcass, 48),
+  tar_target(hours_after_carcass, 72),
   tar_target(carcass_bouts, get_carcass_bouts(bouts = feeding_bouts,
                                               carcasses = carcasses_focal,
                                               dist = dist_bouts_carcasses,
@@ -83,7 +83,7 @@ list(
                                                            minBouts = 3)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df) %>%
                mutate(carcType = "wild")),
-  tar_target(remaining_bouts_2, left_join(remaining_bouts, 
+  tar_target(remaining_bouts_2, left_join(remaining_bouts,
                                           sf::st_drop_geometry(wild_carcass_bouts_df) %>%
                                             select(boutID, carcID),
                                           by = "boutID") %>%
@@ -97,10 +97,10 @@ list(
   tar_target(all_bouts_assigned, bind_rows(carcass_bouts_dedup %>%
                                              mutate(carcType = "inpa"),
                                            remaining_bouts_2)), # note: all bouts are now assigned to a "carcass". We might want to consider redefining singleton bouts as not actually representing a wild carcass all on their own, or set some sort of threshold for groups...,
-
+  
   ## Combine carcasses
   tar_target(all_carcasses, bind_rows(carcasses_focal %>%
-                                        select(carcID, "X" = itmLong, "Y" = itmLat, 
+                                        select(carcID, X, Y,
                                                stationName, carcassWeight,
                                                datetime, cage) %>%
                                         mutate(dateOnly = lubridate::date(datetime),
@@ -110,8 +110,8 @@ list(
                                         select(carcID, X, Y,
                                                year, dateOnly, nBouts, nIndivs) %>%
                                         mutate(carcType = "wild"))),
-
-  ## Assign carcasses (INPA and wild) to stations (documented and inferred)
+  
+  ## Assign carcasses (INPA and wild) to stations
   tar_target(carcasses_split, group_by(all_carcasses, carcID) %>% group_split()),
   tar_target(bouts_split, sf::st_as_sf(all_bouts_assigned, coords = c("X", "Y"), crs = 32636, remove = F) %>%
                group_by(boutID) %>%
@@ -119,32 +119,26 @@ list(
   ### Carcasses
   tar_target(stn_min_dists_carc, map_dbl(carcasses_split, ~min(st_distance(.x, stations)))),
   tar_target(closest_stn_carc, purrr::list_rbind(map(carcasses_split, ~stations[which.min(st_distance(.x, stations)),]))),
-  tar_target(stn_inf_min_dists_carc, map_dbl(carcasses_split, ~min(st_distance(.x, stations_inferred)))),
-  tar_target(closest_stn_inf_carc, purrr::list_rbind(map(carcasses_split, ~stations_inferred[which.min(st_distance(.x, stations_inferred)),]))),
   tar_target(all_carcasses_annotated, all_carcasses %>%
-               mutate(dist_stn = stn_min_dists_carc,
-                      dist_stn_inf = stn_inf_min_dists_carc) %>%
+               mutate(dist_stn = stn_min_dists_carc) %>%
                bind_cols(st_drop_geometry(closest_stn_carc) %>%
-                           select("stn" = stationName)) %>%
-               bind_cols(st_drop_geometry(closest_stn_inf_carc) %>%
-                           select(stn_inf))),
+                           select("stn" = stationName))),
   ### Bouts
   tar_target(stn_min_dists_bouts, map_dbl(bouts_split, ~min(st_distance(.x, stations)))),
   tar_target(closest_stn_bouts, purrr::list_rbind(map(bouts_split, ~stations[which.min(st_distance(.x, stations)),]))),
-  tar_target(stn_inf_min_dists_bouts, map_dbl(bouts_split, ~min(st_distance(.x, stations_inferred)))),
-  tar_target(closest_stn_inf_bouts, purrr::list_rbind(map(bouts_split, ~stations_inferred[which.min(st_distance(.x, stations_inferred)),]))),
   tar_target(all_bouts_annotated, all_bouts_assigned %>%
                ungroup() %>%
-               mutate(dist_stn = stn_min_dists_bouts,
-                      dist_stn_inf = stn_inf_min_dists_bouts) %>%
+               mutate(dist_stn = stn_min_dists_bouts) %>%
                bind_cols(st_drop_geometry(closest_stn_bouts) %>%
                            select("stn" = stationName)) %>%
-               bind_cols(st_drop_geometry(closest_stn_inf_bouts) %>%
-                           select(stn_inf)) %>%
                select(-c(individualID, prob, start, end, location_lat, location_long))),
   tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
   tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
   tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
   tar_target(a, st_crs(bbox_bouts_hf)),
-  tar_target(bbox_south, st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]), "ymin" = 3350000, "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]), "ymax" = 3500000)), a))
+  tar_target(bbox_south, 
+             st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]),
+                                  "ymin" = 3350000, 
+                                  "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
+                                  "ymax" = 3500000)), a))
 )

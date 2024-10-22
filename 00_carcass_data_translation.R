@@ -4,6 +4,7 @@ library(readxl)
 library(tidyverse)
 library(sf)
 library(mapview)
+source(here("R/functions.R"))
 
 old <- read_excel(here("data/raw/translated/FeedingData from 2018_2024_Translated_9_25_2024 (1).xlsx")) %>%
   dplyr::select("carcID" = ID, 
@@ -343,6 +344,7 @@ audited$stationName[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- 
 # XXX one Gezem_mount next to Tzaror_mount (also within striking distance of Tzaror_trap)
 
 # Write out the audited carcass data --------------------------------------
-carcasses_audited <- audited
-write_rds(audited, file = here("data/created/carcasses_audited.RDS"))
+carcasses_audited <- audited %>%
+  bind_cols(st_coordinates(.))
+write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
 

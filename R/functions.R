@@ -386,7 +386,8 @@ get_focal <- function(carcasses, times){
     bind_rows(carcasses %>%
                 filter(datetime >= times[3],
                        datetime <= times[4])) %>%
-    filter(!cage) # remove carcasses placed in cages 
+    filter(!cage) %>% # remove carcasses placed in cages 
+    dplyr::select(-c("color", "commentsKaija", "investigateKaija", "questionForGideon", "reassign_to", "todo", "interpretation", "flag"))
   return(focal) 
 }
 
