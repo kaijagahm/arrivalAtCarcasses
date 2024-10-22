@@ -167,15 +167,16 @@ calibrate <- function(x, calibration_data){
 
 add_bout_ids <- function(x){
   bout_id <- numeric(nrow(x))
-  j = 0
-  
-  for(i in 1:nrow(x)) {
-    if(x$datatype[i] == "SEN_ACC_20Hz_START") {
-      j = j + 1
+  if(nrow(x) > 0){
+    j = 0
+    
+    for(i in 1:nrow(x)) {
+      if(x$datatype[i] == "SEN_ACC_20Hz_START") {
+        j = j + 1
+      }
+      bout_id[i] = j
     }
-    bout_id[i] = j
   }
-  
   x <- x %>% 
     add_column(bout_id, .before = 1)
   return(x)

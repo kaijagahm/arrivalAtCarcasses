@@ -1,5 +1,3 @@
-## 2023 period
-### Get data
 library(tidyverse)
 library(data.table)
 library(ranger)
@@ -14,42 +12,87 @@ library(move)
 library(here)
 source(here("R/functions.R"))
 
+# Get data files
 # data_files_2023 <- list.files(here("data/ACC/2023_hf_period/raw/"), full.names = T, pattern = ".csv")
 # data_files_2024 <- list.files(here("data/ACC/2024_hf_period/raw/"), full.names = T, pattern = ".csv")
-# 
-# unobs_raw_acc_2023 <- purrr::list_rbind(purrr::map(data_files_2023, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
-# unobs_raw_acc_2024 <- purrr::list_rbind(purrr::map(data_files_2024, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z")))))
+
+# unobs_raw_acc_2023 <- purrr::list_rbind(purrr::map(data_files_2023, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z"))))) %>%
+# filter(!is.na(datatype))
+# unobs_raw_acc_2024 <- purrr::list_rbind(purrr::map(data_files_2024, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z"))))) %>%
+# filter(!is.na(datatype))
 # 
 # readr::write_rds(unobs_raw_acc_2023, here("data/created/unobs_raw_acc_2023.RDS"))
 # readr::write_rds(unobs_raw_acc_2024, here("data/created/unobs_raw_acc_2024.RDS"))
-# 
-# unobs_raw_acc_2023 <- readRDS(here("data/created/unobs_raw_acc_2023.RDS"))
-# unobs_raw_acc_2024 <- readRDS(here("data/created/unobs_raw_acc_2024.RDS"))
-# 
-# # # Look for ones that need to be flipped
-# unobs_raw_acc_2023 %>%
-#   group_by(device_id) %>%
-#   summarize(mny = mean(acc_y)) %>%
-#   arrange(mny) # no negative means here--no need to flip
-# unobs_raw_acc_2024 %>%
-#   group_by(device_id) %>%
-#   summarize(mny = mean(acc_y)) %>%
-#   arrange(mny) # need to flip several
-# 
-# toflip_y <- unobs_raw_acc_2024 %>%
-#   group_by(device_id) %>%
-#   summarize(mny = mean(acc_y)) %>%
-#   filter(mny < 0) %>%
-#   pull(device_id)
-# unobs_raw_acc_2024 <- unobs_raw_acc_2024 %>%
-#   mutate(acc_y = case_when(device_id %in% toflip_y ~ -1*acc_y,
-#                            .default = acc_y))
-# 
-# ## check that we did this right
-# unobs_raw_acc_2024 %>%
-#   group_by(device_id) %>%
-#   summarize(mny = mean(acc_y)) %>%
-#   arrange(mny) # that's better!
+
+unobs_raw_acc_2023 <- readRDS(here("data/created/unobs_raw_acc_2023.RDS"))
+unobs_raw_acc_2024 <- readRDS(here("data/created/unobs_raw_acc_2024.RDS"))
+
+# Fix INPA tags with backwards acc_y sensor -------------------------------
+# # Look for ones that need to be flipped
+inpa_taglist_full <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 1)
+inpa_taglist_partial <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 2)
+
+inpa_taglist <- inpa_taglist_full %>%
+  mutate(type = "full") %>%
+  bind_rows(inpa_taglist_partial %>%
+              mutate(type = "partial"))
+
+tags_2023 <- unobs_raw_acc_2023 %>%
+  dplyr::select(device_id) %>%
+  distinct() %>%
+  left_join(inpa_taglist, by = "device_id") %>%
+  mutate(tagtype = case_when(!is.na(movebank_id) ~ "INPA",
+                             .default = "TAU")) # none of the tags included in the attached list seem to match the 2023 data.
+
+# 2024-10-22 I have realized that this is because Gideon never sent me the INPA tag high-frequency data for 2023, only 2024. So I actually don't have any INPA tags in here, which explains why none of them need to be flipped. Have to wait for Gideon to send me the INPA data for 2023.
+
+length(unique(unobs_raw_acc_2023$device_id)) # 57 unique individuals
+length(unique(unobs_raw_acc_2024$device_id)) # 80 individuals. This number is so much higher because I also included individuals that weren't set to high frequency.
+
+unobs_raw_acc_2023 %>%
+  group_by(device_id) %>%
+  summarize(mny = mean(acc_y)) %>%
+  arrange(mny) # no negative means here--no need to flip
+
+write_csv(unobs_raw_acc_2023 %>%
+            group_by(device_id) %>%
+            summarize(mny = mean(acc_y)) %>%
+            arrange(mny), file = here("data/created/2023_device_ymeans_forGideon_2024-10-22.csv"))
+
+unobs_raw_acc_2023 %>%
+  group_by(device_id, UTC_date) %>%
+  summarize(mny = mean(acc_y)) %>%
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(factor(device_id), mny, .fun = "median"), 
+             y = mny))+
+  geom_boxplot(outlier.size = 0.5, fill = "lightgray", linewidth = 0.5)+
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 5))+
+  geom_hline(aes(yintercept = 0), lty = 2, col = "red", linewidth = 0.75)+
+  labs(y = "Mean daily y acceleration",
+       x = "Tag",
+       title = "2023 HF period")+
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
+
+unobs_raw_acc_2024 %>%
+  group_by(device_id) %>%
+  summarize(mny = mean(acc_y)) %>%
+  arrange(mny) # need to flip several
+
+toflip_y <- unobs_raw_acc_2024 %>%
+  group_by(device_id) %>%
+  summarize(mny = mean(acc_y)) %>%
+  filter(mny < 0) %>%
+  pull(device_id)
+unobs_raw_acc_2024 <- unobs_raw_acc_2024 %>%
+  mutate(acc_y = case_when(device_id %in% toflip_y ~ -1*acc_y,
+                           .default = acc_y))
+
+## check that we did this right
+unobs_raw_acc_2024 %>%
+  group_by(device_id) %>%
+  summarize(mny = mean(acc_y)) %>%
+  arrange(mny) # that's better--no negatives!
 
 # mindate_23 <- lubridate::ymd_hms(min(unobs_raw_acc_2023$UTC_datetime))
 # maxdate_23 <- lubridate::ymd_hms(max(unobs_raw_acc_2023$UTC_datetime))
@@ -61,10 +104,10 @@ source(here("R/functions.R"))
 # write_rds(minmax_dates, file = here("data/created/minmax_dates.RDS"))
 
 # splitup_23 <- group_split(group_by(as.data.frame(unobs_raw_acc_2023)), device_id)
-# splitup_24 <- group_split(group_by(as.data.frame(unobs_raw_acc_2024)), device_id)
+splitup_24 <- group_split(group_by(as.data.frame(unobs_raw_acc_2024)), device_id)
 # 
 # write_rds(splitup_23, here("data/created/splitup_23.RDS"))
-# write_rds(splitup_24, here("data/created/splitup_24.RDS"))
+write_rds(splitup_24, here("data/created/splitup_24.RDS"))
 
 # rm(unobs_raw_acc_2023)
 # rm(unobs_raw_acc_2024)
@@ -74,9 +117,9 @@ source(here("R/functions.R"))
 # splitup_24 <- readRDS(here("data/created/splitup_24.RDS"))
 
 # devices_23 <- map_chr(splitup_23, ~as.character(.x$device_id[1]))
-# devices_24 <- map_chr(splitup_24, ~as.character(.x$device_id[1]))
+devices_24 <- map_chr(splitup_24, ~as.character(.x$device_id[1]))
 # 
-# calibration_data <- read_csv(here("ACC_algo_Marta_draft/Data/example_calibration.csv"))
+calibration_data <- read_csv(here("ACC_algo_Marta_draft/Data/example_calibration.csv"))
 
 # for(i in 1:length(splitup_23)){
 #   name <- paste0("device_", devices_23[i])
@@ -85,15 +128,15 @@ source(here("R/functions.R"))
 #   cat("done with", i, "\n")
 # }
 
-# for(i in 1:length(splitup_24)){
-#   name <- paste0("device_", devices_24[i])
-#   prepared <- prepare_dataset(splitup_24[[i]], calibration = calibration_data)
-#   write_csv(prepared, paste0(here("data/ACC/2024_hf_period/created/prepared/"), "/", name, "_prepared.csv"))
-#   cat("done with", i, "\n")
-# }
+for(i in 1:length(splitup_24)){
+  name <- paste0("device_", devices_24[i])
+  prepared <- prepare_dataset(splitup_24[[i]], calibration = calibration_data)
+  write_csv(prepared, paste0(here("data/ACC/2024_hf_period/created/prepared/"), "/", name, "_prepared.csv"))
+  cat("done with", i, "\n")
+}
 
 # files_23 <- list.files(here("data/ACC/2023_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
-# files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
+files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
 
 # bouts_2023 <- vector(mode = "list", length = length(files_23))
 # for(i in 1:length(files_23)){
@@ -106,24 +149,26 @@ source(here("R/functions.R"))
 #   cat("Done with bouts for", i, "\n")
 # }
 
-# bouts_2024 <- vector(mode = "list", length = length(files_24))
-# for(i in 1:length(files_24)){
-#   file <- as.data.frame(data.table::fread(files_24[i]))
-#   bouts_2024[[i]] <- file[,c("bout_id", "device_id", "start_int")] %>%
-#     group_by(device_id, bout_id) %>%
-#     summarize(start = min(start_int),
-#               end = max(start_int),
-#               .groups = "drop")
-#   cat("Done with bouts for", i, "\n")
-# }
+bouts_2024 <- vector(mode = "list", length = length(files_24))
+for(i in 1:length(files_24)){
+  file <- as.data.frame(data.table::fread(files_24[i]))
+  bouts_2024[[i]] <- file[,c("bout_id", "device_id", "start_int")] %>%
+    group_by(device_id, bout_id) %>%
+    summarize(start = min(start_int),
+              end = max(start_int),
+              .groups = "drop")
+  cat("Done with bouts for", i, "\n")
+}
 
 # write_rds(bouts_2023, here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
-# write_rds(bouts_2024, here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
+write_rds(bouts_2024, here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
 
 # bouts_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
-# bouts_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
+bouts_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
 
-# mod <- readRDS(here("ACC_algo_Marta_draft/Data/gv_final_model_fit.rda"))
+mod <- readRDS(here("ACC_algo_Marta_draft/Data/gv_final_model_fit.rda"))
+# XXX START HERE
+gc()
 
 # predictions_2023 <- vector(mode = "list", length = length(files_23))
 # scores_2023 <- vector(mode = "list", length = length(files_23))
@@ -137,31 +182,31 @@ source(here("R/functions.R"))
 #   cat("Done with predictions and scores for", i, "\n")
 # }
 # 
-# predictions_2024 <- vector(mode = "list", length = length(files_24))
-# scores_2024 <- vector(mode = "list", length = length(files_24))
-# for(i in 1:length(files_24)){
-#   file <- as.data.frame(data.table::fread(files_24[i]))
-#   if(nrow(file) > 0){
-#     file$start_int <- as.character(file$start_int)
-#     predictions_2024[[i]] <- predict(mod, file)
-#     scores_2024[[i]] <- predict(mod, file, type = "prob")
-#   }
-#   cat("Done with predictions and scores for", i, "\n")
-# }
+predictions_2024 <- vector(mode = "list", length = length(files_24))
+scores_2024 <- vector(mode = "list", length = length(files_24))
+for(i in 1:length(files_24)){
+  file <- as.data.frame(data.table::fread(files_24[i]))
+  if(nrow(file) > 0){
+    file$start_int <- as.character(file$start_int)
+    predictions_2024[[i]] <- predict(mod, file)
+    scores_2024[[i]] <- predict(mod, file, type = "prob")
+  }
+  cat("Done with predictions and scores for", i, "\n")
+}
 # 
 # write_rds(predictions_2023, file = here("data/ACC/2023_hf_period/created/predictions_2023.RDS"))
 # write_rds(scores_2023, file = here("data/ACC/2023_hf_period/created/scores_2023.RDS"))
 # 
-# write_rds(predictions_2024, file = here("data/ACC/2024_hf_period/created/predictions_2024.RDS"))
-# write_rds(scores_2024, file = here("data/ACC/2024_hf_period/created/scores_2024.RDS"))
+write_rds(predictions_2024, file = here("data/ACC/2024_hf_period/created/predictions_2024.RDS"))
+write_rds(scores_2024, file = here("data/ACC/2024_hf_period/created/scores_2024.RDS"))
 
 # predictions_2023 <- readRDS(here("data/ACC/2023_hf_period/created/predictions_2023.RDS"))
 # bouts_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
 # scores_2023 <- readRDS(here("data/ACC/2023_hf_period/created/scores_2023.RDS"))
 # 
-# predictions_2024 <- readRDS(here("data/ACC/2024_hf_period/created/predictions_2024.RDS"))
-# bouts_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
-# scores_2024 <- readRDS(here("data/ACC/2024_hf_period/created/scores_2024.RDS"))
+predictions_2024 <- readRDS(here("data/ACC/2024_hf_period/created/predictions_2024.RDS"))
+bouts_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
+scores_2024 <- readRDS(here("data/ACC/2024_hf_period/created/scores_2024.RDS"))
 
 # prepared_files_23 <- list.files(here("data/ACC/2023_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
 # bouts_predictions_2023 <- vector(mode = "list", length = length(predictions_2023))
@@ -177,22 +222,22 @@ source(here("R/functions.R"))
 #   cat("finished", i, "\n")
 # }
 # 
-# prepared_files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
-# bouts_predictions_2024 <- vector(mode = "list", length = length(predictions_2024))
-# for(i in 1:length(prepared_files_24)){
-#   filename <- prepared_files_24[i]
-#   prepared <- as.data.frame(data.table::fread(filename))
-#   if(nrow(prepared) > 0){
-#     bouts_predictions_2024[[i]] <- distinct(get_bouts_predictions(prepared, predictions_2024[[i]], scores_2024[[i]], bouts_2024[[i]]))
-#   }else{
-#     bouts_predictions_2024[[i]] <- NULL
-#   }
-# 
-#   cat("finished", i, "\n")
-# }
+prepared_files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
+bouts_predictions_2024 <- vector(mode = "list", length = length(predictions_2024))
+for(i in 1:length(prepared_files_24)){
+  filename <- prepared_files_24[i]
+  prepared <- as.data.frame(data.table::fread(filename))
+  if(nrow(prepared) > 0){
+    bouts_predictions_2024[[i]] <- distinct(get_bouts_predictions(prepared, predictions_2024[[i]], scores_2024[[i]], bouts_2024[[i]]))
+  }else{
+    bouts_predictions_2024[[i]] <- NULL
+  }
+
+  cat("finished", i, "\n")
+}
 
 # write_rds(bouts_predictions_2023, file = here("data/ACC/2023_hf_period/created/bouts_predictions_2023.RDS"))
-# write_rds(bouts_predictions_2024, file = here("data/ACC/2024_hf_period/created/bouts_predictions_2024.RDS"))
+write_rds(bouts_predictions_2024, file = here("data/ACC/2024_hf_period/created/bouts_predictions_2024.RDS"))
 
 targets::tar_load(loginObject)
 minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
