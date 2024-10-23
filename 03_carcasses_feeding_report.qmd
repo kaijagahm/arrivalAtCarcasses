@@ -29,687 +29,126 @@ source(here("R/functions.R"))
 library(patchwork)
 library(spatsoc)
 
-carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
-stations <- readRDS(here("data/created/stations.RDS"))
-feeding_bouts_station_2023 <- readRDS(here("data/ACC/2023_hf_period/created/feeding_bouts_station_2023.RDS"))
-fbs_2023 <- feeding_bouts_station_2023[!map_lgl(feeding_bouts_station_2023, is.null)]
-
-feeding_bouts_station_2024 <- readRDS(here("data/ACC/2024_hf_period/created/feeding_bouts_station_2024.RDS"))
-fbs_2024 <- feeding_bouts_station_2024[!map_lgl(feeding_bouts_station_2024, is.null)]
-
-bouts23 <- purrr::list_rbind(fbs_2023) %>%
-  mutate(year = 2023,
-         start = lubridate::ymd_hms(start),
-         end = lubridate::ymd_hms(end),
-         dateOnly = lubridate::ymd(dateOnly),
-         tag_id = as.numeric(tag_id),
-         individual_id = as.numeric(individual_id))
-bouts24 <- fbs_2024 %>%
-  map(., ~.x %>% mutate(tag_id = as.numeric(tag_id),
-                        individual_id = as.numeric(individual_id))) %>%
-  purrr::list_rbind() %>%
-  mutate(year = 2024,
-         start = lubridate::ymd_hms(start),
-         end = lubridate::ymd_hms(end),
-         dateOnly = lubridate::ymd(dateOnly))
-bouts <- bind_rows(bouts23, bouts24) %>%
-  sf::st_as_sf(crs = 32636)
-bouts <- bouts %>%
-  bind_cols(st_coordinates(.))
-write_rds(bouts, here("data/created/bouts.RDS"))
-bouts <- readRDS(here("data/created/bouts.RDS"))
-
-# Restrict to carcass placements during the time of year when we have hf-acc data
-minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
-
-carcasses_23 <- carcasses_inpa %>% filter(datetime >= minmax_dates[1], datetime <= minmax_dates[2])
-carcasses_24 <- carcasses_inpa %>% filter(datetime >= minmax_dates[3], datetime <= minmax_dates[4])
-carcasses_focal <- bind_rows(carcasses_23, carcasses_24)
-
-nrow(carcasses_focal) #96 feeding occurrences during the high-frequency ACC periods.
-
-# For each carcass, let's look at feeding bouts within 750m and ~1 day of the carcass.
-carcass_bouts <- map(1:nrow(carcasses_focal), ~{
-  carcass <- carcasses_focal[.x,]
-  id <- carcasses_focal$carcass_id[.x]
-  distances <- as.numeric(st_distance(bouts, carcass))
-  bouts <- bouts %>%
-    mutate(carcass_id = id,
-           dist_to_carcass = distances)
-  keep_distance <- bouts %>%
-    filter(dist_to_carcass <= 750)
-  keep_time <- keep_distance %>%
-    filter(start >= (carcass$datetime - hours(1)), # allow 1 hour before carcass was placed
-           end <= (carcass$datetime + hours(48))) %>% # allow 48 hours after carcass was placed
-    mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
-  return(keep_time)
-}) # only one of these carcasses has a couple feeding bouts. We can look at this for now.
-map_dbl(carcass_bouts, nrow) # varying numbers of feeding bouts for each carcass--many don't have any feeding bouts at all.
-
-carcass_bouts <- map(carcass_bouts, ~.x %>% mutate(boutID = paste(device_id, bout_id, sep = "_")) %>%
-  relocate(boutID, .after = "device_id"))
-write_rds(carcass_bouts, here("data/created/carcass_bouts.RDS"))
-carcass_bouts <- readRDS(here("data/created/carcass_bouts.RDS"))
-
-# Function to make time and distance plots
-makeplots <- function(bouts, carc, type = "distance"){
-  toplot <- bind_rows(carc %>%
-                        mutate(type = "carcass"),
-                      bouts %>%
-                        mutate(type = "feeding_bout"))
-  if(type == "time"){
-    p <- ggplot(bouts)+
-      geom_sf(aes(col = time_since_carcass),
-              size = 5, alpha = 0.5, pch = 19)+
-      scale_color_viridis(name = "Time since\nplacement (hr)", 
-                          limits = c(-1, 25),
-                          direction = -1)+
-      theme_bw()+
-      annotation_scale(location = "br")+
-      geom_sf(data = carc, size = 5, pch = 8, col = "black")
-  }else if(type == "distance"){
-    p <- ggplot(bouts)+
-      geom_sf(aes(col = dist_to_carcass),
-              size = 5, alpha = 0.5, pch = 19)+
-      scale_color_viridis(name = "Distance\nto carcass (m)", 
-                          limits = c(0, 100),
-                          option = "B",
-                          direction = -1)+
-      theme_bw()+
-      annotation_scale(location = "br")+
-      geom_sf(data = carc, size = 5, pch = 8, col = "black")
-  }else(stop("`type` must be either 'time' or 'distance'"))
-  return(p)
-}
+tar_load(all_carcasses_annotated)
+aca <- all_carcasses_annotated
+tar_load(all_bouts_annotated)
+aba <- all_bouts_annotated
+tar_load(carcass_bouts)
+tar_load(stations)
 ```
 
+How many carcasses in each period, wild and inpa?
+- Wild carcasses over time
+How many bouts per carcass?
+How many individuals per carcass?
+Timeline of bouts at carcasses
+- INPA only
+- XXX need to go assign later wild feeding bouts back to the already-determined wild carcass locations
+
+How accurate are the recorded carcass placement locations, based on the bouts? How far away are the bouts in general?
+Does the distance of bouts from the recorded carcass location change over time?
+
+## Carcass dynamics at feeding stations
+How often are carcasses placed at feeding stations?
+Are there days when more than one carcass is placed?
+Overall visualization for carcasses placed over time
 ```{r}
-#| include: false
-# glimpse(carcasses_focal)
-# Combine the carcasses and bouts into a single data frame containing info for both, including carcasses with no bouts.
-carcass_bouts_df <- purrr::list_rbind(carcass_bouts)
-without_bouts <- carcasses_focal %>% filter(!(carcass_id %in% carcass_bouts_df$carcass_id))
-with_bouts <- carcasses_focal %>% filter(carcass_id %in% carcass_bouts_df$carcass_id)
+aca <- aca %>%
+  mutate(stationName = factor(stationName, levels = sort(unique(aca$stationName))))
+glimpse(aca)
 
-carcasses_bouts <- left_join(carcass_bouts_df, with_bouts, by = "carcass_id")
-length(unique(carcasses_bouts$carcass_id)) # 28 unique carcasses
-nrow(carcasses_bouts) == nrow(carcass_bouts_df) # same--good.
-carcasses_bouts <- bind_rows(carcasses_bouts, without_bouts) # add on the carcasses that have no associated bouts
-nrow(carcasses_bouts)
-length(unique(carcasses_bouts$carcass_id)) == nrow(carcasses_focal) # same--good.
+dg(stations) %>% dplyr::select(stationName, "stnlong" = long, "stnlat" = lat)
+stn_carcass_timeline <- st_crop(aca, bbox_south) %>%
+  filter(!cage, carcType == "inpa", stationName != "Other") %>%
+  dplyr::select(datetime, dateOnly, year, stationName) %>%
+  left_join(dg(stations) %>% 
+              dplyr::select(stationName, "stnlong" = long, "stnlat" = lat)) %>%
+  mutate(stationName = factor(stationName),
+         stationName = fct_reorder(stationName, stnlat)) %>%
+  ggplot(aes(x = datetime, y = stationName, col = stnlat))+
+  scale_color_viridis_c()+
+  geom_point(size = 3, alpha = 0.8)+
+  facet_wrap(~year, scales = "free_x")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        panel.spacing = unit(1, "lines"))+
+  scale_x_datetime(date_breaks = "1 week",
+                   date_labels = "%d %b")
+#stn_carcass_timeline
 
-carcass_stats <- carcasses_bouts %>%
-  st_drop_geometry() %>%
-  # making sf object BY CARCASS
-  st_as_sf(coords = c("long", "lat"), crs = "WGS84") %>%
-  st_transform(32636) %>%
-  group_by(carcass_id, datetime) %>%
-  summarize(bouts = sum(!is.na(boutID)),
-            indivs = length(unique(individual_id[!is.na(individual_id)]))) %>%
-  mutate(year = lubridate::year(datetime)) %>%
-  bind_cols(st_coordinates(.)) %>%
-  arrange(bouts)
-```
-
-```{r}
-bouts_cropped <- st_crop(bouts, st_bbox(carcasses_focal))
-new_bbox <- st_bbox(bouts_cropped)
-new_bbox[4] <- 3500000
-new_bbox[2] <- 3350000
-
-bouts_cropped_south <- st_crop(bouts_cropped, new_bbox)
-```
-
-## Can we use spatsoc to group the feeding bouts together into non-station carcass locations?
-```{r}
-ns_bouts <- bouts %>%
-  filter(station == FALSE) %>%
-  arrange(timestamp)
-dim(ns_bouts)
-st_crs(ns_bouts)
-st_distance(ns_bouts[1,],  ns_bouts[2,]) # confirms that the units are in meters, 27,431 meters = ~27.4 km, which looks about right based on the map:
-
-# Prepare data for analysis with spatsoc
-ns_bouts$timestamp <- as.POSIXct(ns_bouts$timestamp)
-ns_bouts <- data.table::data.table(ns_bouts)
-class(ns_bouts$timestamp)
-
-group_times(ns_bouts, datetime = 'timestamp', threshold = '24 hours') # group into 24 hour groups
-group_pts(ns_bouts, threshold = 100, id ='device_id', coords = c('X', 'Y'), timegroup = 'timegroup')
-
-length(unique(ns_bouts$timegroup)) 
-length(unique(ns_bouts$dateOnly)) # okay, we only have 68 days of data, so it makes sense that this is how many groups we ended up with.
-length(unique(ns_bouts$group)) # way more groups than days--this is as expected, because there will be multiple carcasses per day!
-
-ns_bouts %>%
-  group_by(dateOnly, timegroup) %>%
-  summarize(n_ns_carcasses = length(unique(group))) %>%
-  arrange(dateOnly) # does this seem reasonable?? Gut check.
-# XXX will have to deal with multi-day persistent carcasses
-
-# convert back to sf object for mapping
-ns_bouts <- as.data.frame(ns_bouts) %>%
-  st_as_sf(crs = 32636)
-```
-
-
-```{r}
-# Create plots of feeding bouts relative to carcass locations, with feeding bouts colored by either distance or time
-# Now let's see how the location of those feeding bouts corresponds to the location of the carcass as recorded by the INPA.
-
-# Include the ones that have corresponding feeding bouts
-toinclude <- which(map_dbl(carcass_bouts, nrow) > 0)
-distanceplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "distance")
-})
-
-timeplots <- map(toinclude, ~{
-  makeplots(bouts = carcass_bouts[[.x]], carc = carcasses_focal[.x,], type = "time")
-})
-```
-
-## Strangely, the INPA carcass data includes some points in the sea
-
-```{r}
-ggplot(carcasses_inpa) +
-  annotation_map_tile(zoom = 7, type = "cartolight") +
-  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2,
-          col = "blue")+
-  ggtitle("Carcass locations, 2018-2024")
-```
-
-## After removing those points:
-
-```{r}
-carcasses_inpa_edited <- carcasses_inpa %>%
-  filter(!(long < 34.5 & lat > 33.0))
-
-ggplot(carcasses_inpa_edited) +
-  annotation_map_tile(zoom = 7, type = "cartolight") +
-  geom_sf(show.legend = "point", inherit.aes = FALSE, alpha = 0.2, size = 2, 
-          col = "blue")+
-  ggtitle("Carcass locations, 2018-2024")
-```
-
-## The carcasses in the sea are all from two dates on August 2024. Typo? GPS scrambling?
-```{r}
-carcasses_inpa %>%
-  filter(long < 34.5 & lat > 33.0) # Most are Carmel, one is Tzaror
-```
-
-## Carcass-level descriptive stats
-
-## When were the feeding bouts, relative to the time of the carcass?
-```{r}
-carcasses_bouts %>%
-  ggplot(aes(x = time_since_carcass))+
-  geom_histogram(binwidth = 1)+
-  theme_classic()+
-  labs(y = "# feeding bouts (all carcasses)",
-       x = "Time since carcass placed (hours)")+
-  geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
-```
-
-```{r}
-carcass_stats %>%
-  ggplot(aes(x = bouts))+
-  geom_histogram()+
-  theme_classic()+
-  labs(y = "Frequency",
-       x = "Number of feeding bouts")+
-  facet_wrap(~year)
-```
-
-## More central carcasses are the ones that tend to have associated feeding bouts
-```{r}
-carcass_stats %>%
+mp <- st_crop(stations, bbox_south) %>%
+  filter(stationName %in% (aca %>%
+                             filter(!cage, carcType == "inpa", 
+                                    stationName != "Other") %>%
+                             pull(stationName))) %>%
+  mutate(stationName = factor(stationName),
+         stationName = fct_reorder(stationName, lat)) %>%
   ggplot()+
-  annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(aes(col = bouts), pch = 16, size = 3, alpha = 0.5)+
-  scale_color_viridis(option = "B")+
-  coord_sf(datum = st_crs(32636))+
-  facet_wrap(~year)+
-  labs(caption = "Includes feeding bouts within 750m and -1:48 hours from carcass.",
-       color = "# associated\nfeeding bouts")
+  annotation_map_tile(type = "cartolight", zoom = 10)+ 
+  geom_sf(aes(col = lat), size = 3, alpha = 0.8)+
+  scale_color_viridis_c()+
+  ggrepel::geom_label_repel(
+    aes(label = stationName,
+        geometry = geometry),
+    stat = "sf_coordinates",
+    min.segment.length = 0.5,
+    size = 3
+  )+
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank())+
+  NULL
+```
+```{r}
+stn_carcass_timeline | mp
 ```
 
-## This is somewhat surprising, given that recorded feeding bouts are all over the map!
-
 ```{r}
-ggplot(bouts_cropped)+
-  annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
-  scale_color_manual(name = "Station", values = c("red", "blue"))+
-  facet_wrap(~year)+
-  coord_sf(datum = st_crs(32636))+
-  labs("'Station' = within 500m of feeding station location")
-```
-
-## Zooming in on the south
-```{r}
-#rosm::osm.types() # see the different types of maps
-ggplot(bouts_cropped_south)+
-  annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(aes(col = station), alpha = 0.9, pch = 1)+
-  scale_color_manual(name = "Station", values = c("red", "blue"))+
-  facet_wrap(~year)+
-  coord_sf(datum = st_crs(32636))+
-  labs("'Station' = within 500m of feeding station location")
-```
-## What's going on here?
-1. Feeding station locations might not be very accurate, or they may change, or I may need a buffer  > 500m (but at that point, what's the point of the recorded feeding station locations?)
-2. Instead of using recorded feeding station locations, maybe I should just use the locations where carcasses were deposited, since that's where the stations would be active anyway, and station locations might shift over the years?
-3. Maybe there are a lot of non-INPA-deposited carcasses in the same area as, but not directly at, feeding stations?
-
-## Now what about the non-station feeding bouts?
-
-## Big difference in the number of non-station carcasses between the years
-Either there were fewer non-station carcasses in 2024, or the feeding station locations shifted (opposite!)
-More likely: Different numbers of birds tagged, or different birds, or different biases in who was tagged. Also different time of year (just slightly)
-Was there a different number of feeding events to generate those carcasses, too? XXX
-```{r}
-ns_bouts %>%
-  group_by(year, dateOnly) %>%
-  summarize(n_ns_carcasses = length(unique(group))) %>%
-  arrange(dateOnly) %>%
-  ggplot(aes(x = dateOnly, y = n_ns_carcasses))+
-  geom_line()+
-  geom_point()+
+wild_carcass_timeline <- st_crop(aca, bbox_south) %>%
+  st_transform("WGS84") %>%
+  bind_cols(setNames(as.data.frame(st_coordinates(.)), c("long", "lat"))) %>%
+  filter(carcType == "wild") %>%
+  ggplot(aes(x = dateOnly, y = lat))+
+  geom_point(size = 3, alpha = 0.8, aes(col = lat), pch = 1)+
+  scale_color_viridis_c()+
   facet_wrap(~year, scales = "free_x")+
-  theme_classic()+
-  labs(y = "# non-station carcasses",
-       x = "Date")
-```
-## Vultures alternate between station and non-station food sources
-
-```{r}
-bouts %>%
-  group_by(year, dateOnly, station) %>%
-  summarize(n = n()) %>%
-  ggplot(aes(x = dateOnly, y = n, col = station))+
-  geom_line()+
-  geom_point()+
-  facet_wrap(~year, scales = "free_x")+
-  theme_classic()+
-  labs(y = "# feeding bouts",
-       x = "Date",
-       col = "At feeding station")+
-  scale_color_manual(values = c("red", "blue"))
-```
-
-## Non-station carcass locations (inferred using {spatsoc})
-
-```{r}
-ns_carcasses <- ns_bouts %>%
-  group_by(year, group) %>%
-  summarize(geometry = st_union(geometry),
-            dateOnly = dateOnly[1]) %>%
-  st_centroid() %>%
-  ungroup() %>%
-  bind_cols(st_coordinates(.))
-```
-
-```{r}
-# To plot this, we're going to need to focus in on the south only, since otherwise the maps will take way too long to load.
-ns_bouts_cropped_south <- st_crop(ns_bouts, new_bbox)
-ns_carcasses_cropped_south <- st_crop(ns_bouts, new_bbox)
-ggplot()+
-  annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(data = ns_bouts_cropped_south, alpha = 0.5, pch = 1, col = "black")+
-  geom_sf(data = ns_carcasses_cropped_south, alpha = 0.5, pch = 4, col = "red")+
-  facet_wrap(~year)+
-  labs(caption = "Black points represent feeding bouts. Red x's represent the centroids\nof groups of feeding bouts (24 hours, 100m clusters), i.e. putative\ncarcass locations.")+
-  theme(plot.caption = element_text(hjust = 0))+
-  coord_sf(datum = st_crs(32636))
-```
-
-## With the at-station carcasses added
-
-```{r}
-carcasses_focal_cropped_south <- st_crop(carcasses_focal, new_bbox)
-ggplot()+
-  annotation_map_tile(zoom = 9, type = "hotstyle") +
-  geom_sf(data = ns_bouts_cropped_south, alpha = 0.5, pch = 1, col = "black")+
-  geom_sf(data = ns_carcasses_cropped_south, alpha = 0.5, pch = 4, col = "red")+
-  geom_sf(data = carcasses_focal_cropped_south, alpha = 0.5, pch = 4, col = "blue")+ # these are just station carcasses, because by definition if it was deposited by the INPA, it was deposited at a feeding station. (XXX RIGHT??)
-  facet_wrap(~year)+
-  theme(plot.caption = element_text(hjust = 0))+
-  coord_sf(datum = st_crs(32636))
-```
-## Zooming in on that high-density area
-```{r}
-bbox_highDensity <- c("xmin" = 660000, "ymin" = 3400000, "xmax" = 690000, "ymax" = 3420000)
-ggplot()+
-  annotation_map_tile(zoom = 11, type = "hotstyle") +
-  geom_sf(data = st_crop(ns_bouts_cropped_south, bbox_highDensity), 
-          alpha = 0.5, pch = 1, col = "black")+
-  geom_sf(data = st_crop(ns_carcasses_cropped_south, bbox_highDensity), 
-          alpha = 0.5, pch = 4, col = "red")+
-  geom_sf(data = st_crop(carcasses_focal_cropped_south, bbox_highDensity), 
-          alpha = 0.5, pch = 4, col = "blue")+ # these are just station carcasses, because by definition if it was deposited by the INPA, it was deposited at a feeding station. (XXX RIGHT??)
-  facet_wrap(~year)+
-  theme(plot.caption = element_text(hjust = 0))+
-  coord_sf(datum = st_crs(32636))+
-  annotation_scale()
-```
-
-## How accurate are the INPA's recorded carcass placement locations?
-
-For carcasses placed during the high-frequency ACC periods, I identified feeding bouts based on ACC and compared the GPS location of those bouts to the recorded GPS location of the carcass.
-
-## Some examples:
-```{r}
-distanceplots[[1]] + timeplots[[1]]
-```
-
-## Some examples:
-```{r}
-distanceplots[[4]] + timeplots[[4]]
-```
-
-## Some examples:
-```{r}
-distanceplots[[11]] + timeplots[[11]]
-```
-
-## How far away are the bouts in general?
-```{r}
-c_bouts %>%
-  group_by(carcass_id) %>%
-  mutate(mn = mean(dist_to_carcass)) %>%
-  ggplot(aes(x = fct_reorder(factor(carcass_id), dist_to_carcass, mean), y = dist_to_carcass, fill = mn))+
-  geom_boxplot(outlier.size = 0.5)+
   theme_bw()+
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  scale_fill_viridis(name = "Mean distance\nto carcass", limits = c(0, 100))+
-  labs(x = "Carcass",
-       y = "Distance (m)",
-       title = "Distance from feeding bouts to recorded carcass location",
-       sutbtitle = "For feeding bouts within 500m",
-       caption = "Includes carcasses that had at least 1 feeding bout within 750m\n Includes feeding bouts from 1 hour before through 24 hours after carcass placement.")
-```
+  theme(axis.title.x = element_blank(),
+        panel.spacing = unit(1, "lines"),
+        legend.position = "none")+
+  scale_x_date(date_breaks = "1 week",
+               date_labels = "%d %b")+
+  labs(y = "Latitude")
 
-## Does the distance of bouts from the recorded carcass location change over time?
-```{r}
-#| warning: false
-c_bouts %>%
-  group_by(carcass_id) %>%
-  filter(n() > 4) %>%
-  ggplot(aes(x = time_since_carcass, y = dist_to_carcass, group = carcass_id))+
-  theme_bw()+
-  geom_smooth(method = "lm")+
-  geom_point(alpha = 0.5, pch = 1)+
-  facet_wrap(~carcass_id, scales = "free_x")+
-  theme(strip.background = element_blank(),
-        strip.text.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  labs(y = "Distance (m)",
-       x = "Time since carcass placement (hours)",
-       caption = "Includes carcasses that had at least 5 feeding bouts within 750m.\n Includes feeding bouts from 1 hour before through 24 hours after carcass placement.")
-```
-
-## Looks like the carcass locations are generally pretty accurate, and the carcass doesn't necessarily get dragged farther away over time!
-A 100m distance threshold seems like a decent buffer for the INPA-provided locations.
-
-## Let's understand more about the dynamics of carcasses at feeding stations.
-
-- How often are carcasses placed at feeding stations?
-- How regular is the carcass placement?
-- How much does carcass cadence vary between feeding stations?
-
-## How often are carcasses placed at feeding stations?
-
-Coordinates of feeding stations in the south: XXX READ IN
-
-Coordinates of feeding stations in the north: XXX STILL NEED THIS FILE
-
-Until we have a full list of feeding station coordinates, let's use the real carcass data to infer the position of feeding stations.
-
-Let's first see where carcasses were recorded as being placed.
-
-```{r}
-#| echo: false
-#| message: false
-library(tidyverse)
-library(sf)
-library(mapview)
-library(here)
-library(readxl)
+mp_wild <- st_crop(aca, bbox_south) %>%
+  st_transform("WGS84") %>%
+  bind_cols(setNames(as.data.frame(st_coordinates(.)), c("long", "lat"))) %>%
+  filter(carcType == "wild") %>%
+  ggplot()+
+  annotation_map_tile(type = "cartolight", zoom = 10)+ 
+  geom_sf(size = 3, alpha = 0.8, aes(col = lat), pch = 1)+
+  scale_color_viridis_c()+
+  theme(legend.position = "none")+
+  NULL
 ```
 
 ```{r}
-#| echo: false
-#| warning: false
-#| message: false
-feed <- read_excel(here("data/FeedingData from 2018_2024_Translated.xlsx")) %>% 
-  select(contains("RTG"), contains("WGS84"), "date" = `Date Event`, "time" = `Event time`) %>%
-  rename("inspectionArea" = `Inspection area - RTG`,
-         "merhavRTG" = `Merhav - RTG`,
-         "district" = `RTG district`,
-         "long" = `WGS84 - LONG`,
-         "lat" = `WGS84 - LAT`) %>%
-  mutate(datetime = lubridate::ymd_hms(paste0(as.character(date), " ", substr(as.character(time), 12, 19)))) %>%
-  mutate(year = lubridate::year(datetime))
-
-feed_sf <- feed %>%
-  st_as_sf(coords = c("long", "lat"), crs = "WGS84") %>%
-  st_transform(32636)
-
-ggplot(feed_sf)+
-  geom_sf(alpha = 0.2, size = 2, col = "blue")+
-  theme_minimal()+
-  ggtitle("Carcass locations, 2018-2024")
-```
-
-We notice that there are definitely a lot of repeat placements. As a quick and dirty way of quantifying feeding stations, let's cluster them together.
-
-Buffering by 300m (arbitrary) and then clustering and intersecting and coloring by cluster gives us this:
-
-```{r}
-#| echo: false
-carc_inpa_buffered <- st_buffer(feed_sf, 300)
-parts <- st_cast(st_union(carc_inpa_buffered),"POLYGON")
-clust <- unlist(st_intersects(carc_inpa_buffered, parts))
-diss <- cbind(carc_inpa_buffered, clust) %>%
-  group_by(clust) %>%
-  st_transform("WGS84")
-
-#mapview(diss, zcol = "clust")
-```
-
-Examine the carcass placement over time at these "stations"
-```{r}
-#| echo: false
-#| message: false
-ggplot(diss, aes(x = datetime, y = clust, col = factor(clust)))+
-  geom_point()+
-  theme_bw()+
-  ylab("Feeding Station")+
-  theme(legend.position = "none",
-        axis.title.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank())+
-  labs(title = "Carcass placement at ~feeding stations",
-       caption = "Feeding station locations defined by buffering and merging nearby coordinates.")+
-  scale_x_datetime(date_breaks = "6 months",
-                   date_labels = "%m/%y")
-```
-
-...and by year:
-```{r}
-#| echo: false
-#| message: false
-diss %>%
-  group_by(year, clust) %>%
-  filter(n() > 4) %>%
-  ggplot(aes(x = datetime, y = factor(clust), 
-             col = factor(clust)))+
-  geom_point()+
-  facet_wrap(~year, scales = "free") +
-  theme_bw()+
-  ylab("Feeding Station")+
-  theme(legend.position = "none",
-        axis.title.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  labs(title = "Carcass placement at ~feeding stations, by year",
-       caption = "Feeding stations created by buffering and merging nearby coordinates.")+
-  scale_x_datetime(date_breaks = "2 months",
-                   date_labels = "%b")
-```
-
-Let's take a look at the intervals between carcass depositions
-```{r}
-#| echo: false
-#| message: false
-stats <- diss %>%
-  arrange(clust, datetime) %>%
-  group_by(clust) %>%
-  mutate(interval = difftime(datetime, lag(datetime), units = "days"))
-
-stats %>%
-  group_by(clust) %>%
-  filter(n() > 4) %>%
-  filter(!is.na(interval)) %>%
-  ggplot(aes(x = fct_reorder(factor(clust), interval, .fun = median), 
-             y = interval))+
-  geom_boxplot(outlier.shape = NA)+
-  theme_minimal()+
-  geom_jitter(alpha = 0.3, aes(col = factor(clust)), width = 0.2)+
-  theme(legend.position = "none",
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  ylab("Interval (days)")+
-  xlab("Feeding station")
-```
-
-Top 5 by year:
-```{r}
-#| echo: false
-#| message: false
-# Now picking the top 5
-stats %>%
-  filter(!is.na(interval)) %>%
-  group_by(clust) %>%
-  mutate(size = n()) %>%
-  ungroup() %>%
-  filter(size >= sort(unique(size), TRUE)[5])  %>%
-  arrange(desc(size)) %>%
-  ggplot(aes(x = fct_reorder(factor(clust), interval, .fun = median), 
-             y = interval))+
-  geom_boxplot(outlier.shape = NA)+
-  theme_minimal()+
-  geom_jitter(alpha = 0.3, aes(col = factor(clust)), width = 0.2)+
-  theme(legend.position = "none",
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())+
-  ylab("Interval (days)")+
-  xlab("Feeding station")+
-  facet_wrap(~year, scales = "free_y")+
-  ggtitle("Top 5 most frequent overall feeding stations")
+wild_carcass_timeline | mp_wild
 ```
 
 ```{r}
-#| echo: false
-#| message: false
-lines <- stats %>%
-  st_drop_geometry() %>%
-  filter(!is.na(interval)) %>%
-  group_by(clust) %>%
-  mutate(size = n()) %>%
-  ungroup() %>%
-  filter(size >= sort(unique(size), TRUE)[5]) %>%
-  group_by(clust, year) %>%
-  summarize(mean = mean(interval))
-
-stats %>%
-  filter(!is.na(interval)) %>%
-  group_by(clust) %>%
-  mutate(size = n()) %>%
-  ungroup() %>%
-  filter(size >= sort(unique(size), TRUE)[5])  %>%
-  arrange(desc(size)) %>%
-  ggplot(aes(x = interval, group = clust, col = factor(clust)))+
-  geom_density(linewidth = 1)+
-  theme_minimal()+
-  theme(legend.position = "none",
-        panel.grid = element_blank(),
-        axis.text.y = element_blank())+
-  xlab("Interval (days)")+
-  facet_wrap(~year, scales = "free")+
-  geom_vline(data = lines, aes(xintercept = mean, col = factor(clust)), linetype = 2, linewidth = 0.5)+
-  labs(title = "Frequency at 5 overall most provisioned feeding stations, by year")+
-  ylab("")
-```
-
-So, depending on the feeding station, carcasses are typically deposited every 5-100 days. At the top/most frequent feeding stations, carcasses are placed about every 3-40 days.
-
-How often do we see carcasses being placed less than 5 days apart?
-```{r}
-threshes <- seq(from = 1, to = 5, by = 1)
-dat <- purrr::map(threshes, ~stats %>% filter(interval <= .x) %>% mutate(thresh = .x)) %>% purrr::list_rbind()
-
-dat %>%
-  st_drop_geometry() %>%
-  group_by(clust, thresh) %>%
-  add_count() %>%
-  ggplot(aes(x = thresh, y = n, group = factor(clust), col = factor(clust)))+
-  geom_line()+
-  scale_x_continuous(breaks = threshes)+
-  theme_minimal()+
-  ylab("Number of carcass placements")+
-  xlab("<= n days apart")
-```
-
-So, while most carcasses are provisioned less often than every 5 days, there are some sites where food is often available every day!
-
-## Are there days when more than one carcass is placed?
-```{r}
-head(stats)
-carcasses_per_day <- stats %>%
-  st_drop_geometry() %>%
-  group_by(year, date) %>%
-  summarize(carc_per_day = n())
-carcasses_per_day %>%
-  ggplot(aes(x = factor(carc_per_day)))+
-  geom_bar()+
-  theme_minimal()+
-  ylab("Days")+
-  xlab("Carcasses per day")+
+st_crop(aca, bbox_south) %>%
+  st_transform("WGS84") %>%
+  bind_cols(setNames(as.data.frame(st_coordinates(.)), c("long", "lat"))) %>%
+  ggplot()+
+  annotation_map_tile(type = "cartolight", zoom = 10)+ 
+  geom_sf(size = 3, alpha = 0.8, aes(col = lat, shape = carcType))+
+  scale_shape_manual(values = c(19, 1), name = "Carcass\ntype")+
+  scale_color_viridis_c(guide = "none")+
+  #theme(legend.position = "none")+
   facet_wrap(~year)+
-  labs(caption = "Sometimes, more than one carcass\nis deposited per day\n(anywhere in the country)")
+  NULL
 ```
 
-## Overall visualization of carcasses placed over time
-```{r}
-over_time <- stats %>%
-  st_drop_geometry() %>%
-  mutate(month = lubridate::month(datetime),
-         day = lubridate::day(datetime)) %>%
-  group_by(month, day, year, date) %>%
-  summarize(n = n())
-
-over_time %>%
-  ggplot(aes(y = n, x = lubridate::ymd(date)))+
-  geom_line(alpha = 0.2)+
-  geom_point(aes(col = n))+
-  scale_color_viridis_c(name = "")+
-  theme_minimal()+
-  facet_wrap(~year, scales = "free_x", ncol = 2)+
-  scale_x_date(date_breaks = "3 months",
-               date_labels = "%b")+
-  ggtitle("Carcasses over time")+
-  ylab("Number of carcasses")+
-  xlab("Date")
-```
-
-## Summary stats for how long carcasses last
-We can do this either by looking at the vultures that are nearby the stated location, or we can look at feeding bouts nearby. It would be better to look at feeding bouts in order to quantify duration, I think, so I'm going to wait on this until I have the data processed.
