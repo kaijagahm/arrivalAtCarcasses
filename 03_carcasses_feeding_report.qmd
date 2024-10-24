@@ -34,28 +34,47 @@ aca <- all_carcasses_annotated
 tar_load(all_bouts_annotated)
 aba <- all_bouts_annotated
 tar_load(carcass_bouts)
+tar_load(carcass_bouts_df)
 tar_load(stations)
+tar_load(bbox_south)
 ```
 
-How many carcasses in each period, wild and inpa?
-- Wild carcasses over time
-How many bouts per carcass?
-How many individuals per carcass?
-Timeline of bouts at carcasses
-- INPA only
-- XXX need to go assign later wild feeding bouts back to the already-determined wild carcass locations
+## How do vultures find carcasses?
+- individual information
+  - memory
+  - searching
+- social information 
+  - in-flight (local enhancement)
+  - following from the roost (information center hypothesis)
+. . .
 
-How accurate are the recorded carcass placement locations, based on the bouts? How far away are the bouts in general?
-Does the distance of bouts from the recorded carcass location change over time?
+A combination of all of these!
 
-## Carcass dynamics at feeding stations
-How often are carcasses placed at feeding stations?
-Are there days when more than one carcass is placed?
-Overall visualization for carcasses placed over time
+## What factors affect reliance on different information sources?
+H1: Resource predictability affects reliance on social information
+. . .
+
+Spatial and temporal predictability
+
+  P1: Where resources are unpredictable, vultures will rely more on social information.
+  P2: In areas with predictable resources, social information will not diminish in importance and will contribute
+
+
+
+Predictability of carcasses in area
+Size of carcass
+Location (relative to roost sites; relative to overall pop. home range, etc.)
+Dyadic interactions
+Higher-order interactions
+Signaling/circling
+
+
+
+## Feeding station (INPA) carcasses
+
 ```{r}
 aca <- aca %>%
   mutate(stationName = factor(stationName, levels = sort(unique(aca$stationName))))
-glimpse(aca)
 
 dg(stations) %>% dplyr::select(stationName, "stnlong" = long, "stnlat" = lat)
 stn_carcass_timeline <- st_crop(aca, bbox_south) %>%
@@ -105,6 +124,8 @@ mp <- st_crop(stations, bbox_south) %>%
 stn_carcass_timeline | mp
 ```
 
+## Wild carcasses
+
 ```{r}
 wild_carcass_timeline <- st_crop(aca, bbox_south) %>%
   st_transform("WGS84") %>%
@@ -138,6 +159,8 @@ mp_wild <- st_crop(aca, bbox_south) %>%
 wild_carcass_timeline | mp_wild
 ```
 
+## All carcasses
+
 ```{r}
 st_crop(aca, bbox_south) %>%
   st_transform("WGS84") %>%
@@ -151,4 +174,70 @@ st_crop(aca, bbox_south) %>%
   facet_wrap(~year)+
   NULL
 ```
+
+## Carcass numbers
+```{r}
+aca %>%
+  group_by(year, carcType) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(x = factor(year), y = n, fill = carcType))+
+  geom_col(position = position_dodge())+
+  theme_bw()+
+  scale_fill_manual(name = "Carcass\ntype", values = c("blue", "red"))+
+  labs(y = "Number of carcasses",
+       x = "Year")
+```
+## INPA carcass visits
+```{r}
+carcass_stats <- aca %>%
+  filter(carcType == "inpa") %>%
+  dplyr::select(carcID, X, Y, stationName, carcassWeight, "carcDatetime" = datetime, "carcDate" = dateOnly) %>%
+  left_join(carcass_bouts_df, by = "carcID") %>%
+  filter(!is.na(year)) %>%
+  group_by(carcID, carcDate, carcDatetime, year) %>%
+  summarize(nbouts = length(unique(boutID)),
+            nindivs = length(unique(individualID)))
+
+carcass_stats %>%
+  ggplot(aes(x = nindivs, y = nbouts, col = factor(year)))+
+  geom_point(size = 3, pch = 1)+
+  geom_smooth(method = "lm")+
+  theme_bw()+
+  labs(y = "# recorded feeding bouts",
+       x = "# individual vultures",
+       caption = "(Within 72 hours and 750m of carcass placement at feeding station)")+
+  scale_color_manual(name = "Year", values = c("skyblue", "skyblue4"))+
+  theme(text = element_text(size = 16))
+```
+
+## INPA carcass visits
+
+```{r}
+carcass_stats %>%
+  pivot_longer(cols = c("nindivs", "nbouts")) %>%
+  mutate(name = case_when(name == "nbouts" ~ "Feeding bouts",
+                          name == "nindivs" ~ "Individual vultures")) %>%
+  ggplot(aes(x = factor(year), y = value, fill = factor(year)))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("skyblue", "skyblue4"))+
+  theme_bw()+
+  facet_wrap(~name, scales = "free_y")+
+  labs(x = "Year")+
+  theme(axis.title.y = element_blank(),
+        legend.position = "none",
+        text = element_text(size = 16))
+```
+
+
+
+How many bouts per carcass?
+How many individuals per carcass?
+Timeline of bouts at carcasses
+- INPA only
+- XXX need to go assign later wild feeding bouts back to the already-determined wild carcass locations
+
+How accurate are the recorded carcass placement locations, based on the bouts? How far away are the bouts in general?
+Does the distance of bouts from the recorded carcass location change over time?
+
+
 
