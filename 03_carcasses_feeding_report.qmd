@@ -37,38 +37,47 @@ tar_load(carcass_bouts)
 tar_load(carcass_bouts_df)
 tar_load(stations)
 tar_load(bbox_south)
+tar_load(carcasses_audited)
 ```
 
 ## How do vultures find carcasses?
+
+. . .
+
 - individual information
   - memory
   - searching
+  
+. . .
+
 - social information 
   - in-flight (local enhancement)
   - following from the roost (information center hypothesis)
+  
 . . .
 
 A combination of all of these!
 
 ## What factors affect reliance on different information sources?
-H1: Resource predictability affects reliance on social information
+
 . . .
 
-Spatial and temporal predictability
+H1: Resource predictability affects reliance on social information
 
-  P1: Where resources are unpredictable, vultures will rely more on social information.
-  P2: In areas with predictable resources, social information will not diminish in importance and will contribute
+. . .
 
+- P1: Where resources are unpredictable, vultures will rely more on social information to find them.
 
+. . .
 
-Predictability of carcasses in area
-Size of carcass
-Location (relative to roost sites; relative to overall pop. home range, etc.)
-Dyadic interactions
-Higher-order interactions
-Signaling/circling
+*Predictability: spatial and temporal*
 
+. . .
 
+Following:
+
+- find new location
+- know when to bother flying far --> wild carcasses?
 
 ## Feeding station (INPA) carcasses
 
@@ -76,7 +85,6 @@ Signaling/circling
 aca <- aca %>%
   mutate(stationName = factor(stationName, levels = sort(unique(aca$stationName))))
 
-dg(stations) %>% dplyr::select(stationName, "stnlong" = long, "stnlat" = lat)
 stn_carcass_timeline <- st_crop(aca, bbox_south) %>%
   filter(!cage, carcType == "inpa", stationName != "Other") %>%
   dplyr::select(datetime, dateOnly, year, stationName) %>%
@@ -120,6 +128,8 @@ mp <- st_crop(stations, bbox_south) %>%
         axis.title.x = element_blank())+
   NULL
 ```
+
+
 ```{r}
 stn_carcass_timeline | mp
 ```
@@ -132,7 +142,7 @@ wild_carcass_timeline <- st_crop(aca, bbox_south) %>%
   bind_cols(setNames(as.data.frame(st_coordinates(.)), c("long", "lat"))) %>%
   filter(carcType == "wild") %>%
   ggplot(aes(x = dateOnly, y = lat))+
-  geom_point(size = 3, alpha = 0.8, aes(col = lat), pch = 1)+
+  geom_point(size = 3, alpha = 0.8, aes(col = lat), pch = 8)+
   scale_color_viridis_c()+
   facet_wrap(~year, scales = "free_x")+
   theme_bw()+
@@ -149,7 +159,7 @@ mp_wild <- st_crop(aca, bbox_south) %>%
   filter(carcType == "wild") %>%
   ggplot()+
   annotation_map_tile(type = "cartolight", zoom = 10)+ 
-  geom_sf(size = 3, alpha = 0.8, aes(col = lat), pch = 1)+
+  geom_sf(size = 3, alpha = 0.8, aes(col = lat), pch = 8)+
   scale_color_viridis_c()+
   theme(legend.position = "none")+
   NULL
@@ -168,12 +178,39 @@ st_crop(aca, bbox_south) %>%
   ggplot()+
   annotation_map_tile(type = "cartolight", zoom = 10)+ 
   geom_sf(size = 3, alpha = 0.8, aes(col = lat, shape = carcType))+
-  scale_shape_manual(values = c(19, 1), name = "Carcass\ntype")+
+  scale_shape_manual(values = c(19, 8), name = "Carcass\ntype")+
   scale_color_viridis_c(guide = "none")+
   #theme(legend.position = "none")+
   facet_wrap(~year)+
   NULL
 ```
+
+## Other important factors
+- location relative to central roosts
+- time of day placed
+
+```{r}
+carcasses_audited %>%
+  filter(!cage, carcassWeight < 1500, lubridate::year(date) > 2018) %>%
+  st_as_sf(crs = 32636) %>%
+  st_crop(bbox_south) %>%
+  filter(stationName != "Other", !is.na(stationName)) %>%
+  group_by(stationName) %>%
+  filter(n() > 5) %>%
+  ggplot(aes(x = carcassWeight))+
+  geom_histogram(aes(y = after_stat(density), fill = stationName))+
+  facet_wrap(~lubridate::year(date))+
+  theme_classic()+
+  labs(y = "Density", x = "Carcass weight (kg)")+
+  theme(legend.position = "none",
+        text = element_text(size = 16))
+```
+
+## How?
+NBDA--time-ordered information networks. 
+  - Model spread; compare to actual spread
+  
+Find instances of following behavior
 
 ## Carcass numbers
 ```{r}
@@ -187,6 +224,7 @@ aca %>%
   labs(y = "Number of carcasses",
        x = "Year")
 ```
+
 ## INPA carcass visits
 ```{r}
 carcass_stats <- aca %>%
@@ -200,7 +238,7 @@ carcass_stats <- aca %>%
 
 carcass_stats %>%
   ggplot(aes(x = nindivs, y = nbouts, col = factor(year)))+
-  geom_point(size = 3, pch = 1)+
+  geom_point(size = 3, pch = 19)+
   geom_smooth(method = "lm")+
   theme_bw()+
   labs(y = "# recorded feeding bouts",
@@ -228,16 +266,83 @@ carcass_stats %>%
         text = element_text(size = 16))
 ```
 
+## Feeding bouts over time: example INPA carcasses
 
+```{r}
+tar_load(carcasses_audited)
+ca <- carcasses_audited %>% 
+  st_as_sf(crs = 32636) %>%
+  filter(!cage) %>%
+  st_crop(bbox_south) %>%
+  dplyr::select(carcID, X, Y, cage, stationName)
 
-How many bouts per carcass?
-How many individuals per carcass?
-Timeline of bouts at carcasses
-- INPA only
-- XXX need to go assign later wild feeding bouts back to the already-determined wild carcass locations
+ca2 <- ca %>% left_join(carcass_bouts_df, by = "carcID") %>%
+  filter(!is.na(time_since_carcass)) %>%
+  mutate(hour = round(as.numeric(time_since_carcass))) %>%
+  group_by(carcID, stationName, hour) %>%
+  summarize(n = n())
 
-How accurate are the recorded carcass placement locations, based on the bouts? How far away are the bouts in general?
-Does the distance of bouts from the recorded carcass location change over time?
+max <- hours(72)
+all_hours <- expand.grid("carcID" = unique(ca2$carcID), "hour" = -1:72) %>%
+  mutate(n = 0) %>%
+  left_join(carcasses_audited %>%
+              dplyr::select(carcID, stationName) %>%
+              distinct())
 
+ca3 <- bind_rows(ca2, all_hours) %>%
+  arrange(carcID, hour, desc(n)) %>%
+  group_by(carcID, hour) %>%
+  slice(1) %>%
+  ungroup()
 
+set.seed(6)
+ca3 %>% filter(carcID %in% sample(unique(ca3$carcID), 12)) %>%
+  mutate(carcID = factor(carcID)) %>%
+  ggplot(aes(x = hour, y = n, group = carcID, col = stationName))+
+  #geom_point()+
+  geom_line(linewidth = 1)+
+  theme_classic()+
+  facet_wrap(~carcID)+
+  labs(y = "Number of feeding bouts",
+       x = "Hour since carcass placed")
+```
 
+## Feeding bouts over time: all INPA carcasses
+```{r}
+ca3 %>% 
+  mutate(carcID = factor(carcID)) %>%
+  ggplot(aes(x = hour, y = n, group = carcID, col = stationName))+
+  #geom_point()+
+  geom_line(alpha = 0.7)+
+  theme_classic()+
+  facet_wrap(~stationName)+
+  labs(y = "Number of feeding bouts",
+       x = "Hour since carcass placed")+
+  theme(legend.position = "none")
+```
+
+## Animation: 10 days of vultures
+![](tendays.gif)
+
+## Animation: one carcass
+![](carcass_2023-06-13.gif)
+
+## What determines individual arrival order at a carcass?
+- Age: risk-taking
+  - H1: Younger → risk-averse b/c weaker, less experienced
+  - H2: Younger → risk-prone b/c lower in hierarchy, must take advantage of opportunities
+
+- Arrival order (not same as feeding order!)
+
+- Intraspecific producer-scrounger dynamics: do some individuals consistently eat first?
+
+- Individual information source
+
+## Individuals detecting/arriving over time (example 1)
+![](fig/carcass_arrivals/2023-06-11_11.44.03_SouthernRegion.png)
+
+## Individuals detecting/arriving over time (example 2)
+![](fig/carcass_arrivals/2023-08-28_11.24.52_SouthernRegion.png)
+
+## Individuals detecting/arriving over time (example 3)
+![](fig/carcass_arrivals/2023-07-12_11.17.07_SouthernRegion.png)
