@@ -7,8 +7,6 @@ source(here("params.R"))
 gps <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") %>%
   st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
   st_transform(32636) # this data originally comes from the script 01_classify_localize_bouts.R, which just pulled it directly from Movebank. It should contain all tagged individuals in the population, not merely the ones that had high-frequency ACC tags.
-# So this leaves the question of why there seem to be so many deposited carcasses that don't have any individuals coming within 1000m of them! It's very odd.
-# Let's run this through with all of the 2024 carcasses in the south and see how frequent it is to have few individuals arriving.
 
 tar_load(all_carcasses_annotated)
 tar_load(all_bouts_annotated)
@@ -16,19 +14,6 @@ tar_load(bbox_south)
 # Restrict bouts and carcasses to south in 2024
 aca <- all_carcasses_annotated %>% filter(year == "2024") %>% st_crop(bbox_south)
 aba <- all_bouts_annotated %>% st_as_sf() %>% filter(year == "2024") %>% st_crop(bbox_south)
-
-# Take a subset of this data to test. 2 wild and 2 placed carcasses -------
-# Hahalak_mount 2023-03-20
-# carcs <- aca %>%
-#   group_by(carcType) %>%
-#   slice_sample(n = 3) %>%
-#   pull(carcID)
-# carcs
-# test <- "4872568"
-
-# one of them is 4872568, which is at Hava_cliff
-# sample_carcs <- aca %>%
-#   filter(carcID %in% test)
 
 # Get data within the right date range ------------------------------------------
 carcass_gps_data <- vector(mode = "list", length = nrow(aca))
@@ -71,29 +56,71 @@ sample_gps <- sample_gps %>%
 table(sample_gps$informed)
 
 # Some stats
-sample_gps %>%
+informed_stats <- sample_gps %>%
   st_drop_geometry() %>%
+  left_join(aca %>% select(carcID, carcType) %>% distinct()) %>%
   ungroup() %>%
-  select(carcID, individual_id, informed) %>%
+  select(carcType, carcID, individual_id, informed) %>%
   distinct() %>%
   ungroup() %>%
-  group_by(carcID, individual_id) %>%
+  group_by(carcType, carcID, individual_id) %>%
   arrange(desc(informed), .by_group = T) %>%
   ungroup() %>%
-  group_by(carcID) %>%
+  group_by(carcType, carcID) %>%
   summarize(ever_informed = sum(informed),
             total = length(unique(individual_id)),
-            never_informed = total-ever_informed) %>%
-  arrange(ever_informed) %>%
-  View() # okay this is more like what I thought! So now I'm wondering why I wasn't getting these results earlier. Hmm...
+            never_informed = total-ever_informed,
+            prop_ever_informed = ever_informed/total) %>%
+  arrange(ever_informed) # okay this is more like what I thought! So now I'm wondering why I wasn't getting these results earlier. Hmm...
 
-# When they're first informed
-a <- sample_gps %>%
-  filter(informed == T) %>%
-  group_by(carcID, individual_id) %>%
-  slice_head() %>%
-  arrange(timestamp)
+informed_stats %>%
+  ggplot(aes(x = carcType, y = prop_ever_informed, fill = carcType, col = carcType))+
+  geom_violin(alpha = 0.2)+
+  theme_classic()+
+  geom_jitter(width = 0.1, pch = 1, size = 2)+
+  theme(legend.position = "none")+
+  labs(y = "Proportion ever informed",
+       x = "Carcass type",
+       title = "2024 carcasses",
+       subtitle = paste0("Informed = within 1000m\nCarcass duration = ", 
+                         carcass_dur_days, " days"))
+# These different distributions might be due to the different way we're measuring time of deposition (we only have date for the wild carcasses, not also time). But it also could be due to real biological differences between what's happening in the INPA vs. wild situations.
+# Maybe also a geographic difference-- wild carcasses are disproportionately located nearer to the center. Does this relate to geography?
 
-a %>%
-  ggplot(aes(x = timestamp, y = fct_reorder(factor(individual_id), timestamp)))+
-  geom_point() # okay, this looks reasonable! I don't love the plot, but that's okay, we'll come back to it. Let's get some more carcasses for now.
+mapview(aca, zcol = "carcType") # wild carcasses are generally more central, but not always, and some of them are way over in Jordan!
+
+# Does latitude affect the proportion of the population that visits within 5 days?
+aca %>%
+  select(carcID, carcType, X, Y) %>%
+  left_join(informed_stats) %>%
+  ggplot(aes(x = Y, y = prop_ever_informed, col = carcType))+
+  geom_point(pch = 1, size = 2)+
+  geom_smooth(method = "lm")+
+  theme_classic()+
+  labs(y = "Proportion ever informed", x = "Carcass latitude") # I don't think this is a linear relationship. Let's try the same thing with a loess?
+
+aca %>%
+  select(carcID, carcType, X, Y) %>%
+  left_join(informed_stats) %>%
+  ggplot(aes(x = Y, y = prop_ever_informed, col = carcType))+
+  geom_point(pch = 1, size = 2)+
+  geom_smooth()+
+  theme_classic()+
+  labs(y = "Proportion ever informed", x = "Carcass latitude") # this makes much more sense. Mid latitudes are going to have many more individuals.
+
+# I assume we'd find the same thing if we looked at longitude
+aca %>%
+  select(carcID, carcType, X, Y) %>%
+  left_join(informed_stats) %>%
+  ggplot(aes(x = X, y = prop_ever_informed, col = carcType))+
+  geom_point(pch = 1, size = 2)+
+  geom_smooth()+
+  theme_classic()+
+  labs(y = "Proportion ever informed", x = "Carcass longitude") # huh, a less straightforward pattern, but still definitely nonlinear.
+
+# Need to probably directly calculate centrality in order to assess the effect of geography. But anyway, we can tell that the spatial placement of the carcass is very important to its dynamics!
+
+# Well, whatever! Let's grab some sample carcasses. -----------------------
+# Going to choose some from the mid range
+
+
