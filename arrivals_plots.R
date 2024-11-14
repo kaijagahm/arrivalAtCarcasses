@@ -7,14 +7,15 @@ library(moveVis)
 library(future)
 library(targets)
 library(patchwork)
+source(here("params.R"))
 
 # allow moveVis to use multiple cores for faster processing
-use_multicore(n_cores = 10, verbose = TRUE)
+use_multicore(n_cores = ncores, verbose = TRUE)
 
 tar_load(hires_tags)
 hires_tags <- hires_tags %>%
-  mutate(behavior = case_when(ground_speed > 5 ~ "flying",
-                              ground_speed <= 5 ~ "ground",
+  mutate(behavior = case_when(ground_speed > flight_speed ~ "flying",
+                              ground_speed <= flight_speed ~ "ground",
                               .default = NA))
 carcasses <- read_excel(here("data/FeedingData from 2018_2024_Translated.xlsx"))
 carcasses_simple <- carcasses %>% select(ID, `Date Event`, `Event time`, `WGS84 - LONG`, `WGS84 - LAT`, `Inspection area - RTG`, `Merhav - RTG`, `RTG district`)
