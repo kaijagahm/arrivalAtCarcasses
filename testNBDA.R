@@ -71,7 +71,9 @@ informed_stats <- sample_gps %>%
             total = length(unique(individual_id)),
             never_informed = total-ever_informed,
             prop_ever_informed = ever_informed/total) %>%
-  arrange(ever_informed) # okay this is more like what I thought! So now I'm wondering why I wasn't getting these results earlier. Hmm...
+  arrange(ever_informed)%>%
+  left_join(aca %>%
+              dplyr::select(carcID, carcType, X, Y))# okay this is more like what I thought! So now I'm wondering why I wasn't getting these results earlier. Hmm...
 
 informed_stats %>%
   ggplot(aes(x = carcType, y = prop_ever_informed, fill = carcType, col = carcType))+
@@ -90,18 +92,14 @@ informed_stats %>%
 mapview(aca, zcol = "carcType") # wild carcasses are generally more central, but not always, and some of them are way over in Jordan!
 
 # Does latitude affect the proportion of the population that visits within 5 days?
-aca %>%
-  select(carcID, carcType, X, Y) %>%
-  left_join(informed_stats) %>%
+informed_stats %>%
   ggplot(aes(x = Y, y = prop_ever_informed, col = carcType))+
   geom_point(pch = 1, size = 2)+
   geom_smooth(method = "lm")+
   theme_classic()+
   labs(y = "Proportion ever informed", x = "Carcass latitude") # I don't think this is a linear relationship. Let's try the same thing with a loess?
 
-aca %>%
-  select(carcID, carcType, X, Y) %>%
-  left_join(informed_stats) %>%
+informed_stats %>%
   ggplot(aes(x = Y, y = prop_ever_informed, col = carcType))+
   geom_point(pch = 1, size = 2)+
   geom_smooth()+
@@ -109,16 +107,20 @@ aca %>%
   labs(y = "Proportion ever informed", x = "Carcass latitude") # this makes much more sense. Mid latitudes are going to have many more individuals.
 
 # I assume we'd find the same thing if we looked at longitude
-aca %>%
-  select(carcID, carcType, X, Y) %>%
-  left_join(informed_stats) %>%
+informed_stats %>%
   ggplot(aes(x = X, y = prop_ever_informed, col = carcType))+
   geom_point(pch = 1, size = 2)+
   geom_smooth()+
   theme_classic()+
   labs(y = "Proportion ever informed", x = "Carcass longitude") # huh, a less straightforward pattern, but still definitely nonlinear.
 
-# Need to probably directly calculate centrality in order to assess the effect of geography. But anyway, we can tell that the spatial placement of the carcass is very important to its dynamics!
+# Need to probably directly calculate centrality in order to assess the effect of geography. But anyway, we can tell that the spatial placement of the carcass is very important to its dynamics! This aligns with what I would expect.
+
+# I don't know if we can put these into a model... does that even work?
+geo_mod <- lm(prop_ever_informed ~ X*Y + carcType, data = informed_stats)
+summary(geo_mod) # yeah, no significant effect. Could be not enough data; could be this isn't the right way to look at centrality.
+
+# Could do a density raster... but anyway, that's for later.
 
 # Well, whatever! Let's grab some sample carcasses. -----------------------
 # Going to choose some from the mid range
