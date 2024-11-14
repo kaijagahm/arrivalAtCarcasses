@@ -117,7 +117,7 @@ int %>%
                     values = pal)+
   labs(x = "Time since carcass",
        y = "# vultures",
-       title = paste(.$stationName[1]),
+       title = paste(.$stationName[1], " (", rand_inpa, ")", sep = ""),
        subtitle = paste(.$carc_date[1]))+
   geom_vline(aes(xintercept = 0), col = "black", linetype = 2)+
   theme(legend.position = "bottom", nrow = 2)}
