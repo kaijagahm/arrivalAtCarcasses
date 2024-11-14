@@ -123,6 +123,61 @@ summary(geo_mod) # yeah, no significant effect. Could be not enough data; could 
 # Could do a density raster... but anyway, that's for later.
 
 # Well, whatever! Let's grab some sample carcasses. -----------------------
-# Going to choose some from the mid range
+# Going to choose some from the mid range proportions.
+informed_stats %>%
+  ggplot(aes(x = prop_ever_informed, col = carcType))+
+  geom_density()
 
+carcs <- informed_stats %>%
+  filter(prop_ever_informed > 0.25 & prop_ever_informed < 0.6) %>%
+  group_by(carcType) %>%
+  sample_n(3) %>%
+  pull(carcID)
 
+dataset <- sample_gps %>%
+  filter(carcID %in% carcs)
+
+# Let's pick one and visualize the spread of information through time
+one <- "4874955"
+order <- dataset %>%
+  filter(carcID == one) %>%
+  group_by(individual_id) %>%
+  arrange(desc(informed), timestamp, .by_group = T) %>%
+  slice(1) %>%
+  arrange(desc(timestamp)) %>%
+  pull(individual_id)
+
+dataset %>%
+  filter(carcID == one) %>%
+  ggplot(aes(x = timestamp, y = factor(individual_id, levels = order), 
+             col = informed))+
+  geom_point(pch = 1, alpha = 0.2)+
+  theme_minimal()+
+  theme(axis.text.y = element_blank())+
+  labs(title = "Spread of information for one carcass",
+       subtitle = one,
+       y = "Individual",
+       x = "Timestamp",
+       caption = "Informed = have been within 1000m of carcass since it was placed")+
+  scale_color_manual(name = "Informed",
+                     values = c("lightgray", "firebrick3"))+
+  guides(color = guide_legend(override.aes = list(alpha = 1, size = 2)))
+# This would also be interesting to visualize if we instead did "have been within 1000m of carcass within the past 24 hours" or something
+
+dataset %>%
+  filter(carcID == one) %>%
+  mutate(close = case_when(dist_m <= 1000 ~ T,
+                           .default = F)) %>%
+  ggplot(aes(x = timestamp, y = factor(individual_id, levels = order), 
+             col = close))+
+  geom_point(pch = 1, alpha = 0.2)+
+  theme_minimal()+
+  theme(axis.text.y = element_blank())+
+  labs(title = "Instances of direct information\nacquisition for one carcass",
+       subtitle = one,
+       y = "Individual",
+       x = "Timestamp",
+       caption = "Close = currently within 1000m of carcass")+
+  scale_color_manual(name = "Close",
+                     values = c("lightgray", "dodgerblue3"))+
+  guides(color = guide_legend(override.aes = list(alpha = 1, size = 2)))
