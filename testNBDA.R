@@ -3,6 +3,8 @@ library(tidyverse)
 library(here)
 library(targets)
 source(here("params.R"))
+#devtools::install_github("whoppitt/NBDA")
+library(NBDA)
 
 gps <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") %>%
   st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
@@ -137,6 +139,7 @@ carcs <- informed_stats %>%
 dataset <- sample_gps %>%
   filter(carcID %in% carcs)
 
+# Tangent to visualize the spread of info for a single carcass ------------
 # Let's pick one and visualize the spread of information through time
 one <- "4874955"
 order <- dataset %>%
@@ -181,3 +184,7 @@ dataset %>%
   scale_color_manual(name = "Close",
                      values = c("lightgray", "dodgerblue3"))+
   guides(color = guide_legend(override.aes = list(alpha = 1, size = 2)))
+
+
+
+
