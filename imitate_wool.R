@@ -1,14 +1,37 @@
-library(tidyverse)
-library(igraph)
-library(NBDA)
-library(vultureUtils)
-library(targets)
-library(sf)
+# PACKAGES
+## Workflow
 library(here)
+library(targets)
+
+## Data wrangling
+library(tidyverse) # for data wrangling
+library(vultureUtils)
+library(data.table)
+
+## Networks
+library(igraph) # for network viz
 library(tidygraph)
 library(ggraph)
+#library(asnipe) # XXX remove?
 
-# Now time to look at the NBDA code ---------------------------------------
+## Spatial
+library(sf)
+library(mapview)
+# library(sp) # XXX remove?
+# library(geosphere) # XXX remove?
+# devtools::install_github("John-R-Wallace-NOAA/Imap")
+# library(Imap) # XXX remove?
+
+## Modeling and stats
+# install_github("whoppitt/NBDA")
+library(NBDA)
+library(vegan)
+
+## Visualization
+library(ggplot2)
+library(gridExtra)
+
+# Load data ---------------------------------------
 tar_load(all_carcasses_annotated)
 tar_load(all_bouts_annotated)
 tar_load(bbox_south)
@@ -22,36 +45,51 @@ all_bouts_annotated %>%
 mycarc <- aca %>%
   filter(carcID == "4874955")
 date_placed <- lubridate::date(mycarc$datetime)
+date_before <- date_placed - days(1)
 plusfour <- date_placed + days(4)
 
 # Downloaded code for tits finding colored wool (Vistalli et al. 2023)
 # Determined I need the following:
 
 # *For one single carcass, at first*
-#   - dataset of GPS points in the south, from beginning of placement day to +4 days
+#   - dataset of GPS points in the south, from one day before placement day to +4 days
 gps <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") %>%
   st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
   st_transform(32636) %>%
   st_crop(bbox_south)
 gps_mycarc <- gps %>%
-  filter(dateOnly >= date_placed & dateOnly <= plusfour) %>%
+  filter(dateOnly >= date_before & dateOnly <= plusfour) %>%
   st_transform("WGS84") %>%
   bind_cols(st_coordinates(.)) %>%
   rename("location_long" = X,
          "location_lat" = Y) %>%
   mutate(dateOnly = lubridate::ymd(dateOnly))
-dim(gps_mycarc) # a lot of gps points in the south between day of placement and 4 days later
-length(unique(gps_mycarc$individual_id)) # 59 individuals detected in the south between day of placement and 4 days later.
+dim(gps_mycarc) # a lot of gps points in the south between one day before day of placement and 4 days after placement
+length(unique(gps_mycarc$local_identifier)) # 59 individuals detected
 
+# - for calculating activity areas on the day before: get just that one day of data
+gps_mycarc_daybefore <- gps_mycarc %>%
+  filter(dateOnly == date_before)
+dim(gps_mycarc_daybefore)
+
+gps_mycarc_fromplacement <- gps_mycarc %>%
+  filter(dateOnly > date_before)
+dim(gps_mycarc_fromplacement)
+all_individuals <- sort(unique(gps_mycarc_fromplacement$local_identifier))
+length(all_individuals)
+
+# NETWORKS ---------------------------------------
+## Co-flight (foraging) ---------------------------------------
+### --UPDATE DYNAMICALLY EVENTUALLY, BUT FOR NOW STATIC OVER ENTIRE PERIOD
 # - co-flight network, from beginning of placement day to +4 days. consecThreshold = 1.
 rp <- sf::st_read(here("data/raw/roosts50_kde95_cutOffRegion.kml"))
-coflight <- getFlightEdges(gps_mycarc, roostPolygons = rp, roostBuffer = 50,
-               consecThreshold = 1, distThreshold = 1000,
-               speedThreshUpper = NULL, speedThreshLower = 5,
-               timeThreshold = "10 minutes",
-               idCol = "individual_id",
-               return = "sri")
-g <- igraph::graph_from_data_frame(coflight, directed = FALSE)
+coflight <- getFlightEdges(gps_mycarc_fromplacement, roostPolygons = rp, roostBuffer = 50,
+                           consecThreshold = 1, distThreshold = 1000,
+                           speedThreshUpper = NULL, speedThreshLower = 5,
+                           timeThreshold = "10 minutes",
+                           idCol = "local_identifier",
+                           return = "sri")
+g <- igraph::graph_from_data_frame(coflight, directed = FALSE, vertices = all_individuals)
 t_g <- tidygraph::as_tbl_graph(g) %>% activate(edges) %>%
   filter(!is.na(sri) & sri > 0)
 ggraph(t_g) +
@@ -61,87 +99,125 @@ ggraph(t_g) +
   theme_classic()
 coflight_adj <- as_adjacency_matrix(t_g, attr=  "sri")
 
-# - roosts for each vulture on each night, beginning the night before the carcass was placed. In order to get this, we need to add two extra days of data (since both morning and night are necessary for roost computation). Need date_placed-days(1) through plusfour + days(1)
+## Co-roosting (following) ---------------------------------------
+### --UPDATE DYNAMICALLY EACH DAY
+# - roosts for each vulture on each night, beginning the night before the carcass was placed. In order to get this, we need to add two extra days of data (since both morning and night are necessary for roost computation). Need date_before through plusfour + days(1)
 gps_mycarc_forroosts <- gps %>%
   # need to include the previous day
-  filter(dateOnly >= (date_placed-days(1)) & dateOnly <= (plusfour + days(1))) %>%
+  filter(dateOnly >= date_before & dateOnly <= (plusfour + days(1))) %>%
   st_transform("WGS84") %>%
   bind_cols(st_coordinates(.)) %>%
   rename("location_long" = X,
          "location_lat" = Y) %>%
   mutate(dateOnly = lubridate::ymd(dateOnly))
-r <- get_roosts_df(gps_mycarc_forroosts, id = "individual_id")
+r <- get_roosts_df(gps_mycarc_forroosts, id = "local_identifier")
 length(unique(r$roost_date)) # we have roosts for nights including the night before the carcass was placed.
+
+# create dummy data frame for adding any missing indivs
+dummy <- data.frame(local_identifier = all_individuals, 
+                    location_lat = NA, 
+                    location_long = NA)
+
 unique(r$roost_date)
 table(r$roost_date)
 r_list <- r %>%
   group_by(roost_date) %>%
   group_split() %>%
-  map(., ~sf::st_as_sf(.x, coords = c("location_long", "location_lat"), remove = F, crs = "WGS84") %>% st_transform(32636))
+  map(., ~sf::st_as_sf(.x, coords = c("location_long", "location_lat"), remove = F, crs = "WGS84") %>% 
+        st_transform(32636))
 
-# - matrices of pairwise distances between them
-indivs <- map(r_list, ~.x$individual_id)
+missing <- map(r_list, ~all_individuals[!(all_individuals %in% .x$local_identifier)])
+
+fill_in <- map(missing, ~dummy %>% filter(local_identifier %in% .x))
+
+r_list <- map2(r_list, fill_in, ~{
+  if(nrow(.y) > 0){
+    out <- bind_rows(.x, .y) %>%
+      arrange(local_identifier)
+  }else{out <- .x %>%
+    arrange(local_identifier)}
+  return(out)})
+
+# - matrices of pairwise distances between them (co-roost network; changes each day)
 roost_pairwise_distances <- map(r_list, ~as.data.frame(st_distance(.x))) %>%
-  map2(., indivs, ~{
-    out <- .x
-    names(out) <- .y
-    row.names(out) <- .y
-    return(out)
-    }) %>%
-  map(., ~.x %>% mutate(across(everything(), as.numeric)))
-
-# - daily centers of activity for each vulture, excluding roosts
-activity_list <- 
-  gps_mycarc %>%
-  group_by(dateOnly) %>%
-  group_split()
-
-activity_centers <- map(activity_list, ~.x %>%
-                          group_by(individual_id) %>%
-                          summarize(st_union(geometry)) %>%
-                          st_centroid() %>%
-                          st_transform(32636))
-indivs_activity <- map(activity_centers, ~.x$individual_id)
-
-# - matrix of pairwise distances between them
-activity_centers_pairwise_distances <- map(activity_centers, ~as.data.frame(st_distance(.x))) %>%
-  map2(., indivs_activity, ~{
-    out <- .x
-    names(out) <- .y
-    row.names(out) <- .y
-    return(out)
+  map(., ~{
+    row.names(.x) <- all_individuals
+    colnames(.x) <- all_individuals
+    return(.x)
   }) %>%
   map(., ~.x %>% mutate(across(everything(), as.numeric)))
 
-# - overall center of activity for each vulture from carcass placement day to +4 days
-overall_activity_centers <- gps_mycarc %>%
-  group_by(individual_id) %>%
+# INDIVIDUAL-LEVEL VARIABLES ----------------------------------------------
+## Distance to carcass (day before) ----------------------------------------------
+### activity centers
+activity_centers <- gps_mycarc_daybefore %>%
+  group_by(local_identifier) %>%
   summarize(st_union(geometry)) %>%
   st_centroid() %>%
-  st_transform(32636)
+  st_transform(32636) # XXX maybe change this to only include daylight points?
 
-# - matrix of pairwise distances between them
-indivs_overall <- overall_activity_centers$individual_id
-overall_activity_centers_pairwise_distances <- as.data.frame(st_distance(overall_activity_centers)) %>%
-  mutate(across(everything(), as.numeric))
-names(overall_activity_centers_pairwise_distances) <- indivs_overall
-row.names(overall_activity_centers_pairwise_distances) <- indivs_overall
+## distance between those activity centers and the carcass location (to use as an ILV)
+dists_to_carc <- as.numeric(st_distance(activity_centers, mycarc))
 
+## create ilvs data frame
+ilvs <- st_drop_geometry(activity_centers) %>%
+  bind_cols("dist_to_carc_daybefore" = dists_to_carc)
+
+## Age ----------------------------------------------
+# ww <- read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"),
+#                col_select = 1:40)
+# write_rds(ww, file = here("data/created/ww.RDS"))
+ww <- readRDS(here("data/created/ww.RDS"))
+glimpse(ww)
+www <- ww %>%
+  dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex)
+
+www_tojoin <- www %>%
+  filter(Movebank_id %in% ilvs$local_identifier) %>%
+  distinct()
+dim(www_tojoin) #59 rows, yay
+
+## check before joining:
+all(www_tojoin$Movebank_id %in% ilvs$local_identifier) # TRUE
+all(ilvs$local_identifier %in% www_tojoin$Movebank_id) # TRUE
+
+ilvs <- ilvs %>%
+  left_join(www_tojoin, by = c("local_identifier" = "Movebank_id"))
+
+table(ilvs$sex, exclude = NULL) # we have sex info for almost all of them
+
+## Calculate age in 2024
+ilvs <- ilvs %>%
+  mutate(age_in_2024 = 2024-birth_year)
+
+## Assign age groups
+ilvs <- ilvs %>%
+  mutate(age_group = case_when(age_in_2024 >5 ~ "02_adult",
+                               age_in_2024 <= 5 ~ "01_juv_sub",
+                               .default = NA),
+         age_group = factor(age_group),
+         sex = factor(sex))
+dim(ilvs) # 59 individuals still
+
+# ACQUISITION DATA ----------------------------------------------
+## Time of acquisition ----------------------------------------------
 # - time of first arrivals to carcass
-distances <- as.numeric(st_distance(st_transform(gps_mycarc, 32636), mycarc))
-gps_mycarc$dist_to_carc <- distances
+distances <- as.numeric(st_distance(st_transform(gps_mycarc_fromplacement, 32636), mycarc))
+gps_mycarc_fromplacement$dist_to_carc <- distances
 
-at_carcass <- gps_mycarc %>%
-  filter(ground_speed < 5) %>%
-  filter(dist_to_carc < 250)
+at_carcass <- gps_mycarc_fromplacement %>%
+  mutate(carcID = mycarc$carcID) %>%
+  filter(dist_to_carc < 250 & ground_speed < 5) # near carcass and not flying
 
 first_at_carcass <- at_carcass %>%
   arrange(timestamp) %>%
-  group_by(individual_id) %>%
+  group_by(local_identifier) %>%
   slice(1) %>%
   ungroup() %>%
   arrange(timestamp) %>%
   mutate(rownumber = 1:n())
+length(unique(first_at_carcass$local_identifier)) # 33 individuals arrived at the carcass during the 4 days since placement
+nrow(first_at_carcass)
 
 # quick viz
 first_at_carcass %>% 
@@ -151,41 +227,19 @@ first_at_carcass %>%
   labs(y = "Number of unique individuals",
        x = "Time")
 
-# - age and sex for each individual
-# it won't be trivial to join this information onto the gps data, since I didn't do a good job maintaining the IDs. Let's just proceed with no ILVs for now and add them later.
+# Modeling ----------------------------------------------
 
-# Got the data, now time to try modeling ----------------------------------
-# Bringing code over from imitate_wool.R whenever possible
-library(asnipe)
-library(sp)
-library(geosphere)
-library(Imap) # XXX had to install devtools version; this is no loner on CRAN
-library(data.table)
-library(ggplot2)
-library(gridExtra)
-
-# 2) Create foraging network ------------------------------------------------
+## 2) Create foraging network ------------------------------------------------
 # AKA co-flight network
 glimpse(coflight)
 t_g
 t_g %>% activate(nodes) %>% pull(name) %>% length() # 59 vultures included in the co-flight network.
 
-# 3) Create distance matrix ----------------------------------------------------
-# 3.3. calculate distances between nest boxes and dispensers --------------
-# AKA Distance between roosts on each night and the carcass site
-st_crs(r_list[[1]]) == st_crs(mycarc)
-r_list <- map(r_list, ~.x %>% mutate(dist_to_carc = as.numeric(st_distance(.x, mycarc))))
+## 3) Create distance matrix ----------------------------------------------------
 
-# 3.4. Extract which boxes are within 200m of dispensers ------------------
-# KG: can skip this; already restricted to south
-
-# 3.5. Calculate the neighbour matrix -------------------------------------
+### 3.5. Calculate the neighbour matrix -------------------------------------
 # AKA nighttime neighbour matrix = pairwise distances between roosts
 map(roost_pairwise_distances, dim)
-# AKA daytime neighbour matrix = pairwise distances between daily activity centers
-map(activity_centers_pairwise_distances, dim)
-# AKA daytime neighbour matrix (aggregate) = pairwise distances between overall activity centers
-dim(overall_activity_centers_pairwise_distances)
 
 # Get inverted square root of all of these:
 rpd_invsq <- map(roost_pairwise_distances, ~.x %>% 
@@ -195,50 +249,33 @@ rpd_invsq <- map(rpd_invsq, ~{
   .x[.x==Inf] <- 0
   return(.x)
 })
+# use the inverted square root of distances so that locations closer together have higher values
 
-acpd_invsq <- map(activity_centers_pairwise_distances, ~.x %>%
-                    mutate(across(everything(),
-                                  ~1/sqrt(.x))))
-acpd_invsq <- map(acpd_invsq, ~{
-  .x[.x==Inf] <- 0
-  return(.x)
-})
-
-oacpd_invsq <- overall_activity_centers_pairwise_distances %>%
-  mutate(across(everything(),
-                ~1/sqrt(.x)))
-oacpd_invsq[oacpd_invsq == Inf] <- 0
-hist(as.matrix(oacpd_invsq))
-# use the inverted square root of distances 
-# so that locations closer together have higher values
-
-# 4) Load data from wool dispensers -----------------------------------------
-# AKA: get arrival data to the carcass
+## 4) get arrival data to the carcass -----------------------------------------
+# (ref: Load data from wool dispensers)
 dim(at_carcass)
 head(at_carcass)
 glimpse(at_carcass)
 
 # How many different birds have visited
-length(unique(at_carcass$individual_id))
+length(unique(at_carcass$local_identifier))
 # 33 (out of a network of 58-59 depending on the day)
 
-# # 5) Load individual-level variables (ILVs) ---------------------------------------------------------
-# XXX SKIPPING THIS FOR NOW
-# XXX couldn't make the NBDA data without ILVs, so maybe we can put in some dummy ones?
+## 5) Load individual-level variables (ILVs) ---------------------------------------------------------
+glimpse(ilvs)
 load(here("data/ILVs.combined.RDA"))
 str(ILVs.combined) # just a simple data frame
-fakeILVs <- data.frame(individual_id = unique(gps_mycarc$individual_id),
-                       age = 1,
-                       sex = 1)
+glimpse(ilvs)
 # columns:
-# - Age: 
-# - Sex:
-# - First.visits: Date (yymmddHHMMSS) of first visit to a dispenser XXX any dispenser, or the target one?
-# - D1-D5: distance (in m) to each dispenser # XXX change to distance to roosts/etc?
-# - D1.visited-D5.visited: 0 if not visited dispenser, 1 if registered on the respective dispenser #XXX ?
-# - closest.dispenser: distance (in m) to the closest dispenser # XXX ?
+# - local_identifier: the individual ID 
+# - dist_to_carc_daybefore: how far away the individual's center of activity was from the carcass site on the day before the carcass was placed
+# - Nili_id: redundant with local_identifier
+# - sex: m, f, or NA for unknown
+# - birth_year: year hatched
+# - age_in_2024: numerical age in 2024
+# - age_group: >5 is adult; <= 5 is juvenile/subadult
 
-# 5.1) Double-check stability of foraging network -------------------------
+### 5.1) Double-check stability of foraging network -------------------------
 # AKA: investigate stability of co-flight network (e.g. over days 1, 2, 3)
 rows_day1 <- gps_mycarc %>%
   filter(dateOnly == date_placed)
@@ -247,9 +284,9 @@ rows_day2 <- gps_mycarc %>%
 rows_day3 <- gps_mycarc %>%
   filter(dateOnly == date_placed + days(2))
 
-indivs <- unique(gps_mycarc$individual_id)
+indivs <- unique(gps_mycarc$local_identifier)
 getadj <- function(rows){
-  cf <- getFlightEdges(rows, roostPolygons = rp, consecThreshold = 1, distThreshold = 1000, idCol = "individual_id", return = "sri")
+  cf <- getFlightEdges(rows, roostPolygons = rp, consecThreshold = 1, distThreshold = 1000, idCol = "local_identifier", return = "sri")
   g <- igraph::graph_from_data_frame(cf, directed = FALSE, vertices = indivs)
   tg <- tidygraph::as_tbl_graph(g) %>%
     activate(edges) %>%
@@ -262,8 +299,6 @@ coflight_day1 <- getadj(rows_day1)
 coflight_day2 <- getadj(rows_day2)
 coflight_day3 <- getadj(rows_day3)
 
-library(vegan)
-
 mantel(coflight_day1, coflight_day2) # a significant mantel test would suggest that the matrices are significantly correlated. This is not significant: 0.04, with a mantel statistic of 0.05 (extremely low correlation!)
 
 # I would expect the same between coflight_day2 and coflight_day3
@@ -271,170 +306,84 @@ mantel(coflight_day2, coflight_day3) # slightly higher correlation: 0.19, and th
 
 # Anyway, though, this is just one carcass, and I suspect that in general we are going to need to use dynamic networks. There's no way that the co-flight network will be consistently correlated over time.
 #XXX to do--read papers on dynamic networks for NBDA
+# CONFIRMS WE NEED A DYNAMIC FORAGING NETWORK! But sticking with static for now for simplicity.
 
-# 6.1. prepare matrices -------------------------------------------------
-
-# extract how many points each vulture had recorded at the carcass
-at_carcass %>%
-  st_drop_geometry() %>%
-  group_by(individual_id) %>%
-  summarize(n = n()) %>%
-  arrange(desc(n)) # okay but this isn't the same as the number of independent visits (i.e. separated by at least one point that's not at the carcass)
-
-gps_mycarc <- gps_mycarc %>%
-  mutate(at_carcass = case_when(ground_speed < 5 & dist_to_carc < 250 ~ T,
-                                .default = F)) %>%
-  arrange(individual_id, timestamp) %>%
-  mutate(visit = NA)
-
-current_indiv <- gps_mycarc$individual_id[1]
-current_visit <- 0
-for(i in 1:nrow(gps_mycarc)){
-  if(gps_mycarc$at_carcass[i] == FALSE){ # if not at carcass, no visit
-    gps_mycarc$visit[i] <- NA
-  }else{ # if at carcass
-    if(gps_mycarc$individual_id[i] != gps_mycarc$individual_id[i-1]){ # if new indiv
-      current_visit <- current_visit + 1 # next visit number
-      gps_mycarc$visit[i] <- current_visit
-    }else{ # if same indiv
-      if(gps_mycarc$at_carcass[i-1] == TRUE){ # if previous row was also at carcass, same visit 
-        gps_mycarc$visit[i] <- current_visit
-      }else{ # if previous row was not at carcass, then new visit
-        current_visit <- current_visit + 1 #next visit number
-        gps_mycarc$visit[i] <- current_visit
-      }
-    }
-  }
-}
-
-at_carcass <- gps_mycarc %>%
-  filter(at_carcass == T)
-
-at_carcass %>%
-  group_by(individual_id) %>%
-  st_drop_geometry() %>%
-  summarize(npoints = n(),
-            nvisits = length(unique(visit))) %>%
-  arrange(desc(npoints), desc(nvisits))
-
-# Average and max number of visits by a single individual to the carcass over the 4-day period
-at_carcass %>%
-  group_by(individual_id) %>%
-  st_drop_geometry() %>%
-  summarize(npoints = n(),
-            nvisits = length(unique(visit))) %>%
-  arrange(desc(npoints), desc(nvisits)) %>%
-  summarize(mnpoints = mean(npoints),
-            maxpoints = max(npoints),
-            mnvisits = mean(nvisits),
-            maxvisits = max(nvisits))
-
-# 6.2. Check for correlation between foraging and neighbour matrix ----------------------------------------------
-# AKA: check for correlation between co-flight network and the oacpd_invsq (overall activity centers pairwise distances inverse square) matrix (or whatever spatial matrix I ultimately decide to use) 
-dim(coflight_adj)
-dim(oacpd_invsq)
-
-library(vegan)
-mantel(coflight_adj, oacpd_invsq, permutations = 9999)
-
+# 6) NBDA - social information to use to find lining material -----------------------------------------------------------------
+# 6.2. Check for correlation between foraging and roosting matrices ----------------------------------------------
+mantel(coflight_adj, roost_pairwise_distances[[1]], permutations = 9999)
 # Mantel statistic based on Pearson's product-moment correlation 
 # 
 # Call:
-# mantel(xdis = coflight_adj, ydis = oacpd_invsq, permutations = 9999) 
+# mantel(xdis = coflight_adj, ydis = roost_pairwise_distances[[1]],      permutations = 9999) 
 # 
-# Mantel statistic r: 0.02873 
-#       Significance: 0.1781 
+# Mantel statistic r: -0.1754 
+#       Significance: 1 
 # 
 # Upper quantiles of permutations (null model):
 #    90%    95%  97.5%    99% 
-# 0.0424 0.0565 0.0721 0.0883 
+# 0.0421 0.0530 0.0623 0.0724 
 # Permutation: free
 # Number of permutations: 9999
 
-# non-significant correlation between co-flight and spatial network, which means we can include them both in the NBDA analysis at the same time
+mantel(coflight_adj, roost_pairwise_distances[[2]], permutations = 9999) # n.s
+# XXX it will be more complicated to test the correlations once we have dynamic networks for both foraging and roosting, but that's okay for now. Also keep in mind that some of these have NAs, which is going to interfere.
 
+# non-significant correlation between foraging and neighbour network, which means we can include them both in the NBDA analysis at the same time
+# XXX for now, just going to use the first roost neighbor network so we don't have to deal with anything being dynamic.
+nn_fornow <- roost_pairwise_distances[[1]]
 
 # 6.3. Prepare NBDA data ------------------------------------------------------------------
 prepare.NBDA.data <- function(at_carcass, include.all, ILVs.include){
-  # dispenser.data <- dispenser.data[order(dispenser.data$date.time),] # ensure it is sorted according to date
-  at_carcass <- at_carcass %>%
-    ungroup() %>%
-    arrange(timestamp)
-  
-  # location <- unique(dispenser.data$Location)
-  location <- rep(mycarc$carcID, nrow(at_carcass)) # all the same carcass (for now)
-  
-  # # We extract which females were breeding in boxes within 200m of the respective dispenser
-  # IDs.included <- subset(ILVs.combined$PIT_f, ILVs.combined[,location]<=200 | ILVs.combined[,paste(location, ".visited", sep="")]==1 ) 
-  # IDs.included <- subset(IDs.included, IDs.included %in% IDs.to.include.in.NBDA)
-  # # we remove boxes D04, R06, G33 (females breeding in two boxes - we retained the ones closer to the dispenser)
-  # ILVs.sub.disp <- subset(ILVs.combined, ILVs.combined$PIT_f %in% IDs.included & !(ILVs.combined$Box %in% c("D04", "R06", "G33")))
-  # # subset the dispenser data to only those females
-  # dispenser.data <- subset(dispenser.data, dispenser.data$PIT %in%  IDs.included)
-  # XXX not doing this because we're including all the individuals and the ILV matrix already includes all of them.
+  at_carcass <- at_carcass[order(at_carcass$timestamp),] # ensure it is sorted according to date/time
+  location <- unique(at_carcass$carcID)
   
   # order data in ascending order (according to PIT tag)
-  # ILVs.sub.disp <- ILVs.sub.disp[order(ILVs.sub.disp$PIT_f),] # order ascending according to PIT tag
-  fakeILVs <- fakeILVs[order(fakeILVs$individual_id),]
-  
-  # # subset the two networks to those IDs
-  # forage.net <- foraging.network.NBDA[rownames(foraging.network.NBDA) %in% IDs.included, colnames(foraging.network.NBDA) %in% IDs.included]
-  # neighbour.net <- neighbour_matrix.NBDA.new[rownames(neighbour_matrix.NBDA.new) %in% IDs.included, colnames(neighbour_matrix.NBDA.new) %in% IDs.included]
-  # XXX not doing this because again, we're using all the individuals
-  
+  ilvs_ordered <- ilvs[order(ilvs$local_identifier),] # order ascending according to local identifier
+
   # create an array with the two matrices
-  # assMatrix.nbda <- array(data=c(forage.net, neighbour.net), dim=c(nrow(forage.net), ncol(forage.net), 2))
-  assMatrix.nbda <- array(data=c(coflight_adj, oacpd_invsq), 
+  # XXX START HERE--something is wrong with the format of assMatrix.nbda. It needs to exactly match the GBI matrix produced in the tit project, which means I need to actually rerun that code without assuming a particular format.
+  assMatrix.nbda <- array(data = c(coflight_adj, nn_fornow), 
                           dim = c(nrow(coflight_adj), ncol(coflight_adj), 2))
   
-  # # create objects in the global environment for each ILV
-  # species.nbda <- as.matrix(ILVs.sub.disp$Species) 
-  # species.nbda[species.nbda!="GRETI"] <- -0.5 # we assign -0.5 for non great tits
-  # species.nbda[species.nbda=="GRETI"] <- 0.5 # we assign 0.5 for great tits
-  # species.nbda <- as.matrix(as.numeric(species.nbda)) # ILVs need to be defined as matrices
-  # age.nbda <- as.matrix(ILVs.sub.disp$Age) 
-  # age.nbda[age.nbda=="first.year"] <- -0.5 # -0.5 for juveniles
-  # age.nbda[age.nbda=="adult"] <- 0.5 # 0.5 for adult birds
-  # age.nbda <- as.matrix(as.numeric(age.nbda))
-  # distance.nbda <- as.matrix(as.numeric(ILVs.sub.disp[,location])) # we extract the distance of the box to the respective dispenser
-  # distance.nbda[is.na(distance.nbda)] <- mean(distance.nbda[!is.na(distance.nbda)]) # for those not breeding in boxes, add the average distance to the respective dispenser
-  # # we take the square root and standardize the distance for better model fitting - using the standard deviation and mean across all distances calculated above
-  # distance.nbda <- (sqrt(distance.nbda)-sqrt(mean(dist.vec)))/sqrt(sd(dist.vec))
-  # XXX are they going to have to also reorder the networks in order by ID?
-  sex.nbda <- as.matrix(fakeILVs$sex) # XXX note that for any future ILVs that are not numeric, need to make them numeric.
-  age.nbda <- as.matrix(fakeILVs$age)
+  # create objects in the global environment for each ILV
+  age.nbda <- as.matrix(ilvs$age_group) 
+  age.nbda[age.nbda == "01_juv_sub"] <- -0.5 # -0.5 for juveniles/subadults
+  age.nbda[age.nbda == "02_adult"] <- 0.5 # 0.5 for adult birds
+  age.nbda <- as.matrix(as.numeric(age.nbda)) # ILVs need to be defined as matrices
+  
+  sex.nbda <- as.matrix(ilvs$sex) 
+  sex.nbda[sex.nbda == "m"] <- -0.5 # -0.5 for males
+  sex.nbda[sex.nbda == "f"] <- 0.5 # 0.5 for females
+  sex.nbda[is.na(sex.nbda)] <- 0 # 0 when sex is unknown
+  sex.nbda <- as.matrix(as.numeric(sex.nbda)) # ILVs need to be defined as matrices
+  
+  distance.nbda <- as.matrix(ilvs[,"dist_to_carc_daybefore"]) # distance to the current carcass
+  distance.nbda[is.na(distance.nbda)] <- mean(distance.nbda[!is.na(distance.nbda)]) # for any where we don't know the activity area for the previous day, set the distance to the mean
+  # we take the square root and standardize the distance for better model fitting - using the standard deviation and mean across all distances calculated above
+  distance.nbda <- (sqrt(distance.nbda)-sqrt(mean(distance.nbda)))/sqrt(sd(distance.nbda)) # XXX NEED TO CHECK ON STANDARDIZATION--WHAT'S GOING ON WITH MEAN THING HERE?
   
   # we need to assign these ILVs as objects to the global environment
-  # assign(paste("species", location, sep="_"), species.nbda, envir = .GlobalEnv)
-  # assign(paste("age", location, sep="_"), age.nbda, envir = .GlobalEnv)
-  # assign(paste("distance", location, sep="_"), distance.nbda, envir = .GlobalEnv)
-  assign(paste("")) # XXX again, how are we doing this if we're not sure that the order is the same?
-  # XXX START HERE
-    
-}
-prepare.NBDA.data <- function(dispenser.data, include.all, ILVs.include){
-  
-
-  
+  assign(paste("age", location, sep="_"), age.nbda, envir = .GlobalEnv)
+  assign(paste("sex", location, sep="_"), sex.nbda, envir = .GlobalEnv)
+  assign(paste("distance", location, sep="_"), distance.nbda, envir = .GlobalEnv)
   
   ILVs <- paste(ILVs.include, location, sep="_")
   assign(paste("ILVs", location, sep="_"), ILVs, envir = .GlobalEnv)
   
-  # extract the order of finding the dispenser from the dispenser data
-  t.first <- dispenser.data[match(unique(dispenser.data$PIT), dispenser.data$PIT),]
+  # extract the order of finding the carcass from the carcass data
+  t.first <- at_carcass[match(unique(at_carcass$local_identifier), at_carcass$local_identifier),]
   order <- NULL
   time <- NULL
   num.visits <- NULL
-  for( i in t.first$PIT){
-    order[which(t.first$PIT==i)] <- which(rownames(forage.net)==i)
-    time[which(t.first$PIT==i)] <- as.POSIXct(as.character(subset(t.first$date.time, t.first$PIT==i)), format="%y%m%d%H%M%S", origin="1970-01-01")-as.POSIXct("21032612300000", format="%y%m%d%H%M%S") # difference in days
-    # 26.03.21 12:30 CEST was the start date of the experiment
+  for(i in t.first$local_identifier){
+    order[which(t.first$local_identifier==i)] <- which(rownames(coflight_adj)==i)
+    time[which(t.first$local_identifier==i)] <- lubridate::ymd_hms(as.character(subset(t.first$timestamp, t.first$local_identifier==i)))
   }
   
   object <- NULL
-  object$forage.net <- forage.net
-  object$neighbour.net <- neighbour.net
-  object$ILVs.full <- ILVs.sub.disp
+  object$forage.net <- coflight_adj
+  object$roost.net <- nn_fornow
+  object$ILVs.full <- ilvs
   object$assMatrix <- assMatrix.nbda
   
   object$OAc <- order
@@ -448,9 +397,10 @@ prepare.NBDA.data <- function(dispenser.data, include.all, ILVs.include){
                       int_ilv=get(paste("ILVs", location, sep="_")),            
                       multi_ilv="ILVabsent",        
                       orderAcq=object$OAc,          
-                      timeAcq=object$TAc,           
-                      endTime=41
+                      timeAcq=object$TAc
   )
   
   return(object2)
 }
+
+
