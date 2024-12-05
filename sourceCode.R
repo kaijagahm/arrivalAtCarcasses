@@ -562,7 +562,6 @@ setMethod("initialize",
               availabilityMatrix[,nAcq+1] <- statusMatrix[,nAcq+1]
               #  } # closes the if statement for nAcq!=0
               
-              
               if(is.na(id[1])) {id <- paste(label,c(unlist(naive.id)), sep="_")} # id of naive individuals before each acquisition event, including demonstrators
               
               naive <- dim(assMatrix)[1]-apply(statusMatrix, 2, sum) # number of naive individuals remaining after each acq event (last event will be the end of the diffusion for TADA data with incomplete diffusion)
@@ -594,7 +593,7 @@ setMethod("initialize",
               
               
               if(is.na(event.id[1])) {event.id <- paste(label, event.id.temp, sep="_")}
-              
+
               for(event in 1:(nAcq+1)){ # event indexes the number of the acquisition event- increased by 1 for TADA to allow for the endTime period
                 
                 #Take the appropriate association matrix from the (weighted) time varying association matrix,

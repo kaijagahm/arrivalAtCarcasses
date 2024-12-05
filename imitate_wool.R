@@ -97,7 +97,7 @@ ggraph(t_g) +
   geom_node_point(size = 4, color = "dodgerblue")+
   scale_edge_width(range = c(0, 1))+
   theme_classic()
-coflight_adj <- as_adjacency_matrix(t_g, attr=  "sri")
+coflight_adj <- as_adjacency_matrix(t_g, attr=  "sri", sparse = F)
 
 ## Co-roosting (following) ---------------------------------------
 ### --UPDATE DYNAMICALLY EACH DAY
@@ -342,7 +342,7 @@ prepare.NBDA.data <- function(at_carcass, include.all, ILVs.include){
 
   # create an array with the two matrices
   # XXX START HERE--something is wrong with the format of assMatrix.nbda. It needs to exactly match the GBI matrix produced in the tit project, which means I need to actually rerun that code without assuming a particular format.
-  assMatrix.nbda <- array(data = c(coflight_adj, nn_fornow), 
+  assMatrix.nbda <- array(data = unlist(c(coflight_adj, nn_fornow)), 
                           dim = c(nrow(coflight_adj), ncol(coflight_adj), 2))
   
   # create objects in the global environment for each ILV
@@ -403,4 +403,391 @@ prepare.NBDA.data <- function(at_carcass, include.all, ILVs.include){
   return(object2)
 }
 
+# 6.4. Including all vultures ----------------------------------------------
+nbdaData.all <- prepare.NBDA.data(at_carcass = at_carcass, include.all = TRUE, ILVs.include = c("age", "sex", "distance")) # XXX do this for each carcass
 
+# extract the number of birds in each carcass area and the number of learners
+# test carcass
+dim(nbdaData.all@assMatrix[,,2,1])
+length(nbdaData.all@orderAcq)
+# 59 birds, 33 learners
+
+# 6.5. Create constraints Vector Matrix ---------------------------------
+
+# here, we provide a function to generate the constraints vector matrix
+# which defines the parameter combinations of all NBDA models that are to be run
+
+create.constraints.Vect.Matrix <- function(NBDA_data_object, num_networks, num_ILVs){
+  suppressWarnings(
+    if(length(NBDA_data_object@asoc_ilv) == 1){ # KG addition
+      if(NBDA_data_object@asoc_ilv=="ILVabsent"){
+        num.ILV.asoc <- 0
+      }else {num.ILV.asoc <- length(NBDA_data_object@asoc_ilv)}
+    }else {num.ILV.asoc <- length(NBDA_data_object@asoc_ilv)}) 
+  
+  
+  suppressWarnings(
+    if(length(NBDA_data_object@int_ilv) == 1){# KG addition
+      if(NBDA_data_object@int_ilv=="ILVabsent"){
+        num.ILV.int<- 0
+      } else {num.ILV.int<- length(NBDA_data_object@int_ilv)}
+    }else {num.ILV.int<- length(NBDA_data_object@int_ilv)})
+  
+  suppressWarnings(
+    if(length(NBDA_data_object@multi_ilv) == 1){# KG addition
+      if(NBDA_data_object@multi_ilv=="ILVabsent"){
+        num.ILV.multi <- 0
+      } else {num.ILV.multi <- length(NBDA_data_object@multi_ilv)}
+    }else {num.ILV.multi <- length(NBDA_data_object@multi_ilv)})
+  
+  vector <- seq(1:(num_networks+num.ILV.asoc+num.ILV.int+num.ILV.multi))
+  
+  count <- 0 # create an object 'count', which starts on 0
+  
+  constraintsVect <- matrix(nrow = 10000000, ncol=(num_networks+num.ILV.asoc+num.ILV.int+num.ILV.multi)) # create a matrix to save the combination of parameters in
+  constraintsVect[1,] <- vector # the first row gets filled with a sequence from 1:8 (all parameters will be estimated, none are set to 0)
+  
+  for (i in 1:(length(vector)-1)){ # a loop for each number of parameters to be estimated
+    array <- combn(vector, i, FUN = NULL, simplify = TRUE) # for each number of paramters to be estiamted (e.g. 2) create all possible combinations of numbers between 1:12 (e.g. 2&8, 1&5 etc)
+    
+    for (j in 1:length(array[1,])){ # for each of those combinations
+      vector2 <- seq(1:((num_networks+(num.ILV.asoc+num.ILV.int+num.ILV.multi))-i)) # create a second vector with 11-i free spaces
+      position <- array[,j] # for each created combination
+      count <- count+1 # add +1 to the count
+      
+      for (k in position){ # at each possible position
+        vector2 <- append(vector2, 0, after=k-1) # add a 0 (e.g. 1 0 2 3 ...; 1 2 0 3 4 5 ...; 1 2 3 0 4 5 ....)
+      }
+      constraintsVect[count+1,] <- vector2 # and save the resulting order in a matrix
+    }
+  }
+  
+  
+  constraintsVect <- na.omit(constraintsVect) # remove all NAs from the matrix
+  
+  # extract which columns are networks
+  col.networks <- c(1:num_networks)
+  
+  col.names <- NULL
+  
+  if(num.ILV.asoc!=0){
+    col.names <- rep("asoc", num.ILV.asoc)
+  }
+  
+  if(num.ILV.int!=0){
+    col.names <- c(col.names, rep("int", num.ILV.int))
+  }
+  
+  if(num.ILV.multi!=0){
+    col.names <- c(col.names, rep("multi", num.ILV.multi))
+  }
+  
+  colnames(constraintsVect) <- c(rep("network", num_networks), col.names)
+  
+  constraintsVect <- as.matrix(as.data.frame(constraintsVect))
+  
+  # extract the models containing any social network
+  
+  social.models <- rep(NA, length(constraintsVect[,1]))
+  
+  for (k in 1:length(constraintsVect[,1])){
+    sum <- sum(constraintsVect[k,1:num_networks])
+    if(sum!=0){
+      social.models[k] <- k
+    }
+  }
+  social.models <- as.vector(na.omit(social.models))
+  
+  social.models.matrix <- constraintsVect[social.models,]
+  
+  # if multiplicative models are fit, we need to adjust the matrix
+  # if the multiplicative slots are filled, it automatically fits the parameter for asoc and social (just constrained to be the same)
+  # meaning that we can remove it from the asoc and int slot
+  
+  if(num.ILV.multi!=0){
+    social.models.retain <- rep(NA, length(social.model.matrix[,1]))
+    multi.models <- rep(NA, length(social.models.matrix[,1]))
+    for (k in 1:length(social.models.matrix[,1])){
+      sum <- sum(social.models.matrix[k,which(colnames(social.models.matrix)=="multi")])
+      sum2 <- sum(social.models.matrix[k, c(which(colnames(social.models.matrix)=="asoc"),which(colnames(social.models.matrix)=="int"))])
+      if(sum!=0 & sum2==0){ # if multi models are fit and int and asoc are set to 0
+        multi.models[k] <- k # then retain the model
+      } else if (sum==0){
+        social.models.retain[k] <- k
+      }
+    }
+    
+    multi.models <- as.vector(na.omit(multi.models))
+    social.models.retain <- as.vector(na.omit(social.models.retain))
+    
+    models.to.retain <- c(multi.models, social.models.retain)
+    
+    # these models are retained
+    retain.matrix.soc <- social.models.matrix[models.to.retain,]
+    
+    social.models.matrix <- retain.matrix.soc
+  }
+  
+  # extract the models containing no social network
+  
+  asocial.models <- rep(NA, length(constraintsVect[,1]))
+  
+  for (k in 1:length(constraintsVect[,1])){
+    sum <- sum(constraintsVect[k,1:num_networks])
+    if(sum==0){
+      asocial.models[k] <- k
+    }
+  }
+  asocial.models <- as.vector(na.omit(asocial.models))
+  
+  asocial.models.matrix <- constraintsVect[asocial.models,]
+  
+  cols.asoc <- which(colnames(constraintsVect)=="asoc")
+  
+  asocial.retain <- rep(NA, length(asocial.models))
+  for (k in 1:length(asocial.models)){
+    sum <- sum(asocial.models.matrix[k,which(colnames(constraintsVect)!="asoc")])
+    if(sum==0){
+      asocial.retain[k] <- k
+    }
+  }
+  
+  
+  asocial.retain <- as.vector(na.omit(asocial.retain))
+  
+  asocial.models.to.retain <- asocial.models.matrix[asocial.retain, ]
+  asocial.models.to.retain.matrix <- as.matrix(asocial.models.to.retain)
+  constraintsVectMatrix <- rbind(social.models.matrix,asocial.models.to.retain)
+  
+  # add the Null model (without social learning, and no ILVs)
+  constraintsVectMatrix <- rbind(constraintsVectMatrix, rep(0, length(constraintsVectMatrix[1,])))
+  
+  row.names(constraintsVectMatrix) <- NULL
+  return(constraintsVectMatrix)
+}
+
+
+constraintsVectMatrix <- create.constraints.Vect.Matrix(NBDA_data_object = nbdaData.all, num_networks = 2, num_ILVs = 3)
+colnames(constraintsVectMatrix) <- c("foraging network", "roost network", "asoc_age",
+                                     "asoc_sex", "asoc_distance", "soc_age", "soc_sex",
+                                     "soc_distance") # XXX KG: it's not clear to me how they determined which order to put species/age/distance in these column names, and I don't love that it's hard-coded. I went with the order they were in in my nbdaData object, but I need to double check on theirs.
+# XXX it looks like the order doesn't matter--each of the columns has the same number of rows where it's included and where it's not
+table(constraintsVectMatrix[,"asoc_age"]) # 100 0s and the others add up to 100
+table(constraintsVectMatrix[,"asoc_sex"])
+table(constraintsVectMatrix[,"asoc_distance"])
+table(constraintsVectMatrix[,"soc_age"]) # 104 0s and the others add up to 96
+table(constraintsVectMatrix[,"soc_sex"])
+table(constraintsVectMatrix[,"soc_distance"])
+
+# we have a look at the ouput
+head(constraintsVectMatrix)
+
+# each row represents a model, each column a parameters
+# the first two columns refer to the two networks
+# columns 3-5 to the ILVs influencing asocial learning
+# columns 6-8 to the ILVs influencing social learning
+# if a parameter is set to 0, it is not estimated in that model
+# if it is a number >0, then the parameter is estimated 
+# we could in theory constrain model parameters to be the same 
+# by setting equal numbers (e.g. foraging netowrk=1, neighbour network =1)
+# but here, we want to estimate all parameters independently (hence, consecutive numbers for each additional parameter)
+# XXX KG: do the consecutive numbers actually mean anything, or are they just arbitrary placeholders? E.g. would setting two parameters to both be 1 be different than setting them both to 2?
+
+# 6.6. Run TADA on all vultures  --------------------------------------------------------------------
+
+# we run TADA with multiple diffusions
+
+# Now we can run TADA
+TADA.finding.all <-
+  tadaAICtable(
+    nbdadata = list(
+      nbdaData.all),
+    constraintsVectMatrix = constraintsVectMatrix, 
+    writeProgressFile = F,
+    cores=1
+  )
+
+# we have a look at the resulting AICc table
+# each row corresponds to a model
+# Akaike weights are given in the last column
+# we can see that the top model is model 190 with an Akaike weight of 0.982
+head(print(TADA.finding.all@printTable))
+
+write.csv(TADA.finding.all@printTable, "AIC.table.csv")
+
+constraintsVectMatrix[190,]
+# we can extract network support via summed Akaike weights
+networksSupport(TADA.finding.all)
+
+# support numberOfModels
+# 0:0 1.282362e-90              8
+# 0:1 9.279020e-28             64
+# 1:0 7.398404e-36             64
+# 1:2 1.000000e+00             64
+
+# most evidential support for transmission along the foraging and roosting networks (1.00), 
+# followed by the roosting network alone (9.28x10^-28)
+# followed by transmission through the foraging newtork alone (7.40x10^-36)
+# followed by asocial (1.28x10^-90)
+
+# XXX KG This either means that they are DEFINITELY transmitting through both for this one, or that something's off with the scaling.
+
+variableSupport(TADA.finding.all)
+#          s1 s2 ASOC:age_4874955 ASOC:sex_4874955 ASOC:distance_4874955 SOCIAL:age_4874955 SOCIAL:sex_4874955
+# support  1  1      0.004794253       0.01789115          5.762637e-36       4.055563e-10         0.01789115
+#                SOCIAL:distance_4874955
+# support            6.762121e-26
+
+#                s1        s2 ASOC:age_D1 ASOC:species_D1 ASOC:distance_D1 SOCIAL:age_D1 SOCIAL:species_D1 SOCIAL:distance_D1
+# support 0.7598735 0.1930601   0.1751455       0.1916325        0.6019383     0.2535429         0.1806516          0.1496506
+
+# for an ILV to influence the social or asocial learning rate, we'd need the weight to be >0.5.
+# none of the ILVs influence social or asocial learning rate (weights are all < 0.5)
+
+# extracting effect sizes: model averaged estimates
+mle <- modelAverageEstimates(TADA.finding.all , averageType = "median")
+mle
+
+# s1                      s2                      ASOCIALage_4874955      ASOCIALsex_4874955 
+# 8.379196431             0.004781336             0.000000000             0.000000000 
+# ASOCIALdistance_4874955 SOCIALage_4874955       SOCIALsex_4874955       SOCIALdistance_4874955 
+# 0.000000000             0.000000000             0.000000000             0.000000000 
+
+# we can see that all of the values for the ILVs are 0, which means that the social and asocial learning rates are unaffected by the ILVs in this example.
+
+# 6.7. Extract effect sizes ------------------------------------------------
+
+# we extract effect sizes conditional on the best model
+# the best model is model 190 (top model in AIC table)
+constraintsVectMatrix[190,]
+# foraging network    roost network         asoc_age         asoc_sex    asoc_distance          soc_age 
+# 1                   2                     0                0           0                      0 
+# soc_sex     soc_distance 
+# 0           0 
+# it contains the foraging network and the roost network influencing the learning rate
+
+# we create constrained NBDA Data Objects for that specific model
+bestModelData <- constrainedNBDAdata(nbdadata=nbdaData.all,constraintsVect =constraintsVectMatrix[190,])
+
+# and run TADA on the best model
+model.best.social <-
+  tadaFit(
+    list(bestModelData)
+  )
+
+cbind.data.frame(model.best.social@varNames, model.best.social@outputPar)
+
+# model.best.social@varNames model.best.social@outputPar
+# 1            Scale (1/rate):                1.713873e+09
+# 2    1 Social transmission 1                8.379196e+00
+# 3    2 Social transmission 2                4.781336e-03
+
+# extract the % of events occurring through social learning
+prop.solve.social.byevent <-
+  oadaPropSolveByST.byevent(
+    nbdadata = list(
+      bestModelData
+    ),
+    model = model.best.social
+  )
+prop.solve.social.byevent 
+# this gives an estimate of the likelihood of each event occurring through social learning
+
+# this extracts the overall percentage that have learned socially
+prop.solve.social <-
+  oadaPropSolveByST(
+    nbdadata = list(
+      bestModelData
+    ),
+    model = model.best.social
+  )
+prop.solve.social # P(Network 1, forage): 0.06
+# P(Network 2, roost): 0.92 # XXX noticing that a lot of them are learning through the co-roosting network. definitely need to adjust which networks we're using here, in order for this one to make sense.
+
+# this means that 92+6% of birds have found the carcass through social learning 
+# the remaining 2% have done so through asocial learning
+
+# extract profile likelihood. which=1 extracts the first parameter 
+# (in this case s for the foraging network)
+plotProfLik(which=1,model=model.best.social,range=c(0,10000), resolution=10) 
+# we check where the profile likelihood crosses the dotted line to get the
+# range for the lower and upper interval - set the ranges accordingly
+CIs <- profLikCI(which=1,model=model.best.social, lowerRange = c(1500,2200), upperRange = c(8000,10000)) # extract confidence intervals
+CIs
+# Lower CI Upper CI 
+# 1606.417 9384.638 # XXX I'm not clear on what is meant by such an enormous confidence interval and such a huge value of s. Maybe just that we're really really certain it's social transmission? But it does definitely seem like the scaling is off.
+
+# Now the same thing for the co-roosting network
+plotProfLik(which=2,model=model.best.social,range=c(0,10000), resolution=10) 
+# XXX what does it mean that this one is just a line? can't extract a CI for this.
+
+# we also want to extract what this means in %
+
+#To get the estimates for the lower bound 
+# we have to compute the corresponding values of the other parameters for that model
+# if s is constrained to the value of the lower bound 
+bestModelDataS1LowerBound <- constrainedNBDAdata(
+  nbdadata =
+    nbdaData.all,
+  constraintsVect = constraintsVectMatrix[190, ],
+  offset = c(CIs[1] , rep(0, 7))
+)
+
+#Now, when we fit an "asocial" model it constrains the value of s1=0, but then the value of s at the lower bound is added to s as an offset
+bestModelS1LowerBound <-
+  tadaFit(
+    list(
+      bestModelDataS1LowerBound
+    ) ,
+    type = "asocial"
+  )
+bestModelS1LowerBound@outputPar
+# [1] 1713872785
+
+#Now we plug this into the prop solve function to get %
+prop.solve.social.lower <-
+  oadaPropSolveByST(
+    model = bestModelS1LowerBound,
+    nbdadata = list(
+      bestModelDataS1LowerBound
+    )
+  )
+prop.solve.social.lower
+# P(S offset) 
+# 0.87353 
+# lower bound for % of birds having learned the dial task through social learning is 87.4%
+
+# We repeat it for the upper bound
+bestModelDataS1upperBound <- constrainedNBDAdata(
+  nbdadata =
+    nbdaData.all,
+  constraintsVect = constraintsVectMatrix[190, ],
+  offset = c(CIs[2] , rep(0, 7))
+)
+
+# we again the fit the 'asocial' model with the offset to constrain s to the value of the upper bound
+bestModelS1upperBound <-
+  tadaFit(
+    list(
+      bestModelDataS1upperBound
+    ) ,
+    type = "asocial"
+  )
+bestModelS1upperBound@outputPar
+# [1] 1713872785
+
+#Now plug into the prop solve function
+prop.solve.social.upper <-
+  oadaPropSolveByST(
+    model = bestModelS1upperBound,
+    nbdadata = list(
+      bestModelDataS1upperBound
+    )
+  )
+prop.solve.social.upper
+# P(S offset) 
+# 0.87475
+
+# upper bound for % of birds having learned about the location of the carcass through social learning is 87.5% # XXX that's REALLY similar to the lower bound, wow.
+
+# XXX here is where we would extract the effect size for ILVs influencing social learning if we had evidence that any of them did, but we don't.

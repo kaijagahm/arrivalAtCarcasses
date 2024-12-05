@@ -453,7 +453,6 @@ prepare.NBDA.data <- function(dispenser.data, include.all, ILVs.include){
 
 # 6.4. Including all females ----------------------------------------------
 
-
 # we run the code to prepare NBDA data objects including all females (those breeding in boxes + the ones who have visited the dispenser) 
 # Note that the function will not work for D4 - as there was only one tagged learner - we exclude it from the NBDA
 nbdaData_D1.all <- prepare.NBDA.data(dispenser.data = dispenser.data$dispenser.data.1, include.all = TRUE, ILVs.include = c("age", "species", "distance"))
