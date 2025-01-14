@@ -243,25 +243,25 @@ targets::tar_load(loginObject)
 minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 
 # Matching to GPS data (Gideon code, merged with Kaija code) --------------------------------------
-# ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
-#                                           removeDup = T, dfConvert = T,
-#                                           quiet = T,
-#                                           dateTimeStartUTC = minmax_dates[[1]],
-#                                           dateTimeEndUTC = minmax_dates[[2]])
+ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
+                                          removeDup = T, dfConvert = T,
+                                          quiet = T,
+                                          dateTimeStartUTC = minmax_dates[[1]],
+                                          dateTimeEndUTC = minmax_dates[[2]])
 
-# ornitela_data_2024 <- vultureUtils::downloadVultures(loginObject = loginObject,
-#                                           removeDup = T, dfConvert = T,
-#                                           quiet = T,
-#                                           dateTimeStartUTC = minmax_dates[[3]],
-#                                           dateTimeEndUTC = minmax_dates[[4]])
-# gps_2023 <- dplyr::select(ornitela_data_2023, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-# gps_2024 <- dplyr::select(ornitela_data_2024, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-# rm(ornitela_data_2023)
-# rm(ornitela_data_2024)
-# gc()
-# 
-# data.table::fwrite(gps_2023, file = here("data/ACC/2023_hf_period/created/gps_2023.csv"))
-# data.table::fwrite(gps_2024, file = here("data/ACC/2024_hf_period/created/gps_2024.csv"))
+ornitela_data_2024 <- vultureUtils::downloadVultures(loginObject = loginObject,
+                                          removeDup = T, dfConvert = T,
+                                          quiet = T,
+                                          dateTimeStartUTC = minmax_dates[[3]],
+                                          dateTimeEndUTC = minmax_dates[[4]])
+gps_2023 <- dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
+gps_2024 <- dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
+rm(ornitela_data_2023)
+rm(ornitela_data_2024)
+gc()
+
+data.table::fwrite(gps_2023, file = here("data/ACC/2023_hf_period/created/gps_2023.csv"))
+data.table::fwrite(gps_2024, file = here("data/ACC/2024_hf_period/created/gps_2024.csv"))
 gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
 gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")
 # gc()
