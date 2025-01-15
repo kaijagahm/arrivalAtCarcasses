@@ -13,5 +13,5 @@ dist_near_flying <- 500
 dist_far_ground <- 1000
 dist_near_ground <- 300
 dist_at_ground <- 100
-carcass_dur_days <- 5
+carcass_dur_days <- 7
 

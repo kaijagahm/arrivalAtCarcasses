@@ -3,6 +3,7 @@ library(tidyverse)
 library(readxl)
 library(sf)
 library(mapview)
+#devtools::install_github("16EAGLE/moveVis") 
 library(moveVis)
 library(future)
 library(targets)
@@ -12,7 +13,7 @@ source(here("params.R"))
 # allow moveVis to use multiple cores for faster processing
 use_multicore(n_cores = ncores, verbose = TRUE)
 
-tar_load(hires_tags)
+targets::tar_load(hires_tags)
 hires_tags <- hires_tags %>%
   mutate(behavior = case_when(ground_speed > flight_speed ~ "flying",
                               ground_speed <= flight_speed ~ "ground",
@@ -45,44 +46,44 @@ write_csv(hires_carcasses, file = here("data/hires_carcasses.csv"))
 
 # for each carcass, get the data to go with it. Let's go to the beginning of the day when the carcass was placed, since we know 1) the times reported may not be exact and 2) the vultures sometimes circle when they can see the car coming.
 # 
-# fn <- function(idx){
-#   carcass <- hires_carcasses[idx,]
-#   carcass_date <- carcass$date
-#   carcass_label <- carcass$lab
-#   dat <-  hires_tags %>%
-#     filter(dateOnly_il %in%
-#              seq.Date(from = carcass_date-1, to = carcass_date+10, by = "day")) %>%
-#     mutate(time_relative = difftime(timestamp_il, carcass$datetime, units = "hours")) %>%
-#     mutate(lab = carcass_label)
-#   distances_m <- as.numeric(sf::st_distance(dat, carcass))
-#   if(length(distances_m) != nrow(dat)){
-#     stop("length doesn't match")
-#   }else{
-#     dat$dist_m <- distances_m
-#   }
-#   dat <- dat %>%
-#     mutate(state = case_when(dist_m > 1000 & behavior == "flying" ~ "far_flying",
-#                              dist_m <= 1000 & dist_m > 500 & behavior == "flying" ~ "vis_flying",
-#                              dist_m <= 500 & behavior == "flying" ~ "approach_flying",
-#                              dist_m > 1000 & behavior == "ground" ~ "far_ground",
-#                              dist_m <= 1000 & dist_m > 300 & behavior == "ground" ~ "vis_ground",
-#                              dist_m <= 300 & dist_m > 50 & behavior == "ground" ~ "near_ground",
-#                              dist_m <= 50 & behavior == "ground" ~ "at_carcass"),
-#            state_description = case_when(state == "far_flying"~ "Out of sight flying\n(fl. >1000m)",
-#                                          state == "vis_flying"~ "In sight flying\n(fl. 500-1000m)",
-#                                          state == "approach_flying" ~ "Approaching\n(fl. <=500m)",
-#                                          state == "far_ground" ~ "Out of sight ground\n(gr. >1000m)",
-#                                          state == "vis_ground" ~ "In sight ground\n(gr. 300-1000m)",
-#                                          state == "near_ground" ~ "Near ground\n(gr. 50-300m)",
-#                                          state == "at_carcass" ~ "At carcass\n(gr. <=50m)"),
-#            state = factor(state, levels = c("far_flying", "vis_flying", "approach_flying", "far_ground", "vis_ground", "near_ground", "at_carcass")),
-#            state_description = factor(state_description, levels = c("Out of sight flying\n(fl. >1000m)", "In sight flying\n(fl. 500-1000m)", "Approaching\n(fl. <=500m)", "Out of sight ground\n(gr. >1000m)", "In sight ground\n(gr. 300-1000m)", "Near ground\n(gr. 50-300m)", "At carcass\n(gr. <=50m)")))
-#   return(dat)
-# }
-# 
-# carcass_data <- map(1:nrow(hires_carcasses), fn, .progress = T)
-# 
-# save(carcass_data, file = here("data/carcass_data.Rda"))
+fn <- function(idx){
+  carcass <- hires_carcasses[idx,]
+  carcass_date <- carcass$date
+  carcass_label <- carcass$lab
+  dat <-  hires_tags %>%
+    filter(dateOnly_il %in%
+             seq.Date(from = carcass_date-1, to = carcass_date+10, by = "day")) %>%
+    mutate(time_relative = difftime(timestamp_il, carcass$datetime, units = "hours")) %>%
+    mutate(lab = carcass_label)
+  distances_m <- as.numeric(sf::st_distance(dat, carcass))
+  if(length(distances_m) != nrow(dat)){
+    stop("length doesn't match")
+  }else{
+    dat$dist_m <- distances_m
+  }
+  dat <- dat %>%
+    mutate(state = case_when(dist_m > 1000 & behavior == "flying" ~ "far_flying",
+                             dist_m <= 1000 & dist_m > 500 & behavior == "flying" ~ "vis_flying",
+                             dist_m <= 500 & behavior == "flying" ~ "approach_flying",
+                             dist_m > 1000 & behavior == "ground" ~ "far_ground",
+                             dist_m <= 1000 & dist_m > 300 & behavior == "ground" ~ "vis_ground",
+                             dist_m <= 300 & dist_m > 50 & behavior == "ground" ~ "near_ground",
+                             dist_m <= 50 & behavior == "ground" ~ "at_carcass"),
+           state_description = case_when(state == "far_flying"~ "Out of sight flying\n(fl. >1000m)",
+                                         state == "vis_flying"~ "In sight flying\n(fl. 500-1000m)",
+                                         state == "approach_flying" ~ "Approaching\n(fl. <=500m)",
+                                         state == "far_ground" ~ "Out of sight ground\n(gr. >1000m)",
+                                         state == "vis_ground" ~ "In sight ground\n(gr. 300-1000m)",
+                                         state == "near_ground" ~ "Near ground\n(gr. 50-300m)",
+                                         state == "at_carcass" ~ "At carcass\n(gr. <=50m)"),
+           state = factor(state, levels = c("far_flying", "vis_flying", "approach_flying", "far_ground", "vis_ground", "near_ground", "at_carcass")),
+           state_description = factor(state_description, levels = c("Out of sight flying\n(fl. >1000m)", "In sight flying\n(fl. 500-1000m)", "Approaching\n(fl. <=500m)", "Out of sight ground\n(gr. >1000m)", "In sight ground\n(gr. 300-1000m)", "Near ground\n(gr. 50-300m)", "At carcass\n(gr. <=50m)")))
+  return(dat)
+}
+
+carcass_data <- map(1:nrow(hires_carcasses), fn, .progress = T)
+
+save(carcass_data, file = here("data/carcass_data.Rda"))
 load(here("data/carcass_data.Rda"))
 
 

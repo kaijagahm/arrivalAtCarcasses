@@ -346,3 +346,101 @@ ca3 %>%
 
 ## Individuals detecting/arriving over time (example 3)
 ![](fig/carcass_arrivals/2023-07-12_11.17.07_SouthernRegion.png)
+
+## Arrivals versus bouts
+Can we use feeding bouts as a way to determine how long a placed carcass persists, somewhat independent of the vulture arrivals? The previous plots show us that vultures keep arriving at a carcass sometimes for a while, but are they actually feeding?
+We need:
+- info about the vultures arriving at the carcasses (only At carcass or Nearby)
+- info about the feeding bouts for each carcass
+
+Plot them on the same axes to compare.
+
+```{r}
+source(here("R/functions.R"))
+# jankily re-doing part of the targets pipeline because I want 7 days (168 hours) instead of 72 hours
+tar_load(feeding_bouts)
+tar_load(carcasses_focal)
+tar_load(dist_bouts_carcasses)
+tar_load(hours_before_carcass)
+hours_after_carcass <- 168
+carcass_bouts <- get_carcass_bouts(bouts = feeding_bouts,
+                                              carcasses = carcasses_focal,
+                                              dist = dist_bouts_carcasses,
+                                              hours_before = hours_before_carcass,
+                                              hours_after = hours_after_carcass)
+carcass_bouts_df <- purrr::list_rbind(carcass_bouts)
+approach_data <- readRDS(here("data/created/carcass_approach_data.RDS")) # from hf-acc_carcass_arrivals.R. This also uses 7 days (see params.R)
+head(approach_data)
+head(carcass_bouts_df)
+```
+
+Simplify
+```{r}
+arrivals <- approach_data %>%
+  filter(category %in% c("ground_at", "ground_near")) %>%
+  select("id" = tag_local_identifier, timestamp, dateOnly, dist_to_carcass, time_since_carcass, carcID, category) %>%
+  mutate(dateOnly = lubridate::date(dateOnly),
+         type = "arrival")
+bouts <- carcass_bouts_df %>%
+  select("id" = individualID, start, end, dateOnly, dist_to_carcass, time_since_carcass, carcID) %>%
+  mutate(type = "bout")
+
+both <- bind_rows(arrivals, bouts) %>%
+  mutate(time_since_carcass = hms::hms(seconds_to_period(time_since_carcass)))
+```
+
+Restrict to carcasses that have at least one row of each
+```{r}
+both <- both %>%
+  group_by(carcID) %>%
+  filter(length(unique(type)) == 2)
+
+length(unique(both$carcID)) # this gives us 30 carcasses that have at least one feeding bout and at least one arrival
+```
+
+Visualize
+```{r}
+set.seed(3)
+both %>%
+  filter(carcID %in% sample(unique(both$carcID), 3)) %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass))+
+  geom_point(aes(col = type), alpha = 0.5, size = 3, pch = 1)+
+  facet_wrap(~carcID, ncol = 1)+
+  theme_classic() # looks like feeding bouts can extend as far out as 7 days
+```
+
+Need to do some more exploration here to figure out the carcass duration--e.g. does the ratio of number of bouts to number of proximity points change over time? What about the number of unique individuals feeding?
+
+```{r}
+props <- both %>%
+  group_by(carcID, dateOnly, type) %>%
+  summarize(n = n(),
+            nindivs = length(unique(id))) %>%
+  pivot_wider(id_cols =c("carcID", "dateOnly"),
+              names_from = "type",
+              values_from = c("n", "nindivs")) %>%
+  mutate(bout_arrival_ratio_n = n_bout/n_arrival,
+         bout_arrival_ratio_nindivs = nindivs_arrival/nindivs_bout) %>%
+  ungroup() %>%
+  arrange(carcID, dateOnly) %>%
+  group_by(carcID) %>%
+  mutate(day = 1:n())
+
+props %>%
+  ggplot(aes(x = day, y = bout_arrival_ratio_nindivs, group = carcID, col = factor(carcID)))+
+  geom_point()+
+  geom_line()+
+  theme_classic()
+```
+This doesn't really help... there are at least some feeding bouts even 7 days after the carcass was placed.
+```{r}
+props %>%
+  ggplot(aes(x = day))+
+  geom_point(aes(y = n_arrival), col = "red")+
+  geom_line(aes(y = n_arrival), col = "red")+
+  geom_point(aes(y = n_bout), col = "blue")+
+  geom_line(aes(y = n_bout), col = "blue")+
+  facet_wrap(~carcID)+
+  theme_minimal() # there are some carcasses for which the arrivals persist longer than the bouts, but not many
+```
+
