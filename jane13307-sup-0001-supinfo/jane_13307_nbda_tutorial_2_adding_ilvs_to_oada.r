@@ -14,14 +14,14 @@ library(NBDA)
 #############################################################################
 
 #Read in the social network and order of acquisition vector as shown in tutorial 1.
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
 socNet1<-array(socNet1,dim=c(30,30,1))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
 
 #In our made-up case study, we have the sex and age of all 30 individuals
 #We will read in the csv file into a dataframe
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 
 #Then extract each ILV
 female<-cbind(ILVdata$female)

@@ -253,8 +253,8 @@ model_social@aicc
 
 #Imagine we believe the social network changed sometime between the 20th and 21st acquisition event.
 #Let us load in the networks for each time period
-socNet2a<-as.matrix(read.csv(file="jane_13307_exampleDynamicSocNetA.csv"))
-socNet2b<-as.matrix(read.csv(file="jane_13307_exampleDynamicSocNetB.csv"))
+socNet2a<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleDynamicSocNetA.csv"))
+socNet2b<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleDynamicSocNetB.csv"))
 
 #We need to combine these in a 4 dimensional array, with the 4th dimension for time periods
 

@@ -15,11 +15,11 @@ library(NBDA)
 
 
 #Read in the social network and order of acquisition vector as shown in Tutorials 1 and 2
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
 socNet1<-array(socNet1,dim=c(30,30,1))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 #Then extract each ILV
 female<-cbind(ILVdata$female)
 male<-1-female
@@ -347,11 +347,11 @@ sum(lowerLimitsByModel_addVmulti$propST*lowerLimitsByModel_addVmulti$adjAkWeight
 #############################################################################
 
 #Read in the social network and order of acquisition vector as shown in Tutorials 1 and 2
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
 socNet1<-array(socNet1,dim=c(30,30,1))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 #Then extract each ILV
 female<-cbind(ILVdata$female)
 male<-1-female
@@ -603,12 +603,12 @@ lowerLimitsByModel_gamma
 
 
 #Read in the 2 social networks and order of acquisition vector as shown in Tutorial 3
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
-socNet2<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet2.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
+socNet2<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet2.csv"))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
 #Load and process the ILVs as shown in Tutorial 2
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 female<-cbind(ILVdata$female)
 male<-1-female
 age<-cbind(ILVdata$age)
@@ -990,11 +990,11 @@ sum(lowerLimitsByModel_s2$propST*lowerLimitsByModel_s2$adjAkWeight)
 #We use the same data as for tutoral 7.3:
 #########################################
 #Read in the social network and order of acquisition vector as shown in Tutorials 1 and 2
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
 socNet1<-array(socNet1,dim=c(30,30,1))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 #Then extract each ILV
 female<-cbind(ILVdata$female)
 male<-1-female
