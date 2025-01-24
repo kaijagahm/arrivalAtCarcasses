@@ -148,7 +148,7 @@ profLikCI(which=1,model=model_social,upperRange=c(120,150),lowerRange=c(0,2))
 
 #s=0 is not included in the 95% C.I. so there is at least reasonable evidence for social transmission
 #or at least a statistical effect consistent with social transmission.
-#Note we can obtain C.I.s for a different level of confidence by setting, e.g. conf=0.99 in the 
+#Note we can obtain C.I.s for a different level of confidence by setting, e.g. conf=0.99 in the
 #plotProfLik and profLikCI functions
 
 #We can get an estimate of %ST corresponding to the upper and lower limits of the
