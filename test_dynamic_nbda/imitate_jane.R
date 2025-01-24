@@ -4,11 +4,15 @@
 ## Workflow
 library(here)
 library(devtools)
+library(targets)
 #Then download and install my NBDA package from GitHub:
 #devtools::install_github("whoppitt/NBDA")
 #And load it as follows
 library(NBDA)
 
+tar_load(aca)
+mycarc <- aca %>%
+  filter(carcID == "4874955")
 at_carcass <- read_csv(here("test_dynamic_nbda/data/at_carcass.csv"))
 firsts <- read_csv(here("test_dynamic_nbda/data/firsts.csv"))
 dim(firsts) # This shows the order of acquisition and the time of acquisition too
@@ -160,13 +164,82 @@ profLikCI(which = 1, model = model_social, upperRange = c(10000,1000000),lowerRa
 #Note we can obtain C.I.s for a different level of confidence by setting, e.g. conf=0.99 in the
 #plotProfLik and profLikCI functions
 
+#We can get an estimate of %ST corresponding to the upper and lower limits of the
+#95% C.I. as follows.
+#Instead of specifying the model, we specify the parameter values and the name of the nbdaData object
+
+nbdaPropSolveByST(par = 7.581885, nbdadata = nbdaData1)
+# P(Network 1)  P(S offset) 
+# 0.70011      0.00000 
+nbdaPropSolveByST(par = 10000.000200, nbdadata = nbdaData1)
+# P(Network 1)  P(S offset) 
+# 0.99954      0.00000 
+
+#So between 70.0 - 99.9% of events are estimated to have occurred by social transmission.
+
+#############################################################################
+# TUTORIAL 1.2
+# ADDING SEEDED DEMONSTRATORS TO AN OADA MODEL
+# 1 diffusion
+# 1 static network
+# Seeded demonstrators
+#############################################################################
+
+#Adding seeded demonstrators to a diffusion is straightfoward: simply create a vector showing who started
+#the diffusion informed (1) or naive, and input it to the demons argument in nbdaData
+
+#Let's say that the individuals that were already present at the carcass site in the 2 hours before it was deposited were the demonstrators.
+head(at_carcass)
+
+carcass_time <- mycarc$datetime
+carcass_time_minus2 <- carcass_time-hours(2)
+demonstrators <- at_carcass %>%
+  filter(timestamp >= carcass_time_minus2 & timestamp < carcass_time) %>%
+  pull(local_identifier) %>%
+  unique() # this gives us five demonstrators
+
+oa
+
+#So let create a demons vector full of zeroes
+demons<-rep(0,length(oa))
+#and slot in 1s for 26,29 and 30
+demons[oa[demonstrators]] <- 1
+demons
+
+#we can then remove them from the order of acquistion:
+oa2 <- oa[!(names(oa) %in% demonstrators)]
+length(oa2)
+length(oa)
+
+#create the nbdaData object
+nbdaData1_seeded <- nbdaData(label = "ExampleDiffusion1", 
+                             assMatrix = socNet1,
+                             orderAcq = oa2, 
+                             demons = demons)
+#and fit the model
+model_seeded <- oadaFit(nbdaData1_seeded)
+
+#Note that models with seeded demonstrators cannot be compared to models with those same individuals included in the order of acqusition using AICc or LRTs, since they are being fitted to different data (different orders of acquisition)
+
+# XXX KG addition: going to calculate the values anyway--not a direct comparison, but we do get a different conclusion depending on how we define the acquisition here. 
+nbdaPropSolveByST(model = model_seeded) # with this order of acquisition, only 90% of the events are estimated to have occurred by 
+
+#############################################################################
+# TUTORIAL 1.3
+# ADDING TRANSMISSION WEIGHTS TO AN OADA MODEL
+# 1 diffusion
+# 1 static network
+# Transmission weights
+#############################################################################
+
+# XXX KG addition: could theoretically add transmission weights according to e.g. time that each individual spent at the carcass, or whether they actually ate there versus just visiting. Not going to do this right now because it would be a bunch more calculations.
+
 #############################################################################
 # TUTORIAL 1.4
 # USING A DYNAMIC NETWORK IN OADA
 # 1 diffusion
 # 1 dynamic network
 #############################################################################
-
 
 
 #We need to combine these in a 4 dimensional array, with the 4th dimension for time periods

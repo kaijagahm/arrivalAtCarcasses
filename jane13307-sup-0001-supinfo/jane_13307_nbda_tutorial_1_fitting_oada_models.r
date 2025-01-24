@@ -199,7 +199,6 @@ model_seeded<-oadaFit(nbdaData1_seeded)
 #included in the order of acqusition using AICc or LRTs, since they are being fitted to different
 #data (different orders of acquisition)
 
-
 #############################################################################
 # TUTORIAL 1.3
 # ADDING TRANSMISSION WEIGHTS TO AN OADA MODEL
