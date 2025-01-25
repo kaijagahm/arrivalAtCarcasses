@@ -276,6 +276,8 @@ ilvs <- ilvs %>%
          sex = factor(sex))
 dim(ilvs) # 59 individuals still
 
+write_csv(ilvs, file = here("test_dynamic_nbda/data/ilvs.csv"))
+
 # Modeling ----------------------------------------------
 
 ## 2) Create foraging network ------------------------------------------------
