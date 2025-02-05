@@ -31,271 +31,424 @@ library(vegan)
 library(ggplot2)
 library(gridExtra)
 
-# Load data ---------------------------------------
-# Note: XXX will need to go back to the bout calculation and change the time zone to israel time
+## PSEUDOCODE
+## 0. Define parameters
+## 1. Get carcasses and restrict to south
+## 1a. Convert carcasses to Israel time # xxx FIXME!
+## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
+## 3. Get datetimes
+## 4. Get all gps data
+## 4a. Convert gps data to Israel time # xxx FIXME!
+## 4b. Make gps_all
+## 5. Get roosts
+## 6. Get seeds
+## 7. Get distances from roosts to carcasses
+## 8. Load who's who
+## 9. Get age_group ILV
+## 10. Combine age_group ILV with distances to get ILVs data frame
+## 11. Make gps
+## 12. Get arrivals
+## 13. Get firsts
+## 14. Get oa
+## 15. Get GPS subsets for flight (four different intervals)
+## 16. Get roost nets
+## 17. Get flight nets (whole days)
+## 18. Get flight nets (four different intervals)
+
+## 0. Define parameters
+days_after <- 3
+seed_distance <- 1000 # 1000m to be within sight of the carcass
+seed_time_before <- hours(1)
+
+## 1. Get carcasses and restrict to south
 tar_load(all_carcasses_annotated)
-tar_load(all_bouts_annotated)
 tar_load(bbox_south)
-aca <- all_carcasses_annotated %>% filter(year == "2024") %>% st_crop(bbox_south)
-all_bouts_annotated %>%
-  filter(carcID %in% aca$carcID) %>%
-  group_by(carcID) %>%
-  summarize(n = n()) %>%
-  arrange(desc(n)) # let's use one with a lot of bouts: 4874955
+aca <- all_carcasses_annotated %>% st_crop(bbox_south)
 
-mycarc <- aca %>%
-  filter(carcID == "4874955")
-date_placed <- lubridate::date(mycarc$datetime)
-date_before <- date_placed - days(1)
-plusfour <- date_placed + days(4)
+## 1a. Convert carcasses to Israel time
+# XXX FIXME!
 
-# Downloaded code for tits finding colored wool (Vistalli et al. 2023)
-# Determined I need the following:
+## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
+inpa <- aca %>% filter(carcType == "inpa")
+inpa_carcs <- inpa %>% group_by(carcID) %>% group_split() # split into a list so we can use this later with map, e.g. to calculate distances
+save(inpa_carcs, file = here("test_dynamic_nbda/data/inpa_carcs.Rda"))
 
-# *For one single carcass, at first*
-#   - dataset of GPS points in the south, from one day before placement day to +4 days
-gps <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") %>%
+wild <- aca %>% filter(carcType == "wild") # the rest of the code will pertain to inpa only; this is a stub for now
+wild_carcs <- wild %>% group_by(carcID) %>% group_split()
+
+## 3. Get datetimes
+datetimes <- inpa$datetime
+
+## 4. Get all gps data
+gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
+gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") 
+gps <- bind_rows(gps_2023, gps_2024) %>%
   st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+  bind_cols(st_coordinates(.)) %>%
+  rename("location_long" = X,
+         "location_lat" = Y) %>%
+  mutate(dateOnly = lubridate::ymd(dateOnly)) %>%
   st_transform(32636) %>%
   st_crop(bbox_south)
-gps_mycarc <- gps %>%
-  filter(dateOnly >= date_before & dateOnly <= plusfour) %>%
-  st_transform("WGS84") %>%
-  bind_cols(st_coordinates(.)) %>%
-  rename("location_long" = X,
-         "location_lat" = Y) %>%
-  mutate(dateOnly = lubridate::ymd(dateOnly))
-dim(gps_mycarc) # a lot of gps points in the south between one day before day of placement and 4 days after placement
-length(unique(gps_mycarc$local_identifier)) # 59 individuals detected
 
-# - for calculating activity areas on the day before: get just that one day of data
-gps_mycarc_daybefore <- gps_mycarc %>%
-  filter(dateOnly == date_before)
-dim(gps_mycarc_daybefore)
+## 4a. Convert gps data to Israel time
+# XXX FIXME!
 
-gps_mycarc_fromplacement <- gps_mycarc %>%
-  filter(dateOnly > date_before)
-dim(gps_mycarc_fromplacement)
-all_individuals <- sort(unique(gps_mycarc_fromplacement$local_identifier))
-length(all_individuals)
+## 4b. Make gps_all
+gps_all <- map2(datetimes, inpa_carcs, ~{
+  gps %>%
+    filter(dateOnly >= lubridate::date(.x)-days(1) & dateOnly <= lubridate::date(.x) + days(days_after+1)) %>%
+    mutate(dist_to_carcass = as.numeric(st_distance(., .y)))
+}) #XXX check that we are getting the roost location for the day before the carcass was placed
 
-# ACQUISITION DATA ----------------------------------------------
-## Time of acquisition ----------------------------------------------
-# - time of first arrivals to carcass
-distances <- as.numeric(st_distance(st_transform(gps_mycarc_fromplacement, 32636), mycarc))
-gps_mycarc_fromplacement$dist_to_carc <- distances
+## 5. Get roosts
+# roosts <- map(gps_all, ~{
+#   if(nrow(.x) > 0){
+#     return(get_roosts_df(.x, id = "local_identifier"))
+#   }
+#     else{return(NULL)}
+#   },
+#     .progress = T)
+# write_rds(roosts, file = here("test_dynamic_nbda/data/roosts.RDS"))
+roosts <- readRDS(here("test_dynamic_nbda/data/roosts.RDS"))
 
-at_carcass <- gps_mycarc_fromplacement %>%
-  mutate(carcID = mycarc$carcID) %>%
-  filter(dist_to_carc < 250 & ground_speed < 5) # near carcass and not flying
-
-firsts <- at_carcass %>%
-  filter(timestamp >= mycarc$datetime) %>%
-  arrange(timestamp) %>%
-  group_by(local_identifier) %>%
-  slice(1) %>%
-  ungroup() %>%
-  arrange(timestamp) %>%
-  mutate(rownumber = 1:n())
-length(unique(firsts$local_identifier)) # 33 individuals arrived at the carcass during the 4 days since placement
-nrow(firsts)
-
-# quick viz
-firsts %>% 
-  ggplot(aes(x = timestamp, y = rownumber))+
-  geom_point()+
-  geom_path()+
-  labs(y = "Number of unique individuals",
-       x = "Time")
-# XXX as a side note, this makes it pretty clear that the appropriate scale on which to vary the dynamic networks is daily!
-
-## 4) get arrival data to the carcass -----------------------------------------
-# (ref: Load data from wool dispensers)
-dim(at_carcass)
-head(at_carcass)
-glimpse(at_carcass)
-
-# How many different birds have visited
-length(unique(at_carcass$local_identifier))
-# 33 (out of a network of 58-59 depending on the day)
-n_indivs <- length(unique(at_carcass$local_identifier))
-indivs <- unique(at_carcass$local_identifier)
-
-write_csv(at_carcass, file = here("test_dynamic_nbda/data/at_carcass.csv"))
-write_csv(firsts, file = here("test_dynamic_nbda/data/firsts.csv"))
-
-# NETWORKS ---------------------------------------
-## Co-flight (foraging) ---------------------------------------
-### --UPDATE DYNAMICALLY EVENTUALLY, BUT FOR NOW STATIC OVER ENTIRE PERIOD
-# - co-flight network, from beginning of placement day to +4 days. consecThreshold = 1.
-rp <- sf::st_read(here("data/raw/roosts50_kde95_cutOffRegion.kml"))
-coflight <- getFlightEdges(gps_mycarc_fromplacement, roostPolygons = rp, roostBuffer = 50,
-                           consecThreshold = 1, distThreshold = 1000,
-                           speedThreshUpper = NULL, speedThreshLower = 5,
-                           timeThreshold = "10 minutes",
-                           idCol = "local_identifier",
-                           return = "sri")
-g <- igraph::graph_from_data_frame(coflight, directed = FALSE, vertices = all_individuals)
-t_g <- tidygraph::as_tbl_graph(g) %>% activate(edges) %>%
-  filter(!is.na(sri) & sri > 0)
-ggraph(t_g) +
-  geom_edge_link(aes(width = sri), alpha = 0.5)+
-  geom_node_point(size = 4, color = "dodgerblue")+
-  scale_edge_width(range = c(0, 1))+
-  theme_classic()
-coflight_adj <- as_adjacency_matrix(t_g, attr=  "sri", sparse = F)
-
-## Co-roosting (following) ---------------------------------------
-### --UPDATE DYNAMICALLY EACH DAY
-# - roosts for each vulture on each night, beginning the night before the carcass was placed. In order to get this, we need to add two extra days of data (since both morning and night are necessary for roost computation). Need date_before through plusfour + days(1)
-gps_mycarc_forroosts <- gps %>%
-  # need to include the previous day
-  filter(dateOnly >= date_before & dateOnly <= (plusfour + days(1))) %>%
-  st_transform("WGS84") %>%
-  bind_cols(st_coordinates(.)) %>%
-  rename("location_long" = X,
-         "location_lat" = Y) %>%
-  mutate(dateOnly = lubridate::ymd(dateOnly))
-r <- get_roosts_df(gps_mycarc_forroosts, id = "local_identifier")
-length(unique(r$roost_date)) # we have roosts for nights including the night before the carcass was placed.
-
-
-# create dummy data frame for adding any missing indivs
-dummy <- data.frame(local_identifier = all_individuals, 
-                    location_lat = NA, 
-                    location_long = NA)
-
-unique(r$roost_date)
-table(r$roost_date)
-r_list <- r %>%
-  group_by(roost_date) %>%
-  group_split() %>%
-  map(., ~sf::st_as_sf(.x, coords = c("location_long", "location_lat"), remove = F, crs = "WGS84") %>% 
-        st_transform(32636))
-
-missing <- map(r_list, ~all_individuals[!(all_individuals %in% .x$local_identifier)])
-
-fill_in <- map(missing, ~dummy %>% filter(local_identifier %in% .x))
-
-r_list <- map2(r_list, fill_in, ~{
-  if(nrow(.y) > 0){
-    out <- bind_rows(.x, .y) %>%
-      arrange(local_identifier)
-  }else{out <- .x %>%
-    arrange(local_identifier)}
-  return(out)})
-
-# - matrices of pairwise distances between them (co-roost network; changes each day)
-roost_pairwise_distances <- map(r_list, ~as.data.frame(st_distance(.x))) %>%
-  map(., ~{
-    row.names(.x) <- all_individuals
-    colnames(.x) <- all_individuals
-    return(.x)
-  }) %>%
-  map(., ~.x %>% mutate(across(everything(), as.numeric)))
-
-# Get inverted square root of all of these:
-rpd_invsq <- map(roost_pairwise_distances, ~.x %>% 
-                   mutate(across(everything(), 
-                                 ~1/sqrt(.x))))
-rpd_invsq <- map(rpd_invsq, ~{
-  .x[.x==Inf] <- 0
-  return(.x)
+## 6. Get seeds
+seed_distance
+seeds_gps <- map2(gps_all, datetimes, ~{
+  .x %>% filter(timestamp >= .y-seed_time_before & timestamp <= .y) %>%
+    filter(dist_to_carcass < seed_distance)
 })
-rpd_invsq <- map(rpd_invsq, as.matrix)
-# Subset to the individuals involved in the diffusion
-rpd_invsq_subset <- map(rpd_invsq, ~{
-  out <- .x[indivs, indivs]
-  return(out)
+
+## 7. Get distances from roosts to carcasses
+distances <- map2(roosts, inpa_carcs, ~{
+  if(!is.null(.x)){
+    dist <- .x %>%
+      sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+      sf::st_transform(32636) %>%
+      mutate(dist = as.numeric(st_distance(., .y))) %>%
+      st_drop_geometry() %>%
+      select(local_identifier, roost_date, dist) %>%
+      pivot_wider(id_cols = "local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_")
+  }else{
+    dist <- NULL
+  }
+  return(dist)
 })
-map(rpd_invsq_subset, dim) # should all be 33x33
-# use the inverted square root of distances so that locations closer together have higher values
 
-roost_dates <- lubridate::ymd(map_chr(r_list, ~as.character(max(.x$roost_date, na.rm = T))))
-acquisition_dates <- sort(unique(firsts$dateOnly)) # these are the dates on which acquisition events occurred. So we only need to keep the roost networks from the night before the first date to the night before the last one
-roost_dates_tokeep <- which(roost_dates %in% roost_dates[roost_dates >= min(acquisition_dates-days(1)) & roost_dates < max(acquisition_dates)]) # don't need to include the roost network for the night *after* the last acquisition day
-
-# Save each of the roost networks as a matrix so we can use it more easily in the analysis
-for(i in roost_dates_tokeep){
-  filename <- paste0("test_dynamic_nbda/data/roost_networks/r", i, ".csv")
-  write.csv(rpd_invsq_subset[[i]], file = here(filename))
-}
-
-n_roost_networks <- length(roost_dates_tokeep)
-write_rds(roost_dates[roost_dates_tokeep], file = here("test_dynamic_nbda/data/roost_networks/roost_dates.RDS"))
-
-# INDIVIDUAL-LEVEL VARIABLES ----------------------------------------------
-## Distance to carcass (day before) ----------------------------------------------
-### activity centers
-activity_centers <- gps_mycarc_daybefore %>%
-  group_by(local_identifier) %>%
-  summarize(st_union(geometry)) %>%
-  st_centroid() %>%
-  st_transform(32636) # XXX maybe change this to only include daylight points?
-
-## distance between those activity centers and the carcass location (to use as an ILV)
-dists_to_carc <- as.numeric(st_distance(activity_centers, mycarc))
-
-## create ilvs data frame
-ilvs <- st_drop_geometry(activity_centers) %>%
-  bind_cols("dist_to_carc_daybefore" = dists_to_carc)
-
-## Age ----------------------------------------------
+## 8. Load who's who
 # ww <- read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"),
 #                col_select = 1:40)
 # write_rds(ww, file = here("data/created/ww.RDS"))
 ww <- readRDS(here("data/created/ww.RDS"))
 glimpse(ww)
+
+## 9. Get age_group ILV
 www <- ww %>%
-  dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex)
-
-www_tojoin <- www %>%
-  filter(Movebank_id %in% ilvs$local_identifier) %>%
+  dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
+  mutate(age_2023 = 2023-birth_year,
+         age_2024 = 2024-birth_year,
+         age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
+                                    age_2023 <= 5 ~ "01_juv_sub",
+                                    .default = NA),
+         age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
+                                    age_2024 <= 5 ~ "01_juv_sub",
+                                    .default = NA)) %>%
+  select("local_identifier" = "Movebank_id", age_group_2023, age_group_2024) %>%
   distinct()
-dim(www_tojoin) #59 rows, yay
 
-## check before joining:
-all(www_tojoin$Movebank_id %in% ilvs$local_identifier) # TRUE
-all(ilvs$local_identifier %in% www_tojoin$Movebank_id) # TRUE
+## 10. Combine age_group ILV with distances to get ILVs data frame
+# XXX start here
+ilvs <- map(distances, ~{
+  .x %>%
+    left_join(www, by = "local_identifier")
+})
 
-ilvs <- ilvs %>%
-  left_join(www_tojoin, by = c("local_identifier" = "Movebank_id"))
+all(map_dbl(ilvs, nrow) == map_dbl(distances, nrow)) # should be TRUE--we shouldn't have added any rows.
 
-table(ilvs$sex, exclude = NULL) # we have sex info for almost all of them
+## 11. Make gps (i.e. remove days before the carcass)
+gps <- map2(gps_all, datetimes, ~{
+  .x %>%
+    filter(dateOnly >= lubridate::date(.y) & dateOnly <= lubridate::date(.y) + days_after)
+})
+rows_removed <- map_dbl(gps_all, nrow) - map_dbl(gps, nrow)
+pct_removed <- 100*(rows_removed/(map_dbl(gps_all, nrow)))# just checking that this looks reasonable. We removed a couple days of data, so values around 30% make sense.
 
-## Calculate age in 2024
-ilvs <- ilvs %>%
-  mutate(age_in_2024 = 2024-birth_year)
+## 12. Get arrivals
+at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                     mutate(carcID = .y$carcID) %>%
+                     filter(dist_to_carcass < 400 & ground_speed < 5))
 
-## Assign age groups
-ilvs <- ilvs %>%
-  mutate(age_group = case_when(age_in_2024 >5 ~ "02_adult",
-                               age_in_2024 <= 5 ~ "01_juv_sub",
-                               .default = NA),
-         age_group = factor(age_group),
-         sex = factor(sex))
-dim(ilvs) # 59 individuals still
+## 13. Get firsts
+# Get first arrival of each vulture to the carcass
+firsts <- map2(at_carcass, inpa_carcs, ~{
+  if(nrow(.x) > 1){
+    out <- .x %>%
+      filter(timestamp >= .y$datetime) %>%
+      arrange(timestamp) %>%
+      group_by(local_identifier) %>%
+      slice(1) %>%
+      ungroup() %>%
+      arrange(timestamp)
+    if(nrow(out) > 0){
+      out$rownumber <- 1:nrow(out)
+      return(out)
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  }else{
+    out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+    return(out)
+  }
+}) 
+map_dbl(firsts, nrow)
+map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)) # needed to do this because not all instances of 1 row are actually zeroes.
+# XXX why do we have so many carcasses provisioned that have nobody arriving? That seems weird!!!
+save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
 
-write_csv(ilvs, file = here("test_dynamic_nbda/data/ilvs.csv"))
+#XXX at this point maybe I should make subsets and only continued dealing with the carcasses that have the acquisitions
+has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 
-# Modeling ----------------------------------------------
+# XXX everything after this will be subsetted by has_visits; won't be calculated otherwise.
+## 14. Get oa
+oa <- map(firsts[has_visits], "local_identifier")
+save(oa, file = here("test_dynamic_nbda/data/oa.Rda"))
+oa_num <- map(oa, order)
+save(oa_num, file = here("test_dynamic_nbda/data/oa_num.Rda"))
+oa_indivs_sorted <- map(oa, sort)
+# oa_indivs_pairs <- map(oa_indivs_sorted, ~{ # get all possible pairs so we can make sure that the eventual networks are complete before subsetting
+#   if(length(.x) > 1){
+#     pairs <- as.data.frame(expand.grid(.x, .x))
+#     colnames(pairs) <- c("ID1", "ID2")
+#     return(pairs)
+#   }
+# })
 
-## 2) Create foraging network ------------------------------------------------
-# AKA co-flight network
-glimpse(coflight)
-t_g
-t_g %>% activate(nodes) %>% pull(name) %>% length() # 59 vultures included in the co-flight network.
 
-# Subset co-flight network to only include the individuals involved in the diffusion
-t_g_subset <- t_g %>%
-  activate(nodes) %>%
-  filter(name %in% indivs)
-t_g_subset %>% activate(nodes) %>% pull(name) %>% length() # 33 vultures
+## 14.5 Get acquisition times
+acq_times <- map(firsts[has_visits], ~.x$timestamp)
 
-# Let's figure out the order of acquisition
-indivs # these are in alphabetical order
-ids_order <- firsts$local_identifier
-indivs_lookup <- 1:length(indivs)
-names(indivs_lookup) <- indivs
-oa <- indivs_lookup[ids_order]
-write_rds(oa, file = here("test_dynamic_nbda/data/oa.RDS"))
+## 15. Get GPS subsets for flight (four different intervals)
+gps_flight_allday <- map(gps[has_visits], ~.x %>%
+                           group_by(dateOnly) %>%
+                           group_split())
+
+gps_flight_cumulative <- vector(mode = "list", length = length(gps[has_visits]))
+for(i in 1:length(gps[has_visits])){
+  times <- acq_times[[i]]
+  subsets <- vector(mode = "list", length = length(times))
+  for(j in 1:length(times)){
+    subsets[[j]] <- gps[has_visits][[i]] %>%
+      filter(timestamp <= times[j])
+  }
+  gps_flight_cumulative[[i]] <- subsets
+}
+
+gps_flight_1hr <- vector(mode = "list", length = length(gps[has_visits]))
+for(i in 1:length(gps[has_visits])){
+  times <- acq_times[[i]][!is.na(acq_times[[i]])]
+  if(length(times) > 0){
+    subsets <- vector(mode = "list", length = length(times))
+    for(j in 1:length(times)){
+      subsets[[j]] <- gps[has_visits][[i]] %>%
+        filter(timestamp >= times[j]-hours(1) & timestamp <= times[j])
+    }
+  }else{
+    subsets <- "blank" # assigning this to NULL wasn't working
+  }
+  gps_flight_1hr[[i]] <- subsets
+}
+length(gps_flight_1hr)
+
+gps_flight_3hr <- vector(mode = "list", length = length(gps[has_visits]))
+for(i in 1:length(gps[has_visits])){
+  times <- acq_times[[i]][!is.na(acq_times[[i]])]
+  if(length(times) > 0){
+    subsets <- vector(mode = "list", length = length(times))
+    for(j in 1:length(times)){
+      subsets[[j]] <- gps[[i]] %>%
+        filter(timestamp >= times[j]-hours(3) & timestamp <= times[j])
+    }
+  }else{
+    subsets <- "blank"
+  }
+  gps_flight_3hr[[i]] <- subsets
+}
+
+## 16. Get roost nets
+# Have to make sure that all individuals in oa are included in the roost network, and no others.
+
+map(roosts[has_visits], ~unique(.x$roost_date)) # XXX why are there different numbers of roosts? Is it boundaries of the month?
+
+roosts_dates <- map(roosts[has_visits], ~{
+  .x %>%
+    group_by(roost_date) %>%
+    group_split() %>%
+    map(., ~st_as_sf(.x, coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+          st_transform(32636))
+})
+
+roosts_pairwise_distances <- map(roosts_dates, ~{
+  outout <- map(.x, ~{
+    ids <- .x$local_identifier
+    out <- as.data.frame(st_distance(.x)) %>%
+      mutate(across(everything(), as.numeric))
+    row.names(out) <- ids
+    colnames(out) <- ids
+    return(out)
+  })
+  return(outout)
+})
+
+thresh <- 500 # 500m threshold for roosting together. should check Orr's paper to see if I can find a better threshold.
+roosts_bin <- map(roosts_dates, ~{
+  outout <- map(.x, ~{
+    ids <- .x$local_identifier
+    out <- as.data.frame(st_distance(.x)) %>%
+      mutate(across(everything(), as.numeric))
+    out[out < 500] <- 1
+    out[out >= 500] <- 0
+    row.names(out) <- ids
+    colnames(out) <- ids
+    return(out)
+  })
+  return(outout)
+})
+save(roosts_bin, file = here("test_dynamic_nbda/data/roosts_bin.Rda"))
+
+roosts_pairwise_distances_invsq <- map(roosts_dates, ~{
+  outout <- map(.x, ~{
+    ids <- .x$local_identifier
+    out <- as.data.frame(st_distance(.x)) %>%
+      mutate(across(everything(), as.numeric))
+    row.names(out) <- ids
+    colnames(out) <- ids
+    out <- sqrt(out)
+    out <- 1/out
+    return(out)
+  })
+  return(outout)
+})
+
+## 17. Get flight nets (whole days)
+get_fl_bin <- function(dat){
+  if(is.data.frame(dat)){
+    if(nrow(dat) > 0){
+      self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
+                               ID2 = sort(unique(dat$local_identifier)),
+                               value = 0)
+      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                           consecThreshold = 1,
+                                                           idCol = "local_identifier",
+                                                           return = "edges")) %>%
+        select(ID1, ID2) %>%
+        distinct() %>%
+        mutate(value = 1) %>%
+        bind_rows(self_edges) %>%
+        arrange(ID1, ID2) %>%
+        pivot_wider(id_cols = "ID1", names_from = "ID2", values_fill = 0) %>%
+        select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
+        as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else{
+      out <- "blank"
+    }
+  }else{
+    out <- "blank"
+  }
+  return(out)
+}
+
+fl_allday_bin <- map(gps_flight_allday, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+length(fl_allday_bin)
+
+## 18. Get flight nets (four different intervals)
+fl_cumulative_bin <- map(gps_flight_cumulative, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+length(fl_cumulative_bin)
+
+fl_1hr_bin <- map(gps_flight_1hr, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+length(fl_1hr_bin)
+
+fl_3hr_bin <- map(gps_flight_3hr, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+length(fl_3hr_bin)
+
+# Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
+fix_nets <- function(nets, indivs){
+  indivs <- indivs[!is.na(indivs)]
+  updated <- vector(mode = "list", length = length(nets))
+  for(nt in 1:length(nets)){
+    net <- nets[[nt]]
+    
+    # Find any that are missing and add them
+    missing <- indivs[!(indivs %in% names(net))]
+    if(length(missing) > 0){
+      toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
+      if(nrow(net) > 0){ # XXX THE PROBLEM IS HERE!!! dealing with missing data. ugh.
+        net_updated <- bind_rows(net, toadd)
+      }else{
+        net_updated <- toadd
+      }
+      net_updated[is.na(net_updated)] <- 0
+      row.names(net_updated) <- net_updated$ID1
+      
+      # Remove any that don't need to be included
+      if(length(indivs) > 0){
+        net_subset <- net_updated[indivs, indivs]
+        # Save the result
+        updated[[nt]] <- net_subset
+      }else{
+        updated[[nt]] <- net
+      }
+    }
+    return(updated)
+  }
+}
+
+# XXX START HERE--why are we getting NAs?
+fl_allday_bin_fixed <- vector(mode = "list", length = length(fl_allday_bin))
+for(i in 1:length(fl_allday_bin)){
+  nets <- fl_allday_bin[[i]]
+  indivs <- sort(oa[[i]])
+  fl_allday_bin_fixed[[i]] <- fix_nets(nets, indivs)
+}
+
+save(fl_allday_bin_fixed, file = here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
+load(here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
+
+fl_cumulative_bin_fixed <- vector(mode = "list", length = length(fl_cumulative_bin))
+for(i in 1:length(fl_cumulative_bin)){
+  nets <- fl_cumulative_bin[[i]]
+  indivs <- sort(oa[[i]])
+  fl_cumulative_bin_fixed[[i]] <- fix_nets(nets, indivs)
+}
+
+save(fl_cumulative_bin_fixed, file = here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
+
+fl_1hr_bin_fixed <- vector(mode = "list", length = length(fl_1hr_bin))
+for(i in 1:length(fl_1hr_bin)){
+  nets <- fl_1hr_bin[[i]]
+  indivs <- sort(oa[[i]])
+  fl_1hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+}
+save(fl_1hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
+load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
+
+fl_3hr_bin_fixed <- vector(mode = "list", length = length(fl_3hr_bin))
+for(i in 1:length(fl_3hr_bin)){
+  nets <- fl_3hr_bin[[i]]
+  indivs <- sort(oa[[i]])
+  fl_3hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+  cat(i, "\n")
+}
+save(fl_3hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
+load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
+# XXX checking that these dimensions match the length of the individuals in OA seems like a lot of work, so I'm going to skip it for now. Come back to here if necessary.

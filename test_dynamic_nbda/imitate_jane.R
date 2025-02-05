@@ -320,9 +320,13 @@ oa
 
 #Get a CSV of the time-constant ILVs.
 ilvs <- read_csv(here("test_dynamic_nbda/data/ilvs.csv"))
+ilvs <- ilvs %>%
+  filter(local_identifier %in% indivs)
+ilvs$local_identifier == indivs # should be TRUE to make sure they're in the same order
+
 dist_before <- cbind(ilvs$dist_to_carc_daybefore)
 dist_before_std <- (dist_before-mean(dist_before))/sd(dist_before) 
-  
+
 age_group <- cbind(ilvs$age_group) # age group (categorical)
 age_group[age_group == "01_juv_sub"] <- 0
 age_group[age_group == "02_adult"] <- 1
@@ -358,10 +362,10 @@ data.frame(Variable = model2_add@varNames,
            MLE = model2_add@outputPar,
            SE = model2_add@se)
 
-#                     Variable          MLE           SE
-# 1    1 Social transmission 1 5.165365e+05 7.766783e+06
-# 2       2 Asocial: age_group 1.088932e+01 1.509751e+01
-# 3 3 Asocial: dist_before_std 6.360513e-01 3.072999e-01
+#                    Variable          MLE  SE
+# 1    1 Social transmission 1 914461.62843 NaN
+# 2       2 Asocial: age_group -97461.53309 NaN
+# 3 3 Asocial: dist_before_std      4.97328 NaN
 
 #If we wanted to fit a "multiplicative" model we would specify:
 nbdaData2_multi <- nbdaData(label = "ExampleDiffusion2",
@@ -374,10 +378,10 @@ data.frame(Variable = model2_multi@varNames,
            SE = model2_multi@se)
 nbdaPropSolveByST(model = model2_multi)
 
-#                             Variable          MLE  SE
-# 1            1 Social transmission 1 1.733273e+08 NaN
-# 2       2 Social= asocial: age_group 7.447351e-01 NaN
-# 3 3 Social= asocial: dist_before_std 4.636529e-01 NaN
+#                             Variable           MLE  SE
+# 1            1 Social transmission 1  6.282767e+08 NaN
+# 2       2 Social= asocial: age_group  7.020256e-01 NaN
+# 3 3 Social= asocial: dist_before_std -2.127998e-01 NaN
 
 #Or the "unconstrained" model
 nbdaData2_uc <- nbdaData(label = "ExampleDiffusion2",
@@ -390,12 +394,12 @@ data.frame(Variable = model2_uc@varNames,
            MLE = model2_uc@outputPar,
            SE = model2_uc@se)
 
-#                     Variable        MLE        SE
-# 1    1 Social transmission 1  0.8166331 1.5250360
-# 2       2 Asocial: age_group  1.3558332 0.5980410
-# 3 3 Asocial: dist_before_std  0.6007495 0.1741734
-# 4        4 Social: age_group -1.3052858 1.5209076
-# 5  5 Social: dist_before_std -2.4256179 1.2057813
+#                     Variable         MLE           SE
+# 1    1 Social transmission 1  79.4522060 2.260913e+02
+# 2       2 Asocial: age_group -25.6941287 1.154700e+04
+# 3 3 Asocial: dist_before_std   3.4922057 2.480081e+00
+# 4        4 Social: age_group   1.0250513 4.694902e-01
+# 5  5 Social: dist_before_std  -0.4365975 2.620383e-01
 
 #Note that one does not need to specify the same set of ILVs in asoc_ilv int_ilv and multi_ilv
 #So a model can be fitted in which some variables affect only asocial learning, some only social learning, some affect both the same amount, and some affect social and asocial learning differently.
@@ -406,26 +410,26 @@ data.frame(Variable = model2_uc@varNames,
 #For simplicity in the tutorial, we will take the approach of choosing the best of the 3 models based on AICc
 
 model2_add@aicc
-model2_multi@aicc # this one is lowest
-model2_uc@aicc
+model2_multi@aicc
+model2_uc@aicc # this one is lowest, but I want to pick a simpler one so let's look at the additive model
 
-#We see the multiplicative model is favored, but I'm not sure what it means that the standard error estimates are NA. To avoid that problem, and for consistency with the tutorial, we'll proceed with the additive model while we continue to walk through this tutorial.
+#We see the unconstrained model is favored. I'm not sure what it means that the standard error estimates are NA in the other two--might just be because the probability of social transmission is very high and therefore SE can't be estimated? For consistency with the tutorial, I'm going to stick with the additive one and hope I don't run into problems with the SE.
 
 data.frame(Variable = model2_add@varNames,
            MLE = model2_add@outputPar,
            SE = model2_add@se)
 
-#                     Variable          MLE           SE
-# 1    1 Social transmission 1 5.165365e+05 7.766783e+06
-# 2       2 Asocial: age_group 1.088932e+01 1.509751e+01
-# 3 3 Asocial: dist_before_std 6.360513e-01 3.072999e-01
+# Variable          MLE  SE
+# 1    1 Social transmission 1 914461.62843 NaN
+# 2       2 Asocial: age_group -97461.53309 NaN
+# 3 3 Asocial: dist_before_std      4.97328 NaN
 
 # And we can compare with an asocial model containing the same ILVs:
 model2_asocial <- oadaFit(nbdaData2_add, type="asocial")
 model2_add@aicc
-#[1] 155.0883
+# [1] 155.7121
 model2_asocial@aicc
-#[1] 165.3588 # KG: this is larger, so as expected, the additive model is favored over the asocial model.
+#[1] 173.1955 # KG: this is larger, so as expected, the additive model is favored over the asocial model.
 
 #From looking at the MLEs for the parameters we can see that s is estimated to be very large.
 #Indeed if we look at the profile log-likelihood plot for s:
@@ -434,12 +438,12 @@ plotProfLik(which=1,model=model2_add,range=c(0,200),resolution=20)
 plotProfLik(which=1,model=model2_add,range=c(0,1000),resolution=20)
 #We can see it appears to level out as s tends to infinity
 
-#However, this may well be an artifact of the asocial baseline chosen- we can see that adults are estimated to be faster than juveniles at asocial learning (coefficient of about 10 for the MLE estimate for age_group), and juveniles/subadults are set as the baseline. This means s is being estimated relative to a very small baseline rate of asocial learning.
-# We can reparameterise the model so that adults (of mean initial distance away from the carcass) are the baseline.
+#[(XXX KG: this comment is a holdover from the tutorial and doesn't apply to this model, I think...) However, this may well be an artifact of the asocial baseline chosen- we can see that adults are estimated to be faster than juveniles at asocial learning (coefficient of about [] for the MLE estimate for age_group), and juveniles/subadults are set as the baseline. This means s is being estimated relative to a very small baseline rate of asocial learning.
+# We can reparameterise the model so that adults (of mean initial distance away from the carcass) are the baseline.]
 
 age_group_rev <- 1-age_group
 asoc2 <- c("age_group_rev","dist_before_std")
-#Now juveniles/subadults = 1 and adults = 0
+#Now juveniles/subadults = 1 and adults = 0. Adults is the base level, and the coefficient will refer to the difference from adults
 
 nbdaData3_add <- nbdaData(label = "ExampleDiffusion2_reparam",
                           assMatrix = socNet1,
@@ -452,12 +456,12 @@ data.frame(Variable = model3_add@varNames,
            MLE = model3_add@outputPar,
            SE = model3_add@se)
 
-#                     Variable         MLE           SE
-# 1    1 Social transmission 1   9.6842584 1.330672e+01
-# 2   2 Asocial: age_group_rev -19.5169601 1.040121e+04
-# 3 3 Asocial: dist_before_std   0.6360545 3.080294e-01
+# Variable          MLE  SE
+# 1    1 Social transmission 1 6.713641e+17 NaN
+# 2   2 Asocial: age_group_rev 1.691814e+01 NaN
+# 3 3 Asocial: dist_before_std 8.088980e+00 NaN
 
-# Now we get a large negative coefficient for juveniles/subadults, and a much easier to interpret MLE of s = 9.68.
+# Now we get a small positive coefficient for juveniles/subadults, but a very large s value that's hard to interpret still (XXX KG note: this deviates substantially from the tutorial! May be due to the NAs?)
 
 # We can also see that the AICc is fractionally better for model 3, showing that the optimum has been found more precisely. (KG: in their tutorial there was more of a difference. Here it doesn't seem to matter at all.)
 model2_add@aicc
@@ -466,7 +470,7 @@ model3_add@aicc # KG oh wow, this is barely different at all
 #Note that the two models specified are the same, just parameterized differently- so you may even
 #see the same AICc here. # KG yep that's what happened here
 
-#You may also think we have somehow magically reduced the importance of social transmission, given the much lower estimation of s! But this is not the case, s is merely estimated reletive to a much higher baseline rate of asocial learning. This can be seen by comparing %ST for the two models:
+#You may also think we have somehow magically changed the importance of social transmission, given the very different estimation of s! But this is not the case, s is merely estimated relative to a much different baseline rate of asocial learning. This can be seen by comparing %ST for the two models:
 
 nbdaPropSolveByST(model = model2_add)
 # P(Network 1)  P(S offset) 
@@ -481,13 +485,13 @@ nbdaPropSolveByST(model = model3_add)
 plotProfLik(which = 1, model = model3_add, range = c(0,10), resolution = 20)
 plotProfLik(which = 1, model = model3_add, range = c(0,1000), resolution = 10)
 
-#We can see the lower limit is between 0 and 2, and the upper from 90-110 (KG: actually, there is no upper limit evident at all.)
+#We can see the lower limit is between 100 and 300, and the upper from [] (XXX KG: actually, there is no upper limit evident at all.)
 
 profLikCI(which = 1, model = model3_add, 
           upperRange = c(100, 10000),
           lowerRange = c(0,2))
 # Lower CI   Upper CI 
-# 1.573137 602.348833 # XXX QQQ I don't understand why this is able to calculate a confidence interval when the upper limit isn't even visible on the graph.
+# 1.999959 217.463418  # XXX QQQ I don't understand why this is able to calculate a confidence interval when the upper limit isn't even visible on the graph.
 
 #We can again get the %ST corresponding to the upper and lower points of the 95% CI. However, before we do so, we need to look at the constrainedNBDAdata function- so we will come back to this after we have looked at the estimated ILV effects and 95% C.I.s for those.
 
@@ -499,10 +503,12 @@ data.frame(Variable = model3_add@varNames,
            WaldLower = model3_add@outputPar-1.96*model3_add@se,
            WaldUpper = model3_add@outputPar+1.96*model3_add@se)
 
-#                     Variable         MLE           SE     WaldLower    WaldUpper
-# 1    1 Social transmission 1   9.6842584 1.330672e+01 -1.639691e+01    35.765424
-# 2   2 Asocial: age_group_rev -19.5169601 1.040121e+04 -2.040589e+04 20366.856293
-# 3 3 Asocial: dist_before_std   0.6360545 3.080294e-01  3.231697e-02     1.239792
+# Variable          MLE  SE WaldLower WaldUpper
+# 1    1 Social transmission 1 6.713641e+17 NaN       NaN       NaN
+# 2   2 Asocial: age_group_rev 1.691814e+01 NaN       NaN       NaN
+# 3 3 Asocial: dist_before_std 8.088980e+00 NaN       NaN       NaN
+#(XXX KG: can't continue this part of the tutorial because of all the NAs in this model. The comments from here on out are from before I fixed the ILV data)
+#++++++++++++++++++++++++++++++
 
 #We have already seen why the Wald C.I.s are misleading for s (XXX KG: we have?)
 #For dist_before_std the Wald 95% C.I.s look like they *could* be reasonable (XXX KG: I think?)
@@ -578,7 +584,80 @@ exp(model3_add@outputPar[2])
 exp(model3_add@outputPar[2]*-1) # XXX KG I have no idea what's going on here
 
 # XXX next to do: constraining models
+#++++++++++++++++++++++++++++++
 
+#############################################################################
+# TUTORIAL 2.2
+# ADDING TIME-VARYING ILVs TO AN OADA MODEL
+# 1 diffusion
+# 1 static network
+# 1 Time constant ILV
+# 1 Time varying ILV
+#############################################################################
+
+#Time-varying ILVs are easily added to an OADA
+#It might take a bit of work to set up the nbdaData object, but once this is done the analysis proceeds as above.
+
+#If one or more of our ILVs is time-varying, we need to set up an array for ALL of our ILVs specifying their values for every individual for every acquistion event.
+
+#For example, let us assume that individuals' age groups don't vary over time, but their distance from the carcass does--we're going to incorporate the distance of each roost site to the carcass on each day.
+activity_centers <- readRDS(here("test_dynamic_nbda/data/activity_centers.RDS"))
+
+#Let us set up a matrix with rows = number of individuals, columns = number of acquisition event (in this case, 30 for both)
+# XXX KG note: unclear whether the time-varying ILVs can only be categorical, or whether continuous/quantitative ones are accepted too. Going to try with continuous and see how it goes.
+n_acq_events <- length(oa)
+n_acq_events # 33
+n_indivs # 33
+
+ilvs <- ilvs %>%
+  left_join((activity_centers %>%
+  st_drop_geometry() %>%
+  pivot_wider(id_cols = "local_identifier", names_from = "dateOnly", values_from = "dist_to_carc_m", names_prefix = "dist_")), by = "local_identifier") 
+day1 <- ilvs$`dist_2024-04-21`
+day2 <- ilvs$`dist_2024-04-22`
+day3 <- ilvs$`dist_2024-04-23`
+day4 <- ilvs$`dist_2024-04-24`
+day5 <- ilvs$`dist_2024-04-25`
+day6 <- ilvs$`dist_2024-04-26`
+
+which_dates <- acq_roost_dates$timeperiod
+n_acq_firstday <- sum(which_dates == 1)
+n_acq_secondday <- sum(which_dates == 2)
+n_acq_thirdday <- sum(which_dates == 3)
+n_acq_fourthday <- sum(which_dates == 4)
+  
+#Let us set up a matrix with rows = number of individuals, columns = number of acquistion event (in this case, 33 for both)
+treatment <- matrix(NA, nrow = n_indivs, ncol = n_acq_events)
+for(i in 1:length(indivs)){
+  # each row is an individual; each column is an acquisition event
+  treatment[i,] <- c(rep(day1[i], n_acq_firstday), 
+                     rep(day2[i], n_acq_secondday),
+                     rep(day3[i], n_acq_thirdday),
+                     rep(day4[i], n_acq_fourthday))
+}
+
+#let us also assume we want to include the age_group_rev variable from above
+age_group_rev # reversed, so 0 is adult and 1 is juvenile/subadult
+#We have to input this as a time varying ILV as well, even though it does not change
+#However it is easy to create this using the byrow=F argument:
+age_group_rev_TV <- matrix(age_group_rev, nrow = n_indivs, ncol = n_acq_events, byrow = F)
+age_group_rev_TV # each row is an individual (so, we'll have the same value all the way across) and each column is an acquisition event (each column will be identical to the previous column)
+
+asocTV <- c("treatment","age_group_rev_TV")
+
+#We can then create the nbdaData object for the unconstrained model, specifying asocialTreatment="timevarying"
+
+nbdaData3_TVadd <- nbdaData(label = "ExampleDiffusion2",
+                            assMatrix = socNet1,
+                            orderAcq = oa, 
+                            asoc_ilv = asocTV,
+                            asocialTreatment = "timevarying")
+#Fit the model
+model_socialTV <- oadaFit(nbdaData3_TVadd)
+#Display the output
+data.frame(Variable = model_socialTV@varNames,
+           MLE = model_socialTV@outputPar,
+           SE = model_socialTV@se) # why are the SE values NA here?
 
 
 
