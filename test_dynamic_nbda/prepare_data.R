@@ -208,6 +208,7 @@ save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
 
 #XXX at this point maybe I should make subsets and only continued dealing with the carcasses that have the acquisitions
 has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+save(has_visits, file = here("test_dynamic_nbda/data/has_visits.Rda"))
 
 # XXX everything after this will be subsetted by has_visits; won't be calculated otherwise.
 ## 14. Get oa
@@ -359,26 +360,34 @@ get_fl_bin <- function(dat){
   return(out)
 }
 
-fl_allday_bin <- map(gps_flight_allday, ~{
-  map(.x, ~get_fl_bin(.x))
-}, .progress = T)
-length(fl_allday_bin)
+# fl_allday_bin <- map(gps_flight_allday, ~{
+#   map(.x, ~get_fl_bin(.x))
+# }, .progress = T)
+# length(fl_allday_bin)
+# save(fl_allday_bin, file = here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
+load(here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
 
 ## 18. Get flight nets (four different intervals)
-fl_cumulative_bin <- map(gps_flight_cumulative, ~{
-  map(.x, ~get_fl_bin(.x))
-}, .progress = T)
-length(fl_cumulative_bin)
+# fl_cumulative_bin <- map(gps_flight_cumulative, ~{
+#   map(.x, ~get_fl_bin(.x))
+# }, .progress = T)
+# length(fl_cumulative_bin)
+# save(fl_cumulative_bin, file = here("test_dynamic_nbda/data/fl_cumulative_bin.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin.Rda"))
 
-fl_1hr_bin <- map(gps_flight_1hr, ~{
-  map(.x, ~get_fl_bin(.x))
-}, .progress = T)
-length(fl_1hr_bin)
+# fl_1hr_bin <- map(gps_flight_1hr, ~{
+#   map(.x, ~get_fl_bin(.x))
+# }, .progress = T)
+# length(fl_1hr_bin)
+# save(fl_1hr_bin, file = here("test_dynamic_nbda/data/fl_1hr_bin.Rda"))
+load(here("test_dynamic_nbda/data/fl_1hr_bin.Rda"))
 
-fl_3hr_bin <- map(gps_flight_3hr, ~{
-  map(.x, ~get_fl_bin(.x))
-}, .progress = T)
-length(fl_3hr_bin)
+# fl_3hr_bin <- map(gps_flight_3hr, ~{
+#   map(.x, ~get_fl_bin(.x))
+# }, .progress = T)
+# length(fl_3hr_bin)
+# save(fl_3hr_bin, file = here("test_dynamic_nbda/data/fl_3hr_bin.Rda"))
+load(here("test_dynamic_nbda/data/fl_3hr_bin.Rda"))
 
 # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
 fix_nets <- function(nets, indivs){
@@ -386,37 +395,47 @@ fix_nets <- function(nets, indivs){
   updated <- vector(mode = "list", length = length(nets))
   for(nt in 1:length(nets)){
     net <- nets[[nt]]
+    if(!("ID1" %in% names(net))){ # this is a stupid workaround so the function will work with the co-roost network. Horribly inefficient.
+      net$ID1 <- row.names(net)
+    }
     
     # Find any that are missing and add them
     missing <- indivs[!(indivs %in% names(net))]
     if(length(missing) > 0){
       toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
-      if(nrow(net) > 0){ # XXX THE PROBLEM IS HERE!!! dealing with missing data. ugh.
-        net_updated <- bind_rows(net, toadd)
+      if(!any(net == "blank")){ # XXX THE PROBLEM IS HERE!!! dealing with missing data. ugh.
+        net_updated <- as.data.frame(bind_rows(net, toadd))
       }else{
-        net_updated <- toadd
+        net_updated <- as.data.frame(toadd)
       }
       net_updated[is.na(net_updated)] <- 0
       row.names(net_updated) <- net_updated$ID1
-      
-      # Remove any that don't need to be included
-      if(length(indivs) > 0){
-        net_subset <- net_updated[indivs, indivs]
-        # Save the result
-        updated[[nt]] <- net_subset
-      }else{
-        updated[[nt]] <- net
-      }
+    }else{
+      net_updated <- net
     }
-    return(updated)
+    
+    # Remove any that don't need to be included
+    if(length(indivs) > 0){
+      net_subset <- net_updated[indivs, indivs]
+      if(!is.data.frame(net_subset) & length(net_subset) == 1){
+        net_subset <- as.data.frame(net_subset)
+        names(net_subset) <- indivs
+        row.names(net_subset) <- indivs
+      }
+      # Save the result
+      updated[[nt]] <- net_subset
+    }else{
+      updated[[nt]] <- net_updated
+    }
   }
+  return(updated)
 }
 
 # XXX START HERE--why are we getting NAs?
 fl_allday_bin_fixed <- vector(mode = "list", length = length(fl_allday_bin))
 for(i in 1:length(fl_allday_bin)){
   nets <- fl_allday_bin[[i]]
-  indivs <- sort(oa[[i]])
+  indivs <- oa_indivs_sorted[[i]]
   fl_allday_bin_fixed[[i]] <- fix_nets(nets, indivs)
 }
 
@@ -426,7 +445,7 @@ load(here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
 fl_cumulative_bin_fixed <- vector(mode = "list", length = length(fl_cumulative_bin))
 for(i in 1:length(fl_cumulative_bin)){
   nets <- fl_cumulative_bin[[i]]
-  indivs <- sort(oa[[i]])
+  indivs <- oa_indivs_sorted[[i]]
   fl_cumulative_bin_fixed[[i]] <- fix_nets(nets, indivs)
 }
 
@@ -436,19 +455,71 @@ load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
 fl_1hr_bin_fixed <- vector(mode = "list", length = length(fl_1hr_bin))
 for(i in 1:length(fl_1hr_bin)){
   nets <- fl_1hr_bin[[i]]
-  indivs <- sort(oa[[i]])
+  indivs <- oa_indivs_sorted[[i]]
   fl_1hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
 }
+map_dbl(fl_1hr_bin_fixed, length) == map_dbl(oa, length) # good--we got one network per acquisition event
 save(fl_1hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
 
 fl_3hr_bin_fixed <- vector(mode = "list", length = length(fl_3hr_bin))
 for(i in 1:length(fl_3hr_bin)){
   nets <- fl_3hr_bin[[i]]
-  indivs <- sort(oa[[i]])
+  indivs <- oa_indivs_sorted[[i]]
   fl_3hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
-  cat(i, "\n")
 }
+map_dbl(fl_3hr_bin_fixed, length) == map_dbl(oa, length) # good--we got one network per acquisition event
 save(fl_3hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
-# XXX checking that these dimensions match the length of the individuals in OA seems like a lot of work, so I'm going to skip it for now. Come back to here if necessary.
+
+# check that the dimensions match the number of individuals
+check <- function(list){
+  out <- map(list, ~map(.x, ~{
+    t(as.matrix(dim(.x)))}) %>% do.call(rbind, .) %>% 
+      as.data.frame() %>% 
+      distinct()
+  ) %>% purrr::list_rbind() %>%
+    mutate(n_expected = map_dbl(oa, length)) %>%
+    mutate(square = V1 == V2,
+           expected_rows = V1 == n_expected,
+           expected_cols = V2 == n_expected)
+  return(out)
+}
+
+# this is sloppy, but it gives us the important info. Let's go ahead and check it.
+check(fl_allday_bin_fixed)
+check(fl_cumulative_bin_fixed)
+check(fl_3hr_bin_fixed)
+check(fl_1hr_bin_fixed) # these look good!
+
+# Another check: fl_allday_bin_fixed should have one network per day, while the others should have one network per acquisition event.
+map_dbl(fl_allday_bin_fixed, length) # a separate question is why one of these diffusions has only one day; I suspect it's because the carcass was placed toward the end of one of the periods. Need to double check this XXX. But otherwise this looks good--they each have 4 networks, one for each day.
+
+all(map_dbl(fl_cumulative_bin_fixed, length) == map(oa, length)) # TRUE
+all(map_dbl(fl_1hr_bin_fixed, length) == map(oa, length)) # TRUE
+all(map_dbl(fl_3hr_bin_fixed, length) == map(oa, length)) # TRUE
+
+# okay good! The flight network data looks okay. Now we need to subset the roost networks similarly.
+length(roosts_bin) # should be same as number of valid diffusions--good.
+map_dbl(roosts_bin, length) # this is an odder result. What's going on here? XXX
+# XXX it does look like the same one that only had one day of data for the flight network also only has one day of data for the roost network. That's normal. But I don't understand where the 6 comes from, and why one of them only has 4 while some others have 5.
+roosts_bin_fixed <- vector(mode = "list", length = length(roosts_bin))
+for(i in 1:length(roosts_bin)){
+  nets <- roosts_bin[[i]]
+  indivs <- oa_indivs_sorted[[i]]
+  roosts_bin_fixed[[i]] <- fix_nets(nets, indivs)
+}
+save(roosts_bin_fixed, file = here("test_dynamic_nbda/data/roosts_bin_fixed.Rda"))
+
+# Make networks -----------------------------------------------------------
+roosts_bin_nets <- map(roosts_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+fl_allday_bin_nets <- map(fl_allday_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+fl_cumulative_bin_nets <- map(fl_cumulative_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+fl_1h_bin_nets <- map(fl_1hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+fl_3h_bin_nets <- map(fl_3hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+
+save(roosts_bin_nets, file = here("test_dynamic_nbda/data/roosts_bin_nets.Rda"))
+save(fl_allday_bin_nets, file = here("test_dynamic_nbda/data/fl_allday_bin_nets.Rda"))
+save(fl_cumulative_bin_nets, file = here("test_dynamic_nbda/data/fl_cumulative_bin_nets.Rda"))
+save(fl_1h_bin_nets, file = here("test_dynamic_nbda/data/fl_1h_bin_nets.Rda"))
+save(fl_3h_bin_nets, file = here("test_dynamic_nbda/data/fl_3h_bin_nets.Rda"))
