@@ -161,9 +161,20 @@ www <- ww %>%
 ilvs <- map(distances, ~{
   .x %>%
     left_join(www, by = "local_identifier")
-})
+}) # let's reduce this down to just one age group column, depending on the carcass
 
 all(map_dbl(ilvs, nrow) == map_dbl(distances, nrow)) # should be TRUE--we shouldn't have added any rows.
+
+for(i in 1:length(ilvs)){
+  if(lubridate::year(inpa_carcs[[i]]$dateOnly) == 2023){
+    ilvs[[i]] <- ilvs[[i]] %>% select(-age_group_2024) %>%
+      rename("age_group" = age_group_2023)
+  }else{
+    ilvs[[i]] <- ilvs[[i]] %>% select(-age_group_2023) %>%
+      rename("age_group" = age_group_2024)
+  }
+}
+save(ilvs, file = here("test_dynamic_nbda/data/ilvs.Rda"))
 
 ## 11. Make gps (i.e. remove days before the carcass)
 gps <- map2(gps_all, datetimes, ~{
@@ -172,15 +183,47 @@ gps <- map2(gps_all, datetimes, ~{
 })
 rows_removed <- map_dbl(gps_all, nrow) - map_dbl(gps, nrow)
 pct_removed <- 100*(rows_removed/(map_dbl(gps_all, nrow)))# just checking that this looks reasonable. We removed a couple days of data, so values around 30% make sense.
+save(gps, file = here("test_dynamic_nbda/data/gps.Rda"))
 
-## 12. Get arrivals
-at_carcass <- map2(gps, inpa_carcs, ~.x %>%
-                     mutate(carcID = .y$carcID) %>%
-                     filter(dist_to_carcass < 400 & ground_speed < 5))
+## 12. Get arrivals/sightings of the carcass
+# at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+#                      mutate(carcID = .y$carcID) %>%
+#                      filter(dist_to_carcass < 400 & ground_speed < 5))
+
+see_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                      mutate(carcID = .y$carcID) %>%
+                      filter(dist_to_carcass < 1000))
 
 ## 13. Get firsts
 # Get first arrival of each vulture to the carcass
-firsts <- map2(at_carcass, inpa_carcs, ~{
+# firsts <- map2(at_carcass, inpa_carcs, ~{
+#   if(nrow(.x) > 1){
+#     out <- .x %>%
+#       filter(timestamp >= .y$datetime) %>%
+#       arrange(timestamp) %>%
+#       group_by(local_identifier) %>%
+#       slice(1) %>%
+#       ungroup() %>%
+#       arrange(timestamp)
+#     if(nrow(out) > 0){
+#       out$rownumber <- 1:nrow(out)
+#       return(out)
+#     }else{
+#       out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+#       return(out)
+#     }
+#   }else{
+#     out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+#     return(out)
+#   }
+# }) 
+# map_dbl(firsts, nrow)
+# map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)) # needed to do this because not all instances of 1 row are actually zeroes.
+# # XXX why do we have so many carcasses provisioned that have nobody arriving? That seems weird!!!
+# save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
+
+# Get first time each vulture saw the carcass
+firsts_see <- map2(see_carcass, inpa_carcs, ~{
   if(nrow(.x) > 1){
     out <- .x %>%
       filter(timestamp >= .y$datetime) %>%
@@ -201,87 +244,140 @@ firsts <- map2(at_carcass, inpa_carcs, ~{
     return(out)
   }
 }) 
-map_dbl(firsts, nrow)
-map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)) # needed to do this because not all instances of 1 row are actually zeroes.
-# XXX why do we have so many carcasses provisioned that have nobody arriving? That seems weird!!!
-save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
+save(firsts_see, file = here("test_dynamic_nbda/data/firsts_see.Rda"))
 
-#XXX at this point maybe I should make subsets and only continued dealing with the carcasses that have the acquisitions
-has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
-save(has_visits, file = here("test_dynamic_nbda/data/has_visits.Rda"))
+# has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+# save(has_visits, file = here("test_dynamic_nbda/data/has_visits.Rda"))
 
-# XXX everything after this will be subsetted by has_visits; won't be calculated otherwise.
+has_sightings <- map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+save(has_sightings, file = here("test_dynamic_nbda/data/has_sightings.Rda"))
+
+# Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
 ## 14. Get oa
-oa <- map(firsts[has_visits], "local_identifier")
-save(oa, file = here("test_dynamic_nbda/data/oa.Rda"))
-oa_num <- map(oa, order)
-save(oa_num, file = here("test_dynamic_nbda/data/oa_num.Rda"))
-oa_indivs_sorted <- map(oa, sort)
-# oa_indivs_pairs <- map(oa_indivs_sorted, ~{ # get all possible pairs so we can make sure that the eventual networks are complete before subsetting
-#   if(length(.x) > 1){
-#     pairs <- as.data.frame(expand.grid(.x, .x))
-#     colnames(pairs) <- c("ID1", "ID2")
-#     return(pairs)
-#   }
-# })
-
+# oa <- map(firsts[has_visits], "local_identifier")
+oa_see <- map(firsts_see[has_sightings], "local_identifier")
+# save(oa, file = here("test_dynamic_nbda/data/oa.Rda"))
+save(oa_see, file = here("test_dynamic_nbda/data/oa_see.Rda"))
+# oa_num <- map(oa, order)
+oa_see_num <- map(oa_see, order)
+# save(oa_num, file = here("test_dynamic_nbda/data/oa_num.Rda"))
+save(oa_see_num, file = here("test_dynamic_nbda/data/oa_see_num.Rda"))
+# oa_indivs_sorted <- map(oa, sort)
+oa_see_indivs_sorted <- map(oa_see, sort)
 
 ## 14.5 Get acquisition times
-acq_times <- map(firsts[has_visits], ~.x$timestamp)
+# acq_times <- map(firsts[has_visits], ~.x$timestamp)
+see_times <- map(firsts_see[has_sightings], ~.x$timestamp)
 
 ## 15. Get GPS subsets for flight (four different intervals)
-gps_flight_allday <- map(gps[has_visits], ~.x %>%
-                           group_by(dateOnly) %>%
-                           group_split())
+# gps_flight_allday <- map(gps[has_visits], ~.x %>%
+#                            group_by(dateOnly) %>%
+#                            group_split())
+gps_flight_allday_see <- map(gps[has_sightings], ~.x %>%
+                               group_by(dateOnly) %>%
+                               group_split())
 
-gps_flight_cumulative <- vector(mode = "list", length = length(gps[has_visits]))
-for(i in 1:length(gps[has_visits])){
-  times <- acq_times[[i]]
+# gps_flight_cumulative <- vector(mode = "list", length = length(gps[has_visits]))
+# for(i in 1:length(gps[has_visits])){
+#   times <- acq_times[[i]]
+#   subsets <- vector(mode = "list", length = length(times))
+#   for(j in 1:length(times)){
+#     subsets[[j]] <- gps[has_visits][[i]] %>%
+#       filter(timestamp <= times[j])
+#   }
+#   gps_flight_cumulative[[i]] <- subsets
+# }
+
+gps_flight_cumulative_see <- vector(mode = "list", length = length(gps[has_sightings]))
+for(i in 1:length(gps[has_sightings])){
+  times <- see_times[[i]]
   subsets <- vector(mode = "list", length = length(times))
   for(j in 1:length(times)){
-    subsets[[j]] <- gps[has_visits][[i]] %>%
+    subsets[[j]] <- gps[has_sightings][[i]] %>%
       filter(timestamp <= times[j])
   }
-  gps_flight_cumulative[[i]] <- subsets
+  gps_flight_cumulative_see[[i]] <- subsets
 }
 
-gps_flight_1hr <- vector(mode = "list", length = length(gps[has_visits]))
-for(i in 1:length(gps[has_visits])){
-  times <- acq_times[[i]][!is.na(acq_times[[i]])]
+# gps_flight_1hr <- vector(mode = "list", length = length(gps[has_visits]))
+# for(i in 1:length(gps[has_visits])){
+#   times <- acq_times[[i]][!is.na(acq_times[[i]])]
+#   if(length(times) > 0){
+#     subsets <- vector(mode = "list", length = length(times))
+#     for(j in 1:length(times)){
+#       subsets[[j]] <- gps[has_visits][[i]] %>%
+#         filter(timestamp >= times[j]-hours(1) & timestamp <= times[j])
+#     }
+#   }else{
+#     subsets <- "blank" # assigning this to NULL wasn't working
+#   }
+#   gps_flight_1hr[[i]] <- subsets
+# }
+# length(gps_flight_1hr)
+
+gps_flight_1hr_see <- vector(mode = "list", length = length(gps[has_sightings]))
+for(i in 1:length(gps[has_sightings])){
+  times <- see_times[[i]][!is.na(see_times[[i]])]
   if(length(times) > 0){
     subsets <- vector(mode = "list", length = length(times))
     for(j in 1:length(times)){
-      subsets[[j]] <- gps[has_visits][[i]] %>%
+      subsets[[j]] <- gps[has_sightings][[i]] %>%
         filter(timestamp >= times[j]-hours(1) & timestamp <= times[j])
     }
   }else{
     subsets <- "blank" # assigning this to NULL wasn't working
   }
-  gps_flight_1hr[[i]] <- subsets
+  gps_flight_1hr_see[[i]] <- subsets
 }
-length(gps_flight_1hr)
+length(gps_flight_1hr_see)
 
-gps_flight_3hr <- vector(mode = "list", length = length(gps[has_visits]))
-for(i in 1:length(gps[has_visits])){
-  times <- acq_times[[i]][!is.na(acq_times[[i]])]
+# gps_flight_3hr <- vector(mode = "list", length = length(gps[has_visits]))
+# for(i in 1:length(gps[has_visits])){
+#   times <- acq_times[[i]][!is.na(acq_times[[i]])]
+#   if(length(times) > 0){
+#     subsets <- vector(mode = "list", length = length(times))
+#     for(j in 1:length(times)){
+#       subsets[[j]] <- gps[has_visits][[i]] %>%
+#         filter(timestamp >= times[j]-hours(3) & timestamp <= times[j])
+#     }
+#   }else{
+#     subsets <- "blank" # assigning this to NULL wasn't working
+#   }
+#   gps_flight_3hr[[i]] <- subsets
+# }
+# length(gps_flight_3hr)
+
+gps_flight_3hr_see <- vector(mode = "list", length = length(gps[has_sightings]))
+for(i in 1:length(gps[has_sightings])){
+  times <- see_times[[i]][!is.na(see_times[[i]])]
   if(length(times) > 0){
     subsets <- vector(mode = "list", length = length(times))
     for(j in 1:length(times)){
-      subsets[[j]] <- gps[[i]] %>%
+      subsets[[j]] <- gps[has_sightings][[i]] %>%
         filter(timestamp >= times[j]-hours(3) & timestamp <= times[j])
     }
   }else{
-    subsets <- "blank"
+    subsets <- "blank" # assigning this to NULL wasn't working
   }
-  gps_flight_3hr[[i]] <- subsets
+  gps_flight_3hr_see[[i]] <- subsets
 }
+length(gps_flight_3hr_see)
+
 
 ## 16. Get roost nets
 # Have to make sure that all individuals in oa are included in the roost network, and no others.
 
-map(roosts[has_visits], ~unique(.x$roost_date)) # XXX why are there different numbers of roosts? Is it boundaries of the month?
+# map(roosts[has_visits], ~unique(.x$roost_date)) # XXX why are there different numbers of roosts? Is it boundaries of the month?
 
-roosts_dates <- map(roosts[has_visits], ~{
+# roosts_dates <- map(roosts[has_visits], ~{
+#   .x %>%
+#     group_by(roost_date) %>%
+#     group_split() %>%
+#     map(., ~st_as_sf(.x, coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+#           st_transform(32636))
+# })
+
+roosts_dates_see <- map(roosts[has_sightings], ~{
   .x %>%
     group_by(roost_date) %>%
     group_split() %>%
@@ -289,7 +385,19 @@ roosts_dates <- map(roosts[has_visits], ~{
           st_transform(32636))
 })
 
-roosts_pairwise_distances <- map(roosts_dates, ~{
+# roosts_pairwise_distances <- map(roosts_dates, ~{
+#   outout <- map(.x, ~{
+#     ids <- .x$local_identifier
+#     out <- as.data.frame(st_distance(.x)) %>%
+#       mutate(across(everything(), as.numeric))
+#     row.names(out) <- ids
+#     colnames(out) <- ids
+#     return(out)
+#   })
+#   return(outout)
+# })
+
+roosts_pairwise_distances_see <- map(roosts_dates_see, ~{
   outout <- map(.x, ~{
     ids <- .x$local_identifier
     out <- as.data.frame(st_distance(.x)) %>%
@@ -302,7 +410,20 @@ roosts_pairwise_distances <- map(roosts_dates, ~{
 })
 
 thresh <- 500 # 500m threshold for roosting together. should check Orr's paper to see if I can find a better threshold.
-roosts_bin <- map(roosts_dates, ~{
+# roosts_bin <- map(roosts_dates, ~{
+#   outout <- map(.x, ~{
+#     ids <- .x$local_identifier
+#     out <- as.data.frame(st_distance(.x)) %>%
+#       mutate(across(everything(), as.numeric))
+#     out[out < 500] <- 1
+#     out[out >= 500] <- 0
+#     row.names(out) <- ids
+#     colnames(out) <- ids
+#     return(out)
+#   })
+#   return(outout)
+# })
+roosts_bin_see <- map(roosts_dates_see, ~{
   outout <- map(.x, ~{
     ids <- .x$local_identifier
     out <- as.data.frame(st_distance(.x)) %>%
@@ -315,21 +436,7 @@ roosts_bin <- map(roosts_dates, ~{
   })
   return(outout)
 })
-save(roosts_bin, file = here("test_dynamic_nbda/data/roosts_bin.Rda"))
-
-roosts_pairwise_distances_invsq <- map(roosts_dates, ~{
-  outout <- map(.x, ~{
-    ids <- .x$local_identifier
-    out <- as.data.frame(st_distance(.x)) %>%
-      mutate(across(everything(), as.numeric))
-    row.names(out) <- ids
-    colnames(out) <- ids
-    out <- sqrt(out)
-    out <- 1/out
-    return(out)
-  })
-  return(outout)
-})
+save(roosts_bin_see, file = here("test_dynamic_nbda/data/roosts_bin_see.Rda"))
 
 ## 17. Get flight nets (whole days)
 get_fl_bin <- function(dat){
@@ -365,7 +472,13 @@ get_fl_bin <- function(dat){
 # }, .progress = T)
 # length(fl_allday_bin)
 # save(fl_allday_bin, file = here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
-load(here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
+# load(here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
+
+fl_allday_bin_see <- map(gps_flight_allday_see, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+save(fl_allday_bin_see, file = here("test_dynamic_nbda/data/fl_allday_bin_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_allday_bin_see.Rda"))
 
 ## 18. Get flight nets (four different intervals)
 # fl_cumulative_bin <- map(gps_flight_cumulative, ~{
@@ -373,21 +486,39 @@ load(here("test_dynamic_nbda/data/fl_allday_bin.Rda"))
 # }, .progress = T)
 # length(fl_cumulative_bin)
 # save(fl_cumulative_bin, file = here("test_dynamic_nbda/data/fl_cumulative_bin.Rda"))
-load(here("test_dynamic_nbda/data/fl_cumulative_bin.Rda"))
+# load(here("test_dynamic_nbda/data/fl_cumulative_bin.Rda"))
+
+fl_cumulative_bin_see <- map(gps_flight_cumulative_see, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+save(fl_cumulative_bin_see, file = here("test_dynamic_nbda/data/fl_cumulative_bin_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_see.Rda"))
 
 # fl_1hr_bin <- map(gps_flight_1hr, ~{
 #   map(.x, ~get_fl_bin(.x))
 # }, .progress = T)
 # length(fl_1hr_bin)
 # save(fl_1hr_bin, file = here("test_dynamic_nbda/data/fl_1hr_bin.Rda"))
-load(here("test_dynamic_nbda/data/fl_1hr_bin.Rda"))
+# load(here("test_dynamic_nbda/data/fl_1hr_bin.Rda"))
+
+fl_1hr_bin_see <- map(gps_flight_1hr_see, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+save(fl_1hr_bin_see, file = here("test_dynamic_nbda/data/fl_1hr_bin_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_1hr_bin_see.Rda"))
 
 # fl_3hr_bin <- map(gps_flight_3hr, ~{
 #   map(.x, ~get_fl_bin(.x))
 # }, .progress = T)
 # length(fl_3hr_bin)
 # save(fl_3hr_bin, file = here("test_dynamic_nbda/data/fl_3hr_bin.Rda"))
-load(here("test_dynamic_nbda/data/fl_3hr_bin.Rda"))
+# load(here("test_dynamic_nbda/data/fl_3hr_bin.Rda"))
+
+fl_3hr_bin_see <- map(gps_flight_3hr_see, ~{
+  map(.x, ~get_fl_bin(.x))
+}, .progress = T)
+save(fl_3hr_bin_see, file = here("test_dynamic_nbda/data/fl_3hr_bin_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_3hr_bin_see.Rda"))
 
 # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
 fix_nets <- function(nets, indivs){
@@ -397,6 +528,8 @@ fix_nets <- function(nets, indivs){
     net <- nets[[nt]]
     if(!("ID1" %in% names(net))){ # this is a stupid workaround so the function will work with the co-roost network. Horribly inefficient.
       net$ID1 <- row.names(net)
+      net <- net %>%
+        relocate(ID1)
     }
     
     # Find any that are missing and add them
@@ -413,113 +546,139 @@ fix_nets <- function(nets, indivs){
     }else{
       net_updated <- net
     }
-    
-    # Remove any that don't need to be included
-    if(length(indivs) > 0){
-      net_subset <- net_updated[indivs, indivs]
-      if(!is.data.frame(net_subset) & length(net_subset) == 1){
-        net_subset <- as.data.frame(net_subset)
-        names(net_subset) <- indivs
-        row.names(net_subset) <- indivs
-      }
-      # Save the result
-      updated[[nt]] <- net_subset
-    }else{
-      updated[[nt]] <- net_updated
-    }
+    net_updated_2 <- net_updated[,-1]
+    updated[[nt]] <- net_updated_2[indivs, indivs]
+
   }
   return(updated)
 }
 
-# XXX START HERE--why are we getting NAs?
-fl_allday_bin_fixed <- vector(mode = "list", length = length(fl_allday_bin))
-for(i in 1:length(fl_allday_bin)){
-  nets <- fl_allday_bin[[i]]
-  indivs <- oa_indivs_sorted[[i]]
-  fl_allday_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# fl_allday_bin_fixed <- vector(mode = "list", length = length(fl_allday_bin))
+# for(i in 1:length(fl_allday_bin)){
+#   nets <- fl_allday_bin[[i]]
+#   indivs <- oa_indivs_sorted[[i]]
+#   fl_allday_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# }
+# save(fl_allday_bin_fixed, file = here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
+# load(here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
+
+fl_allday_bin_fixed_see <- vector(mode = "list", length = length(fl_allday_bin_see))
+for(i in 1:length(fl_allday_bin_see)){
+  nets <- fl_allday_bin_see[[i]]
+  indivs <- sort(unique(gps[has_sightings][[i]]$local_identifier))
+  fl_allday_bin_fixed_see[[i]] <- fix_nets(nets, indivs)
 }
+save(fl_allday_bin_fixed_see, file = here("test_dynamic_nbda/data/fl_allday_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_allday_bin_fixed_see.Rda"))
 
-save(fl_allday_bin_fixed, file = here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
-load(here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
+# fl_cumulative_bin_fixed <- vector(mode = "list", length = length(fl_cumulative_bin))
+# for(i in 1:length(fl_cumulative_bin)){
+#   nets <- fl_cumulative_bin[[i]]
+#   indivs <- oa_indivs_sorted[[i]]
+#   fl_cumulative_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# }
+# save(fl_cumulative_bin_fixed, file = here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
+# load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
 
-fl_cumulative_bin_fixed <- vector(mode = "list", length = length(fl_cumulative_bin))
-for(i in 1:length(fl_cumulative_bin)){
-  nets <- fl_cumulative_bin[[i]]
-  indivs <- oa_indivs_sorted[[i]]
-  fl_cumulative_bin_fixed[[i]] <- fix_nets(nets, indivs)
+fl_cumulative_bin_fixed_see <- vector(mode = "list", length = length(fl_cumulative_bin_see))
+for(i in 1:length(fl_cumulative_bin_see)){
+  nets <- fl_cumulative_bin_see[[i]]
+  indivs <- sort(unique(gps[has_sightings][[i]]$local_identifier))
+  fl_cumulative_bin_fixed_see[[i]] <- fix_nets(nets, indivs)
 }
+save(fl_cumulative_bin_fixed_see, file = here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
 
-save(fl_cumulative_bin_fixed, file = here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
-load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
+# fl_1hr_bin_fixed <- vector(mode = "list", length = length(fl_1hr_bin))
+# for(i in 1:length(fl_1hr_bin)){
+#   nets <- fl_1hr_bin[[i]]
+#   indivs <- oa_indivs_sorted[[i]]
+#   fl_1hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# }
+# save(fl_1hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
+# load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
 
-fl_1hr_bin_fixed <- vector(mode = "list", length = length(fl_1hr_bin))
-for(i in 1:length(fl_1hr_bin)){
-  nets <- fl_1hr_bin[[i]]
-  indivs <- oa_indivs_sorted[[i]]
-  fl_1hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+fl_1hr_bin_fixed_see <- vector(mode = "list", length = length(fl_1hr_bin_see))
+for(i in 1:length(fl_1hr_bin_see)){
+  nets <- fl_1hr_bin_see[[i]]
+  indivs <- sort(unique(gps[has_sightings][[i]]$local_identifier))
+  fl_1hr_bin_fixed_see[[i]] <- fix_nets(nets, indivs)
 }
-map_dbl(fl_1hr_bin_fixed, length) == map_dbl(oa, length) # good--we got one network per acquisition event
-save(fl_1hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
-load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
+save(fl_1hr_bin_fixed_see, file = here("test_dynamic_nbda/data/fl_1hr_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed_see.Rda"))
 
-fl_3hr_bin_fixed <- vector(mode = "list", length = length(fl_3hr_bin))
-for(i in 1:length(fl_3hr_bin)){
-  nets <- fl_3hr_bin[[i]]
-  indivs <- oa_indivs_sorted[[i]]
-  fl_3hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# fl_3hr_bin_fixed <- vector(mode = "list", length = length(fl_3hr_bin))
+# for(i in 1:length(fl_3hr_bin)){
+#   nets <- fl_3hr_bin[[i]]
+#   indivs <- oa_indivs_sorted[[i]]
+#   fl_3hr_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# }
+# save(fl_3hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
+# load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
+
+fl_3hr_bin_fixed_see <- vector(mode = "list", length = length(fl_3hr_bin_see))
+for(i in 1:length(fl_3hr_bin_see)){
+  nets <- fl_3hr_bin_see[[i]]
+  indivs <- sort(unique(gps[has_sightings][[i]]$local_identifier))
+  fl_3hr_bin_fixed_see[[i]] <- fix_nets(nets, indivs)
 }
-map_dbl(fl_3hr_bin_fixed, length) == map_dbl(oa, length) # good--we got one network per acquisition event
-save(fl_3hr_bin_fixed, file = here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
-load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
-
-# check that the dimensions match the number of individuals
-check <- function(list){
-  out <- map(list, ~map(.x, ~{
-    t(as.matrix(dim(.x)))}) %>% do.call(rbind, .) %>% 
-      as.data.frame() %>% 
-      distinct()
-  ) %>% purrr::list_rbind() %>%
-    mutate(n_expected = map_dbl(oa, length)) %>%
-    mutate(square = V1 == V2,
-           expected_rows = V1 == n_expected,
-           expected_cols = V2 == n_expected)
-  return(out)
-}
-
-# this is sloppy, but it gives us the important info. Let's go ahead and check it.
-check(fl_allday_bin_fixed)
-check(fl_cumulative_bin_fixed)
-check(fl_3hr_bin_fixed)
-check(fl_1hr_bin_fixed) # these look good!
+save(fl_3hr_bin_fixed_see, file = here("test_dynamic_nbda/data/fl_3hr_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed_see.Rda"))
 
 # Another check: fl_allday_bin_fixed should have one network per day, while the others should have one network per acquisition event.
-map_dbl(fl_allday_bin_fixed, length) # a separate question is why one of these diffusions has only one day; I suspect it's because the carcass was placed toward the end of one of the periods. Need to double check this XXX. But otherwise this looks good--they each have 4 networks, one for each day.
-
-all(map_dbl(fl_cumulative_bin_fixed, length) == map(oa, length)) # TRUE
-all(map_dbl(fl_1hr_bin_fixed, length) == map(oa, length)) # TRUE
-all(map_dbl(fl_3hr_bin_fixed, length) == map(oa, length)) # TRUE
+# map_dbl(fl_allday_bin_fixed, length) 
+# all(map_dbl(fl_cumulative_bin_fixed, length) == map(oa, length)) # TRUE
+# all(map_dbl(fl_1hr_bin_fixed, length) == map(oa, length)) # TRUE
+# all(map_dbl(fl_3hr_bin_fixed, length) == map(oa, length)) # TRUE
 
 # okay good! The flight network data looks okay. Now we need to subset the roost networks similarly.
-length(roosts_bin) # should be same as number of valid diffusions--good.
-map_dbl(roosts_bin, length) # this is an odder result. What's going on here? XXX
+# length(roosts_bin) # should be same as number of valid diffusions--good.
+# map_dbl(roosts_bin, length) # this is an odder result. What's going on here? XXX
 # XXX it does look like the same one that only had one day of data for the flight network also only has one day of data for the roost network. That's normal. But I don't understand where the 6 comes from, and why one of them only has 4 while some others have 5.
-roosts_bin_fixed <- vector(mode = "list", length = length(roosts_bin))
-for(i in 1:length(roosts_bin)){
-  nets <- roosts_bin[[i]]
-  indivs <- oa_indivs_sorted[[i]]
-  roosts_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# roosts_bin_fixed <- vector(mode = "list", length = length(roosts_bin))
+# for(i in 1:length(roosts_bin)){
+#   nets <- roosts_bin[[i]]
+#   indivs <- oa_indivs_sorted[[i]]
+#   roosts_bin_fixed[[i]] <- fix_nets(nets, indivs)
+# }
+# save(roosts_bin_fixed, file = here("test_dynamic_nbda/data/roosts_bin_fixed.Rda"))
+
+roosts_bin_fixed_see <- vector(mode = "list", length = length(roosts_bin_see))
+for(i in 1:length(roosts_bin_see)){
+  nets <- roosts_bin_see[[i]]
+  indivs <- sort(unique(gps[has_sightings][[i]]$local_identifier))
+  roosts_bin_fixed_see[[i]] <- fix_nets(nets, indivs)
 }
-save(roosts_bin_fixed, file = here("test_dynamic_nbda/data/roosts_bin_fixed.Rda"))
+save(roosts_bin_fixed_see, file = here("test_dynamic_nbda/data/roosts_bin_fixed_see.Rda"))
 
 # Make networks -----------------------------------------------------------
-roosts_bin_nets <- map(roosts_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
-fl_allday_bin_nets <- map(fl_allday_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
-fl_cumulative_bin_nets <- map(fl_cumulative_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
-fl_1h_bin_nets <- map(fl_1hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
-fl_3h_bin_nets <- map(fl_3hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x))})})
+# roosts_bin_nets <- map(roosts_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+roosts_bin_nets_see <- map(roosts_bin_fixed_see, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
 
-save(roosts_bin_nets, file = here("test_dynamic_nbda/data/roosts_bin_nets.Rda"))
-save(fl_allday_bin_nets, file = here("test_dynamic_nbda/data/fl_allday_bin_nets.Rda"))
-save(fl_cumulative_bin_nets, file = here("test_dynamic_nbda/data/fl_cumulative_bin_nets.Rda"))
-save(fl_1h_bin_nets, file = here("test_dynamic_nbda/data/fl_1h_bin_nets.Rda"))
-save(fl_3h_bin_nets, file = here("test_dynamic_nbda/data/fl_3h_bin_nets.Rda"))
+# fl_allday_bin_nets <- map(fl_allday_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+fl_allday_bin_nets_see <- map(fl_allday_bin_fixed_see, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+
+# fl_cumulative_bin_nets <- map(fl_cumulative_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+fl_cumulative_bin_nets_see <- map(fl_cumulative_bin_fixed_see, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+
+# fl_1h_bin_nets <- map(fl_1hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+fl_1h_bin_nets_see <- map(fl_1hr_bin_fixed_see, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+
+# fl_3h_bin_nets <- map(fl_3hr_bin_fixed, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+fl_3h_bin_nets_see <- map(fl_3hr_bin_fixed_see, ~{map(.x, ~{igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)})})
+
+# save(roosts_bin_nets, file = here("test_dynamic_nbda/data/roosts_bin_nets.Rda"))
+save(roosts_bin_nets_see, file = here("test_dynamic_nbda/data/roosts_bin_nets_see.Rda"))
+
+# save(fl_allday_bin_nets, file = here("test_dynamic_nbda/data/fl_allday_bin_nets.Rda"))
+save(fl_allday_bin_nets_see, file = here("test_dynamic_nbda/data/fl_allday_bin_nets_see.Rda"))
+
+# save(fl_cumulative_bin_nets, file = here("test_dynamic_nbda/data/fl_cumulative_bin_nets.Rda"))
+save(fl_cumulative_bin_nets_see, file = here("test_dynamic_nbda/data/fl_cumulative_bin_nets_see.Rda"))
+
+# save(fl_1h_bin_nets, file = here("test_dynamic_nbda/data/fl_1h_bin_nets.Rda"))
+save(fl_1h_bin_nets_see, file = here("test_dynamic_nbda/data/fl_1h_bin_nets_see.Rda"))
+
+# save(fl_3h_bin_nets, file = here("test_dynamic_nbda/data/fl_3h_bin_nets.Rda"))
+save(fl_3h_bin_nets_see, file = here("test_dynamic_nbda/data/fl_3h_bin_nets_see.Rda"))
+
