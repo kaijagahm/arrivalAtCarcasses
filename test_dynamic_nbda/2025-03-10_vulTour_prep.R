@@ -816,8 +816,186 @@ nbdaPropSolveByST(model = Mod_N.RD_addI.TCrev_I.TV_So)
 # So 44% of events are expected to have occurred due to social transmission, with a 95% confidence interval between 21.9% and 60.1%. Interesting! That's a pretty wide range and it's lower than I expected. I had expected the percentage to go up a little with the dynamic network, and it did a little bit (with a narrow confidence range, too), but not by much. There's other stuff going on--which maybe unsurprising given that we have not introduced the co-flight networks!!!
 
 # Mod_N.RD_N.FD_I.TC_I.TV: Dynamic roost and flight networks, 1 time-constant and 1 time-varying ILV --------
+# Time to introduce the co-flight networks. Going to go straight into using them as a dynamic network.
+length(fl_mats) # should be same as length of roost_mats_expanded
+fl_mats <- map(fl_mats, as.matrix) # had to do this before with roost_mats_expanded
+length(roost_mats_expanded)
+length(oa)
 
-# Time to introduce the co-flight networks.
-# I'm going to go ahead and introduce them as a dynamic network right off the bat because why not?
-#XXX start here
+#In a multi-network NBDA, we need to combine our networks into an array
+#If we have dynamic (time-varying) networks we need to create a four dimensional array of size no. individuals x no.individuals x no.networks x number of time periods and provide an assMatrixIndex vector as shown in Tutorial 1.
+n_timeperiods
 
+#Create the empty array
+N.RD_N.FD <- array(NA, dim = c(n_indivs, n_indivs, 2, n_timeperiods))
+#Slot in the network for each time period # XXX
+for(i in 1:length(roost_mats_expanded)){
+  N.RD_N.FD[,,1,i] <- array(roost_mats_expanded[[i]], dim = c(n_indivs, n_indivs, 1))
+  N.RD_N.FD[,,2,i] <- array(fl_mats[[i]], dim = c(n_indivs, n_indivs, 1))
+}
+
+assMatrixIndex # already expanded the networks
+
+nbdaData8_rev <- nbdaData(label = paste0("Diffusion_", whch),
+                          assMatrix = N.RD_N.FD, # dynamic roost networks and dynamic flight networks
+                          orderAcq = oa,  
+                          asoc_ilv = ilvs_to_use_tv_2, # two time-varying ILVs
+                          asocialTreatment = "timevarying",
+                          assMatrixIndex = assMatrixIndex)
+Mod_N.RD_N.FD_addI.TCrev_I.TV_So <- oadaFit(nbdaData8_rev)
+
+nbdaModSum(Mod_N.RD_N.FD_addI.TCrev_I.TV_So)
+#                             Variable        MLE        SE
+# 1            1 Social transmission 1  0.3586772       NaN
+# 2            2 Social transmission 2  0.0000000       NaN
+# 3 3 Asocial: std_roost_carc_distance -1.1211523 0.3765711
+# 4        4 Asocial: age_group_TV_rev -1.2082015 0.6563662
+
+#You will notice that we have a second s parameter in the model. The s parameters correspond to the order the networks
+#are entered into the socNets array. So the first s parameter,s1, labelled "1 Social transmission 1"  corresponds to 
+#the network in socNets[,,1] and the second s parameter,s2, labelled "2 Social transmission 2" to the network in 
+#socNets[,,2]. # KG: in our case, 1 = co-roosting and 2 = co-flight
+
+# XXX why are the standard errors NaN?
+# Thinking through possibilities from DeepSeek:
+# One problem could be highly correlated predictors.
+# I don't really know how to assess the correlation between two dynamic matrices. Let me see
+correlations <- map2_dbl(roost_mats_expanded, fl_mats, ~{
+  cor(c(.x), c(.y))
+})
+
+plot(correlations)
+hist(correlations) # these are very low correlations. They are patterned through time, which makes sense because they could both be responding to environmental variables, but they are overall so low that I don't think this is the problem.
+Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar
+
+# One other potential problem is that the co-flight networks are quite sparse
+round(map_dbl(roost_mats_expanded, sum)/(59*59),2)
+round(map_dbl(fl_mats, sum)/(59*59),2) # much sparser than the co-roosting networks
+
+# This in itself could explain why we are detecting more social transmission over the denser networks.
+
+#Inference regarding the ILVs can proceed as it did in Tutorial 2, so here we will focus on inference about the s parameters.
+
+#It looks like we have some evidence of social transmission following network 1 but not network 2, at first sight.
+#Let us fit some constrained models to test some null hypotheses.
+
+#First let us test the hypothesis s1=0.
+#We first create the nbdaData object with the constraint s1=0:
+N.RD_zero <- constrainedNBDAdata(nbdaData8_rev, constraintsVect = c(0,1,2,3)) # KG: I had to guess at how long this needed to be and I'm still not sure how to get that info
+#Here the first parameter, s1, is constrained to be 0 and all other parameters are unconstrained
+#Then fit the model:
+Mod_N.RDzero_N.FD_addI.TCrev_I.TV_So <- oadaFit(N.RD_zero)
+
+#We can then compare AICcs
+Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc
+#[1] 256.0888
+Mod_N.RDzero_N.FD_addI.TCrev_I.TV_So@aicc
+#[1] 261.8219
+#The model with s1>0 is favoured but by how much?
+exp(0.5*(Mod_N.RDzero_N.FD_addI.TCrev_I.TV_So@aicc-Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc))
+#[1] 17.5756
+#17.6x more support for a model in which there is social transmission following network 1
+
+#We can also conduct a likelihood ratio test (LRT)
+#Test statistic
+teststat <- 2*(Mod_N.RDzero_N.FD_addI.TCrev_I.TV_So@loglik-Mod_N.RD_N.FD_addI.TCrev_I.TV_So@loglik)
+#The difference in number of parameters is 1, so df=1
+pchisq(teststat,df=1,lower.tail = F)
+#[1] 0.004199476
+#Strong evidence for social transmission following network 1 (co-roosting network) # KG: this is consistent with the model including only the roost network
+
+#Now we can do the same for the hypothesis s2=0
+N.FD_zero <- constrainedNBDAdata(nbdaData8_rev, constraintsVect = c(1,0,2,3))
+Mod_N.RD_N.FDzero_addI.TCrev_I.TV_So <- oadaFit(N.FD_zero)
+Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc
+#[1] 256.0888
+Mod_N.RD_N.FDzero_addI.TCrev_I.TV_So@aicc
+#[1] 253.6264
+#The model with s2=0 is favoured but by how much?
+exp(0.5*(Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc-Mod_N.RD_N.FDzero_addI.TCrev_I.TV_So@aicc))
+#[1] 3.425444
+
+#Now the LRT
+#Test statistic
+teststat <- 2*(Mod_N.RD_N.FDzero_addI.TCrev_I.TV_So@loglik-Mod_N.RD_N.FD_addI.TCrev_I.TV_So@loglik)
+#The difference in number of parameters is 1, so df=1
+pchisq(teststat,df=1,lower.tail = F)
+#[1] 1
+#No evidence for social transmission following network 2 (co-flight network)
+
+#This does not necessarily mean that we have strong evidence for s1>s2. It could be that s2 has very wide confidence intervals. We need to test the hypothesis s1 = s2 separately, as follows
+N.RD_equals_N.FD <- constrainedNBDAdata(nbdaData8_rev, constraintsVect = c(1,1,2,3))
+#In the constraintsVect, parameter 1 and 2 have the same number, meaning they are constrained to have the same value, i.e. s1=s2 as required
+#Fit the model:
+Mod_N.RD_equals_N.FD_addI.TCrev_I.TV_So <- oadaFit(N.RD_equals_N.FD)
+#compare AICcs:
+Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc
+Mod_N.RD_equals_N.FD_addI.TCrev_I.TV_So@aicc #oop, this one is lower!
+exp(0.5*(Mod_N.RD_equals_N.FD_addI.TCrev_I.TV_So@aicc-Mod_N.RD_N.FD_addI.TCrev_I.TV_So@aicc))
+#[1] 0.4611768
+
+#LRT:
+#Test statistic
+teststat <- 2*(Mod_N.RD_equals_N.FD_addI.TCrev_I.TV_So@loglik-Mod_N.RD_N.FD_addI.TCrev_I.TV_So@loglik)
+#The difference in number of parameters is 1, so df=1
+pchisq(teststat,df=1,lower.tail = F)
+#[1] 0.3389193
+#No evidence that s1>s2.
+
+#So overall we have:
+#1. strong evidence for social transmission following network 1. 
+#2. no evidence for social transmission following network 2.
+#3. no evidence that the social transmission following network 2, if it exists, is weaker than the social transmission following network 1
+
+#In general terms: it is often tempting, when we find strong evidence of effect A, and no evidence of effect B to conclude that we have strong evidence that effect A > effect B.
+#But this is a logical error--remember that "no evidence of an effect" does not equate to "strong evidence of no effect".
+
+#We would strongly advise users of NBDA to present confidence intervals (C.I.s) for effect sizes. These can be obtained for s1 and s2 in the same manner as in Tutorial 2:
+
+#for s1, which=1
+plotProfLik(which=1,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So, range=c(0,3),resolution=20)
+#lower limit between 0 and 0.5
+#upper limit between 1 and 2
+profLikCI(which=1 ,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So,
+          lowerRange = c(0,0.5),upperRange = c(1,2))
+# Lower CI   Upper CI 
+# 0.07116999 1.26517200
+
+#for s2, which=2
+plotProfLik(which=2,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So, range=c(1,2),resolution=20)
+# lower limit between 1.5 and 2
+plotProfLik(which=2,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So, range=c(100,1000),resolution=20)
+# can't find an upper limit
+profLikCI(which=2,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So, lowerRange = c(1.5, 2))
+# Lower CI Upper CI 
+# 1.768372       NA  # XXX if no upper limit exists and the lower limit is above 0, then why do we not have any evidence of social transmission via this network?
+
+#So we have a clearer picture already as to why we saw the pattern of significance in the LRTs
+#There is quite a lot of overlap in the 95% C.I.s. (#KG: in our example there's not; I'm keeping this here for explanation only)
+#However, do not fall into the trap of thinking that because the C.I.s for two parameters overlap there is NOT evidence for a difference between them!
+#Instead one should aim to get the confidence interval for the difference, in this case for s1-s2.
+# KG: I removed the code for calculating this because it doesn't seem relevant for our non-overlapping CIs. Can go back to the tutorial if I need to for another diffusion.
+
+#We can also get %ST for the proportion of events that ocurred via social transmission for each network:
+
+nbdaPropSolveByST(model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So)
+# P(Network 1) P(Network 2)  P(S offset) 
+# 0.44577      0.00000      0.00000 
+
+#If we want to get %ST corresponding to the upper and lower limits of C.I.s we can do so using the same procedure as in previous tutorials:
+
+#s1 
+(p <- profLikCI(which=1 ,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So,
+                lowerRange = c(0,0.5),upperRange = c(1,2)))
+# Lower CI   Upper CI 
+# 0.07116753 1.26517200 
+
+nbdaPropSolveByST(par = c(p[1], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[2], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[3], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[4]), nbdadata = nbdaData8_rev) # have to pass in the vector of values instead of just one.
+# P(Network 1) P(Network 2)  P(S offset) 
+# 0.21997      0.00000      0.00000 
+
+nbdaPropSolveByST(par = c(p[2], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[2], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[3], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[4]), nbdadata = nbdaData8_rev)
+# P(Network 1) P(Network 2)  P(S offset) 
+# 0.60095      0.00000      0.00000 
+
+#So a plausible range for the % of events occurring by social transmission through network 1 is 22% - 60%
