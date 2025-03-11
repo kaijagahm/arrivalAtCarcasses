@@ -1,2 +1,0 @@
-carcID,X,Y,stationName,carcassWeight,datetime,cage,dateOnly,carcType,year,nBouts,nIndivs,dist_stn,stn,geometry
-4885906,673376.3934093666,3415662.7793692434,Tzaror_mount,60,2024-05-02T09:56:04Z,FALSE,2024-05-02,inpa,2024,NA,NA,6006.840518485014,Daroch,"c(673376.393409367, 3415662.77936924)"
