@@ -48,10 +48,38 @@ firsts <- firsts_see[has_sightings][[whch]]
 all(oa %in% firsts$local_identifier)
 all(firsts$local_identifier %in% oa)
 
+# Make a plot of them discovering the carcass
+firsts %>% 
+  ggplot(aes(x = timestamp, y = rownumber))+
+  geom_line()+
+  geom_point(size = 2, pch = 21, fill = "white")+
+  theme_classic()+
+  labs(y = "Cumulative number of vultures", 
+       x = "Time", 
+       title = "Vultures discovering the carcass", 
+       caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
+  geom_vline(aes(xintercept = carc$datetime), col = "red", lty = 2)
+
 fl_mats <- fl_3hr_bin_fixed_see[[whch]]
 roost_mats <- roosts_bin_fixed_see[[whch]]
 fl_nets <- fl_3h_bin_nets_see[[whch]]
 roost_nets <- roosts_bin_nets_see[[whch]]
+
+map2(roost_nets, 1:length(roost_nets), ~{
+  ggraph(.x)+
+    geom_edge_link(color = "darkgreen")+
+    geom_node_label(aes(label = name), size = 3)+
+    theme_graph()+
+    ggtitle(paste0("Roost network, night ", .y))
+})
+
+map2(fl_nets, 1:length(fl_nets), ~{
+  ggraph(.x)+
+    geom_edge_link(color = "dodgerblue3")+
+    geom_node_label(aes(label = name), size = 3)+
+    theme_graph()+
+    ggtitle(paste0("Flight network, 3 hours before vulture ", .y))
+})
 
 indivs <- row.names(roost_mats[[1]])
 
@@ -329,7 +357,37 @@ Mod_N.RD_So@aicc
 Mod_N.RS_So@aicc 
 #[1] 272.006
 
-# here the dynamic model fits better than the dynamic model (lower AICC). 
+exp(0.5*(Mod_N.RS_So@aicc-Mod_N.RD_So@aicc))
+
+# here the dynamic model fits better than the static model (lower AICC)--55.5x more support
+
+#Compare to the asocial model
+Mod_N.RD_Aso <- oadaFit(nbdaData2, type = "asocial")
+Mod_N.RD_Aso@aicc-Mod_N.RD_So@aicc
+
+#So the social model is favoured by 32.30358 AICc units. This means:
+exp(0.5*(Mod_N.RD_Aso@aicc-Mod_N.RD_So@aicc))
+#[1] 10342670
+#the social model is 10342670x more likely to be the best K-L model, out of the two. (wow, shocker!)
+
+#There is 1 parameter in Mod_N.RS_So, and 0 in Mod_N.RS_Aso, so we have 1 d.f.
+pchisq(2*(Mod_N.RD_Aso@loglik-Mod_N.RD_So@loglik),df=1,lower.tail=F)
+#[1] 4.473096e-09
+#p= 4.473096e-09; strong evidence of an effect consistent with social transmission
+
+plotProfLik(which = 1, model = Mod_N.RD_So, range = c(0,10), resolution = 20)
+(p <- profLikCI(which = 1, model = Mod_N.RD_So, 
+                upperRange = c(3,6),lowerRange = c(0,2)))
+
+nbdaPropSolveByST(model = Mod_N.RD_So)
+#61.9% by social transmission
+
+nbdaPropSolveByST(par = p[1], nbdadata = nbdaData2)
+# P(Network 1)  P(S offset) 
+# 0.48791      0.00000
+nbdaPropSolveByST(par = p[2], nbdadata = nbdaData2)
+# P(Network 1)  P(S offset) 
+# 0.70119      0.00000 
 
 # Mod_N.RS_I.TC: Static roost net, 1 time-constant ILV ----------------------------------------------------------
 
@@ -439,6 +497,9 @@ Mod_N.RS_addI.TC_So@aicc
 # [1] 267.4296
 Mod_N.RS_addI.TC_Aso@aicc
 # [1] 296.0008 # slightly larger, so the social model fits a bit better than the asocial one.
+
+exp(0.5*(Mod_N.RS_addI.TC_Aso@aicc-Mod_N.RS_addI.TC_So@aicc))
+#[1] 1600142
 
 #From looking at the MLEs for the parameters we can see that s is estimated to be very large.
 #Indeed if we look at the profile log-likelihood plot for s:
@@ -670,16 +731,16 @@ nbdaPropSolveByST(model = Mod_N.RS_addI.TCrev_I.TV_So)
 # 0.37249      0.00000  # as expected, this is exactly the same.
 
 #Fit the asocial model for comparison:
-Mod_N.RS_addI.TC_I.TV_Aso <- oadaFit(nbdaData6, type = "asocial")
+Mod_N.RS_addI.TCrev_I.TV_Aso <- oadaFit(nbdaData6_rev, type = "asocial")
 
 #And then compare the social and asocial models using 
 
-Mod_N.RS_addI.TC_I.TV_So@aicc
-Mod_N.RS_addI.TC_I.TV_Aso@aicc
-Mod_N.RS_addI.TC_I.TV_Aso@aicc-Mod_N.RS_addI.TC_I.TV_So@aicc # asocial is slightly higher than social, which means social is favored.
+Mod_N.RS_addI.TCrev_I.TV_So@aicc
+Mod_N.RS_addI.TCrev_I.TV_Aso@aicc
+Mod_N.RS_addI.TCrev_I.TV_Aso@aicc-Mod_N.RS_addI.TCrev_I.TV_So@aicc # asocial is slightly higher than social, which means social is favored.
 
 #So the social model is favoured by 2.232307 AICc units. This means:
-exp(0.5*(Mod_N.RS_addI.TC_I.TV_Aso@aicc-Mod_N.RS_addI.TC_I.TV_So@aicc))
+exp(0.5*(Mod_N.RS_addI.TCrev_I.TV_Aso@aicc-Mod_N.RS_addI.TCrev_I.TV_So@aicc))
 #[1] 3.053088
 #the social model is 3.053088x more likely to be the best K-L model, out of the two. (okay cool, so even though way fewer of the events are estimated to have occurred by social transmission, it's still a lot.)
 #Or we can say the social model has 3.053088x more support than the asocial model.
@@ -771,10 +832,13 @@ Mod_N.RD_addI.TCrev_I.TV_So@aicc
 # [1] 253.6264 # this one is slightly lower, so the dynamic networks fit slightly better (yay! that's what we wanted!)
 Mod_N.RS_addI.TCrev_I.TV_So@aicc
 # [1] 257.2567
+exp(0.5*(Mod_N.RS_addI.TCrev_I.TV_So@aicc-Mod_N.RD_addI.TCrev_I.TV_So@aicc))
+#6.14x more support for the dynamic model
+
 
 # Now time to analyze the results of this model
 nbdaPropSolveByST(model = Mod_N.RD_addI.TCrev_I.TV_So)
-# P(Network 1)  P(S offset) 
+6# P(Network 1)  P(S offset) 
 # 0.44577      0.00000 
 
 # Compare to the one with the static network:
@@ -789,6 +853,9 @@ Mod_N.RD_addI.TCrev_I.TV_Aso <- oadaFit(nbdaData7_rev, type = "asocial")
 Mod_N.RD_addI.TCrev_I.TV_So@aicc
 Mod_N.RD_addI.TCrev_I.TV_Aso@aicc # higher, as expected!
 Mod_N.RD_addI.TCrev_I.TV_Aso@aicc-Mod_N.RD_addI.TCrev_I.TV_So@aicc # asocial is slightly higher than social, which means it's worse
+exp(0.5*(Mod_N.RD_addI.TCrev_I.TV_Aso@aicc-Mod_N.RD_addI.TCrev_I.TV_So@aicc))
+# -18.75224x more support for the social model vs. asocial
+
 
 # 95% confidence interval for the social transmission parameter:
 plotProfLik(which = 1, model = Mod_N.RD_addI.TCrev_I.TV_So, range = c(0,5), resolution = 20) #  nice, should be easy to identify the crossing points here
@@ -998,4 +1065,17 @@ nbdaPropSolveByST(par = c(p[2], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[2], M
 # P(Network 1) P(Network 2)  P(S offset) 
 # 0.60095      0.00000      0.00000 
 
+#So a plausible range for the % of events occurring by social transmission through network 1 is 22% - 60%
+
+#s2 
+(p <- profLikCI(which=2 ,model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So,
+                lowerRange = c(0,3)))
+# Lower CI Upper CI 
+# 1.768386       NA 
+
+nbdaPropSolveByST(par = c(Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[2], p[1], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[3], Mod_N.RD_N.FD_addI.TCrev_I.TV_So@outputPar[4]), nbdadata = nbdaData8_rev) # have to pass in the vector of values instead of just one.
+# P(Network 1) P(Network 2)  P(S offset) 
+# 0.00000      0.07538      0.00000
+
+nbdaPropSolveByST(model=Mod_N.RD_N.FD_addI.TCrev_I.TV_So)
 #So a plausible range for the % of events occurring by social transmission through network 1 is 22% - 60%
