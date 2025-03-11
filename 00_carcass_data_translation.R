@@ -347,4 +347,3 @@ audited$stationName[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- 
 carcasses_audited <- audited %>%
   bind_cols(st_coordinates(.))
 write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
-

@@ -33,7 +33,8 @@ for(i in 1:length(carcass_gps_data)){
   
   # Attach the carcass ID
   close_enough <- close_enough %>%
-    mutate(carcID = carcassid)
+    mutate(carcID = carcassid) %>%
+    mutate(time_since_carcass = timestamp-aca$datetime[i])
   
   carcass_gps_data[[i]] <- close_enough
   cat("done with iteration", i, "\n")

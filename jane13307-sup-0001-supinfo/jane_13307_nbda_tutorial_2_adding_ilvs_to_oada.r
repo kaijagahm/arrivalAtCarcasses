@@ -14,14 +14,14 @@ library(NBDA)
 #############################################################################
 
 #Read in the social network and order of acquisition vector as shown in tutorial 1.
-socNet1<-as.matrix(read.csv(file="jane_13307_exampleStaticSocNet.csv"))
+socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
 socNet1<-array(socNet1,dim=c(30,30,1))
 oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
 
 
 #In our made-up case study, we have the sex and age of all 30 individuals
 #We will read in the csv file into a dataframe
-ILVdata<-read.csv(file="jane_13307_exampleTimeConstantILVs.csv")
+ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
 
 #Then extract each ILV
 female<-cbind(ILVdata$female)
@@ -50,10 +50,10 @@ model2_add<-oadaFit(nbdaData2_add)
 #And get the output:
 data.frame(Variable=model2_add@varNames,MLE=model2_add@outputPar,SE=model2_add@se)
 
-#             Variable           MLE           SE
-#1 1 Social transmission 1  05121.827376 1.176533e+07
-#2       2 Asocial: female     11.540250 3.858018e+01
-#3        3 Asocial: stAge     -1.027096 1.034692e+00
+#                     Variable          MLE           SE
+# 1    1 Social transmission 1 5.165365e+05 7.766783e+06
+# 2       2 Asocial: age_group 1.088932e+01 1.509751e+01
+# 3 3 Asocial: dist_before_std 6.360513e-01 3.072999e-01
 
 
 #If we wanted to fit a "multiplicative" model we would specify:
@@ -172,7 +172,6 @@ plotProfLik(which=1,model=model3_add,range=c(0,110),resolution=20)
 profLikCI(which=1,model=model3_add,upperRange = c(90,110),lowerRange = c(0,2))
 #Lower CI    Upper CI
 #0.4020731 101.4168944
-
 
 #We can again get the %ST corresponding to the upper and lower points of the 95% CI. However, before we
 #do so, we need to look at the constrainedNBDAdata function- so we will come back to this after we have
