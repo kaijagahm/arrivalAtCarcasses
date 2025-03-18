@@ -4,104 +4,94 @@
 library(mapview)
 library(sf)
 library(tidyverse)
+library(here)
+library(ggraph)
+library(tidygraph)
+
+## 0. Define parameters (same as prepare_data.R)
+days_after <- 3
+seed_distance <- 1000 # 1000m to be within sight of the carcass
+seed_time_before <- hours(1)
 
 # Load data
-load(here("test_dynamic_nbda/data/fl_allday_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_allday_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_1hr_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/roosts_bin_fixed.Rda"))
 load(here("test_dynamic_nbda/data/roosts_bin_fixed_see.Rda"))
 
 load(here("test_dynamic_nbda/data/inpa_carcs.Rda"))
 
-load(here("test_dynamic_nbda/data/oa.Rda"))
 load(here("test_dynamic_nbda/data/oa_see.Rda"))
-load(here("test_dynamic_nbda/data/oa_num.Rda"))
 load(here("test_dynamic_nbda/data/oa_see_num.Rda"))
-load(here("test_dynamic_nbda/data/firsts.Rda"))
 load(here("test_dynamic_nbda/data/firsts_see.Rda"))
-load(here("test_dynamic_nbda/data/roosts_bin_nets.Rda"))
 load(here("test_dynamic_nbda/data/roosts_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_allday_bin_nets.Rda"))
 load(here("test_dynamic_nbda/data/fl_allday_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_cumulative_bin_nets.Rda"))
 load(here("test_dynamic_nbda/data/fl_cumulative_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_1h_bin_nets.Rda"))
 load(here("test_dynamic_nbda/data/fl_1h_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_3h_bin_nets.Rda"))
 load(here("test_dynamic_nbda/data/fl_3h_bin_nets_see.Rda"))
 
-# 1. I noticed that a lot of carcasses don't have any tagged birds that ever go there. Why? What's going on?
-## Maybe this is explained by the hour of the day when the carcass is placed?
+load(here("test_dynamic_nbda/data/gps.Rda"))
+
+# 1. How many birds arrive/see the carcass, based on weight and time of day placed?
+# KG note: in previous versions of this data, I had thought that way more of the carcasses never had any visits at all, which didn't make much sense. Turns out the indexes were misaligned (ughhh). But on the bright side, this makes so much more sense now!!
 df <- bind_rows(inpa_carcs) %>%
   mutate(time_of_day = lubridate::hour(datetime),
          year = lubridate::year(datetime)) %>%
-  mutate(number_of_firsts = map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)),
-         number_of_seen = map_dbl(firsts_see, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.))) %>%
+  mutate(number_of_seen = map_dbl(firsts_see, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.))) %>%
   pivot_longer(cols = contains("number_of"), names_to = "Measure", values_to = "number") %>%
-  mutate(Measure = case_when(Measure == "number_of_firsts" ~ "Arrivals",
-                             Measure == "number_of_seen" ~ "Detections"))
+  mutate(Measure = case_when(Measure == "number_of_firsts" ~ "Arrivals"))
 
 df %>%
-  ggplot(aes(x = time_of_day, y = number, col = Measure, fill = Measure))+
+  ggplot(aes(x = time_of_day, y = number))+
   geom_point(aes(size = carcassWeight), alpha = 0.5)+
   geom_smooth(method = "lm", alpha = 0.1)+
   facet_wrap(~year)+
   theme_minimal()+ # doesn't seem to be related to hour of day
-  labs(y = "Number of vultures",
+  labs(y = "Number of vultures detecting",
        x = "Hour of carcass placement",
        size = "Carcass\nweight",
-       caption = "Arrivals and detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
+       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
 
 
 ## maybe it's related to the size of the carcass
 df %>%
-  ggplot(aes(x = carcassWeight, y = number, col = Measure, fill = Measure))+
+  ggplot(aes(x = carcassWeight, y = number))+
   geom_point(aes(size = time_of_day), alpha = 0.5)+
   geom_smooth(method = "lm", alpha = 0.1)+
   facet_wrap(~year)+
   theme_minimal()+ # this also doesn't produce a clear relationship.
-  labs(y = "Number of vultures",
+  labs(y = "Number of vultures detecting",
        x = "Carcass weight",
        size = "Hour of carcass placement",
-       caption = "Arrivals and detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
+       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
 
-## Let's see a map of the carcasses, colored by the number of individuals that visit over the course of 4-ish days
-mapview(df %>% filter(year == 2023), zcol = "number_of_firsts")
-mapview(df %>% filter(year == 2024), zcol = "number_of_firsts")
-## There definitely seems to be some relationship between the centrality of the carcass and the number of visits, but I'm surprised at how stark the numbers are, given how many carcasses are placed.
-
-# For the networks, we are already only dealing with the carcasses that have visits from vultures
-load(here("test_dynamic_nbda/data/has_visits.Rda"))
-carcs <- inpa_carcs[has_visits] # get the carcasses corresponding to the networks, in case we need them
+# For the networks, we are already only dealing with the carcasses that have sightings by vultures
+load(here("test_dynamic_nbda/data/has_sightings.Rda"))
+carcs <- inpa_carcs[has_sightings] # get the carcasses corresponding to the networks, in case we need them
 
 tolong <- function(list, id, tp){
   df <- map(list, ~.x %>%
               mutate(ID1 = row.names(.)) %>%
               pivot_longer(cols = -ID1, names_to = "ID2", values_to = "inter"))
-  out <- rbindlist(df, idcol = id) %>% mutate(type = tp)
+  out <- data.table::rbindlist(df, idcol = id) %>% mutate(type = tp)
   return(out)
 }
 
 # here, "carc" is the numerical index of which carcass we're using, after already filtering by "has_visits"
 compile_networks_long <- function(carc){
   # Get acquisition event dates
-  idx <- firsts[has_visits][[carc]] %>%
+  idx <- firsts_see[has_sightings][[carc]] %>%
     group_by(dateOnly) %>% summarize(n = n()) %>%
     pull(n)
   idx_day <- data.frame(acq = 1:sum(idx), day = rep(1:length(idx), times = idx))
   
   # Get long-format data for each type of network
-  r_long <- tolong(roosts_bin_fixed[[carc]], id = "day", tp = "roost")
-  f_a_long <- tolong(fl_allday_bin_fixed[[carc]], id = "day", tp = "fl_a")
-  f_c_long <- tolong(fl_cumulative_bin_fixed[[carc]], id = "acq", tp = "fl_c")
-  f_1h_long <- tolong(fl_1hr_bin_fixed[[carc]], id = "acq", tp = "fl_1h")
-  f_3h_long <- tolong(fl_3hr_bin_fixed[[carc]], id = "acq", tp = "fl_3h")
+  r_long <- tolong(roosts_bin_fixed_see[[carc]], id = "day", tp = "roost")
+  f_a_long <- tolong(fl_allday_bin_fixed_see[[carc]], id = "day", tp = "fl_a")
+  f_c_long <- tolong(fl_cumulative_bin_fixed_see[[carc]], id = "acq", tp = "fl_c")
+  f_1h_long <- tolong(fl_1hr_bin_fixed_see[[carc]], id = "acq", tp = "fl_1h")
+  f_3h_long <- tolong(fl_3hr_bin_fixed_see[[carc]], id = "acq", tp = "fl_3h")
   
   # Join the networks and convert to wide (separately for the daily networks and the per-acquisition networks)
   ## daily networks (roost and daily flight)
@@ -136,34 +126,100 @@ plt <- function(g, title_slug, i){
 }
 carc <- inpa_carcs[[13]] # carcass information
 carc # 2023-03-30 12:54:29, Hahalak_mount
-oa[[13]] # order of arrivals to this carcass
+oa_see[[13]] # order of arrivals to this carcass
 mapview(carc)
-tr <- roosts_bin_nets[[13]]
+tr <- roosts_bin_nets_see[[13]]
 tr_g <- map2(tr, 1:length(tr), ~plt(.x, "Roosts, night", .y))
 
-tfa <- fl_allday_bin_nets[[13]]
+tfa <- fl_allday_bin_nets_see[[13]]
 tfa_g <- map2(tfa, 1:length(tfa), ~plt(.x, "Flight, day", .y))
 
-tfc <- fl_cumulative_bin_nets[[13]]
+tfc <- fl_cumulative_bin_nets_see[[13]]
 tfc_g <- map2(tfc, 1:length(tfc), ~plt(.x, "Flight (cumulative),\nacquisition event", .y))
 
-tf1 <- fl_1h_bin_nets[[13]]
+tf1 <- fl_1h_bin_nets_see[[13]]
 tf1_g <- map2(tf1, 1:length(tf1), ~plt(.x, "Flight (1 hour before),\nacquisition event", .y))
 
-tf3 <- fl_3h_bin_nets[[13]]
+tf3 <- fl_3h_bin_nets_see[[13]]
 tf3_g <- map2(tf3, 1:length(tf3), ~plt(.x, "Flight (3 hours before),\nacquisition event", .y))
 
 # Correlations?
 # Jamie wanted to know: does who you roost with predict who you fly with?
-# DeepSeek suggests running a GLMM to account for the repeated-measures structure of the data
-library(lme4)
+# DeepSeek suggests running a GLMM to account for the repeated-measures structure of the data, but when I tried, it didn't run (too much data?)
 
-# Fit a GLMM with nested random effects for period_id within carcID
-test <- networks_long %>%
-  filter(carcID %in% unique(networks_long$carcID)[1:2])
-test_model <- glmer(fl_a ~ roost * day + (1 | dyad_id) + (1 | carcID/day), 
-                    data = test, 
-                    family = binomial(link = "logit")) # even this is taking a really long time to run... maybe as a proxy I could do a bunch of chi-squared tests and do a multiple testing correction? # XXX this doesn't work--runs forever even with just two carcasses
+# 2025-03-12: Visualizing arrivals at and detections of carcasses ---------------------------
+load(here("test_dynamic_nbda/data/firsts_see.Rda"))
+load(here("test_dynamic_nbda/data/firsts.Rda"))
 
-# Summarize the model
-summary(test_model) 
+length(inpa_carcs)
+length(firsts_see)
+length(firsts)
+
+fs <- map(firsts_see, st_drop_geometry) %>% purrr::list_rbind() %>% mutate(type = "detection")
+f <- map(firsts, st_drop_geometry) %>% purrr::list_rbind() %>% mutate(type = "arrival")
+ic <- purrr::list_rbind(inpa_carcs) %>% st_drop_geometry() %>% select(carcID, datetime)
+all <- bind_rows(fs, f) %>% left_join(ic) %>%
+  mutate(time_since_placement = difftime(timestamp, datetime, units = "hours")) %>%
+  group_by(carcID) %>%
+  mutate(time_since_first = difftime(timestamp, timestamp[1], units = "hours")) %>%
+  mutate(prop = rownumber/max(rownumber)) %>%
+  ungroup()
+
+# Accumulation curves since carcass placement
+all %>%
+  ggplot(aes(x = time_since_placement, y = rownumber, col = factor(carcID)))+
+  geom_line()+
+  theme_minimal()+
+  facet_wrap(~type, nrow = 2)+
+  theme(legend.position = "none")+
+  labs(y = "Number of vultures",
+       x = "Hours since carcass placement")
+
+# Accumulation curves since first arrival/detection
+all %>%
+  ggplot(aes(x = time_since_first, y = rownumber, col = factor(carcID)))+
+  geom_line()+
+  theme_minimal()+
+  facet_wrap(~type, nrow = 2)+
+  theme(legend.position = "none")+
+  labs(y = "Number of vultures",
+       x = "Hours since first vulture")
+
+# Accumulation curves since carcass placement (proportion)
+all %>%
+  ggplot(aes(x = time_since_placement, y = prop, col = factor(carcID)))+
+  geom_line()+
+  theme_minimal()+
+  facet_wrap(~type, nrow = 2)+
+  theme(legend.position = "none")+
+  labs(y = "Proportion of vultures",
+       x = "Hours since carcass placement")
+
+# Accumulation curves since first arrival/detection (proportion)
+all %>%
+  ggplot(aes(x = time_since_first, y = prop, col = factor(carcID)))+
+  geom_line()+
+  theme_minimal()+
+  facet_wrap(~type, nrow = 2)+
+  theme(legend.position = "none")+
+  labs(y = "Proportion of vultures",
+       x = "Hours since carcass placement")
+
+# Simultaneous presence of other carcasses -----------------------
+carcs <- purrr::list_rbind(inpa_carcs)
+max_times <- carcs$datetime + days(days_after)
+carcs <- carcs %>%
+  mutate(max_time = max_times)
+
+carcs %>%
+  ggplot(aes(y = factor(carcID)))+
+  geom_segment(aes(x = datetime, xend = max_time, col = Y, linewidth = carcassWeight))+
+  scale_color_viridis()+
+  facet_wrap(~year, scales = "free")+
+  theme_minimal()+
+  labs(y = "Carcass",
+       x = "Datetime",
+       color = "UTM Northing",
+       linewidth = "Carcass weight (kg)",
+       title = "Carcass provisioning",
+       caption = "Bars begin at carcass placement and end three days later.")
