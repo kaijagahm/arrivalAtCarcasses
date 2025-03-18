@@ -76,9 +76,6 @@ save(inpa_carcs, file = here("test_dynamic_nbda/data/inpa_carcs.Rda"))
 wild <- aca %>% filter(carcType == "wild") # the rest of the code will pertain to inpa only; this is a stub for now
 wild_carcs <- wild %>% group_by(carcID) %>% group_split()
 
-## 3. Get datetimes
-datetimes <- inpa$datetime
-
 ## 4. Get all gps data
 gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
 gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") 
@@ -95,10 +92,14 @@ gps <- bind_rows(gps_2023, gps_2024) %>%
 # XXX FIXME!
 
 ## 4b. Make gps_all
-gps_all <- map2(datetimes, inpa_carcs, ~{
+gps_all <- map(inpa_carcs, ~{
+  cid <- .x$carcID[1]
+  carcass_datetime <- .x$datetime[1]
   gps %>%
-    filter(dateOnly >= lubridate::date(.x)-days(1) & dateOnly <= lubridate::date(.x) + days(days_after+1)) %>%
-    mutate(dist_to_carcass = as.numeric(st_distance(., .y)))
+    filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
+    mutate(dist_to_carcass = as.numeric(st_distance(., .x)),
+           time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
+           carcID = cid)
 }) #XXX check that we are getting the roost location for the day before the carcass was placed
 
 ## 5. Get roosts
@@ -114,8 +115,9 @@ roosts <- readRDS(here("test_dynamic_nbda/data/roosts.RDS"))
 
 ## 6. Get seeds
 seed_distance
-seeds_gps <- map2(gps_all, datetimes, ~{
-  .x %>% filter(timestamp >= .y-seed_time_before & timestamp <= .y) %>%
+seeds_gps <- map2(gps_all, inpa_carcs, ~{
+  dttm <- .y$datetime[1]
+  .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
     filter(dist_to_carcass < seed_distance)
 })
 
@@ -157,7 +159,6 @@ www <- ww %>%
   distinct()
 
 ## 10. Combine age_group ILV with distances to get ILVs data frame
-# XXX start here
 ilvs <- map(distances, ~{
   .x %>%
     left_join(www, by = "local_identifier")
@@ -176,19 +177,23 @@ for(i in 1:length(ilvs)){
 }
 save(ilvs, file = here("test_dynamic_nbda/data/ilvs.Rda"))
 
-## 11. Make gps (i.e. remove days before the carcass)
-gps <- map2(gps_all, datetimes, ~{
+## 11. Make gps (i.e. remove points before the carcass)
+map_dbl(gps_all, nrow) # testing how many rows we have before
+gps <- map2(gps_all, inpa_carcs, ~{
+  dttm <- .y$datetime[1]
   .x %>%
-    filter(dateOnly >= lubridate::date(.y) & dateOnly <= lubridate::date(.y) + days_after)
+    filter(timestamp >= lubridate::ymd_hms(dttm) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
 })
 rows_removed <- map_dbl(gps_all, nrow) - map_dbl(gps, nrow)
-pct_removed <- 100*(rows_removed/(map_dbl(gps_all, nrow)))# just checking that this looks reasonable. We removed a couple days of data, so values around 30% make sense.
+(pct_removed <- 100*(rows_removed/(map_dbl(gps_all, nrow)))) # this looks much more reasonable!
+hist(pct_removed) # not sure what's up with the one that had 82% removed
+nrow(gps_all[[which(pct_removed >70)]]) # oh, this is the one at the very end, so maybe it got cut off by the end of the sampling time period. We'll have to figure out how to fix that later.
 save(gps, file = here("test_dynamic_nbda/data/gps.Rda"))
 
 ## 12. Get arrivals/sightings of the carcass
-# at_carcass <- map2(gps, inpa_carcs, ~.x %>%
-#                      mutate(carcID = .y$carcID) %>%
-#                      filter(dist_to_carcass < 400 & ground_speed < 5))
+at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                     mutate(carcID = .y$carcID) %>%
+                     filter(dist_to_carcass < 400 & ground_speed < 5))
 
 see_carcass <- map2(gps, inpa_carcs, ~.x %>%
                       mutate(carcID = .y$carcID) %>%
@@ -196,31 +201,31 @@ see_carcass <- map2(gps, inpa_carcs, ~.x %>%
 
 ## 13. Get firsts
 # Get first arrival of each vulture to the carcass
-# firsts <- map2(at_carcass, inpa_carcs, ~{
-#   if(nrow(.x) > 1){
-#     out <- .x %>%
-#       filter(timestamp >= .y$datetime) %>%
-#       arrange(timestamp) %>%
-#       group_by(local_identifier) %>%
-#       slice(1) %>%
-#       ungroup() %>%
-#       arrange(timestamp)
-#     if(nrow(out) > 0){
-#       out$rownumber <- 1:nrow(out)
-#       return(out)
-#     }else{
-#       out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
-#       return(out)
-#     }
-#   }else{
-#     out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
-#     return(out)
-#   }
-# }) 
-# map_dbl(firsts, nrow)
-# map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)) # needed to do this because not all instances of 1 row are actually zeroes.
-# # XXX why do we have so many carcasses provisioned that have nobody arriving? That seems weird!!!
-# save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
+firsts <- map2(at_carcass, inpa_carcs, ~{
+  if(nrow(.x) > 1){
+    out <- .x %>%
+      filter(timestamp >= .y$datetime) %>%
+      arrange(timestamp) %>%
+      group_by(local_identifier) %>%
+      slice(1) %>%
+      ungroup() %>%
+      arrange(timestamp)
+    if(nrow(out) > 0){
+      out$rownumber <- 1:nrow(out)
+      return(out)
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  }else{
+    out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+    return(out)
+  }
+})
+map_dbl(firsts, nrow)
+map_dbl(firsts, ~.x %>% filter(!is.na(local_identifier)) %>% nrow(.)) # needed to do this because not all instances of 1 row are actually zeroes.
+# XXX why do we have so many carcasses provisioned that have nobody arriving? That seems weird!!!
+save(firsts, file = here("test_dynamic_nbda/data/firsts.Rda"))
 
 # Get first time each vulture saw the carcass
 firsts_see <- map2(see_carcass, inpa_carcs, ~{
@@ -246,27 +251,27 @@ firsts_see <- map2(see_carcass, inpa_carcs, ~{
 }) 
 save(firsts_see, file = here("test_dynamic_nbda/data/firsts_see.Rda"))
 
-# has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
-# save(has_visits, file = here("test_dynamic_nbda/data/has_visits.Rda"))
+has_visits <- map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+save(has_visits, file = here("test_dynamic_nbda/data/has_visits.Rda"))
 
 has_sightings <- map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 save(has_sightings, file = here("test_dynamic_nbda/data/has_sightings.Rda"))
 
 # Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
 ## 14. Get oa
-# oa <- map(firsts[has_visits], "local_identifier")
+oa <- map(firsts[has_visits], "local_identifier")
 oa_see <- map(firsts_see[has_sightings], "local_identifier")
-# save(oa, file = here("test_dynamic_nbda/data/oa.Rda"))
+save(oa, file = here("test_dynamic_nbda/data/oa.Rda"))
 save(oa_see, file = here("test_dynamic_nbda/data/oa_see.Rda"))
-# oa_num <- map(oa, order)
+oa_num <- map(oa, order)
 oa_see_num <- map(oa_see, order)
-# save(oa_num, file = here("test_dynamic_nbda/data/oa_num.Rda"))
+save(oa_num, file = here("test_dynamic_nbda/data/oa_num.Rda"))
 save(oa_see_num, file = here("test_dynamic_nbda/data/oa_see_num.Rda"))
-# oa_indivs_sorted <- map(oa, sort)
+oa_indivs_sorted <- map(oa, sort)
 oa_see_indivs_sorted <- map(oa_see, sort)
 
 ## 14.5 Get acquisition times
-# acq_times <- map(firsts[has_visits], ~.x$timestamp)
+acq_times <- map(firsts[has_visits], ~.x$timestamp)
 see_times <- map(firsts_see[has_sightings], ~.x$timestamp)
 
 ## 15. Get GPS subsets for flight (four different intervals)
