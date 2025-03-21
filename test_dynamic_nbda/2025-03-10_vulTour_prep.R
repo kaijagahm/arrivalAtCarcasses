@@ -1,12 +1,13 @@
-# Script to test out several diffusions
+# Script to test out a diffusion with different types of models
 # Created 2025-01-28 in advance of the January vulture meeting
+# Updated 2025-03-21 with 4km detection threshold and longer co-flight networks (cumulative)
 # Parameters/specs
 # - 1 diffusion
 # - Dynamic roost networks (each day)
-# - Dynamic flight networks (3 hours before)
-# - "acquisition" will be when each individual first detects the carcass (i.e. is within 1km of it)
+# - Dynamic flight networks (cumulative)
+# - "acquisition" will be when each individual first detects the carcass (i.e. is within 4km of it)
 # - will include all individuals, not just individuals that eventually detect the carcass, in the diffusion, per MJH advice in meeting on Tues 2/11
-# OADA for now
+# OADA for now b/c I haven't really evaluated whether TADA is appropriate, and OADA is a bit simpler.
 # Compare social and asocial
 # Seeded demonstrators = anyone who was within 1km of the carcass when it was placed
 # Time-constant ILVs: age group, initial distance to carcass
@@ -25,10 +26,10 @@ load(here("test_dynamic_nbda/data/inpa_carcs.Rda"))
 load(here("test_dynamic_nbda/data/oa_see.Rda"))
 load(here("test_dynamic_nbda/data/firsts_see.Rda"))
 
-load(here("test_dynamic_nbda/data/fl_3hr_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
 load(here("test_dynamic_nbda/data/roosts_bin_fixed_see.Rda"))
 load(here("test_dynamic_nbda/data/roosts_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_3h_bin_nets_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_nets_see.Rda"))
 
 load(here("test_dynamic_nbda/data/gps.Rda"))
 load(here("test_dynamic_nbda/data/ilvs.Rda"))
@@ -41,7 +42,8 @@ nbdaModSum <- function(model){
 }
 
 # Get the networks --------------------------------------------------------
-whch <- 19
+which(has_sightings)
+whch <- 17
 carc <- inpa_carcs[has_sightings][[whch]]
 oa <- oa_see[[whch]]
 firsts <- firsts_see[has_sightings][[whch]]
@@ -58,28 +60,28 @@ firsts %>%
        x = "Time", 
        title = "Vultures discovering the carcass", 
        caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
-  geom_vline(aes(xintercept = carc$datetime), col = "red", lty = 2)
+  geom_vline(aes(xintercept = carc$datetime), col = "red", lty = 2) # this one has three distinct days of carcass discovery. Let's see how that goes.
 
-fl_mats <- fl_3hr_bin_fixed_see[[whch]]
+fl_mats <- fl_cumulative_bin_fixed_see[[whch]]
 roost_mats <- roosts_bin_fixed_see[[whch]]
-fl_nets <- fl_3h_bin_nets_see[[whch]]
+fl_nets <- fl_cumulative_bin_nets_see[[whch]]
 roost_nets <- roosts_bin_nets_see[[whch]]
 
-map2(roost_nets, 1:length(roost_nets), ~{
-  ggraph(.x)+
-    geom_edge_link(color = "darkgreen")+
-    geom_node_label(aes(label = name), size = 3)+
-    theme_graph()+
-    ggtitle(paste0("Roost network, night ", .y))
-})
+# map2(roost_nets, 1:length(roost_nets), ~{
+#   ggraph(.x)+
+#     geom_edge_link(color = "darkgreen")+
+#     geom_node_label(aes(label = name), size = 3)+
+#     theme_graph()+
+#     ggtitle(paste0("Roost network, night ", .y))
+# })
 
-map2(fl_nets, 1:length(fl_nets), ~{
-  ggraph(.x)+
-    geom_edge_link(color = "dodgerblue3")+
-    geom_node_label(aes(label = name), size = 3)+
-    theme_graph()+
-    ggtitle(paste0("Flight network, 3 hours before vulture ", .y))
-})
+# map2(fl_nets, 1:length(fl_nets), ~{
+#   ggraph(.x)+
+#     geom_edge_link(color = "dodgerblue3")+
+#     geom_node_label(aes(label = name), size = 3)+
+#     theme_graph()+
+#     ggtitle(paste0("Cumulative flight network, vulture #", .y))
+# })
 
 indivs <- row.names(roost_mats[[1]])
 
@@ -118,21 +120,21 @@ for(i in 1:length(days_vec)){
 length(roost_mats_expanded) == length(fl_mats) # yay!
 
 # One other thing to check: are we including all individuals, or only the ones that ended up seeing the carcass?
-dim(roost_mats_expanded[[1]]) # 59*59
-length(unique(gps[has_sightings][[whch]]$local_identifier)) # 59
-dim(fl_mats[[1]]) # also 59*59
+dim(roost_mats_expanded[[1]]) # equal dimensions
+length(unique(gps[has_sightings][[whch]]$local_identifier)) # equal to each dimension of the previous one
+dim(fl_mats[[1]]) # equal dimensions
 
 dim(roost_mats_expanded[[20]])
 dim(fl_mats[[20]]) # this seems good!
 
 # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
 load(here("test_dynamic_nbda/data/ilvs.Rda"))
-my_ilvs <- ilvs[has_sightings][[19]] %>%
-  rename("roost_night0" = "roost_2024-05-01",
-         "roost_night1" = "roost_2024-05-02",
-         "roost_night2" = "roost_2024-05-03",
-         "roost_night3" = "roost_2024-05-04",
-         "roost_night5" = "roost_2024-05-05")
+my_ilvs <- ilvs[has_sightings][[whch]] %>%
+  rename("roost_night0" = "roost_2023-04-09",
+         "roost_night1" = "roost_2023-04-10",
+         "roost_night2" = "roost_2023-04-11",
+         "roost_night3" = "roost_2023-04-12",
+         "roost_night5" = "roost_2023-04-13")
 
 # Let's make this into an extended data frame as well
 days_vec
@@ -219,21 +221,20 @@ nbdaModSum(Mod_N.RS_So) # function defined at the top
 
 nbdaPropSolveByST(model = Mod_N.RS_So)
 # P(Network 1)  P(S offset) 
-# 0.6912       0.0000
+# 0.11279      0.00000 
 
-#This tells us that the estimated value for s corresponds to 69% (the function returns a 
+#This tells us that the estimated value for s corresponds to 11% (the function returns a 
 #proportion so multiply by 100 to get %ST)
 #P(Network 1) stands for the proportion of events that were a result of transmission through 
 #network 1 (we only have one network)
 #P(S offset) can be ignored for now
 # XXX but note: this is based on the aggregate roost network, so it is likely not very accurate!!
-# XXX kg--put this on a slide!
 
 #By default the calculation of %ST excludes the first learning event (innovation) for an unseeded diffusion, since we know this had to be asocial learning. If we want to include them we can do so:
 
 nbdaPropSolveByST(model = Mod_N.RS_So, exclude.innovations = F)
 # P(Network 1)  P(S offset) 
-# 0.67434      0.00000
+# 0.11108      0.00000 
 
 #Let us fit an asocial model (with s=0), by specifying type="asocial"
 Mod_N.RS_Aso <- oadaFit(nbdaData1, type = "asocial")
@@ -244,22 +245,22 @@ Mod_N.RS_So@aicc
 Mod_N.RS_Aso@aicc
 Mod_N.RS_Aso@aicc-Mod_N.RS_So@aicc
 
-#So the social model is favoured by 24.27073 AICc units. This means:
-exp(0.5*(Mod_N.RS_Aso@aicc-Mod_N.RS_So@aicc))
-#[1] 186347.2
-#the social model is 186347.2x more likely to be the best K-L model, out of the two. (wow, shocker!)
-#Or we can say the social model has 186347.2x more support than the asocial model.
+#So the asocial model is favoured by 1.79 AICc units. This means:
+exp(0.5*(Mod_N.RS_So@aicc-Mod_N.RS_Aso@aicc))
+#[1] 2.454841
+#the asocial model is 2.454841x more likely to be the best K-L model, out of the two. (interesting--did not expect that)
+#Or we can say the asocial model has 2.454841x more support than the social model.
 
 #We can also conduct a likelihood ratio test (LRT) for social transmission
 #The @loglik slot contains the -log-likelihood- i.e. minus the log-likelihood
 #So we can get the test statistic as double the difference in -log-likelihood as follows:
 2*(Mod_N.RS_Aso@loglik-Mod_N.RS_So@loglik)
-#[1] 26.3733
+#[1]0.2663759
 
 #There is 1 parameter in Mod_N.RS_So, and 0 in Mod_N.RS_Aso, so we have 1 d.f.
 pchisq(2*(Mod_N.RS_Aso@loglik-Mod_N.RS_So@loglik),df=1,lower.tail=F)
-#[1] 2.814039e-07
-#p= 2.814039e-07; strong evidence of an effect consistent with social transmission
+#[1] 0.6057733
+#p= 0.60577337; no evidence of an effect consistent with social transmission
 
 #We can get 95% confidence intervals (C.I.s) for the parameter by first plotting the
 #profile log-likelihood function. This is the -log-likelihood for a specified
@@ -274,7 +275,7 @@ plotProfLik(which = 1, model = Mod_N.RS_So, range = c(0,10), resolution = 20)
 #Any values of s for which the profile log-likelihood is above the dotted line would be
 #REJECTED in a likelihood ratio test (LRT), and therefore are OUTSIDE the 95% C.I.
 #Therefore we can get the 95% C.I. by finding the crossing points
-#Here we can see that there is one crossing point between 0 and 2, and another between 4 and 6.
+#Here we can see one crossing point between 0 and 2, but there seems to be no other crossing point.
 
 #Before we move on to find these points, take a moment to note the asymmetry in the
 #profile log-likelihood. We have quite a lot of certainty about the lower limit of
@@ -283,12 +284,12 @@ plotProfLik(which = 1, model = Mod_N.RS_So, range = c(0,10), resolution = 20)
 #the SE failed to quantify the strength of evidence against the null hypothesis, s=0.
 
 #So we need to find the cross over points to get the 95% C.I. We use the profLikCI
-#function, specifying the upperRange and lowerRange to search in.
+#function, specifying the lowerRange to search in.
 
 (p <- profLikCI(which = 1, model = Mod_N.RS_So, 
-                upperRange = c(4,10),lowerRange = c(0,2)))
-# Lower CI  Upper CI 
-# 0.4069403 5.5092088  
+                lowerRange = c(0,2)))
+# Lower CI Upper CI 
+# 0.435197       NA  
 
 #s=0 is not included in the 95% C.I. so there is at least reasonable evidence for social transmission or at least a statistical effect consistent with social transmission.
 #Note we can obtain C.I.s for a different level of confidence by setting, e.g. conf=0.99 in the plotProfLik and profLikCI functions.
@@ -299,12 +300,11 @@ plotProfLik(which = 1, model = Mod_N.RS_So, range = c(0,10), resolution = 20)
 
 nbdaPropSolveByST(par = p[1], nbdadata = nbdaData1)
 # P(Network 1)  P(S offset) 
-# 0.4986       0.0000
+# 0.50051      0.00000 
 nbdaPropSolveByST(par = p[2], nbdadata = nbdaData1)
-# P(Network 1)  P(S offset) 
-# 0.82422      0.00000 
+#NA
 
-#So between 49.8% and 82.4% of events are estimated to have occurred by social transmission.
+#So between 50% and NA% of events are estimated to have occurred by social transmission.
 
 
 # Mod_N.RD: Dynamic roost net, no ILVs ------------------------------------
@@ -322,7 +322,7 @@ length(roost_mats_expanded) # these are each replicated as many times as there a
 roost_mats_expanded <- map(roost_mats_expanded, as.matrix)
 
 #We need to combine these in a 4 dimensional array, with the 4th dimension for time periods
-(n_timeperiods <- length(roost_mats_expanded)) # 41 first sighting events, and therefore 41 roost networks (many of which are repeats of each other)
+(n_timeperiods <- length(roost_mats_expanded)) # 66 first detection events, and therefore 66 roost networks (many of which are repeats of each other)
 
 #Create the empty array
 N.RD <- array(NA, dim = c(n_indivs, n_indivs, 1, n_timeperiods))
@@ -343,48 +343,47 @@ nbdaData2 <- nbdaData(label = paste0("Diffusion_", whch),
 
 Mod_N.RD_So <- oadaFit(nbdaData2)
 nbdaModSum(Mod_N.RD_So)
-# Variable      MLE        SE
-# 1 1 Social transmission 1 1.285991 0.6506921
+# Variable        MLE         SE
+# 1 1 Social transmission 1 0.02388205 0.05345923
 
 # Compare to static network:
 nbdaModSum(Mod_N.RS_So)
-# Variable      MLE       SE
-# 1 1 Social transmission 1 1.387364 0.888224
+# Variable        MLE         SE
+# 1 1 Social transmission 1 0.03955125 0.09005417
 
 # Models with a dynamic network can be compared to static network models if they are fitted to the same order of acquisition
 Mod_N.RD_So@aicc
-#[1] 263.9732
+#[1] 456.3319
 Mod_N.RS_So@aicc 
-#[1] 272.006
+#[1] 456.3181
 
 exp(0.5*(Mod_N.RS_So@aicc-Mod_N.RD_So@aicc))
-
-# here the dynamic model fits better than the static model (lower AICC)--55.5x more support
-
 #Compare to the asocial model
 Mod_N.RD_Aso <- oadaFit(nbdaData2, type = "asocial")
 Mod_N.RD_Aso@aicc-Mod_N.RD_So@aicc
+# -1.809965 # actually, looks like the asocial model is better here too.
 
-#So the social model is favoured by 32.30358 AICc units. This means:
+#So the asocial model is favoured by 1.81 AICc units. This means:
 exp(0.5*(Mod_N.RD_Aso@aicc-Mod_N.RD_So@aicc))
-#[1] 10342670
-#the social model is 10342670x more likely to be the best K-L model, out of the two. (wow, shocker!)
+#[1] 0.404549
+#the asocial model is 0.4x more likely to be the best K-L model, out of the two. (surprising!)
 
 #There is 1 parameter in Mod_N.RS_So, and 0 in Mod_N.RS_Aso, so we have 1 d.f.
 pchisq(2*(Mod_N.RD_Aso@loglik-Mod_N.RD_So@loglik),df=1,lower.tail=F)
-#[1] 4.473096e-09
-#p= 4.473096e-09; strong evidence of an effect consistent with social transmission
+#[1] 0.6152954
+#p= 0.6152954; no evidence of an effect consistent with social transmission
 
-plotProfLik(which = 1, model = Mod_N.RD_So, range = c(0,10), resolution = 20)
+plotProfLik(which = 1, model = Mod_N.RD_So, range = c(0,100), resolution = 20)
 (p <- profLikCI(which = 1, model = Mod_N.RD_So, 
-                upperRange = c(3,6),lowerRange = c(0,2)))
+                lowerRange = c(0,2))) # same deal here; we can't find an upper bound.
 
 nbdaPropSolveByST(model = Mod_N.RD_So)
-#61.9% by social transmission
+#7.7% by social transmission
 
 nbdaPropSolveByST(par = p[1], nbdadata = nbdaData2)
 # P(Network 1)  P(S offset) 
-# 0.48791      0.00000
+# 0.3351       0.0000 # XXX this doesn't make sense! What's going on with this model? Why is the lower bound higher than the model itself?
+# XXX START HERE---- below this line the annotations still match the previous carcass, not this one.
 nbdaPropSolveByST(par = p[2], nbdadata = nbdaData2)
 # P(Network 1)  P(S offset) 
 # 0.70119      0.00000 
