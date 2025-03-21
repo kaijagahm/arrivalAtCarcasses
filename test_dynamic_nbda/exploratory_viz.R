@@ -10,7 +10,7 @@ library(tidygraph)
 
 ## 0. Define parameters (same as prepare_data.R)
 days_after <- 3
-seed_distance <- 1000 # 1000m to be within sight of the carcass
+seed_distance <- 4000 # 1000m to be within sight of the carcass
 seed_time_before <- hours(1)
 
 # Load data
@@ -51,7 +51,7 @@ df %>%
   labs(y = "Number of vultures detecting",
        x = "Hour of carcass placement",
        size = "Carcass\nweight",
-       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
+       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 4000m of carcass.")
 
 
 ## maybe it's related to the size of the carcass
@@ -64,7 +64,7 @@ df %>%
   labs(y = "Number of vultures detecting",
        x = "Carcass weight",
        size = "Hour of carcass placement",
-       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 1000m of carcass.")
+       caption = "Detections within 4 days of carcass placement.\nArrival: vulture on ground (<5m/s) within 400m of carcass.\nDetection: vulture within 4000m of carcass.")
 
 # For the networks, we are already only dealing with the carcasses that have sightings by vultures
 load(here("test_dynamic_nbda/data/has_sightings.Rda"))
@@ -159,6 +159,7 @@ fs <- map(firsts_see, st_drop_geometry) %>% purrr::list_rbind() %>% mutate(type 
 f <- map(firsts, st_drop_geometry) %>% purrr::list_rbind() %>% mutate(type = "arrival")
 ic <- purrr::list_rbind(inpa_carcs) %>% st_drop_geometry() %>% select(carcID, datetime)
 all <- bind_rows(fs, f) %>% left_join(ic) %>%
+  filter(!is.na(local_identifier)) %>%
   mutate(time_since_placement = difftime(timestamp, datetime, units = "hours")) %>%
   group_by(carcID) %>%
   mutate(time_since_first = difftime(timestamp, timestamp[1], units = "hours")) %>%
@@ -234,64 +235,23 @@ arr_det_diffs <- all %>%
   mutate(diff = difftime(arrival, detection, units = "hours"))
 
 arr_det_diffs %>%
-  ggplot(aes(x = factor(carcID), y = diff))+
-  geom_boxplot()+
-  theme_minimal()+
-  facet_wrap(~year, scales = "free") # As Noa pointed out, there needs to be variation in this in order for it to be interesting to do multi-state NBDA. We see very little variation here.
-
-# Why?
-# - Could be the same points--the detection is essentially the same as the arrival
-# - Could be that we have too small a detection range--there isn't enough time between when they are within 1km and when they eventually land for a GPS fix to be taken; they're already in the process of going towards it.
-# What to do?
-# Could check whether they are the same point; could restrict detections to "aerial detections"; could increase the detection radius.
-# Let's look at some approach graphs to see how far away the vultures are and when they land and what speed they're going. Do they just drop down really fast, perhaps? XXX TODO
-
-which(has_sightings & has_visits)
-
-set.seed(11)
-focal <- sample(unique(gps[[13]]$local_identifier), 3)
-max_timestamp <- all %>%
-  filter(carcID == gps[[13]]$carcID[1],
-         local_identifier %in% focal) %>%
-  pull(timestamp) %>%
-  max()
-gray_data <- gps[[13]] %>%
-  filter(timestamp <= max_timestamp,
-         !(local_identifier %in% focal))
-colored_data <- gps[[13]] %>%
-  filter(timestamp <= max_timestamp,
-         local_identifier %in% focal)
-
-gray_data %>%
-  filter(dist_to_carcass <= 10000) %>%
-  ggplot(aes(x = timestamp, y = dist_to_carcass/1000, group = local_identifier))+
-  geom_line(col = "gray", alpha = 0.3)+
-  geom_line(data = colored_data %>% filter(dist_to_carcass <= 10000), aes(color = ground_speed))+
-  scale_color_viridis_c()+
+  filter(!is.na(diff)) %>%
+  group_by(carcID) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  arrange(n_indivs) %>%
+  ggplot(aes(x = fct_reorder(factor(carcID), n), y = diff, fill = n))+
+  geom_boxplot(outlier.size = 0.5)+
   theme_classic()+
-  labs(y = "Distance to carcass (km)",
-       x = "Time",
-       color = "Speed")
-# Okay, at least for these individuals, we see that they are approaching the carcass very very fast from a long way away. Maybe they are going straight from the roost?
-
-colored_data %>%
-  ggplot(aes(x = timestamp, y = dist_to_carcass/1000, group = local_identifier))+
-  geom_line(aes(color =ground_speed))+
-  geom_point(aes(color = ground_speed), size = 0.8)+
-  scale_color_viridis_c()+
-  theme_classic() # so, yes, these individuals seem to be going directly to the carcass from their roosts, which are 15-20km away (KG: that was a different sample--these ones are flying first). Either way, the 1km detection threshold seems way too small. 
-
-# Let's add some lines and also zoom in on a shorter time range.
-colored_data %>%
-  filter(timestamp > lubridate::ymd_hm("2023-03-31 04:00")) %>%
-  ggplot(aes(x = timestamp, y = dist_to_carcass/1000, group = local_identifier))+
-  geom_line(aes(color =ground_speed))+
-  geom_point(aes(color = ground_speed), size = 0.8)+
-  geom_hline(aes(yintercept = 4), alpha = 0.5, linetype = 3, color = "magenta")+
-  geom_hline(aes(yintercept = 2), alpha = 0.6, linetype = 2, color = "magenta")+
-  geom_hline(aes(yintercept = 1), alpha = 0.7, linetype = 1, color = "magenta")+
-  scale_color_viridis_c()+
-  theme_classic() # okay so now we can see the approaches more clearly. And indeed we can see that the time between being 1km away and arriving at the carcass is often very short, so it's hit or miss whether there will be a point in there or not. 
-
-# It seems like a 4km or 5km threshold for detection would be better probably. Let's go with 4km because that was what was in Orr's paper and that's what Cassidy is using.
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "bottom")+
+  facet_wrap(~year, scales = "free")+
+  scale_fill_viridis()+
+  labs(y = "Hours between first detection and first arrival",
+       x = "Carcass",
+       fill = "Number of arrivals",
+       caption = "Including vultures that eventually arrived at the carcass.\nDetection <= 4000m; arrival: <= 400m non-flying",
+       title = "Time from detection to arrival")
+  # As Noa pointed out, there needs to be variation in this in order for it to be interesting to do multi-state NBDA. Some carcasses have very little variation, but some have a lot!
 
