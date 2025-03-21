@@ -255,3 +255,43 @@ arr_det_diffs %>%
        title = "Time from detection to arrival")
   # As Noa pointed out, there needs to be variation in this in order for it to be interesting to do multi-state NBDA. Some carcasses have very little variation, but some have a lot!
 
+# Preliminaries for Nina model --------------------------------------------
+# Each hour: distance to closest active carcass
+# - "active" = within the max_time of the `carcs` data frame
+# Each hour: Within 4km of another vulture?
+gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
+#gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")
+gps_points <- gps_2023 %>% arrange(timestamp) %>% sf::st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>% sf::st_transform(32636)
+dim(gps_points)
+
+carcs <- sf::st_as_sf(carcs) %>% sf::st_set_crs(32636)
+carcs_buffered <- st_buffer(carcs, dist = 4000) # buffer by 4km
+mapview(carcs_buffered)
+# Ensure the timestamps are in the correct format
+gps_points$timestamp <- as.POSIXct(gps_points$timestamp)
+carcs$datetime <- as.POSIXct(carcs$datetime)
+carcs$max_time <- as.POSIXct(carcs$max_time)
+
+# Create an empty vector to store the distances
+near_active_carcass <- rep(NA, nrow(gps_points))
+for(i in 1:nrow(gps_points)){
+  active_carcs <- carcs_buffered[carcs_buffered$datetime <= gps_points$timestamp[i] & carcs_buffered$max_time >= gps_points$timestamp[i],]
+  if(nrow(active_carcs) > 0){
+    near_active_carcass[i] <- sum(lengths(st_intersects(active_carcs, gps_points[i,]))) > 0
+  }
+  if(i%%1000 == 0){
+    cat("done with ", i, "\n")
+  }
+}
+
+table(near_active_carcass, exclude = NULL)
+
+gps_points$near_active_carcass <- near_active_carcass
+gps_points %>%
+  ggplot(aes(x = timestamp, y = factor(local_identifier), col = near_active_carcass))+
+  geom_point(size = 0.5)+
+  labs(y = "Vulture",
+       x = "Timestamp",
+       col = "Near\nactive\ncarcass",
+       caption = "Active = within 3 days from carcass placement.\nNear = within 4km\nNA = no current active carcasses")+
+  theme_minimal()
