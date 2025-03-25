@@ -191,6 +191,10 @@ Mods_N.RD_So <- map(nbdaData_list_dynamic, ~{
   tryCatch({oadaFit(.x)}, error = function(msg){NULL})
 })
 
+Mods_N.RS_Aso <- map(nbdaData_list_static, ~{
+  tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
+})
+
 Mods_N.RD_Aso <- map(nbdaData_list_dynamic, ~{
   tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
 })
@@ -207,50 +211,222 @@ summaries <- left_join(summaries_static, summaries_dynamic, by = c("carcID", "Va
 # Models with a dynamic network can be compared to static network models if they are fitted to the same order of acquisition, which these are.
 
 aiccs_dynamic_asocial <- map_dbl(Mods_N.RD_Aso, ~.x@aicc)
+aiccs_static_asocial <- map_dbl(Mods_N.RS_Aso, ~.x@aicc)
 summaries$aicc_dynamic_asocial <- aiccs_dynamic_asocial
+summaries$aicc_static_asocial <- aiccs_static_asocial
 
-# AICC differences: dynamic vs static and dynamic social vs. dynamic asocial
+# AICC differences: dynamic vs static and social vs. asocial
 summaries <- summaries %>%
   mutate(diff_S.D = aicc_static - aicc_dynamic,
-         diff_D.Aso.DSo = aicc_dynamic_asocial - aicc_dynamic,
-         static_favored = exp(0.5*diff_S.D),
-         asocial_favored = exp(0.5*diff_D.Aso.DSo))
+         diff_DAso.DSo = aicc_dynamic_asocial - aicc_dynamic,
+         diff_SAso.SSo = aicc_static_asocial - aicc_static,
+         dynamic_favored = exp(0.5*(aicc_static - aicc_dynamic_asocial)),
+         social_favored_dynamic = exp(0.5*(aicc_dynamic_asocial - aicc_dynamic)),
+         social_favored_static = exp(0.5*(aicc_static_asocial - aicc_static)))
 
-# XXX should re-do these--if the other model is supported, this shows as 0, not negative, which is misleading. Should show the difference as a histogram, and then show how much more supported the model is for each one.
 summaries %>%
-  ggplot(aes(x = static_favored))+
+  ggplot(aes(x = diff_S.D))+
   geom_histogram(fill = "lightgray", color = "darkgray")+
   theme_minimal()+
   labs(y = "Count",
-       x = "Times more support for static model")+
+       x = "Static-Dynamic",
+       caption = "Positive values indicate more support for the dynamic model")+
   geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
 
 summaries %>%
-  ggplot(aes(x = exp(0.5*-1*diff_D.Aso.DSo)))+
+  ggplot(aes(x = diff_DAso.DSo))+
   geom_histogram(fill = "lightgray", color = "darkgray")+
   theme_minimal()+
   labs(y = "Count",
-       x = "Times more support for social model")+
+       x = "Asocial-Social (dynamic models)",
+       caption = "Positive values indicate more support for the social model")+
   geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
 
-# XXX start here--p-values
-#There is 1 parameter in Mod_N.RS_So, and 0 in Mod_N.RS_Aso, so we have 1 d.f.
-pchisq(2*(Mod_N.RD_Aso@loglik-Mod_N.RD_So@loglik),df=1,lower.tail=F)
-#[1] 0.6152954
-#p= 0.6152954; no evidence of an effect consistent with social transmission
+summaries %>%
+  ggplot(aes(x = diff_SAso.SSo))+
+  geom_histogram(fill = "lightgray", color = "darkgray")+
+  theme_minimal()+
+  labs(y = "Count",
+       x = "Asocial-Social (static models)",
+       caption = "Positive values indicate more support for the social model")+
+  geom_vline(aes(xintercept = 0), col = "red", linetype = 2)
 
-plotProfLik(which = 1, model = Mod_N.RD_So, range = c(0,100), resolution = 20)
-(p <- profLikCI(which = 1, model = Mod_N.RD_So, 
-                lowerRange = c(0,2))) # same deal here; we can't find an upper bound.
+# P-values: do we see social transmission?
+summaries$p_DAso.DSo <- map2_dbl(Mods_N.RD_Aso, Mods_N.RD_So, ~{
+  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
+})
 
-nbdaPropSolveByST(model = Mod_N.RD_So)
-#7.7% by social transmission
+summaries$p_SAso.SSo <- map2_dbl(Mods_N.RS_Aso, Mods_N.RS_So, ~{
+  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
+})
 
-nbdaPropSolveByST(par = p[1], nbdadata = nbdaData2)
-# P(Network 1)  P(S offset) 
-# 0.3351       0.0000 # XXX this doesn't make sense! What's going on with this model? Why is the lower bound higher than the model itself?
+summaries$p_S.D <- map2_dbl(Mods_N.RD_Aso, Mods_N.RD_So, ~{
+  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
+})
 
-nbdaPropSolveByST(par = p[2], nbdadata = nbdaData2)
-# P(Network 1)  P(S offset) 
-# NA           NA 
+summaries %>%
+  mutate(sig = ifelse(p_DAso.DSo <= 0.05, T, F)) %>%
+  filter(!is.na(sig)) %>%
+  ggplot(aes(x = diff_DAso.DSo, y = carcID))+
+  geom_point(aes(shape = sig), size = 2)+
+  scale_shape_manual(name = "Evidence for\nsoc.transmission?\n(alpha = 0.05)", 
+                     values = c(1, 19))+
+  theme_minimal()+
+  labs(y = "Carcass",
+       x = "AICC difference (asocial - social)",
+       title = "Social transmission",
+       subtitle = "Dynamic roost networks")+
+  theme(legend.position = "bottom")+
+  geom_vline(aes(xintercept = 0), color = "red", linetype = 2)
+# It's a bit odd that we're not seeing more evidence for social transmission! What does the evidence for social transmission look like over the static roost network?
 
+summaries %>%
+  mutate(sig = ifelse(p_SAso.SSo <= 0.05, T, F)) %>%
+  filter(!is.na(sig)) %>%
+  ggplot(aes(x = diff_SAso.SSo, y = carcID))+
+  geom_point(aes(shape = sig), size = 2)+
+  scale_shape_manual(name = "Evidence for\nsoc.transmission?\n(alpha = 0.05)", 
+                     values = c(1, 19))+
+  theme_minimal()+
+  labs(y = "Carcass",
+       x = "AICC difference (asocial - social)",
+       title = "Social transmission",
+       subtitle = "Static roost networks")+
+  theme(legend.position = "bottom")+
+  geom_vline(aes(xintercept = 0), color = "red", linetype = 2) # similar to the dynamic ones.
+
+# Get the proportion of events estimated to be solved by social transmission
+solveprops_dynamic <- map(Mods_N.RD_So, ~as.data.frame(t(nbdaPropSolveByST(model = .x)))) %>% setNames(carcIDs) %>% list_rbind(names_to = "carcID") %>%
+  select(-V1)
+solveprops_static <- map(Mods_N.RS_So, ~as.data.frame(t(nbdaPropSolveByST(model = .x)))) %>% setNames(carcIDs) %>% list_rbind(names_to = "carcID") %>%
+  select(-V1)
+
+# Get confidence intervals
+## This is the tricky part--in order to find the confidence intervals, we have to manually visualize the plots. Luckily, there aren't too many of them.
+
+search <- data.frame(type = c(rep("dynamic", length(Mods_N.RD_So)),
+                              rep("static", length(Mods_N.RS_So))),
+                     lower_min = NA,
+                     lower_max = NA,
+                     upper_min = NA,
+                     upper_max = NA,
+                     ci_lower = NA,
+                     ci_upper = NA,
+                     carcID = carcIDs)
+## Dynamic models
+#plotProfLik(which = 1, model = Mods_N.RD_So[[1]], range = c(0,2.5))
+search[1,2:5] <- c(0, 0.2, 0.4, 0.6)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[2]], range = c(0,2.5))
+search[2,2:5] <- c(0, 0.2, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[3]], range = c(20,30))
+search[3,2:5] <- c(NA, NA, 24, 28)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[4]], range = c(0, 1))
+search[4,2:5] <- c(NA, NA, 0, 0.2)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[5]], range = c(0, 2.5))
+search[5,2:5] <- c(NA, NA, 0.25, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[6]], range = c(0, 2.5))
+search[6,2:5] <- c(0, 0.2, 0.4, 0.6)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[7]], range = c(0, 2.5))
+search[7,2:5] <- c(NA, NA, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[8]], range = c(0, 1))
+search[8,2:5] <- c(NA, NA, 0, 0.2)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[9]], range = c(0, 1))
+search[9,2:5] <- c(0, 0.1, 0.4, 0.6)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[10]], range = c(0, 1))
+search[10,2:5] <- c(NA, NA, 0.4, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[11]], range = c(0, 2))
+search[11,2:5] <- c(0, 0.25, 1, 1.6)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[12]], range = c(0, 2))
+search[12,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[12]], range = c(0, 2))
+search[12,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[13]], range = c(0, 2))
+search[13,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[14]], range = c(0, 10))
+search[14,2:5] <- c(NA, NA, 4, 6)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[15]], range = c(0, 2.5))
+search[15,2:5] <- c(0, 0.5, 1.5, 2.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[16]], range = c(0, 2))
+search[16,2:5] <- c(NA, NA, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[17]], range = c(0, 50))
+search[17,2:5] <- c(NA, NA, 30, 40)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[18]], range = c(0, 5))
+search[18,2:5] <- c(NA, NA, 2, 3)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[19]], range = c(0, 30))
+search[19,2:5] <- c(NA, NA, 25, 30)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[20]], range = c(0, 5))
+search[20,2:5] <- c(NA, NA, 0, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[21]], range = c(0, 2))
+search[21,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[22]], range = c(0, 2))
+search[22,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[23]], range = c(0, 2.5))
+search[23,2:5] <- c(0, 0.5, 2, 2.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[24]], range = c(0, 2.5))
+#plotProfLik(which = 1, model = Mods_N.RD_So[[25]], range = c(0, 2))
+search[25,2:5] <- c(0, 0.25, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[26]], range = c(0, 2))
+search[26,2:5] <- c(NA, NA, 1.5, 2)
+plotProfLik(which = 1, model = Mods_N.RD_So[[27]], range = c(0, 2))
+#search[27,2:5] <- c(0, 0.25, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[28]], range = c(0, 2))
+search[28,2:5] <- c(NA, NA, 0.5, 1)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[29]], range = c(0, 2))
+search[29,2:5] <- c(0, 0.5, 1, 1.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[30]], range = c(0, 10))
+search[30,2:5] <- c(NA, NA, 6, 8)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[31]], range = c(0, 2.5))
+search[31,2:5] <- c(NA, NA, 0, 0.5)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[32]], range = c(0, 3))
+search[32,2:5] <- c(0, 0.5, 2, 3)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[33]], range = c(0, 10))
+search[33,2:5] <- c(0, 2, 6, 8)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[34]], range = c(0, 10))
+search[34,2:5] <- c(NA, NA, 8, 9)
+#plotProfLik(which = 1, model = Mods_N.RD_So[[35]], range = c(0, 5))
+search[35,2:5] <- c(NA, NA, 4, 5)
+
+for(i in 1:length(Mods_N.RD_So)){
+  if(is.na(search[i,2]) & !is.na(search[i,4])){
+    ci <- profLikCI(which = 1, model = Mods_N.RD_So[[i]],
+                    upperRange = search[i,4:5])
+  }else if(!is.na(search[i,2]) & !is.na(search[i,4])){
+    ci <- profLikCI(which = 1, model = Mods_N.RD_So[[i]],
+                    lowerRange = search[i,2:3],
+                    upperRange = search[i,4:5])
+  }else{
+    ci <- c(NA, NA)
+  }
+  search[i,6:7] <- ci 
+  cat("done with ", i, "\n")
+}
+
+solveprops_dynamic_lower <- map2_dbl(search$ci_lower[search$type == "dynamic"], nbdaData_list_dynamic, ~{
+  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+  })
+
+solveprops_dynamic_upper <- map2_dbl(search$ci_upper[search$type == "dynamic"], nbdaData_list_dynamic, ~{
+  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+})
+
+search$propsolve <- c(solveprops_dynamic[,2], solveprops_static[,2])
+search$propsolve_lower[search$type == "dynamic"] <- solveprops_dynamic_lower
+search$propsolve_upper[search$type == "dynamic"] <- solveprops_dynamic_upper
+
+search <- search %>%
+  mutate(sig = ifelse(propsolve_lower > 0, TRUE, FALSE))
+
+search %>%
+  filter(type == "dynamic") %>%
+  ggplot(aes(y = carcID, color = sig))+
+  geom_segment(aes(x = propsolve_lower, xend = propsolve_upper))+
+  geom_point(aes(x = propsolve, pch = sig), size = 2)+
+  scale_color_manual(values = c("gray60", "black"))+
+  scale_shape_manual(values = c(21, 19))+
+  theme_minimal()+
+  labs(y = "Carcass",
+       x = "Proportion of detections by social transmission",
+       title = "Dynamic roost networks")
+
+# Next step: do the same thing for the static networks
+# Then do it with dynamic flight networks
