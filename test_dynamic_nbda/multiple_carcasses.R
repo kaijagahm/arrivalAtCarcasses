@@ -46,7 +46,7 @@ all(map_dbl(oas, length) == map_dbl(firsts, nrow)) #TRUE (check for corresponden
 length(firsts)
 length(oas)
 length(carcs)
-years <- map(carcs, ~st_drop_geometry(.x) %>% select(carcID, datetime) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% select(-datetime)) %>% purrr::list_rbind()
+years <- map(carcs, ~st_drop_geometry(.x) %>% select(carcID, datetime, X, Y, stationName, carcassWeight) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% select(-datetime)) %>% purrr::list_rbind() %>% mutate(n_detections = map_dbl(oas, length))
 
 # Make plots of carcass discoveries over time
 carcIDs <- map_chr(carcs, ~as.character(.x$carcID[1]))
@@ -492,7 +492,7 @@ search <- search %>%
 
 # join all these calculated conf int params to the overall model summary table
 summaries <- left_join(summaries, search, by = c("carcID", "soc", "type", "network")) %>%
-  left_join(years)
+  left_join(years) # this includes info not just on years but also on carcass location, station, and weight, so we can analyze social transmission by carcass characteristics.
 
 # Plotting ----------------------------------------------------------------
 summaries %>%
@@ -510,9 +510,71 @@ summaries %>%
        title = "Dynamic roost networks")
 
 # Okay, this is great, we have info on both flight and roosting for the same carcasses.
-
 # Now we could ask whether there's a trend for number of detection events, weight of carcass, or location of carcass. And then we can incorporate ILVs and compete these against each other.
 
+test <- summaries %>%
+  filter(type == "dynamic", soc == "social", !is.na(sig_ci)) 
+
+mylogit <- glm(sig_ci ~ network + n_detections + carcassWeight, data = test, family = "binomial")
+summary(mylogit)
+
+newdata <- as.data.frame(expand.grid("n_detections" = seq(from = 3, to = 69, by = 11), "carcassWeight" = seq(from = 30, to = 550, by = 10), "network" = c("flight", "roost")))
+
+newdata$p <- predict(mylogit, newdata = newdata, type = "response")
+
+newdata %>%
+  ggplot(aes(x = carcassWeight, y = p, col = network, group = interaction(factor(n_detections), network)))+
+  geom_line(aes(size = factor(n_detections)))+
+  scale_size_manual(values = seq(from = 0.2, to = 1.5, length.out = 7))+
+  scale_color_manual(values =c("dodgerblue2", "olivedrab4"))+
+  theme_minimal()+
+  labs(y = "P(social transmission)",
+       x = "Carcass weight",
+       color = "Network")+
+  geom_point(data = test %>% mutate(p = ifelse(sig_ci, 1, 0)), 
+             aes(x = carcassWeight, y = p, pch = network), size = 3)+
+  scale_shape_manual(name = "Network", values = c(1, 8))
+
+# So, heavier carcasses are less likely to show a signal of social transmission; roost network is less likely to show social transmission; more detections is more likely to show a signal of social transmission. 
+
+# Okay, now, within the models that show significant evidence of social transmission, what relationships do we see?
+test %>%
+  filter(sig_ci) %>%
+  ggplot(aes(x = carcassWeight, col = network, shape = network))+
+  geom_segment(aes(x = carcassWeight, y = propsolve_lower, yend = propsolve_upper))+
+  geom_point(size = 2, aes(y = propsolve))+
+  scale_color_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
+  theme_minimal()+
+  scale_shape_manual(name = "Network", values = c(1, 8))+
+  geom_smooth(method = "lm", aes(y = propsolve))+
+  labs(y = "Proportion of detections by social transmission",
+       x = "Carcass weight (kg)")
+
+test %>%
+  filter(sig_ci) %>%
+  ggplot(aes(x = n_detections, col = network, shape = network))+
+  geom_segment(aes(x = n_detections, y = propsolve_lower, yend = propsolve_upper))+
+  geom_point(size = 2, aes(y = propsolve))+
+  scale_color_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
+  theme_minimal()+
+  scale_shape_manual(name = "Network", values = c(1, 8))+
+  geom_smooth(method = "lm", aes(y = propsolve))+
+  labs(y = "Proportion of detections by social transmission",
+       x = "Number of detections") # we see that number of detections affected how likely we were to detect a social effect, but not the magnitude of the social effect once detected.
+
+# I'm curious: does more detections decrease the CI size?
+test %>%
+  filter(sig_ci) %>%
+  ggplot(aes(x = n_detections, y = propsolve_upper-propsolve_lower, col = network, shape = network))+
+  geom_point()+
+  geom_smooth(method = "lm") # huh, unexpected effect on the size of the confidence interval here
+
+# XXX start here next time
+
+
+
+
+# Other ways of examining the models --------------------------------------
 # XXXXXXXXXXX
 # Comparing asocial and social
 ## P-values: do we see social transmission? # XXX FIXME--WILL NEED NEW CODE for long format
