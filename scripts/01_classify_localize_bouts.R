@@ -95,18 +95,17 @@ unobs_raw_acc_2024 %>%
   arrange(mny) # that's better--no negatives!
 
 # mindate_23 <- lubridate::ymd_hms(min(unobs_raw_acc_2023$UTC_datetime))
-# maxdate_23 <- lubridate::ymd_hms(max(unobs_raw_acc_2023$UTC_datetime))
-# 
+# maxdate_23 <- lubridate::ymd_hms(max(unobs_raw_acc_2023$UTC_datetime)) + days(5)
 # mindate_24 <- lubridate::ymd_hms(min(unobs_raw_acc_2024$UTC_datetime))
-# maxdate_24 <- lubridate::ymd_hms(max(unobs_raw_acc_2024$UTC_datetime))
+# maxdate_24 <- lubridate::ymd_hms(max(unobs_raw_acc_2024$UTC_datetime)) + days(5)
 # 
 # minmax_dates <- list(mindate_23, maxdate_23, mindate_24, maxdate_24)
 # write_rds(minmax_dates, file = here("data/created/minmax_dates.RDS"))
 
-# splitup_23 <- group_split(group_by(as.data.frame(unobs_raw_acc_2023)), device_id)
+splitup_23 <- group_split(group_by(as.data.frame(unobs_raw_acc_2023)), device_id)
 splitup_24 <- group_split(group_by(as.data.frame(unobs_raw_acc_2024)), device_id)
 # 
-# write_rds(splitup_23, here("data/created/splitup_23.RDS"))
+write_rds(splitup_23, here("data/created/splitup_23.RDS"))
 write_rds(splitup_24, here("data/created/splitup_24.RDS"))
 
 # rm(unobs_raw_acc_2023)
