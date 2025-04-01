@@ -12,6 +12,7 @@ library(here)
 library(NBDA)
 library(tidyverse)
 library(sf)
+library(lme4)
 
 # Load data
 load(here("test_dynamic_nbda/data/has_sightings.Rda"))
@@ -46,7 +47,7 @@ all(map_dbl(oas, length) == map_dbl(firsts, nrow)) #TRUE (check for corresponden
 length(firsts)
 length(oas)
 length(carcs)
-years <- map(carcs, ~st_drop_geometry(.x) %>% select(carcID, datetime, X, Y, stationName, carcassWeight) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% select(-datetime)) %>% purrr::list_rbind() %>% mutate(n_detections = map_dbl(oas, length))
+years <- map(carcs, ~st_drop_geometry(.x) %>% dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% dplyr::select(-datetime)) %>% purrr::list_rbind() %>% mutate(n_detections = map_dbl(oas, length))
 
 # Make plots of carcass discoveries over time
 carcIDs <- map_chr(carcs, ~as.character(.x$carcID[1]))
@@ -132,7 +133,7 @@ ilvs_lists <- map(1:length(my_ilvs), ~{
     col <- paste0("roost_night", days_vec[[.x]][i]-1)
     if(col %in% names(my_ilvs[[.x]])){
       ilvs_list[[i]] <- my_ilvs[[.x]] %>%
-        select(local_identifier, age_group, all_of(col))
+        dplyr::select(local_identifier, age_group, all_of(col))
     }else{
       ilvs_list[[i]] <- "missing roost column"
     }
@@ -193,7 +194,7 @@ for(i in 1:length(nbdaData_list_static)){
   cat("done with", i, "\n")
 }
 
-nbdaData_list_dynamic_flight <- vector(mode = "list", length = length(N.FD)) # XXX start here
+nbdaData_list_dynamic_flight <- vector(mode = "list", length = length(N.FD))
 for(i in 1:length(nbdaData_list_dynamic_flight)){
   carcass <- carcIDs[i]
   nbdaData_list_dynamic_flight[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
@@ -236,7 +237,7 @@ getmodstats <- function(mod){
                      aic = mod@aic,
                      aicc = mod@aicc,
                      varNames = mod@varNames,
-                     outputPar = mod@outputPar,
+                     outputPar = mod@outputPar, #XXX this will need to change once the model has more params, but for now it's length 1, conveniently.
                      se = mod@se,
                      propsolve = ps)
     return(df)}, 
@@ -267,15 +268,15 @@ summaries <- bind_rows(summaries_static, summaries_dynamic, summaries_static_aso
 # Get confidence intervals (only for the social models)
 ## This is the tricky part--in order to find the confidence intervals, we have to manually visualize the plots. Luckily, there aren't too many of them.
 search_roost <- data.frame(type = c(rep("dynamic", length(Mods_N.RD_So)),
-                              rep("static", length(Mods_N.RS_So))),
-                     lower_min = NA,
-                     lower_max = NA,
-                     upper_min = NA,
-                     upper_max = NA,
-                     ci_lower = NA,
-                     ci_upper = NA,
-                     carcID = c(carcIDs, carcIDs),
-                     network = "roost")
+                                    rep("static", length(Mods_N.RS_So))),
+                           lower_min = NA,
+                           lower_max = NA,
+                           upper_min = NA,
+                           upper_max = NA,
+                           ci_lower = NA,
+                           ci_upper = NA,
+                           carcID = c(carcIDs, carcIDs),
+                           network = "roost")
 
 search_flight <- data.frame(type = rep("dynamic", length(Mods_N.RD_So)),
                             lower_min = NA,
@@ -288,11 +289,14 @@ search_flight <- data.frame(type = rep("dynamic", length(Mods_N.RD_So)),
                             network = "flight")
 
 ## Dynamic models (roosting)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[1]], range = c(0,2.5))
+plotProfLik(which = 1, model = Mods_N.RD_So[[1]], range = c(0,1.5))
 search_roost[1,2:5] <- c(0, 0.2, 0.4, 0.6)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[2]], range = c(0,2.5))
+profLikCI(which = 1, model = Mods_N.RD_So[[1]],
+          lowerRange = c(0, 0.2),
+          upperRange = c(0.5, 1)) # XXX this is an example of a thing i need to watch out for--make sure the lower and upper bounds are on the correct side of the minimum, otherwise it won't find them correctly.
+plotProfLik(which = 1, model = Mods_N.RD_So[[2]], range = c(0,2.5))
 search_roost[2,2:5] <- c(0, 0.2, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[3]], range = c(20,30))
+plotProfLik(which = 1, model = Mods_N.RD_So[[3]], range = c(20,30))
 search_roost[3,2:5] <- c(NA, NA, 24, 28)
 #plotProfLik(which = 1, model = Mods_N.RD_So[[4]], range = c(0, 1))
 search_roost[4,2:5] <- c(NA, NA, 0, 0.2)
@@ -336,7 +340,8 @@ search_roost[21,2:5] <- c(NA, NA, 0, 0.5)
 search_roost[22,2:5] <- c(NA, NA, 0, 0.5)
 #plotProfLik(which = 1, model = Mods_N.RD_So[[23]], range = c(0, 2.5))
 search_roost[23,2:5] <- c(0, 0.5, 2, 2.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[24]], range = c(0, 2.5))
+plotProfLik(which = 1, model = Mods_N.RD_So[[24]], range = c(0, 5))
+search_roost[24,2:5] <- c(NA, NA, 2, 4)
 #plotProfLik(which = 1, model = Mods_N.RD_So[[25]], range = c(0, 2))
 search_roost[25,2:5] <- c(0, 0.25, 0.5, 1)
 #plotProfLik(which = 1, model = Mods_N.RD_So[[26]], range = c(0, 2))
@@ -515,7 +520,7 @@ summaries %>%
 test <- summaries %>%
   filter(type == "dynamic", soc == "social", !is.na(sig_ci)) 
 
-mylogit <- glm(sig_ci ~ network + n_detections + carcassWeight, data = test, family = "binomial")
+mylogit <- glm(sig_ci ~ network + n_detections + carcassWeight, data = test, family = "binomial") # XXX should probably standardize detections and carcassWeight
 summary(mylogit)
 
 newdata <- as.data.frame(expand.grid("n_detections" = seq(from = 3, to = 69, by = 11), "carcassWeight" = seq(from = 30, to = 550, by = 10), "network" = c("flight", "roost")))
@@ -533,7 +538,7 @@ newdata %>%
        color = "Network")+
   geom_point(data = test %>% mutate(p = ifelse(sig_ci, 1, 0)), 
              aes(x = carcassWeight, y = p, pch = network), size = 3)+
-  scale_shape_manual(name = "Network", values = c(1, 8))
+  scale_shape_manual(name = "Network", values = c(21, 8))
 
 # So, heavier carcasses are less likely to show a signal of social transmission; roost network is less likely to show social transmission; more detections is more likely to show a signal of social transmission. 
 
@@ -545,10 +550,14 @@ test %>%
   geom_point(size = 2, aes(y = propsolve))+
   scale_color_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   theme_minimal()+
-  scale_shape_manual(name = "Network", values = c(1, 8))+
-  geom_smooth(method = "lm", aes(y = propsolve))+
+  scale_shape_manual(name = "Network", values = c(19, 8))+
+  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2, linetype = 2)+
+  scale_fill_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   labs(y = "Proportion of detections by social transmission",
        x = "Carcass weight (kg)")
+
+mod1 <- lm(propsolve ~ carcassWeight + network, data = test[test$sig_ci,])
+summary(mod1)
 
 test %>%
   filter(sig_ci) %>%
@@ -556,11 +565,15 @@ test %>%
   geom_segment(aes(x = n_detections, y = propsolve_lower, yend = propsolve_upper))+
   geom_point(size = 2, aes(y = propsolve))+
   scale_color_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
+  scale_fill_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   theme_minimal()+
-  scale_shape_manual(name = "Network", values = c(1, 8))+
-  geom_smooth(method = "lm", aes(y = propsolve))+
+  scale_shape_manual(name = "Network", values = c(19, 8))+
+  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2, linetype = 2)+
   labs(y = "Proportion of detections by social transmission",
        x = "Number of detections") # we see that number of detections affected how likely we were to detect a social effect, but not the magnitude of the social effect once detected.
+
+mod2 <- lm(propsolve ~ n_detections + network, data = test[test$sig_ci,])
+summary(mod2)
 
 # I'm curious: does more detections decrease the CI size?
 test %>%
@@ -569,62 +582,278 @@ test %>%
   geom_point()+
   geom_smooth(method = "lm") # huh, unexpected effect on the size of the confidence interval here
 
-# XXX start here next time
-
-
-
-
-# Other ways of examining the models --------------------------------------
-# XXXXXXXXXXX
-# Comparing asocial and social
-## P-values: do we see social transmission? # XXX FIXME--WILL NEED NEW CODE for long format
-summaries$p_DAso.DSo <- map2_dbl(Mods_N.RD_Aso, Mods_N.RD_So, ~{
-  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
+# Adding ILVs -------------------------------------------------------------
+length(ilvs)
+my_ilvs <- ilvs[has_sightings][has_3_sightings]
+my_ilvs <- map(my_ilvs, ~{
+  vec <- 0:((.x %>% dplyr::select(contains("roost_")) %>% length())-1)
+  new_names <- paste0("dist_roost_night_", vec)
+  names(.x)[2:(length(vec)+1)] <- new_names
+  return(.x)
 })
-summaries$p_SAso.SSo <- map2_dbl(Mods_N.RS_Aso, Mods_N.RS_So, ~{
-  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
-})
-
-# Comparing static and dynamic
-## P-values: which is a better fit, static or dynamic? # XXX FIXME
-summaries$p_S.D <- map2_dbl(Mods_N.RD_Aso, Mods_N.RD_So, ~{
-  tryCatch({pchisq(2*(.x@loglik - .y@loglik), df = 1, lower.tail = F)}, error = function(msg){NA})
+ilvs_lists <- map2(my_ilvs, days_vec, ~{
+  lst <- vector(mode = "list", length = length(.y))
+  for(i in 1:length(lst)){
+    col <- paste0("dist_roost_night_", .y[i]-1)
+    lst[[i]] <- .x %>%
+      dplyr::select(local_identifier, age_group, "dist_roost" = any_of(col))
+  }
+  return(lst)
 })
 
+# Need to make a matrix where each row is an individual and each column is an acquisition event. Then we fill it with the values.
+roost_carc_distances <- map2(n_indivs, oas, 
+                             ~matrix(NA, nrow = .x, ncol = length(.y)))
+age_groups <- map2(n_indivs, oas,
+                   ~matrix(NA, nrow = .x, ncol = length(.y)))
+for(i in 1:length(age_groups)){ # loop on carcasses
+  ag <- age_groups[[i]]
+  rcd <- roost_carc_distances[[i]]
+  for(j in 1:nrow(ag)){ # loop on individuals
+    ag[j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))}, error = function(msg){NA})
+    rcd[j,] <- tryCatch({map_dbl(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))}, error = function(msg){NA})
+  }
+  roost_carc_distances[[i]] <- rcd
+  age_groups[[i]] <- ag
+  cat("done with carcass ", i, "\n")
+}
 
-summaries %>%
-  mutate(sig = ifelse(p_DAso.DSo <= 0.05, T, F)) %>%
-  filter(!is.na(sig)) %>%
-  ggplot(aes(x = diff_DAso.DSo, y = carcID))+
-  geom_point(aes(shape = sig), size = 2)+
-  scale_shape_manual(name = "Evidence for\nsoc.transmission?\n(alpha = 0.05)", 
-                     values = c(1, 19))+
+# Check for NA values
+map_dbl(roost_carc_distances, ~round(sum(is.na(.x))/length(.x), 2)) %>%  hist() # a very small proportion of values are NA, presumably when we didn't have distances to the carcass available.
+# Where we have NAs, let's set them to the average value for the rest of the matrix.
+
+mns_non_NAs <- map_dbl(roost_carc_distances, ~mean(.x[!is.na(.x)]))
+roost_carc_distances <- map2(roost_carc_distances, mns_non_NAs, ~{
+  .x[is.na(.x)] <- .y
+  return(.x)
+})
+map_lgl(roost_carc_distances, anyNA) # 24 still has NAs because it's all NA, but that's ok.
+
+std_roost_carc_distances <- map(roost_carc_distances, ~{
+  (.x-mean(.x))/sd(.x)
+})
+
+# Change the age groups to 0s and 1s
+age_groups <- map(age_groups, ~{
+  .x[.x == "01_juv_sub"] <- 0
+  .x[.x == "02_adult"] <- 1
+  .x <- apply(.x, 2, as.numeric)
+  return(.x)
+})
+
+hist(age_groups[[1]]) 
+#Since std_roost_carc_distances is centered on 0, and juveniles/subadults = 0, adults=1, the baseline asocial rate is a juvenile/subadult of mean distance from the roost to the carcass
+#Therefore s is estimated relative to this baseline
+
+age_groups_reversed <- map(age_groups, ~{ # in case we need a reversed one
+  +(!.x)
+})
+
+# THIS IS SO DUMB! Because of the way the code is written for the nbdaData function, I need to create global environment variable that I can then refer to by name for the ILVs. I can't pass an *object* into the function for the ILV matrices. grrrrrrr
+for(i in 1:length(std_roost_carc_distances)){
+  name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+  name2 <- quo_name(paste0("age_groups_", i))
+  assign(name1, std_roost_carc_distances[[i]], envir = .GlobalEnv)
+  assign(name2, age_groups[[i]], envir = .GlobalEnv)
+}
+
+nbdaData_list_fd_ilvs <- vector(mode = "list", length = length(N.FD))
+for(i in 1:length(nbdaData_list_fd_ilvs)){
+  ag_name <- paste0("age_groups_", i)
+  srcd_name <- paste0("std_roost_carc_distances_", i)
+  ilvs_to_use <- c(ag_name, srcd_name)
+  carcass <- carcIDs[i]
+  nbdaData_list_fd_ilvs[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                                         assMatrix = N.FD[[i]],
+                                         orderAcq = oas[[i]],
+                                         assMatrixIndex = assMatrixIndices[[i]],
+                                         asoc_ilv = ilvs_to_use,
+                                         asocialTreatment = "timevarying")
+  cat("done with", i, "\n")
+}
+
+# Make the models
+Mods_N.FD_addI.TC_I.TV_So <- map(nbdaData_list_fd_ilvs, ~{
+  tryCatch({oadaFit(.x)}, error = function(msg){NULL})
+})
+
+summaries_with_ilvs <- list_rbind(map(Mods_N.FD_addI.TC_I.TV_So, getmodstats) %>% setNames(carcIDs), names_to = "carcID") %>% mutate(type = "dynamic", network = "flight")
+
+search_with_ilvs <- data.frame(type = rep("dynamic", length(Mods_N.FD_addI.TC_I.TV_So)),
+                            lower_min = NA,
+                            lower_max = NA,
+                            upper_min = NA,
+                            upper_max = NA,
+                            ci_lower = NA,
+                            ci_upper = NA,
+                            carcID = carcIDs,
+                            network = "flight")
+
+plotProfLik(which = 1, model = Mods_N.FD_addI.TC_I.TV_So[[12]], range = c(0, 2))
+search_with_ilvs[35,2:5] <- c(NA, NA, 20, 40)
+search_with_ilvs[34,2:5] <- c(NA, NA, 100, 200)
+search_with_ilvs[33,2:5] <- c(NA, NA, 1, 2)
+search_with_ilvs[32,2:5] <- c(NA, NA, 0, 1)
+search_with_ilvs[31,2:5] <- c(NA, NA, 0, 1)
+search_with_ilvs[30,2:5] <- c(NA, NA, 100, 200)
+search_with_ilvs[29,2:5] <- c(0, 5, 15, 20)
+search_with_ilvs[28,2:5] <- c(NA, NA, 1, 2)
+search_with_ilvs[27,2:5] <- c(0, 1, 6, 8)
+search_with_ilvs[26,2:5] <- c(NA, NA, 3, 5)
+search_with_ilvs[25,2:5] <- NA
+search_with_ilvs[24,2:5] <- c(NA, NA, 8,12)
+search_with_ilvs[23,2:5] <- c(0, 5, 20, 30)
+search_with_ilvs[22,2:5] <- c(NA, NA, 0, 1)
+search_with_ilvs[21,2:5] <- c(0, 2, 4, 6)
+search_with_ilvs[20,2:5] <- NA
+search_with_ilvs[19,2:5] <- c(NA, NA, 700, 800)
+search_with_ilvs[18,2:5] <- NA
+search_with_ilvs[17,2:5] <- c(0, 20, 9000, 12000)
+search_with_ilvs[16,2:5] <- c(NA, NA, 0.1, 0.2)
+search_with_ilvs[15,2:5] <- c(0, 10, 60, 80)
+search_with_ilvs[14,2:5] <- c(NA, NA, 400, 600)
+search_with_ilvs[13,2:5] <- c(NA, NA, 0.1, 0.3)
+search_with_ilvs[12,2:5] <- c(NA, NA, 1, 2)
+search_with_ilvs[11,2:5] <- c(0, 0.1, 1, 3)
+search_with_ilvs[10,2:5] <- c(0, 0.1, 0.4, 0.6)
+search_with_ilvs[9,2:5] <- c(0, 1, 5, 10)
+search_with_ilvs[8,2:5] <- c(NA, NA, 3, 5)
+search_with_ilvs[7,2:5] <- c(0, 1, NA, NA)
+search_with_ilvs[6,2:5] <- NA
+search_with_ilvs[5,2:5] <- NA
+search_with_ilvs[4,2:5] <- NA
+search_with_ilvs[3,2:5] <- c(NA, NA, 2, 3)
+search_with_ilvs[2,2:5] <- c(0, 1, 1.5, 3)
+search_with_ilvs[1,2:5] <- c(0, 100, 350, 450)
+
+for(i in 1:length(Mods_N.FD_addI.TC_I.TV_So)){
+  if(is.na(search_with_ilvs[i,2]) & !is.na(search_with_ilvs[i,4])){
+    ci <- profLikCI(which = 1, model = Mods_N.FD_addI.TC_I.TV_So[[i]],
+                    upperRange = search_with_ilvs[i,4:5])
+  }else if(!is.na(search_with_ilvs[i,2]) & !is.na(search_with_ilvs[i,4])){
+    ci <- profLikCI(which = 1, model = Mods_N.FD_addI.TC_I.TV_So[[i]],
+                    lowerRange = search_with_ilvs[i,2:3],
+                    upperRange = search_with_ilvs[i,4:5])
+  }else{
+    ci <- c(NA, NA)
+  }
+  search_with_ilvs[i,6:7] <- ci 
+  cat("done with ", i, "\n")
+}
+
+# XXX why do these not match up to the points? Check on this. START HERE
+solveprops_ilvs_lower <- map2_dbl(search_with_ilvs$ci_lower, Mods_N.FD_addI.TC_I.TV_So, ~{
+  tryCatch({nbdaPropSolveByST(par = c(.x, .y@outputPar[2],
+                            .y@outputPar[3]), 
+                    nbdadata = .y@nbdadata)[1]}, error = function(msg){NA})
+})
+
+solveprops_ilvs_upper <- map2_dbl(search_with_ilvs$ci_upper, Mods_N.FD_addI.TC_I.TV_So, ~{
+  tryCatch({nbdaPropSolveByST(par = c(.x, .y@outputPar[2],
+                                      .y@outputPar[3]), 
+                              nbdadata = .y@nbdadata)[1]}, error = function(msg){NA})
+})
+
+search_with_ilvs$propsolve_lower <- solveprops_ilvs_lower
+search_with_ilvs$propsolve_upper <- solveprops_ilvs_upper
+
+search_with_ilvs <- search_with_ilvs %>%
+  mutate(sig_ci = ifelse(propsolve_lower > 0, TRUE, FALSE),
+         soc = "social")
+
+# join all these calculated conf int params to the overall model summary table
+sm <- summaries_with_ilvs %>%
+  filter(varNames == "1 Social transmission 1") %>%
+  left_join(search_with_ilvs, by = c("carcID", "soc", "type", "network")) %>%
+  left_join(years) # this includes info not just on years but also on carcass location, station, and weight, so we can analyze social transmission by carcass characteristics.
+
+sm %>%
+  filter(!is.na(sig_ci)) %>%
+  ggplot(aes(y = carcID))+
+  geom_segment(aes(x = propsolve_lower, xend = propsolve_upper, linetype = sig_ci))+
+  geom_point(aes(x = propsolve, pch = sig_ci), size = 2)+
+  scale_shape_manual(values = c(21, 19))+
+  scale_linetype_manual(values = c(3, 1))+
+  facet_wrap(~year, ncol = 1, scales = "free_y")+
   theme_minimal()+
   labs(y = "Carcass",
-       x = "AICC difference (asocial - social)",
-       title = "Social transmission",
-       subtitle = "Dynamic roost networks")+
-  theme(legend.position = "bottom")+
-  geom_vline(aes(xintercept = 0), color = "red", linetype = 2)
-# It's a bit odd that we're not seeing more evidence for social transmission! What does the evidence for social transmission look like over the static roost network?
-
-summaries %>%
-  mutate(sig_p = ifelse(p_SAso.SSo <= 0.05, T, F)) %>%
-  filter(!is.na(sig_p)) %>%
-  ggplot(aes(x = diff_SAso.SSo, y = carcID))+
-  geom_point(aes(shape = sig_p), size = 2)+
-  scale_shape_manual(name = "Evidence for\nsoc.transmission?\n(alpha = 0.05)", 
-                     values = c(1, 19))+
-  theme_minimal()+
-  labs(y = "Carcass",
-       x = "AICC difference (asocial - social)",
-       title = "Social transmission",
-       subtitle = "Static roost networks")+
-  theme(legend.position = "bottom")+
-  geom_vline(aes(xintercept = 0), color = "red", linetype = 2) # similar to the dynamic ones.
-
-# XXXXXXXXXXX
-# Next step: do the same thing for the static networks
-# Then do it with dynamic flight networks
+       x = "Proportion of detections by social transmission",
+       title = "Dynamic flight networks (and ILVs)")
 
 
+# For just one carcass, let's make all the possible models and see how it goes.
+models_to_make <- expand.grid(sd = c("static", "dynamic"), network = c("roost", "flight"), ilvs = c("age", "distance", "both", "neither"), social = c("social", "asocial")) # 32 models for the one carcass.
+
+# semi-randomly selected carcass 4877850 from among carcasses with at least 30 detections and a significant effect for at least one of the network models.
+datasets_to_make <- expand.grid(sd = c("static", "dynamic"), network = c("roost", "flight"), ilvs = c("age", "distance", "both", "neither")) # need 12 datasets, and then we'll use those to make a social and an asocial model for each
+
+# Before I start making these decisions, let's see if we have any evidence of age or distance actually making a difference to when individuals discover the carcass. No point in correcting for it if we don't think it'll affect things. We could also preemptively decide to use dynamic NBDA since that would describe what's happening better--it doesn't make sense to use static.
+fs <- map2(firsts_see[has_sightings][has_3_sightings], carcIDs, ~.x %>% mutate(carcID = .y))
+mi <- map2(my_ilvs, carcIDs, ~.x %>% mutate(carcID = .y))
+joined <- map2(mi, fs, left_join)
+all(map_dbl(joined, nrow) == map_dbl(my_ilvs, nrow)) # same rows as number of individuals in the ILVs, not the number of individuals that eventually detected the carcass, since not everyone did eventually detect the carcass.
+all(map_dbl(joined, nrow) == map_dbl(fs, nrow))
+joined_df <- purrr::list_rbind(joined)
+joined_df <- joined_df %>%
+  mutate(found_carcass = ifelse(!is.na(timestamp), TRUE, FALSE)) %>%
+  mutate(year = lubridate::year(dateOnly))
+
+# Are adults or juveniles more likely to find the carcass?
+## quick and dirty viz: proportion of adults that found the carcass vs. proportion of juveniles that found the carcass, for different carcasses
+joined_df %>%
+  group_by(carcID, age_group) %>%
+  summarize(prop_found_carcass = sum(found_carcass)/n()) %>%
+  ggplot(aes(x = age_group, y = prop_found_carcass, group = carcID))+
+  geom_point()+
+  geom_line() # no obvious pattern to what proportion of juveniles vs. adults found the carcass
+
+mod3 <- glmer(found_carcass ~ age_group + (1|carcID) 
+              #+ (1|local_identifier)
+              , data = joined_df, family = binomial)
+summary(mod3) # adults slightly less likely to find the carcass than juveniles. Effect basically disappears when we include a random effect of individual ID, but if anything it still trends negative. 
+
+# Do adults and juveniles differ in their time of arrival to the carcass?
+## This one is easier to visualize because time of arrival is continuous.
+joined_df %>%
+  filter(!is.na(year)) %>%
+  ggplot(aes(x = carcID, y = time_since_carcass, fill = age_group))+
+  geom_boxplot()+
+  theme_classic()+
+  facet_wrap(~year, scales = "free_x") # not clear from this viz whether juveniles or adults find the carcass earlier. Let's do a model
+
+mod4 <- lmer(as.numeric(time_since_carcass) ~ age_group + (1|carcID), data = joined_df)
+summary(mod4) # adults seem to find the carcass more quickly.
+
+# This is pointing to the need to include an effect of age in the models. Would it be better to use a continuous rather than categorical predictor? Which is better/fewer degrees of freedom?
+
+# Does distance from the carcass the night before affect how quickly you find the carcass?
+joined_df %>%
+  filter(!is.na(year)) %>%
+  ggplot(aes(x = dist_roost_night_0, y = time_since_carcass, col = carcID))+
+  geom_point()+
+  geom_smooth(method = "lm", alpha = 0.1)+
+  facet_wrap(~year)+
+  theme_classic()+
+  theme(legend.position = "none") # there does seem to be a positive trend--roosting farther away means you find the carcass later.
+# what about night 1?
+
+joined_df %>%
+  filter(!is.na(year)) %>%
+  ggplot(aes(x = dist_roost_night_1, y = time_since_carcass, col = carcID))+
+  geom_point()+
+  geom_smooth(method = "lm", alpha = 0.1)+
+  facet_wrap(~year)+
+  theme_classic()+
+  theme(legend.position = "none") # ooh, even more of a positive trend! Interesting. The causality might start going the other way at some point.
+
+# What about night 2?
+joined_df %>%
+  filter(!is.na(year)) %>%
+  ggplot(aes(x = dist_roost_night_2, y = time_since_carcass, col = carcID))+
+  geom_point()+
+  geom_smooth(method = "lm", alpha = 0.1)+
+  facet_wrap(~year)+
+  theme_classic()+
+  theme(legend.position = "none") # breaks down a bit.
+
+# but regardless, I also think it is important to include distance in the calculation here.
