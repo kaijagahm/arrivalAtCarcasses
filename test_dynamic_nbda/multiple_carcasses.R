@@ -500,6 +500,7 @@ summaries <- left_join(summaries, search, by = c("carcID", "soc", "type", "netwo
   left_join(years) # this includes info not just on years but also on carcass location, station, and weight, so we can analyze social transmission by carcass characteristics.
 
 # Plotting ----------------------------------------------------------------
+# (Post-hoc analysis)
 summaries %>%
   filter(type == "dynamic", soc == "social", !is.na(sig_ci)) %>%
   ggplot(aes(y = carcID, color = network))+
@@ -864,76 +865,6 @@ joined_df %>%
 # but regardless, I also think it is important to include distance in the calculation here.
 
 # Okay, it doesn't look like we can get rid of the ILVs. Maybe we can just use dynamic networks instead of static, since static doesn't make that much sense?
-
-# For just one carcass, let's make all the possible models and see how it goes.
-models_to_make <- expand.grid(sd = "dynamic", network = c("roost", "flight"), ilvs = c("age", "distance", "both", "neither"), social = c("social", "asocial")) # 16 models for the one carcass.
-
-datasets_to_make <- expand.grid(sd = "dynamic", network = c("roost", "flight"), ilvs = c("age", "distance", "both", "neither")) # need 8 datasets, and then we'll use those to make a social and an asocial model for each
-
-## Define function for making the datasets
-make_nbda_data <- function(idx, lbl, network, ilvs = "neither"){
-  # Define flight or roosting network
-  if(network == "flight"){
-    am <- N.FD[[idx]]
-  }else{
-    am <- N.RD[[idx]]
-  }
-  
-  # Define ILVs to use
-  ag_name <- paste0("age_groups_", idx)
-  srcd_name <- paste0("std_roost_carc_distances_", idx)
-
-  # Make data object with the chosen parts
-  if(ilvs %in% c("age", "distance", "both")){
-    if(ilvs == "age"){
-      ilvs_to_use <- ag_name
-    }else if(ilvs == "distance"){
-      ilvs_to_use <- srcd_name
-    }else{
-      ilvs_to_use <- c(ag_name, srcd_name)
-    }
-    dat <- nbdaData(label = lbl,
-             assMatrix = am,
-             orderAcq = oas[[idx]],
-             assMatrixIndex = assMatrixIndices[[idx]],
-             asoc_ilv = ilvs_to_use,
-             asocialTreatment = "timevarying"
-    )
-  }else if (ilvs == "neither"){
-    dat <- nbdaData(label = lbl,
-             assMatrix = am,
-             orderAcq = oas[[idx]],
-             assMatrixIndex = assMatrixIndices[[idx]],)
-  }
-  return(dat)
-}
-
-idx <- 29
-lbl <- paste0("Carcass ", idx)
-
-datasets <- vector(mode = "list", length = nrow(datasets_to_make))
-for(i in 1:length(datasets)){
- datasets[[i]] <- make_nbda_data(idx = idx, lbl = lbl, network = datasets_to_make$network[i], ilvs = datasets_to_make$ilvs[i])
-}
-map(datasets, str)
-
-## Make models
-mods_social <- map(datasets, ~{tryCatch({oadaFit(.x)}, error = function(msg){NULL})})
-mods_asocial <- map(datasets, ~{tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})})
-
-## Compare social and asocial
-map_dbl(mods_asocial, ~.x@aicc) - map_dbl(mods_social, ~.x@aicc) # for this particular carcass, all models show that the social model has more support than the asocial model, which is not surprising since this is one of the carcasses where we detected a social effect!
-
-## Look at the model summaries
-summaries_social <- list_rbind(map2(mods_social, datasets_to_make$network, ~getmodstats(.x) %>% mutate(network = .y))) %>%
-  mutate(carcID = carcIDs[[idx]],
-         sd = "dynamic")
-summaries_social # none of the output parameters are equal to 0, so we can keep all these models (this will not necessarily be true for the other carcasses)
-
-summaries_asocial <- list_rbind(map2(mods_asocial, datasets_to_make$network, ~getmodstats(.x) %>% mutate(network = .y))) %>%
-  mutate(carcID = carcIDs[[idx]],
-         sd = "dynamic")
-summaries_asocial # none of these are zero either, but I don't understand why there are no variables in the last one. Surely there should still be able to be an asocial model on a network without any ilvs? Oh I guess it's because by definition there is no social transmission. So that model still exists and has an aicc that can be compared, but it doesn't have a social parameter or any other variables. Fair enough!
 
 
 # Testing multimodel inference, per tutorial 7 ----------------------------
