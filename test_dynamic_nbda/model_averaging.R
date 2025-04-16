@@ -3,6 +3,34 @@
 # This will be important since we have a few possible ILVs to include and a few possible network models to try (flight, roosting, etc)
 
 # Going to start with just one carcass so we don't get overwhelmed, so I've moved this code out of the multiple_carcasses.R script.
+library(tidyverse)
+library(NBDA)
+library(here)
+
+# Load data
+load(here("test_dynamic_nbda/data/has_sightings.Rda"))
+load(here("test_dynamic_nbda/data/inpa_carcs.Rda"))
+load(here("test_dynamic_nbda/data/oa_see.Rda"))
+load(here("test_dynamic_nbda/data/firsts_see.Rda"))
+
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/roosts_bin_fixed_see.Rda"))
+load(here("test_dynamic_nbda/data/roosts_bin_nets_see.Rda"))
+load(here("test_dynamic_nbda/data/fl_cumulative_bin_nets_see.Rda"))
+
+load(here("test_dynamic_nbda/data/gps.Rda"))
+load(here("test_dynamic_nbda/data/ilvs.Rda"))
+
+# Reading in the objects exported from multiple_carcasses.R
+age_groups_29 <- readRDS(here("test_dynamic_nbda/data/age_groups_29.RDS"))
+std_roost_carc_distances_29 <- readRDS(here("test_dynamic_nbda/data/std_roost_carc_distances_29.RDS"))
+N.RD <- readRDS(here("test_dynamic_nbda/data/N.RD.RDS"))
+N.FD <- readRDS(here("test_dynamic_nbda/data/N.FD.RDS"))
+N.RS <- readRDS(here("test_dynamic_nbda/data/N.RS.RDS"))
+oas <- readRDS(here("test_dynamic_nbda/data/oas.RDS"))
+roost_mats_expanded <- readRDS(here("test_dynamic_nbda/data/roost_mats_expanded.RDS"))
+fl_mats <- readRDS(here("test_dynamic_nbda/data/fl_mats.RDS"))
+idx <- 29
 
 # Testing multimodel inference, per tutorial 7 ----------------------------
 ## To follow the tutorial, let's use one carcass (one diffusion) with one static network (static roost network) and two ILVs (age; distance on the first day from the carcass).
@@ -12,7 +40,7 @@ age <- cbind(age_groups_29[,1])
 dist <- cbind(std_roost_carc_distances_29[,1])
 asoc <- c("age", "dist")
 ## Create an object for the "unconstrained" model
-nd_unconstrained <- nbdaData(label = "test", assMatrix = N.RS[[29]], orderAcq = oas[[29]], asoc_ilv = asoc, int_ilv = asoc)
+nd_unconstrained <- nbdaData(label = "test", assMatrix = N.RS[[idx]], orderAcq = oas[[idx]], asoc_ilv = asoc, int_ilv = asoc)
 
 ## Fit and display the model
 mod_unc <- oadaFit(nd_unconstrained)
@@ -276,43 +304,44 @@ lowerLimitsByModel_addVmulti
 sum(lowerLimitsByModel_addVmulti$propST*lowerLimitsByModel_addVmulti$adjAkWeight)
 # [1] 0.2365941
 
-# XXX START HERE
 #############################################################################
 # TUTORIAL 7.4
 # MULTI-MODEL INFERENCE IN AN OADA WITH MULTIPLE NETWORKS
 # 1 diffusion
-# 2 static networks
+# 2 dynamic networks
 # 2 time constant ILVs
 #############################################################################
-
-
-#Read in the 2 social networks and order of acquisition vector as shown in Tutorial 3
-socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
-socNet2<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet2.csv"))
-oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
-
-#Load and process the ILVs as shown in Tutorial 2
-ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
-female<-cbind(ILVdata$female)
-male<-1-female
-age<-cbind(ILVdata$age)
-stAge<-(age-mean(age))/sd(age)
-asoc<-c("male","stAge")
-
 #In a multi-network NBDA, we need to combine our networks into an array
-#If all of our networks are static (do not change over time) this is a three-dimensional array of size
-#no. individuals x no.individuals x no.networks
-socNets<-array(NA,dim=c(30,30,2))
-#Then slot the networks into the array:
-socNets[,,1]<-socNet1
-socNets[,,2]<-socNet2
+#If we have dynamic (time-varying) networks we need to create a four dimensional array of size no. individuals x no.individuals x no.networks x number of time periods and provide an assMatrixIndex vector as shown in Tutorial 1.
+
+n_timeperiods <- dim(N.FD[[idx]])[4]
+n_indivs <- dim(N.FD[[idx]])[1]
+rme <- roost_mats_expanded[[idx]]
+fm <- fl_mats[[idx]]
+
+#Create the empty array
+N.RD_N.FD <- array(NA, dim = c(n_indivs, n_indivs, 2, n_timeperiods))
+#Slot in the network for each time period # XXX
+for(i in 1:length(rme)){
+  N.RD_N.FD[,,1,i] <- array(rme[[i]], dim = c(n_indivs, n_indivs, 1))
+  N.RD_N.FD[,,2,i] <- array(fm[[i]], dim = c(n_indivs, n_indivs, 1))
+}
+
+assMatrixIndex <- 1:length(oas[[idx]]) # already expanded the matrices
+
+nbdaData_multiNet <- nbdaData(label = paste0("Diffusion_", idx),
+                          assMatrix = N.RD_N.FD,
+                          orderAcq = oas[[idx]],  
+                          asoc_ilv = asoc,
+                          int_ilv = asoc,
+                          asocialTreatment = "timevarying", # I don't understand why this is "asocialTreatment" instead of "ilvsTreatment", since it seems to also apply to the multiplicative/interacting ILVs, but oh well. We need to specify this as time-varying because the default, constant, would assume that the ILVs do not change through time.
+                          assMatrixIndex = assMatrixIndex)
 
 #Then we go on to create our nbdaData object as before. Let us assume we are interested in the unconstrained model:
-nbdaData_multiNet<-nbdaData(label="ExampleDiffusion2",assMatrix=socNets,orderAcq = oa1,asoc_ilv = asoc,int_ilv = asoc )
 #Then fit the model:
 model1_multiNet<-oadaFit(nbdaData_multiNet)
 #And get the output:
-data.frame(Variable=model1_multiNet@varNames,MLE=model1_multiNet@outputPar,SE=model1_multiNet@se)
+data.frame(Variable=model1_multiNet@varNames,MLE=model1_multiNet@outputPar,SE=model1_multiNet@se) # XXX why are there NaN values in these models? I wonder if it has to do with the error things not working very well?
 
 #Let us assume we have 4 competing hypotheses about social transmission.
 #1. Transmission through network 1 only (s2=0)
@@ -326,8 +355,9 @@ data.frame(Variable=model1_multiNet@varNames,MLE=model1_multiNet@outputPar,SE=mo
 #3. 1 1
 #4. 1 2
 
-#We can fit models with each netcombo and compare the fit. However, we are unsure which ILVs to include, so we want to use multi-model inference
+#We can fit models with each netcombo and compare the fit. However, we are unsure which ILVs to include, so we want to use multi-model inference (KG: yes, this is exactly my situation!)
 #We need to set up a constraintsVectMatrix that considers each netcombo but also every combination of ILVs
+# We need six columns because length(model1_multiNet@outputPar is 6, because we're using two possible ILVs and allowing each one to be absent, additive, or multiplicative, I think.)
 
 constraintsVectMatrix<-rbind(
   #netcombo 1 0
@@ -652,138 +682,4 @@ lowerLimitsByModel_s2
 
 sum(lowerLimitsByModel_s2$propST*lowerLimitsByModel_s2$adjAkWeight)
 #[1] 0.0002323638
-
-#############################################################################
-# TUTORIAL 7.5
-# MULTI-MODEL INFERENCE IN A cTADA: INCLUDING A HOMOGENEOUS NETWORK
-# 1 diffusion
-# 1 static network
-# 2 time constant ILVs
-#############################################################################
-
-# We can include multiple networks in a TADA in the same way as described for an OADA in tutorial 7.4.
-# Furthermore, in a TADA, even when we only have one social network of interest, we may wish to include
-# a homogeneous network in our multi-model procedure (see tutorial 4.3).
-# If we have multiple diffusions and use a cTADA we may also want to include a group network (see tutorial
-# 6.5)
-# In this tutorial we show how to include a homogeneous network in a multi-model inference procedure for
-# a cTADA of a single diffusion. A group network could be included in a cTADA/ stratified OADA of multiple
-# diffusions in the same way.
-
-
-#We use the same data as for tutoral 7.3:
-#########################################
-#Read in the social network and order of acquisition vector as shown in Tutorials 1 and 2
-socNet1<-as.matrix(read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleStaticSocNet.csv"))
-socNet1<-array(socNet1,dim=c(30,30,1))
-oa1<-c(26,29,30,8,19,21,22,3,14,12,11,1,17,28,5,9,15,7,6,25,4,13,27,18,20,24,23,16,2,10)
-
-ILVdata<-read.csv(file="jane13307-sup-0001-supinfo/jane_13307_exampleTimeConstantILVs.csv")
-#Then extract each ILV
-female<-cbind(ILVdata$female)
-male<-1-female
-#females=0 males=1
-age<-cbind(ILVdata$age)
-#age in years
-#I am going to standardize age
-stAge<-(age-mean(age))/sd(age)
-
-asoc<-c("male","stAge")
-
-#Now in addition, we need a vector giving the times at which each individual acquired the behaviour:
-ta1<-c(234,252,262,266,273,296,298,310,313,326,332,334,334,337,338,340,343,367,374,376,377,393,402,405,407,407,435,472,499,567)
-#######################################
-
-#Now we add in the homogeneous network as a second network:
-dim(socNet1)
-socNets<-array(NA,dim=c(30,30,2))
-socNets[,,1]<-socNet1
-socNets[,,2]<-1
-
-
-#Create an object for the "unconstrained" model
-nbdaData_tada<-nbdaData(label="ExampleDiffusion2",assMatrix=socNets,orderAcq = oa1,asoc_ilv = asoc,int_ilv=asoc,timeAcq = ta1,endTime = 568)
-
-#Now we have an object with two networks- the first is the social network, the second the homogeneous network
-
-#Now for the model set, we consider all possible sets of ILVs in an unconstrained model for both social and
-#homogeneous networks and an asocial model too:
-
-constraintsVectMatrix<-rbind(
-  #social network models (1 in first slot, 0 in second)
-  c(1,0,0,0,0,0),
-  c(1,0,0,0,0,2),
-  c(1,0,0,0,2,0),
-  c(1,0,0,0,2,3),
-  c(1,0,0,2,0,0),
-  c(1,0,0,2,0,3),
-  c(1,0,0,2,3,0),
-  c(1,0,0,2,3,4),
-  c(1,0,2,0,0,0),
-  c(1,0,2,0,0,3),
-  c(1,0,2,0,3,0),
-  c(1,0,2,0,3,4),
-  c(1,0,2,3,0,0),
-  c(1,0,2,3,0,4),
-  c(1,0,2,3,4,0),
-  c(1,0,2,3,4,5),
-  #homogeneous network models (0 in first slot, 1 in second)
-  c(0,1,0,0,0,0),
-  c(0,1,0,0,0,2),
-  c(0,1,0,0,2,0),
-  c(0,1,0,0,2,3),
-  c(0,1,0,2,0,0),
-  c(0,1,0,2,0,3),
-  c(0,1,0,2,3,0),
-  c(0,1,0,2,3,4),
-  c(0,1,2,0,0,0),
-  c(0,1,2,0,0,3),
-  c(0,1,2,0,3,0),
-  c(0,1,2,0,3,4),
-  c(0,1,2,3,0,0),
-  c(0,1,2,3,0,4),
-  c(0,1,2,3,4,0),
-  c(0,1,2,3,4,5),
-  #asocial models
-  c(0,0,0,0,0,0),
-  c(0,0,1,0,0,0),
-  c(0,0,1,2,0,0),
-  c(0,0,0,1,0,0))
-
-#Again, in a TADA we likely want to consider different baseline functions too. 
-#To speed things up we will just consider the constant and weibull baseline functions here,
-#so we want to replicate the constraintsVectMartix above 2 times:
-constraintsVectMatrixAll<-rbind(constraintsVectMatrix,constraintsVectMatrix)
-
-#And we also need to provide a vector saying what baseline function each model will have.
-
-
-baselineVect<-rep(c("constant","weibull"),each=dim(constraintsVectMatrix)[1])
-
-#Check:
-cbind(baselineVect,constraintsVectMatrixAll)
-
-#To fit the set of models, we use
-modelSet_tada<-tadaAICtable(nbdadata = nbdaData_tada,constraintsVectMatrix =constraintsVectMatrixAll,baselineVect = baselineVect)
-
-
-#We can then get support for each combination of networks across all models
-networksSupport(modelSet_tada)
-#       support numberOfModels
-#0:0 0.02347081              8
-#0:1 0.03745207             32
-#1:0 0.93907712             32
-
-#Here we can see that the social network (1:0= 93.9%) has far more support than the homogeneous network (0:1= 3.7%) and the number of
-#models is the same making this a fair comparison. The ratio of support is
-0.93907712/0.03745207 
-#One could report this result as something like:
-# "25.1x more support for the social network than the homogeneous network, providing evidence that the diffusion follows the
-# social network."
-
-#One could then proceed to make inferences as in tutorial 7.3 above. Given the different scales of the networks, it would be reasonable
-#to refit the model set to just include the social network before calculating model-averaged estimates. However, if the support for
-#the homogeneous network is tiny (e.g. <0.1%) then it is unlikely to affect the model-averaged estimates at all.
-
-
 
