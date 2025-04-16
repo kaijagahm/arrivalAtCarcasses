@@ -791,7 +791,8 @@ fs <- map2(firsts_see[has_sightings][has_3_sightings], carcIDs, ~.x %>% mutate(c
 mi <- map2(my_ilvs, carcIDs, ~.x %>% mutate(carcID = .y))
 joined <- map2(mi, fs, left_join)
 all(map_dbl(joined, nrow) == map_dbl(my_ilvs, nrow)) # same rows as number of individuals in the ILVs, not the number of individuals that eventually detected the carcass, since not everyone did eventually detect the carcass.
-all(map_dbl(joined, nrow) == map_dbl(fs, nrow))
+all(map_dbl(joined, nrow) == map_dbl(fs, nrow)) # false
+
 joined_df <- purrr::list_rbind(joined)
 joined_df <- joined_df %>%
   mutate(found_carcass = ifelse(!is.na(timestamp), TRUE, FALSE)) %>%
@@ -860,3 +861,13 @@ joined_df %>%
 # Okay, it doesn't look like we can get rid of the ILVs. Maybe we can just use dynamic networks instead of static, since static doesn't make that much sense?
 
 # Next: move to model averaging, following the tutorial. See model_averaging.R.
+
+# Save the objects I'll need for this
+write_rds(age_groups_29, file = here("test_dynamic_nbda/data/age_groups_29.RDS"))
+write_rds(std_roost_carc_distances_29, file = here("test_dynamic_nbda/data/std_roost_carc_distances_29.RDS"))
+write_rds(N.RS, file = here("test_dynamic_nbda/data/N.RS.RDS"))
+write_rds(N.RD, file = here("test_dynamic_nbda/data/N.RD.RDS"))
+write_rds(N.FD, file = here("test_dynamic_nbda/data/N.FD.RDS"))
+write_rds(oas, file = here("test_dynamic_nbda/data/oas.RDS"))
+write_rds(roost_mats_expanded, file = here("test_dynamic_nbda/data/roost_mats_expanded.RDS"))
+write_rds(fl_mats, file = here("test_dynamic_nbda/data/fl_mats.RDS"))

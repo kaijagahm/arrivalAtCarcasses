@@ -323,8 +323,8 @@ fm <- fl_mats[[idx]]
 N.RD_N.FD <- array(NA, dim = c(n_indivs, n_indivs, 2, n_timeperiods))
 #Slot in the network for each time period # XXX
 for(i in 1:length(rme)){
-  N.RD_N.FD[,,1,i] <- array(rme[[i]], dim = c(n_indivs, n_indivs, 1))
-  N.RD_N.FD[,,2,i] <- array(fm[[i]], dim = c(n_indivs, n_indivs, 1))
+  N.RD_N.FD[,,1,i] <- array(rme[[i]], dim = c(n_indivs, n_indivs, 1)) # network 1 is roosting
+  N.RD_N.FD[,,2,i] <- array(fm[[i]], dim = c(n_indivs, n_indivs, 1)) # network 2 is flight
 }
 
 assMatrixIndex <- 1:length(oas[[idx]]) # already expanded the matrices
@@ -344,16 +344,16 @@ model1_multiNet<-oadaFit(nbdaData_multiNet)
 data.frame(Variable=model1_multiNet@varNames,MLE=model1_multiNet@outputPar,SE=model1_multiNet@se) # XXX why are there NaN values in these models? I wonder if it has to do with the error things not working very well?
 
 #Let us assume we have 4 competing hypotheses about social transmission.
-#1. Transmission through network 1 only (s2=0)
-#2. Transmission through network 2 only (s1=0)
-#3. Transmission through network 1 and network 2 at equal rates per unit connection (s1=s2)
-#4. Transmission through network 1 and network 2 at different rate (no constraint)
+#1. Transmission through network 1 only (s2=0) (1 = roosting)
+#2. Transmission through network 2 only (s1=0) (2 = flight)
+#3. Transmission through network 1 and network 2 at equal rates per unit connection (s1=s2) (roosting = flight)
+#4. Transmission through network 1 and network 2 at different rate (no constraint) (roosting != flight)
 
 #Each of these can be represented by different constraints between the s parameters, which we refer to as a network combination or netcombo:
-#1. 1 0
-#2. 0 1
-#3. 1 1
-#4. 1 2
+#1. 1 0 (roosting but not flight)
+#2. 0 1 (flight but not roosting)
+#3. 1 1 (roosting == flight)
+#4. 1 2 (roosting != flight)
 
 #We can fit models with each netcombo and compare the fit. However, we are unsure which ILVs to include, so we want to use multi-model inference (KG: yes, this is exactly my situation!)
 #We need to set up a constraintsVectMatrix that considers each netcombo but also every combination of ILVs
@@ -443,165 +443,86 @@ modelSet_multiNet<-oadaAICtable(nbdaData_multiNet,constraintsVectMatrix = constr
 
 networksSupport(modelSet_multiNet)
 
-#support numberOfModels
-#0:0 0.01065492              4
-#0:1 0.00818532             16
-#1:0 0.67992442             16
-#1:1 0.11457221             16
-#1:2 0.18666313             16
+# support numberOfModels
+# 0:0 1.521450e-07              4
+# 0:1 6.465641e-01             16
+# 1:0 1.854665e-06             16
+# 1:1 1.721005e-03             16
+# 1:2 3.517129e-01             16
+
+# Translating that out of scientific notation
+# 0:0 0.0000152145 %            4
+# 0:1 64.65641 %               16
+# 1:0 0.0001854665 %           16
+# 1:1 0.1721005 %              16
+# 1:2 35.17129 %               16
 
 #Note that we have equal numbers of models for each network combo save for asocial learning (0 0), so we can compare the support for different models
 #of social transmission. However, we recommend examining the CIs for s parameters to judge the evidence for social transmission versus asocial learning (see main text).
-#We can see strongest support (68%) for social transmission only through network 1, and second most (18.7%) for transmission of different strengths through each network
+#We can see strongest support (64.65%) for social transmission only through network 2 (flight), and second most (35.17%) for transmission of different strengths through each network (roosting and flight).
 
 #We can also get MAEs etc as before:
-
 rbind(
   support=variableSupport(modelSet_multiNet),
   MAE=modelAverageEstimates(modelSet_multiNet),
   USE=unconditionalStdErr(modelSet_multiNet))
 
-#              s1        s2   ASOC:male ASOC:stAge SOCIAL:male SOCIAL:stAge
-#support 0.9811598 0.3094207   0.5935977  0.3502696  0.22537376    0.3445204
-#MAE     3.6470815 0.1433855 -11.2021988 -0.3394773 -0.02000315    0.1031443
-#USE           NaN       NaN         NaN  0.5557081         NaN          NaN
+#                 s1       s2   ASOC:age  ASOC:dist SOCIAL:age SOCIAL:dist
+# support 0.35343576 0.999998  0.3879940  1.0000000  0.4982325   0.3175748
+# MAE     0.02975252 4.018881 -0.2005121 -2.0613338  0.4040631  -0.1262081
+# USE            NaN      NaN  0.1336602  0.3290568        NaN         NaN
 
 #The missing USEs are due to some models in which the SEs could not be derived. If we look at
 print(modelSet_multiNet)
-#We can see that the SEs are present in all the models with high weight, so it seems reasonable to get an approximate USE by replacing NAs and NaNs with the weighted mean across
-#all other models:
+#We can see that the SEs are present in all the models with high weight, so it seems reasonable to get an approximate USE by replacing NAs and NaNs with the weighted mean across all other models:
 
 rbind(
   support=variableSupport(modelSet_multiNet),
   MAE=modelAverageEstimates(modelSet_multiNet),
   USE=unconditionalStdErr(modelSet_multiNet,nanReplace = T))
 
-#              s1        s2     ASOC:male    ASOC:stAge SOCIAL:male SOCIAL:stAge
-#support  0.9811598 0.3094207  5.935977e-01  0.3502696  0.22537376    0.3445204
-#MAE      3.6470815 0.1433855 -1.120220e+01 -0.3394773 -0.02000315    0.1031443
-#USE     36.0285332 1.0059692  7.310227e+07  0.5557081  0.14394848    0.1284004
+#                  s1        s2   ASOC:age  ASOC:dist SOCIAL:age SOCIAL:dist
+# support 0.353435757  0.999998  0.3879940  1.0000000  0.4982325  0.31757481
+# MAE     0.029752517  4.018881 -0.2005121 -2.0613338  0.4040631 -0.12620806
+# USE     0.008229083 12.204649  0.1336602  0.3290568 16.0207377  0.09694897
 
-#Averaged across models we can see that s1 is estimated to be considerably greater than s2.
+#Averaged across models we can see that s2 (flight) is estimated to be considerably greater than s1 (roosting). (KG: but the SE is really high for s2, so I don't know...)
+
 #We would recommend presenting the 95% CI for s1 and s2 in the best model in which they are present
 #and the 95% CI for s1-s2 in the best model in which they are both present and unconstrained.
 
-#We can check the sensitivity of the 95% CIs for s1 to model selection uncertainty as before:
+#We can check the sensitivity of the 95% CIs for s2 to model selection uncertainty as before:
 
-lowerLimitsByModel<-multiModelLowerLimits(which=1,aicTable = modelSet_multiNet,conf=0.95)
-lowerLimitsByModel
+lowerLimitsByModel<-multiModelLowerLimits(which=2,aicTable = modelSet_multiNet,conf=0.95) # yeesh, this takes forever!!
+lowerLimitsByModel 
+# Make a plot (it will only show the scenarios where s2 is not constrained to 0, so 0:1, 1:1, and 1:2)
+lowerLimitsByModel %>%
+  ggplot(aes(x = factor(model), col = netCombo))+
+  geom_point(aes(y = propST))+
+  geom_segment(aes(y = lowerCI, yend = propST))+
+  theme_minimal()+
+  labs(title = "Social transmission on the roost network",
+       subtitle = "Lower limits by model",
+       y = "Proportion social transmission",
+       x = "Model")+
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank()) # Uhhh why is this showing nonsensical results? Why are the lower limits of the CIs *higher* than the estimates? What am I missing?
 
-#   model netCombo      lowerCI  propST deltaAICc akaikeWeight  adjAkWeight cumulAdjAkWeight
-#1      9      1:0 3.899414e-01 0.53571 0.0000000 0.1315365430 0.1340623086        0.1340623
-#2      1      1:0 3.007326e-01 0.47783 0.8673898 0.0852501433 0.0868871171        0.2209494
-#3     13      1:0 4.020928e-01 0.54412 1.1352833 0.0745628988 0.0759946561        0.2969441
-#4     10      1:0 4.086640e-01 0.54993 1.2875510 0.0690968545 0.0704236527        0.3673677
-#5      2      1:0 2.690855e-01 0.45299 1.9136852 0.0505236774 0.0514938334        0.4188616
-#6     14      1:0 1.452914e-01 0.38811 2.1230682 0.0455017414 0.0463754662        0.4652370
-#7     11      1:0 9.396559e-02 0.30242 2.4186965 0.0392494122 0.0400030796        0.5052401
-#8     57      1:2 3.743582e-01 0.73650 2.4786325 0.0380906356 0.0388220522        0.5440622
-#9      5      1:0 4.037247e-01 0.54338 2.5009361 0.0376682150 0.0383915203        0.5824537
-#10     3      1:0 3.522655e-01 0.51316 2.8398628 0.0317964081 0.0324069629        0.6148606
-#11     6      1:0 5.757081e-02 0.23110 3.0352408 0.0288371449 0.0293908759        0.6442515
-#12    49      1:2 3.007326e-01 0.47783 3.1689771 0.0269719152 0.0274898301        0.6717414
-#13    41      1:1 1.573432e-01 0.41185 3.5213567 0.0226148409 0.0230490912        0.6947904
-#14    15      1:0 1.242905e-01 0.34397 3.7513244 0.0201584287 0.0205455110        0.7153360
-#15    61      1:2 3.639542e-01 0.74839 3.8122064 0.0195540321 0.0199295088        0.7352655
-#16    12      1:0 4.061835e-02 0.26161 3.9587446 0.0181725536 0.0185215031        0.7537870
-#17    58      1:2 4.066797e-01 0.74767 3.9644741 0.0181205685 0.0184685197        0.7722555
-#18    45      1:1 1.856705e-01 0.50556 4.0029245 0.0177755243 0.0181168501        0.7903723
-#19    33      1:1 1.274416e-02 0.04379 4.1942219 0.0161540980 0.0164642891        0.8068366
-#20     4      1:0 2.374518e-01 0.43650 4.2344673 0.0158322823 0.0161362939        0.8229729
-#21    50      1:2 2.690855e-01 0.46200 4.3923177 0.0146307554 0.0149116953        0.8378846
-#22     7      1:0 4.763377e-01 0.58550 4.6267354 0.0130125853 0.0132624530        0.8511471
-#23    53      1:2 4.031556e-01 0.54471 4.9795686 0.0109080429 0.0111174992        0.8622646
-#24    16      1:0 1.909823e-02 0.24849 5.0137907 0.0107229829 0.0109288857        0.8731935
-#25    62      1:2 1.452915e-01 0.45126 5.0230682 0.0106733566 0.0108783065        0.8840718
-#26    59      1:2 9.396390e-02 0.61701 5.0956195 0.0102931120 0.0104907604        0.8945625
-#27    51      1:2 3.522655e-01 0.52724 5.3184952 0.0092076724 0.0093844782        0.9039470
-#28    42      1:1 1.565209e-01 0.41558 5.5865516 0.0080527119 0.0082073401        0.9121543
-#29     8      1:0 1.176647e-02 0.19174 5.5990505 0.0080025438 0.0081562087        0.9203105
-#30    54      1:2 5.757082e-02 0.29719 5.7121639 0.0075625072 0.0077077225        0.9280183
-#31    37      1:1 5.059767e-02 0.14921 5.7482011 0.0074274614 0.0075700836        0.9355884
-#32    46      1:1 7.603493e-02 0.37244 5.9165026 0.0068280110 0.0069591225        0.9425475
-#33    43      1:1 2.559226e-03 0.52095 5.9343480 0.0067673575 0.0068973043        0.9494448
-#34    34      1:1 1.081990e-02 0.15035 6.1186879 0.0061714929 0.0062899979        0.9557348
-#36    35      1:1 9.875455e-03 0.15061 6.4670343 0.0051849882 0.0052845504        0.9610193
-#37    47      1:1 2.528128e-02 0.55149 6.5904721 0.0048746518 0.0049682549        0.9659876
-#38    63      1:2 1.242834e-01 0.64277 6.6513244 0.0047285684 0.0048193664        0.9708070
-#39    60      1:2 4.062878e-02 0.57001 6.8586465 0.0042629502 0.0043448074        0.9751518
-#40    52      1:2 2.374518e-01 0.48312 6.9113904 0.0041519973 0.0042317240        0.9793835
-#41    38      1:1 4.534872e-05 0.11161 7.2380830 0.0035262790 0.0035939906        0.9829775
-#42    55      1:2 4.753915e-01 0.58807 7.3036585 0.0034125351 0.0034780626        0.9864555
-#43    44      1:1 6.649519e-05 0.51734 8.0635604 0.0023338155 0.0023786295        0.9888342
-#44    64      1:2 1.909815e-02 0.33128 8.1659646 0.0022173270 0.0022599041        0.9910941
-#45    39      1:1 4.755244e-02 0.22975 8.1991606 0.0021808276 0.0022227038        0.9933168
-#49    48      1:1 6.307494e-05 0.28074 8.4117525 0.0019609096 0.0019985630        0.9953153
-#50    56      1:2 1.176656e-02 0.22252 8.4990505 0.0018771590 0.0019132042        0.9972285
-#51    36      1:1 3.834547e-02 0.25710 8.5969567 0.0017874792 0.0018218024        0.9990503
-#53    40      1:1 7.916526e-05 0.16341 9.8999189 0.0009317649 0.0009496567        1.0000000
-
-#All 95% CI are above zero, adding to our confidence that we have evidence for social transmission through network 1
-
+# XXX were their CI "lower limits" also above the estimates? Maybe I'm misinterpreting what these values represent? Going to look at the tutorial output to check.
+# I'm not misinterpreting--the tutorial output clearly shows that the CI minima are lower than the estimates. So what is going on in our example here? Data bad? Something up with the scaling? Or is this simply an indication that there is not support for social transmission?
+# Some of the CI's point down the way they should, but that's only in the 1:1 scenario, and we've already seen that we have very low support for that scenario.
+# Maybe this would be solved by just first testing it against the asocial model, and then moving on to this only if there is support for social transmission at all. I don't really understand how to figure that out, though.
 
 #We can obtain a model averaged lower-limit for propST as follows:
 
 sum(lowerLimitsByModel$propST*lowerLimitsByModel$adjAkWeight)
-#[1] 0.5473627
+#[1] 0.3988139 # yeah, so this is once again quite a bit higher than the vast majority of our actual estimates.
 
-#However, note that this includes models with netCombo= 1 1- i.e. one in which the value of s1 is constrained to be = s2. 
-#Our preferred approach is to refit the model set including only those models in which the value of s1 is unconstrained, and re-run the exercise:
+#However, note that this includes models with netCombo= 1 1- i.e. one in which the value of s2 is constrained to be = s1. 
+#Our preferred approach is to refit the model set including only those models in which the value of s2 is unconstrained, and re-run the exercise:
 
 
 constraintsVectMatrixs1<-rbind(
-  #netcombo 1 0
-  c(1,0,0,0,0,0),
-  c(1,0,0,0,0,2),
-  c(1,0,0,0,2,0),
-  c(1,0,0,0,2,3),
-  c(1,0,0,2,0,0),
-  c(1,0,0,2,0,3),
-  c(1,0,0,2,3,0),
-  c(1,0,0,2,3,4),
-  c(1,0,2,0,0,0),
-  c(1,0,2,0,0,3),
-  c(1,0,2,0,3,0),
-  c(1,0,2,0,3,4),
-  c(1,0,2,3,0,0),
-  c(1,0,2,3,0,4),
-  c(1,0,2,3,4,0),
-  c(1,0,2,3,4,5),
-  
-  #netcombo 1 2
-  c(1,2,0,0,0,0),
-  c(1,2,0,0,0,3),
-  c(1,2,0,0,3,0),
-  c(1,2,0,0,3,4),
-  c(1,2,0,3,0,0),
-  c(1,2,0,3,0,4),
-  c(1,2,0,3,4,0),
-  c(1,2,0,3,4,5),
-  c(1,2,3,0,0,0),
-  c(1,2,3,0,0,4),
-  c(1,2,3,0,4,0),
-  c(1,2,3,0,4,5),
-  c(1,2,3,4,0,0),
-  c(1,2,3,4,0,5),
-  c(1,2,3,4,5,0),
-  c(1,2,3,4,5,6))
-
-modelSet_s1<-oadaAICtable(nbdadata = nbdaData_multiNet,constraintsVectMatrix =constraintsVectMatrixs1)
-lowerLimitsByModel_s1<-multiModelLowerLimits(which=1,aicTable = modelSet_s1,conf=0.95)
-lowerLimitsByModel_s1
-
-sum(lowerLimitsByModel_s1$propST*lowerLimitsByModel_s1$adjAkWeight)
-#[1] 0.5857381
-
-#Giving a model-averaged lower limit of 58.6% of events occurring as a result of social transmission via network 1
-
-
-#We can now do the same for s2:
-
-constraintsVectMatrixs2<-rbind(
   #netcombo 0 1
   c(0,1,0,0,0,0),
   c(0,1,0,0,0,2),
@@ -638,48 +559,23 @@ constraintsVectMatrixs2<-rbind(
   c(1,2,3,4,5,0),
   c(1,2,3,4,5,6))
 
-modelSet_s2<-oadaAICtable(nbdadata = nbdaData_multiNet,constraintsVectMatrix =constraintsVectMatrixs2)
-
+modelSet_s2<-oadaAICtable(nbdadata = nbdaData_multiNet,constraintsVectMatrix =constraintsVectMatrixs1)
 lowerLimitsByModel_s2<-multiModelLowerLimits(which=2,aicTable = modelSet_s2,conf=0.95)
-lowerLimitsByModel_s2
-
-#model netCombo    lowerCI  propST  deltaAICc akaikeWeight  adjAkWeight cumulAdjAkWeight
-#1     25      1:2 0.00000000 0.00000  0.0000000 0.1954885179 0.1954885179        0.1954885
-#2     17      1:2 0.00000000 0.00000  0.6903446 0.1384250918 0.1384250918        0.3339136
-#3     29      1:2 0.00000000 0.00000  1.3335739 0.1003550795 0.1003550795        0.4342687
-#4     26      1:2 0.00000000 0.00000  1.4858416 0.0929982664 0.0929982664        0.5272670
-#5     18      1:2 0.00000000 0.00000  1.9136852 0.0750878699 0.0750878699        0.6023548
-#6     21      1:2 0.00000000 0.00000  2.5009361 0.0559821884 0.0559821884        0.6583370
-#7     30      1:2 0.00000000 0.00000  2.5444357 0.0547777329 0.0547777329        0.7131147
-#8     27      1:2 0.00000000 0.00000  2.6169871 0.0528262440 0.0528262440        0.7659410
-#9     19      1:2 0.00000000 0.00000  2.8398627 0.0472555577 0.0472555577        0.8131965
-#10    22      1:2 0.00000000 0.00000  3.2335314 0.0388122512 0.0388122512        0.8520088
-#11    31      1:2 0.00000000 0.00000  4.1726919 0.0242679289 0.0242679289        0.8762767
-#12    28      1:2 0.00000000 0.00000  4.3800140 0.0218782859 0.0218782859        0.8981550
-#13    20      1:2 0.00000000 0.00000  4.4327579 0.0213088542 0.0213088542        0.9194639
-#14    23      1:2 0.00000000 0.00000  4.8250260 0.0175137910 0.0175137910        0.9369777
-#15    32      1:2 0.00000000 0.00000  5.6873321 0.0113797515 0.0113797515        0.9483574
-#16     1      0:1 0.00000000 0.00000  5.8518172 0.0104813034 0.0104813034        0.9588387
-#17    24      1:2 0.00000000 0.00000  6.0204180 0.0096339435 0.0096339435        0.9684727
-#18     2      0:1 0.00000000 0.00000  7.3398351 0.0049807681 0.0049807681        0.9734534
-#19    13      0:1 0.00000000 0.00000  7.9931050 0.0035928621 0.0035928621        0.9770463
-#20     9      0:1 0.00000000 0.00000  8.0761826 0.0034466762 0.0034466762        0.9804930
-#21     5      0:1 0.00000000 0.00000  8.1326620 0.0033507045 0.0033507045        0.9838437
-#22     3      0:1 0.00000000 0.00000  8.1453457 0.0033295221 0.0033295221        0.9871732
-#23     4      0:1 0.00000000 0.00000  8.9206772 0.0022595440 0.0022595440        0.9894327
-#24     6      0:1 0.00000000 0.00000  9.3040168 0.0018654331 0.0018654331        0.9912982
-#25    10      0:1 0.00000000 0.00000  9.6072278 0.0016030174 0.0016030174        0.9929012
-#26    11      0:1 0.00000000 0.00000  9.8584312 0.0014138070 0.0014138070        0.9943150
-#27    15      0:1 0.00000000 0.00000  9.9529192 0.0013485663 0.0013485663        0.9956636
-#28    14      0:1 0.00000000 0.00000 10.3194716 0.0011227329 0.0011227329        0.9967863
-#29     7      0:1 0.00000000 0.00000 10.6018689 0.0009748879 0.0009748879        0.9977612
-#30     8      0:1 0.00000000 0.00000 10.7016820 0.0009274287 0.0009274287        0.9986886
-#31    12      0:1 0.00000000 0.00000 11.0238742 0.0007894368 0.0007894368        0.9994780
-#32    16      0:1 0.07159997 0.44518 11.8513525 0.0005219546 0.0005219546        1.0000000
-
-#In this case, for all models except the worst one the 95% CI for s2 contain 0, so we can be sure we do not have good evidence for social
-#transmission via network 2.
+lowerLimitsByModel_s2 # yeah, so again these look unreasonable.
 
 sum(lowerLimitsByModel_s2$propST*lowerLimitsByModel_s2$adjAkWeight)
-#[1] 0.0002323638
+#[1] 0.3992269, but I don't know if we can trust this based on the insane results on the plot. 
 
+#Giving a model-averaged lower limit of 39.9% of events occurring as a result of social transmission via network 1
+
+# We could do the same for s1, but I'm hesitant to do so because of the disastrous results here
+# I wonder whether this has anything to do with the fact that the networks are dynamic? There's no tutorial on model averaging for dynamic networks, but I don't really see why the approach should be different.
+
+# This is especially weird because if I go back to the non-model-averaged estimates that I did in multiple_carcasses.R and look up this particular carcass, #29 (4877850), search_with_ilvs gives us a CI of (0.32146, 0.49672) for propsolve (which is consistent with the model-averaged estimate of 0.39), but/and tells us it's significantly different from 0 i.e. there is evidence for social transmission on the co-flight network. Apparently there's also evidence of social transmission on the co-roost network, though I didn't run that one with ILVs.
+
+# all in all I'm just kinda confused about where these weird standard errors are coming from. 
+
+# Went back to the paper and oh--they say that the standard error estimates can often be really wacky if things are asymmetrical, which I bet these are. So I'm supposed to not trust those and instead just figure out the best model and then find the CI for that model, which makes a bit more sense to me.
+# They do then follow it up with a discussion of how you're supposed to confirm that the lower limit of the CI is above 0 in order to validate that there's support for that model. Which is what I did that led me to finding the weird CI values.
+# So I'm left with the question: if I'm supposed to disregard the CIs, but I'm also supposed to use the CIs to validate whether the model is legit, can I do both at the same time? How do I figure out which to trust?
+# These seem like questions I should ask Matt or Sonja or someone else, but I think I'll leave it here for now.
