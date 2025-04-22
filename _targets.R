@@ -9,7 +9,7 @@ library(targets)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "sf", "tidyverse") # Packages that your targets need for their tasks.
+  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf") # Packages that your targets need for their tasks.
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
@@ -130,5 +130,60 @@ list(
              st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]),
                                   "ymin" = 3350000, 
                                   "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
-                                  "ymax" = 3500000)), a))
+                                  "ymax" = 3500000)), a)),
+  ## Dynamic NBDA testing
+  ## 0. Define parameters
+  tar_target(days_after, 3),
+  tar_target(seed_distance, 4000),
+  tar_target(seed_time_before, lubridate::hours(1)),
+  tar_target(detection_distance, 4000),
+  tar_target(arrival_distance, 400),
+  ## 1. Get carcasses and restrict to south
+  tar_target(aca, sf::st_crop(all_carcasses_annotated, bbox_south)),
+  ## 1a. Convert carcasses to Israel time
+  ##  XXX FIXME
+  ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
+  tar_target(inpa, filter(aca, carcType == "inpa")),
+  tar_target(inpa_carcs, group_split(group_by(inpa, carcID))),
+  tar_target(wild, filter(aca, carcType == "wild")),
+  tar_target(wild_carcs, group_split(group_by(wild, carcID))),
+  tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
+  tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
+  tar_target(gps_combined, get_gps_combined(gps_2023, gps_2024, bbox_south)),
+  ## 4a. Convert gps data to Israel time 
+  ## XXX fixme
+  ## 4b. Make gps_all
+  tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after)),
+  tar_target(roosts, get_roosts(gps_all)), 
+  ## 6. Get seeds
+  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance)),
+  ## 7. Get distances from roosts to carcasses
+  tar_target(distances, get_distances(roosts, inpa_carcs)),
+  ## 8. Load who's who
+  tar_target(ww, read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"), col_select = 1:40)),
+  ## 9. Get age_group ILV
+  tar_target(www, get_www(ww)),
+  ## 10. Combine age_group ILV with distances to get ILVs data frame
+  tar_target(ilvs, get_ilvs(distances, www)),
+  ## 11. Make gps (i.e. remove points before the carcass)
+  tar_target(gps, remove_points_before(gps_all, inpa_carcs, days_after)),
+  ## 12. Get arrivals/sightings of the carcass
+  tar_target(at_carcass, get_at_carcass(gps, inpa_carcs, arrival_distance)),
+  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, detection_distance)),
+  ## 13. Get firsts
+  # Get first arrival of each vulture to the carcass
+  tar_target(firsts, get_firsts(at_carcass, inpa_carcs)),
+  tar_target(firsts_see, get_firsts_see(see_carcass, inpa_carcs)),
+  tar_target(has_visits, get_has_visits(firsts)),
+  tar_target(has_sightings, get_has_sightings(firsts_see)),
+  # Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
+  ## 14. Get oa
+  tar_target(oa, purrr::map(firsts[has_visits], "local_identifier")),
+  tar_target(oa_see, purrr::map(firsts_see[has_sightings], "local_identifier")),
+  tar_target(oa_num, purrr::map(oa, order)),
+  tar_target(oa_see_num, purrr::map(oa_see, order)),
+  tar_target(oa_indivs_sorted, purrr::map(oa, sort)),
+  tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
+  tar_target(acq_times, purrr::map(firsts[has_visits], "timestamp")),
+  tar_target(see_times, purrr::map(firsts[has_sightings], "timestamp"))
 )

@@ -4,18 +4,6 @@ get_loginObject <- function(pw){
   rm(pw)
   return(loginObject)
 }
-# get_inpa <- function(loginObject){
-#   inpa <- move::getMovebankData(study = 6071688, 
-#                                 login = loginObject, 
-#                                 removeDuplicatedTimestamps = TRUE,
-#                                 timestamp_start = "2020010100000",
-#                                 timestamp_end = "2021021500000")
-#   inpa <- methods::as(inpa, "data.frame")
-#   inpa <- inpa %>%
-#     mutate(dateOnly = lubridate::ymd(substr(timestamp, 1, 10)),
-#            year = as.numeric(lubridate::year(timestamp)))
-#   return(inpa)
-# }
 
 get_ornitela <- function(loginObject){
   minDate <- "2023-06-10 00:00" # two days after 6/8/23, when tags were set to high res
@@ -494,4 +482,174 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
 # Shortcuts ---------------------------------------------------------------
 dg <- function(x){
   return(sf::st_drop_geometry(x))
+}
+
+
+# prepare_data ------------------------------------------------------------
+get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
+  gps_combined <- bind_rows(gps_2023, gps_2024) %>%
+    st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+    bind_cols(st_coordinates(.)) %>%
+    rename("location_long" = X,
+           "location_lat" = Y) %>%
+    mutate(dateOnly = lubridate::ymd(dateOnly)) %>%
+    st_transform(32636) %>%
+    st_crop(bbox_south)
+  return(gps_combined)
+}
+
+get_gps_all <- function(inpa_carcs, gps_combined, days_after){
+  gps_all <- vector(mode = "list", length = length(inpa_carcs))
+  for(i in 1:length(inpa_carcs)){
+    ic <- inpa_carcs[[i]]
+    cid <- ic$carcID[1]
+    carcass_datetime <- ic$datetime[1]
+    out <- gps_combined %>%
+      filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
+      mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
+             time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
+             carcID = cid)
+    gps_all[[i]] <- out
+  }
+  return(gps_all)
+}
+
+get_roosts <- function(gps_all){
+  r <- map(gps_all, ~{
+    if(nrow(.x) > 0){return(get_roosts_df(.x, id = "local_identifier"))}
+    else{return(NULL)}
+  })
+  return(r)
+}
+
+get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance){
+  seeds_gps <- map2(gps_all, inpa_carcs, ~{
+    dttm <- .y$datetime[1]
+    .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
+      filter(dist_to_carcass < seed_distance)
+  })
+  return(seeds_gps)
+}
+
+get_distances <- function(roosts, inpa_carcs){
+  distances <- map2(roosts, inpa_carcs, ~{
+    if(!is.null(.x)){
+      dist <- .x %>%
+        sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+        sf::st_transform(32636) %>%
+        mutate(dist = as.numeric(st_distance(., .y))) %>%
+        st_drop_geometry() %>%
+        dplyr::select(local_identifier, roost_date, dist) %>%
+        pivot_wider(id_cols = "local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_")
+    }else{
+      dist <- NULL
+    }
+    return(dist)
+  })
+  return(distances)
+}
+
+get_www <- function(ww){
+  www <- ww %>%
+    dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
+    mutate(age_2023 = 2023-birth_year,
+           age_2024 = 2024-birth_year,
+           age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
+                                      age_2023 <= 5 ~ "01_juv_sub",
+                                      .default = NA),
+           age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
+                                      age_2024 <= 5 ~ "01_juv_sub",
+                                      .default = NA)) %>%
+    dplyr::select("local_identifier" = "Movebank_id", age_group_2023, age_group_2024) %>%
+    distinct()
+  return(www)
+}
+
+get_ilvs <- function(distances, www){
+  ilvs <- map(distances, ~{
+    .x %>%
+      left_join(www, by = "local_identifier")
+  }) # let's reduce this down to just one age group column, depending on the carcass
+  return(ilvs)
+}
+
+remove_points_before <- function(gps_all, inpa_carcs, days_after){
+  gps <- map2(gps_all, inpa_carcs, ~{
+    dttm <- .y$datetime[1]
+    .x %>%
+      filter(timestamp >= lubridate::ymd_hms(dttm) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
+  })
+  return(gps)
+}
+
+get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
+  at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+         mutate(carcID = .y$carcID) %>%
+         filter(dist_to_carcass < arrival_distance & ground_speed < 5))
+  return(at_carcass)
+}
+
+get_see_carcass <- function(gps, inpa_carcs, detection_distance){
+  see_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                        mutate(carcID = .y$carcID) %>%
+                        filter(dist_to_carcass < detection_distance))
+  return(see_carcass)
+}
+
+get_firsts <- function(at_carcass, inpa_carcs){
+  firsts <- map2(at_carcass, inpa_carcs, ~{
+    if(nrow(.x) > 1){
+      out <- .x %>%
+        filter(timestamp >= .y$datetime) %>%
+        arrange(timestamp) %>%
+        group_by(local_identifier) %>%
+        slice(1) %>%
+        ungroup() %>%
+        arrange(timestamp)
+      if(nrow(out) > 0){
+        out$rownumber <- 1:nrow(out)
+        return(out)
+      }else{
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        return(out)
+      }
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  })
+  return(firsts)
+}
+
+get_firsts_see <- function(see_carcass, inpa_carcs){
+  firsts_see <- map2(see_carcass, inpa_carcs, ~{
+    if(nrow(.x) > 1){
+      out <- .x %>%
+        filter(timestamp >= .y$datetime) %>%
+        arrange(timestamp) %>%
+        group_by(local_identifier) %>%
+        slice(1) %>%
+        ungroup() %>%
+        arrange(timestamp)
+      if(nrow(out) > 0){
+        out$rownumber <- 1:nrow(out)
+        return(out)
+      }else{
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        return(out)
+      }
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  }) 
+  return(firsts_see)
+}
+
+get_has_visits <- function(firsts){
+  map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+}
+
+get_has_sightings <- function(firsts_see){
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }

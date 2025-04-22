@@ -81,7 +81,7 @@ wild_carcs <- wild %>% group_by(carcID) %>% group_split()
 ## 4. Get all gps data
 gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
 gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv") 
-gps <- bind_rows(gps_2023, gps_2024) %>%
+gps_combined <- bind_rows(gps_2023, gps_2024) %>%
   st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
   bind_cols(st_coordinates(.)) %>%
   rename("location_long" = X,
@@ -97,7 +97,7 @@ gps <- bind_rows(gps_2023, gps_2024) %>%
 gps_all <- map(inpa_carcs, ~{
   cid <- .x$carcID[1]
   carcass_datetime <- .x$datetime[1]
-  gps %>%
+  gps_combined %>%
     filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
     mutate(dist_to_carcass = as.numeric(st_distance(., .x)),
            time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
