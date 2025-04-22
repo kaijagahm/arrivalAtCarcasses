@@ -8,21 +8,8 @@ library(targets)
 
 # Set target options:
 tar_option_set(
-  memory = "transient",
-  garbage_collection = TRUE,
-  controller = crew::crew_controller_local(workers = 10, seconds_timeout = 120),
-  format = "qs",
   error = "null",
-  packages = c("vultureUtils", "sf", "tidyverse", "move2", "feather", "readxl", "elevatr", "here", "furrr", "future", "purrr", "igraph", "mapview", "parallel",   "ggplot2", "ggraph", "tidygraph", "moments", "tidymodels", "ranger", "parsnip", "caret", "zoo", "readxl", "data.table", "readr") # Packages that your targets need for their tasks.
-  
-  # Pipelines that take a long time to run may benefit from
-  # optional distributed computing. To use this capability
-  # in tar_make(), supply a {crew} controller
-  # as discussed at https://books.ropensci.org/targets/crew.html.
-  # Choose a controller that suits your needs. For example, the following
-  # sets a controller that scales up to a maximum of two workers
-  # which run as local R processes. Each worker launches when there is work
-  # to do and exits if 60 seconds pass with no tasks to run.
+  packages = c("vultureUtils", "sf", "tidyverse") # Packages that your targets need for their tasks.
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
