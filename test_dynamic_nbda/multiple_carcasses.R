@@ -13,20 +13,19 @@ library(NBDA)
 library(tidyverse)
 library(sf)
 library(lme4)
+library(targets)
 
 # Load data
-load(here("test_dynamic_nbda/data/has_sightings.Rda"))
-load(here("test_dynamic_nbda/data/inpa_carcs.Rda"))
-load(here("test_dynamic_nbda/data/oa_see.Rda"))
-load(here("test_dynamic_nbda/data/firsts_see.Rda"))
+tar_load(has_sightings)
+tar_load(inpa_carcs)
+tar_load(oa_see)
+tar_load(firsts_see)
 
-load(here("test_dynamic_nbda/data/fl_cumulative_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/roosts_bin_fixed_see.Rda"))
-load(here("test_dynamic_nbda/data/roosts_bin_nets_see.Rda"))
-load(here("test_dynamic_nbda/data/fl_cumulative_bin_nets_see.Rda"))
+tar_load(fl_cumulative_bin_fixed_see)
+tar_load(roosts_bin_fixed_see)
 
-load(here("test_dynamic_nbda/data/gps.Rda"))
-load(here("test_dynamic_nbda/data/ilvs.Rda"))
+tar_load(gps)
+tar_load(ilvs)
 
 nbdaModSum <- function(model){
   dat <- data.frame(Variable = model@varNames,
@@ -69,8 +68,6 @@ map2(firsts, carcIDs, ~discoveryplot(.x, .y))
 
 fl_mats <- fl_cumulative_bin_fixed_see[has_3_sightings]
 roost_mats <- roosts_bin_fixed_see[has_3_sightings]
-fl_nets <- fl_cumulative_bin_nets_see[has_3_sightings]
-roost_nets <- roosts_bin_nets_see[has_3_sightings]
 
 # Need to convert the oas into numeric indices instead of a character vector
 matrix_orders <- map(roost_mats, ~row.names(.x[[1]]))
@@ -78,9 +75,7 @@ oas <- map2(oas, matrix_orders, ~match(.x, .y))
 
 # Need to change the roost networks to have the same number of slices as the flight networks
 length(fl_mats[[1]])
-length(fl_nets[[1]])
 length(roost_mats[[1]])
-length(roost_nets[[1]])
 # This means we need to figure out which acquisition events happened on which days
 dates <- map2(carcs, firsts, ~data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")) %>% mutate(day = 1:n()))
 firsts <- map2(firsts, dates, ~.x %>%
@@ -111,10 +106,6 @@ roost_mats_expanded <- map(1:length(roost_mats), ~{
 fl_mats <- map(fl_mats, ~map(.x, as.matrix))
 
 r_static_mns <- map(unique(roost_mats_expanded), ~as.matrix(Reduce("+", .x)/length(.x)))
-
-roost_nets_expanded <- map(1:length(roost_mats), ~{
-  expand(roost_nets[[.x]], fl_mats[[.x]], days_vec[[.x]])
-})
 
 # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
 load(here("test_dynamic_nbda/data/ilvs.Rda"))
