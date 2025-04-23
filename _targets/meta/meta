@@ -41,6 +41,32 @@ feeding_bouts|stem|a9817eca76ee1f2e|39bd8a9d78d9ca41|2c530c1562a7fbd1|-944299867
 firsts|stem|38deaf0e0219f3dd|80e64958a33d17b4|be1e4d9b0466bf26|-111095218||t20200.9039024361s|2c51a4a3be9b73c3|65819|rds|local|vector|||0.89||
 firsts_see|stem|00cf426ad4158269|d9f46911c32dc52e|0eaaf5c1f4964bfc|-1198234657||t20200.9080838973s|696873049f0f22ee|97699|rds|local|vector|||1.25||
 fix_names|function|552429cdeaa613d4|||||||||||||||
+fix_nets|function|b67a0c8e35a04c0c|||||||||||||||
+fix_nets_list|function|dddd927bf12261fe|||||||||||||||
+fl_1hr_bin|stem|1c36215d4081dee4|3470ddb8d035f564|f3a3fa7530c3390f|1421486842||t20200.9940523241s|0e4cbeb02dbe1341|444990|rds|local|vector|||210.875|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_1hr_bin_fixed|stem|969701c3d5211cbe|da9e208e056981f2|1a84b16129c9a540|1953689738||t20201.7672055847s|520dbf0348314599|244712|rds|local|vector|||14.891||
+fl_1hr_bin_fixed_see|stem|97cfbe717b10bfef|56a873399ad9d87a|16cbf45cfd59342f|-206022166||t20201.7678393871s|4a8d4581bfa48f42|326522|rds|local|vector|||17.766||
+fl_1hr_bin_nets|stem|66bb29517ad20ffe|0da9b3eb8af80b38|e4da65eb91381a81|1695570904||t20201.7679182933s|67afdf34ef2ce945|83537|rds|local|vector|||3.156||
+fl_1hr_bin_nets_see|stem|0f2124fbdb12a768|f46060dcdc35817d|0d4bee97720e662f|1295836535||t20201.76809015s|0135fccc08c2ab78|96206|rds|local|vector|||3.969||
+fl_1hr_bin_see|stem|d5c9f476bc8ca5a1|c16b1518a9aed22e|5c44f5e87caa6c7f|459457187||t20201.7433425079s|f29be27d81c5eb1a|445197|rds|local|vector|||213.922|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_3hr_bin|stem|216748e364052e58|383663571a7e68f5|8d2bce5adeb34ee6|447433824||t20200.9967392241s|ad9ea30f849bc940|537758|rds|local|vector|||229.266|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_3hr_bin_fixed|stem|d6f0dba9119c7306|34aaffac9255396e|d2e5fd5f9541f1f4|-200049801||t20201.7670269088s|6f280c6c141d0729|275532|rds|local|vector|||12.312||
+fl_3hr_bin_fixed_see|stem|ed646bca9c319d98|437c8ddb8eec4c5a|e95c16d3804a6ee5|1178083649||t20201.7676261196s|7a0b54347213076c|370054|rds|local|vector|||14.625||
+fl_3hr_bin_nets|stem|705b47170b83a293|dfcb7231a230a06f|04a60881810d3bde|699828502||t20201.7678803207s|69f682b63a609daf|109159|rds|local|vector|||3.406||
+fl_3hr_bin_nets_see|stem|5802bd965f856741|e5573b354a207816|71b2546c149df86e|-1895667307||t20201.7680426418s|c9cdeef464174962|129951|rds|local|vector|||3.453||
+fl_3hr_bin_see|stem|26284c4bfc0b83b4|8328ea0f66efc0db|9ba6e703c66bc132|1412395382||t20201.7460498941s|6800ffc761dc9dec|537978|rds|local|vector|||233.36|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_allday_bin|stem|f2f1730c85c40d48|a3d3f6aa3929330a|8f73da17401103ea|1162631001||t20200.9889999042s|5430e02303a5cf15|107739|rds|local|vector|||42.172|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_allday_bin_fixed|stem|c3d5e8c6303e6214|de43fc3788957e64|fe7ea629bb2c9173|-278046637||t20201.7668196765s|9f734c1c51c65cfb|38954|rds|local|vector|||0.719||
+fl_allday_bin_fixed_see|stem|fa97d2757b3a62ed|29b3d0ea7638c3ae|667e530f95881380|-832338190||t20201.7668503414s|73ad1fe3e4a6b9dd|58887|rds|local|vector|||0.922||
+fl_allday_bin_nets|stem|fa7bb0095aa5dd60|ec8eca883944c10f|293a8c9caeb57ac8|2111603111||t20201.7673114423s|03a289baf58c33cf|40876|rds|local|vector|||0.578|The adjmatrix argument of graph_from_adjacency_matrix must be symmetricwith mode  undirected as of igraph 1.6.0.i Use mode  max to achieve the original behavior.|
+fl_allday_bin_nets_see|stem|358a8e0bb88f3dd4|4302c104416c324e|13e6bf9cd9821536|-1552961412||t20201.7673244126s|37de6cb592fc8665|60052|rds|local|vector|||0.671||
+fl_allday_bin_see|stem|bac0dc226894efdb|762401f9bf85f88f|b1969d57e1ed15d3|-1269306067||t20200.9915948638s|dfc31448722dedf3|142848|rds|local|vector|||58.766|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_cumulative_bin|stem|d9d1266208287345|8a60144da4685953|e0ce3fce9989edc4|1131813693||t20201.0004937012s|ad1f7a55285a7936|721067|rds|local|vector|||310.172|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_cumulative_bin_fixed|stem|589dce53a24d251e|ad2a4b107442a537|d12e16a934189529|1429824179||t20201.7673040449s|fdfa0cc835425ab8|326262|rds|local|vector|||7.906||
+fl_cumulative_bin_fixed_see|stem|f315569e3da32352|ff894b367864382b|68cdd4169a6c3ab2|-1767349496||t20201.7674488357s|240ba424691a3c0b|476148|rds|local|vector|||9.422||
+fl_cumulative_bin_nets|stem|02b9c1ef9345dbfc|68b7bea143ea4916|0e5ee630f44605bd|1639060246||t20201.7679581792s|8081cdbc27f422da|221861|rds|local|vector|||3.219||
+fl_cumulative_bin_nets_see|stem|05c27830da1828cb|879d935a196966d1|17e6c19cbca04d7d|-863239463||t20201.7680009023s|475c59f1f92f6c04|312823|rds|local|vector|||3.406||
+fl_cumulative_bin_see|stem|84f855bd141ff957|b4b01f55616568aa|399ae0dd480dffbd|-2037854133||t20201.0041900115s|51675908dbe7380e|721298|rds|local|vector|||289.453|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
 focal_gps_2023|stem|231561050f958003|e9624e70a001ad03|2c530c1562a7fbd1|-849282975||t20200.8678835349s|30ade5c2c0ef7956|1794891|rds|local|vector|||6.14|package sf was built under R version 4.4.2|
 focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-880552134||t20200.8678892539s|73b89784be840c80|1130121|rds|local|vector|||0.047||
 get_at_carcass|function|46e848c67ffeb4eb|||||||||||||||
@@ -49,20 +75,30 @@ get_carcass_bouts|function|28683c3852fd9433|||||||||||||||
 get_distances|function|656db71ac100a2f5|||||||||||||||
 get_firsts|function|8a550e0d5b44c179|||||||||||||||
 get_firsts_see|function|0d81fe982aca3cab|||||||||||||||
+get_fl_bin|function|e88d8749bfb822a8|||||||||||||||
+get_fl_bin_list|function|57cbbb34e0df6f92|||||||||||||||
+get_flight_allday|function|8abfcc7b94557606|||||||||||||||
 get_focal|function|2373944c578a933f|||||||||||||||
 get_focal2|function|a7e32f0ec16d50f3|||||||||||||||
 get_geofences|function|01b60579b893f749|||||||||||||||
 get_gps|function|bbcb6be07059014b|||||||||||||||
 get_gps_all|function|7006a97d20207123|||||||||||||||
 get_gps_combined|function|881d0a98469376c4|||||||||||||||
+get_gps_flight|function|f0752840cfeee8e6|||||||||||||||
+get_gps_flight_hr|function|f4b411be8a81ffb3|||||||||||||||
 get_has_sightings|function|bf6fc7a3add15b28|||||||||||||||
 get_has_visits|function|2f2e9cf43cf22753|||||||||||||||
 get_hires_tags|function|e3281777f5642b4a|||||||||||||||
 get_ilvs|function|453a702697ab6f00|||||||||||||||
 get_loginObject|function|3d0444bbc27ce24f|||||||||||||||
 get_matches|function|007f61d535e30c51|||||||||||||||
+get_nets|function|2a15a734c6f4639c|||||||||||||||
+get_nets_list|function|a72aef324f9acc31|||||||||||||||
 get_ornitela|function|a3621556651357d9|||||||||||||||
+get_roost_dates|function|f95c759b9a6a71ba|||||||||||||||
+get_roost_pairwise_distances|function|47682ba59fe72bc9|||||||||||||||
 get_roosts|function|e142f097b2824a8a|||||||||||||||
+get_roosts_bin|function|9e9ce8d7ff094008|||||||||||||||
 get_see_carcass|function|3dde066daa9b0ef6|||||||||||||||
 get_seeds_gps|function|ad57bb52482179b3|||||||||||||||
 get_sns|function|3e407dcf3513d114|||||||||||||||
@@ -75,6 +111,14 @@ gps_2023|stem|68ac320054a07a5a|c6150abb0bf0809a|2c530c1562a7fbd1|2090718017||t20
 gps_2024|stem|d0f59e34c53a1839|26a769e9f1e26c92|2c530c1562a7fbd1|322940411||t20200.8746878731s|5aaa4e370bba7cea|1509775|rds|local|vector|||0.079||
 gps_all|stem|d187bbebf2d12694|fcbdf0d29a73f889|7aecfa188b306d8c|292643650||t20200.8981960505s|b79226bc8f8043e5|32244289|rds|local|vector|||5.891||
 gps_combined|stem|f994b05a1991595b|3c87fea2dbbc1827|b28e9ff342bbb762|-363792662||t20200.8980157065s|c4faa6b1850bcb53|7056835|rds|local|vector|||6.735|attribute variables are assumed to be spatially constant throughout all geometries|
+gps_flight_1hr|stem|03c6082e4c2ed22c|f3f79c1e40020bfc|43f7a902aeb90708|-638847767||t20200.9489731665s|359040e997781149|12741029|rds|local|vector|||4.765||
+gps_flight_1hr_see|stem|5f4d77e1c258b27b|3c5088779b9b2c27|8cfb317e72669939|759066054||t20201.7407131428s|ea396a5239cbe4a4|12741159|rds|local|vector|||4.828||
+gps_flight_3hr|stem|4eeb3374a80b5e66|4212c710cc188fda|43f7a902aeb90708|-136713290||t20200.9483612805s|d7b4e86a7e2226ef|29885417|rds|local|vector|||5.313||
+gps_flight_3hr_see|stem|88217a5858a9045e|805b66ed9b1c8fda|8cfb317e72669939|1318847711||t20201.7408593271s|595505982eedb6aa|29885540|rds|local|vector|||5.39||
+gps_flight_allday|stem|c66026c87d1da375|42bf6f9cc6ee7341|53d86c57e061d334|-446035562||t20200.939316596s|25cbe7cc256c2418|14571882|rds|local|vector|||1.047||
+gps_flight_allday_see|stem|09c445d3e565bb6f|cb49419bdbf1ec75|0f4027ef2118d850|1047463475||t20200.9393953209s|6d507a4f0538a814|19585210|rds|local|vector|||1.485||
+gps_flight_cumulative|stem|beea1841ba8a4e04|5c82cc48170a3928|b7f9229634c76ea1|540245365||t20200.9505640985s|71bfd85d03a943e2|137560878|rds|local|vector|||6.969||
+gps_flight_cumulative_see|stem|edf06545387dfcc5|b94c4f3b3a60709a|6a0665c1d4d5ebd6|-2099373567||t20200.9510569961s|1f0a3859dd62e136|137553211|rds|local|vector|||6.156||
 has_sightings|stem|a69fae369f170f01|0454b9798cd19439|1d3207596da9121f|-208344717||t20200.909318211s|1e2e749c6d4ad693|59|rds|local|vector|||0.063||
 has_visits|stem|cd6cc8c05b5ef170|4b3d7f4775749a14|24a4f7380179910e|1549758561||t20200.9093192972s|04fcf8b2530d31e5|77|rds|local|vector|||0.046||
 hours_after_carcass|stem|b82a7e80566ace47|da5014d78feb5a8e|2c530c1562a7fbd1|-1736445422||t20200.8532051598s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
@@ -102,7 +146,18 @@ remove_captures|function|8ac8269f4c2d4c72|||||||||||||||
 remove_gps_rows|function|c420a2d7a3ac58fd|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 remove_points_before|function|4b1d419f68fcee87|||||||||||||||
+roost_thresh|stem|5654ae499fd6c56c|f7fa471aa3f8197f|2c530c1562a7fbd1|393365559||t20200.961792549s|03d0c2cbf5aa332b|54|rds|local|vector|||1.781|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 roosts|stem|f96d85a93286726e|eb7053291138e663|553eb27881a72333|-1266328948||t20200.8943449093s|f33b18e6e5636ce2|190432|rds|local|vector|||215.671||
+roosts_bin|stem|c6fd6ab87a45834f|de79451bde7b2dba|4a24d9628e5be52b|-1036823890||t20200.9619923278s|461cdee831d4a9f7|133083|rds|local|vector|||7.25||
+roosts_bin_fixed|stem|db03e01c9373c273|cfe19bc0027f53cb|6382802b6b0c5366|-1218043150||t20201.7668379331s|651ed025bd22cd2f|48131|rds|local|vector|||1.454||
+roosts_bin_fixed_see|stem|94d28848914c3c7d|8cf614910a1784ec|d0dafa70c12ea18d|-762129084||t20201.7668756838s|eeb0351f25f2a4df|73965|rds|local|vector|||2.031||
+roosts_bin_nets|stem|f344f4f74085df76|0ba63152260d7e6c|bd24e96ea1c1b1a6|368169243||t20201.7673160204s|22bb1222e42a9424|34422|rds|local|vector|||0.328||
+roosts_bin_nets_see|stem|6d95139789bae10a|37cfb2de8cbe0ae0|db0b1d0b704683a5|-1849504329||t20201.7673304305s|8f6e78a25ec548e9|49563|rds|local|vector|||0.437||
+roosts_bin_see|stem|7685736bffb3918d|2abc3a04aef64185|dfbb5865a4f5a237|-142634523||t20200.9619056181s|0e87c7a4a9019fc0|176715|rds|local|vector|||9.313||
+roosts_dates|stem|72a45974ee55e117|60d81b4348ddc884|347d3d2533f9eb63|-1695174610||t20200.9605462154s|95ae8bd2cbbbd8b1|270971|rds|local|vector|||1.75||
+roosts_dates_see|stem|33225c767e51d53d|4ce4201a8c06b48b|9aaa056176cd3ff8|1900017566||t20200.9605235297s|75b597166bdb9263|373989|rds|local|vector|||2.422||
+roosts_pairwise_distances|stem|4c8df69a7407cc0d|9cc006bdc52e1a9b|cfa78d1f143b25f9|-164610962||t20200.9606972023s|03d08f16c88b3a08|3795218|rds|local|vector|||5.328||
+roosts_pairwise_distances_see|stem|c7b41d4888dc1ace|a8de749dcc4b5d6e|440bef1ab97d829a|-1529992581||t20200.9606314939s|2762f70141352d3a|5141214|rds|local|vector|||6.953||
 see_carcass|stem|13f0bfcae9854cab|3eba08de6939d8b5|7b7fcf4cafe07447|-1027215457||t20200.9038913428s|f39facb92ec0aa88|2155685|rds|local|vector|||0.25||
 see_times|stem|376a10a514e2f4a9|a76ba1e017bab52a|c0510359a142fc44|52806774||t20200.9119407825s|26602b38ea63566b|4052|rds|local|vector|||0||
 seed_distance|stem|5e34fbc23d2414ef|29749851874b2fbd|2c530c1562a7fbd1|967986520||t20200.8707899464s|03d0c2cbf5aa332b|54|rds|local|vector|||2.016|package sf was built under R version 4.4.2. package doParallel was built under R version 4.4.2|

@@ -177,7 +177,7 @@ list(
   tar_target(has_visits, get_has_visits(firsts)),
   tar_target(has_sightings, get_has_sightings(firsts_see)),
   # Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
-  ## 14. Get oa
+  ## 14. Get orders of arrival/acquisition
   tar_target(oa, purrr::map(firsts[has_visits], "local_identifier")),
   tar_target(oa_see, purrr::map(firsts_see[has_sightings], "local_identifier")),
   tar_target(oa_num, purrr::map(oa, order)),
@@ -185,5 +185,53 @@ list(
   tar_target(oa_indivs_sorted, purrr::map(oa, sort)),
   tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
   tar_target(acq_times, purrr::map(firsts[has_visits], "timestamp")),
-  tar_target(see_times, purrr::map(firsts[has_sightings], "timestamp"))
+  tar_target(see_times, purrr::map(firsts[has_sightings], "timestamp")),
+  ## 15. Get GPS subsets for flight (four different intervals)
+  tar_target(gps_flight_allday, get_flight_allday(gps, has_visits)),
+  tar_target(gps_flight_allday_see, get_flight_allday(gps, has_sightings)),
+  tar_target(gps_flight_cumulative, get_gps_flight(gps, has_visits, acq_times)),
+  tar_target(gps_flight_cumulative_see, get_gps_flight(gps, has_sightings, see_times)),
+  tar_target(gps_flight_3hr, get_gps_flight_hr(gps, has_visits, acq_times, hrs = 3)),
+  tar_target(gps_flight_3hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 3)),
+  tar_target(gps_flight_1hr, get_gps_flight_hr(gps, has_visits, acq_times, hrs = 1)),
+  tar_target(gps_flight_1hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 1)),
+  ## 16. Get roost nets
+  tar_target(roosts_dates, get_roost_dates(roosts, has_visits)),
+  tar_target(roosts_dates_see, get_roost_dates(roosts, has_sightings)),
+  tar_target(roosts_pairwise_distances, get_roost_pairwise_distances(roosts_dates)),
+  tar_target(roosts_pairwise_distances_see, get_roost_pairwise_distances(roosts_dates_see)),
+  tar_target(roost_thresh, 500),
+  tar_target(roosts_bin, get_roosts_bin(roosts_dates, roost_thresh)),
+  tar_target(roosts_bin_see, get_roosts_bin(roosts_dates_see, roost_thresh)),
+  ## 17. Get flight nets (whole days)
+  tar_target(fl_allday_bin, get_fl_bin_list(gps_flight_allday, detection_distance)),
+  tar_target(fl_allday_bin_see, get_fl_bin_list(gps_flight_allday_see, detection_distance)),
+  tar_target(fl_cumulative_bin, get_fl_bin_list(gps_flight_cumulative, detection_distance)),
+  tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, detection_distance)),
+  tar_target(fl_3hr_bin, get_fl_bin_list(gps_flight_3hr, detection_distance)),
+  tar_target(fl_3hr_bin_see, get_fl_bin_list(gps_flight_3hr_see, detection_distance)),
+  tar_target(fl_1hr_bin, get_fl_bin_list(gps_flight_1hr, detection_distance)),
+  tar_target(fl_1hr_bin_see, get_fl_bin_list(gps_flight_1hr_see, detection_distance)),
+  # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
+  tar_target(fl_allday_bin_fixed, fix_nets_list(fl_allday_bin, oa_indivs_sorted)),
+  tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_cumulative_bin_fixed, fix_nets_list(fl_cumulative_bin, oa_indivs_sorted)),
+  tar_target(fl_cumulative_bin_fixed_see, fix_nets_list(fl_cumulative_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_3hr_bin_fixed, fix_nets_list(fl_3hr_bin, oa_indivs_sorted)),
+  tar_target(fl_3hr_bin_fixed_see, fix_nets_list(fl_3hr_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_1hr_bin_fixed, fix_nets_list(fl_1hr_bin, oa_indivs_sorted)),
+  tar_target(fl_1hr_bin_fixed_see, fix_nets_list(fl_1hr_bin_see, oa_see_indivs_sorted)),
+  tar_target(roosts_bin_fixed, fix_nets_list(roosts_bin, oa_indivs_sorted)),
+  tar_target(roosts_bin_fixed_see, fix_nets_list(roosts_bin_see, oa_see_indivs_sorted)),
+  # Make networks -----------------------------------------------------------
+  tar_target(fl_allday_bin_nets, get_nets_list(fl_allday_bin_fixed)),
+  tar_target(fl_allday_bin_nets_see, get_nets_list(fl_allday_bin_fixed_see)),
+  tar_target(fl_cumulative_bin_nets, get_nets_list(fl_cumulative_bin_fixed)),
+  tar_target(fl_cumulative_bin_nets_see, get_nets_list(fl_cumulative_bin_fixed_see)),
+  tar_target(fl_3hr_bin_nets, get_nets_list(fl_3hr_bin_fixed)),
+  tar_target(fl_3hr_bin_nets_see, get_nets_list(fl_3hr_bin_fixed_see)),
+  tar_target(fl_1hr_bin_nets, get_nets_list(fl_1hr_bin_fixed)),
+  tar_target(fl_1hr_bin_nets_see, get_nets_list(fl_1hr_bin_fixed_see)),
+  tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
+  tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see))
 )

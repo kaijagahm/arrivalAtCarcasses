@@ -584,8 +584,8 @@ remove_points_before <- function(gps_all, inpa_carcs, days_after){
 
 get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
   at_carcass <- map2(gps, inpa_carcs, ~.x %>%
-         mutate(carcID = .y$carcID) %>%
-         filter(dist_to_carcass < arrival_distance & ground_speed < 5))
+                       mutate(carcID = .y$carcID) %>%
+                       filter(dist_to_carcass < arrival_distance & ground_speed < 5))
   return(at_carcass)
 }
 
@@ -652,4 +652,175 @@ get_has_visits <- function(firsts){
 
 get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+}
+
+get_flight_allday <- function(gps, subsettor){
+  flight_allday <- map(gps[subsettor], ~.x %>%
+                         group_by(dateOnly) %>%
+                         group_split())
+  return(flight_allday)
+}
+
+get_gps_flight <- function(gps, subsettor, times_list){
+  len <- length(gps[subsettor])
+  out <- vector(mode = "list", length = len)
+  for(i in 1:len){
+    times <- times_list[[i]]
+    subsets <- vector(mode = "list", length = length(times))
+    for(j in 1:length(times)){
+      subsets[[j]] <- gps[subsettor][[i]] %>%
+        filter(timestamp <= times[j])
+    }
+    out[[i]] <- subsets
+    #cat("done with", i, "\n")
+  }
+  return(out)
+}
+
+get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
+  len <- length(gps[subsettor])
+  out <- vector(mode = "list", length = len)
+  for(i in 1:len){
+    times <- times_list[[i]][!is.na(times_list[[i]])]
+    if(length(times) > 0){
+      subsets <- vector(mode = "list", length = length(times))
+      for(j in 1:length(times)){
+        subsets[[j]] <- gps[subsettor][[i]] %>%
+          filter(timestamp >= times[j]-hours(hrs) & timestamp <= times[j])
+      }
+    }else{
+      subsets <- "blank" # assigning this to NULL wasn't working
+    }
+    out[[i]] <- subsets
+  }
+  return(out)
+}
+
+get_roost_dates <- function(roosts, subsettor){
+  out <- map(roosts[subsettor], ~{
+    .x %>%
+      group_by(roost_date) %>%
+      group_split() %>%
+      map(., ~st_as_sf(.x, coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+            st_transform(32636))
+  })
+  return(out)
+}
+
+get_roost_pairwise_distances <- function(dates){
+  map(dates, ~{
+      outout <- map(.x, ~{
+        ids <- .x$local_identifier
+        out <- as.data.frame(st_distance(.x)) %>%
+          mutate(across(everything(), as.numeric))
+        row.names(out) <- ids
+        colnames(out) <- ids
+        return(out)
+      })
+      return(outout)
+    })
+}
+
+get_roosts_bin <- function(dates, roost_thresh){
+  map(dates, ~{
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      out[out < roost_thresh] <- 1
+      out[out >= roost_thresh] <- 0
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
+    })
+    return(outout)
+  })
+}
+
+get_fl_bin <- function(dat, dist){
+  if(is.data.frame(dat)){
+    if(nrow(dat) > 0){
+      self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
+                               ID2 = sort(unique(dat$local_identifier)),
+                               value = 0)
+      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                           consecThreshold = 1,
+                                                           idCol = "local_identifier",
+                                                           return = "edges",
+                                                           distThreshold = dist)) %>%
+        dplyr::select(ID1, ID2) %>%
+        distinct() %>%
+        mutate(value = 1) %>%
+        bind_rows(self_edges) %>%
+        arrange(ID1, ID2) %>%
+        pivot_wider(id_cols = "ID1", names_from = "ID2", values_fill = 0) %>%
+        dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
+        as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else{
+      out <- "blank"
+    }
+  }else{
+    out <- "blank"
+  }
+  return(out)
+}
+
+get_fl_bin_list <- function(gps_list, detection_distance){
+  out <- vector(mode = "list", length = length(gps_list))
+  for(i in 1:length(out)){
+    out[[i]] <- map(gps_list[[i]], ~get_fl_bin(dat = .x, dist = detection_distance))
+  }
+  return(out)
+}
+
+fix_nets <- function(nets, indivs){
+  indivs <- indivs[!is.na(indivs)]
+  updated <- vector(mode = "list", length = length(nets))
+  for(nt in 1:length(nets)){
+    net <- nets[[nt]]
+    if(class(net) != "character" & !("ID1" %in% names(net))){ # this is a stupid workaround so the function will work with the co-roost network. Horribly inefficient.
+      net$ID1 <- row.names(net)
+      net <- net %>%
+        relocate(ID1)
+    }
+    
+    # Find any that are missing and add them
+    missing <- indivs[!(indivs %in% names(net))]
+    if(length(missing) > 0){
+      toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
+      if(!any(net == "blank")){
+        net_updated <- as.data.frame(bind_rows(net, toadd))
+      }else{
+        net_updated <- as.data.frame(toadd)
+      }
+      net_updated[is.na(net_updated)] <- 0
+      row.names(net_updated) <- net_updated$ID1
+    }else{
+      net_updated <- net
+    }
+    net_updated_2 <- net_updated %>% select(-ID1)
+    updated[[nt]] <- net_updated_2[indivs, indivs]
+  }
+  return(updated)
+}
+
+fix_nets_list <- function(list, oa_sorted){
+  fixed_list <- vector(mode = "list", length = length(list))
+  for(i in 1:length(list)){
+    nets <- list[[i]]
+    indivs <- oa_sorted[[i]]
+    fixed_list[[i]] <- fix_nets(nets, indivs)
+  }
+  return(fixed_list)
+}
+
+get_nets <- function(fixed_list_subset){
+  map(fixed_list_subset, ~{
+    igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)
+  })
+}
+
+get_nets_list <- function(fixed_list){
+  map(fixed_list, get_nets)
 }
