@@ -10,6 +10,7 @@ all_carcasses|stem|da9527ff456f917c|57c30c682bdfcb5e|efa2b9ead2c7a7e9|-969723668
 all_carcasses_annotated|stem|10d15c56e420a10c|1ac31d9e12591c04|9a6889971c94830e|1081868741||t20200.8638040343s|91544395867ec178|11451|rds|local|vector|||0.015||
 arrival_distance|stem|aec6477eafbe80ca|f3081ebfafff83fb|2c530c1562a7fbd1|-1771894113||t20200.8707905799s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
 assign_fs|function|e5bbd0a2c3efcd3a|||||||||||||||
+assMatrixIndices|stem|00c50e84370f925b|7bc1ddba114432f8|38578fdbfe926263|-722223532||t20201.8633973962s|32da600b172cf8c3|251|rds|local|vector|||0||
 at_carcass|stem|dfd0e8dda3cdd6ba|767d254d634c40d9|54fb658ec1442e6b|262011683||t20200.903882046s|fdd21148b015b7d4|693362|rds|local|vector|||0.281||
 attach_age_sex|function|7e7940be2c76b765|||||||||||||||
 bbox_bouts_hf|stem|1355211f2a572e54|cd31ca9c63241cd8|8812ab5d272dd2d0|-1394417539||t20200.8567909091s|718c2568442c2067|972|rds|local|vector|||0||
@@ -25,21 +26,32 @@ carcass_bouts_df|stem|679dde919dec7e30|9390de0bb635a196|d096830b735f23e2|-146930
 carcasses_audited|stem|d827cff1b070c937|7f2fcd8a0c431140|2c530c1562a7fbd1|-36716571||t20200.8567899034s|0f0643f01a61aec3|229403|rds|local|vector|||0.031||
 carcasses_focal|stem|abd252b3a33eb500|04496db8f4732205|d3c1abb0ae1242e0|1203039562||t20200.8567917826s|101f0467a602710f|8678|rds|local|vector|||0.031||
 carcasses_split|stem|e44b22f673ea87ce|8965196b0f85648f|e4744394fd46e568|-783125107||t20200.8569271998s|2eb2d0f5bdb6a898|18202|rds|local|vector|||0.141||
+carcIDs_nbda|stem|81bced1b4067ce7a|3597eb3e21c4279b|dc3984b6911a066d|-110516357||t20201.780151598s|bdc53509363bb091|209|rds|local|vector|||0||
+carcs_nbda|stem|24b1948c74c5db72|f1315bb519a1934b|3d24166f5d12e4ca|-1659008119||t20201.7773546435s|954a69c0a11a2981|5654|rds|local|vector|||0||
 clean_data|function|da9b459d7f333e6e|||||||||||||||
 closest_stn_bouts|stem|69d233a19d6a9eed|b7df10f1caed29c9|1c7a1ede0c3416f2|-268495117||t20200.863568768s|09492122e8f179e2|40140|rds|local|vector|||482.828||
 closest_stn_carc|stem|d4042de04c2370e4|61a3b269197c7d66|1da03adec2088010|2004922924||t20200.8637624717s|a1579a136c79aa45|5793|rds|local|vector|||16.703||
 cluster_carcasses|function|6e9df3a52d1e3c8a|||||||||||||||
 dates|stem|35f2a995f015f9c2|5d57369745c075b6|2c530c1562a7fbd1|-1505472729||t20200.8567904816s|b3893c47d2f8b380|144|rds|local|vector|||0.016||
+dates_nbda|stem|4f3770dc6f85a8c0|09429013de105e7d|5c20411d8190c88d|-953116618||t20201.7944341171s|2b54411a22cedbd8|655|rds|local|vector|||0.078||
 days_after|stem|209b2a0d9c68bcab|2eac0bc41fe1538f|2c530c1562a7fbd1|-645242323||t20200.8707915817s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
+days_vec_nbda|stem|f74a0450879dc3a8|f5d7a8fd632ae19b|37e23d92a6e80366|1735684851||t20201.8368207679s|e5ebf5c8f4f0f43f|385|rds|local|vector|||0||
 detection_distance|stem|5e34fbc23d2414ef|29749851874b2fbd|2c530c1562a7fbd1|-1940065423||t20200.870791951s|03d0c2cbf5aa332b|54|rds|local|vector|||0||
 dg|function|3b1743e3bc54f78c|||||||||||||||
+discovery_plots|stem|480cfacc0fa1c801|e2451f01625abb05|a259a791451bbc60|-1908716188||t20201.7815087266s|a368749234803278|669466|rds|local|vector|||0.454||
+discoveryplot|function|d284b11222d4b585|||||||||||||||
 dist_bouts_carcasses|stem|9c6a50905455a62b|2d06c1a214257fb1|2c530c1562a7fbd1|-1060658074||t20200.8532014053s|03d0c2cbf5aa332b|54|rds|local|vector|||0||
 dist_bouts_wild_carcass_cluster|stem|fd33222c47d4243d|002f55d84e724561|2c530c1562a7fbd1|-2145440048||t20200.8532024157s|03d0c2cbf5aa332b|54|rds|local|vector|||0||
 distances|stem|c23a34b5e3bac5a9|8e4c9e28fb599f5e|7bc1c8b9d061c2b8|672263520||t20200.8947771527s|4e74dcdf3e5f8a66|127491|rds|local|vector|||2.578||
 exclude_incomplete_bouts|function|285e53585f0e6375|||||||||||||||
+expand|function|e92908f1b984db61|||||||||||||||
+expand_mats|function|b89843db444ed655|||||||||||||||
+expand_roost_mats|function|010f90ba651bc930|||||||||||||||
 feeding_bouts|stem|a9817eca76ee1f2e|39bd8a9d78d9ca41|2c530c1562a7fbd1|-944299867||t20200.8567880599s|e3b5b82ec960559d|334522|rds|local|vector|||1.61|package sf was built under R version 4.4.2|
 firsts|stem|38deaf0e0219f3dd|80e64958a33d17b4|be1e4d9b0466bf26|-111095218||t20200.9039024361s|2c51a4a3be9b73c3|65819|rds|local|vector|||0.89||
+firsts_nbda|stem|c7e1f76b79fa6b13|6270039eb88a84c3|3ec9199da59d9956|622710536||t20201.7786962188s|01f4a1280a36d423|94577|rds|local|vector|||0||
 firsts_see|stem|00cf426ad4158269|d9f46911c32dc52e|0eaaf5c1f4964bfc|-1198234657||t20200.9080838973s|696873049f0f22ee|97699|rds|local|vector|||1.25||
+firsts_with_dates|stem|07deadca6ccfceb1|06b1ef360751dd97|50c36928e76ee9ae|1155041364||t20201.8367212189s|a885dff8e77dec06|95839|rds|local|vector|||1.516||
 fix_names|function|552429cdeaa613d4|||||||||||||||
 fix_nets|function|b67a0c8e35a04c0c|||||||||||||||
 fix_nets_list|function|dddd927bf12261fe|||||||||||||||
@@ -67,12 +79,15 @@ fl_cumulative_bin_fixed_see|stem|f315569e3da32352|ff894b367864382b|68cdd4169a6c3
 fl_cumulative_bin_nets|stem|02b9c1ef9345dbfc|68b7bea143ea4916|0e5ee630f44605bd|1639060246||t20201.7679581792s|8081cdbc27f422da|221861|rds|local|vector|||3.219||
 fl_cumulative_bin_nets_see|stem|05c27830da1828cb|879d935a196966d1|17e6c19cbca04d7d|-863239463||t20201.7680009023s|475c59f1f92f6c04|312823|rds|local|vector|||3.406||
 fl_cumulative_bin_see|stem|84f855bd141ff957|b4b01f55616568aa|399ae0dd480dffbd|-2037854133||t20201.0041900115s|51675908dbe7380e|721298|rds|local|vector|||289.453|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_mats_expanded|stem|d156b1313343bbdc|071f06e21eb7da78|4e816435a30827fb|-1527837250||t20201.8433811249s|5a5623658e368a58|438255|rds|local|vector|||0.656||
+fl_mats_nbda|stem|7bb2e20ed91d1227|c06bcdc5f2f02068|a1a754ced28ded53|1506892933||t20201.7896322745s|b63b1a76cfe7061a|475877|rds|local|vector|||0||
 focal_gps_2023|stem|231561050f958003|e9624e70a001ad03|2c530c1562a7fbd1|-849282975||t20200.8678835349s|30ade5c2c0ef7956|1794891|rds|local|vector|||6.14|package sf was built under R version 4.4.2|
 focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-880552134||t20200.8678892539s|73b89784be840c80|1130121|rds|local|vector|||0.047||
 get_at_carcass|function|46e848c67ffeb4eb|||||||||||||||
 get_bouts_predictions|function|801ed5c4975fcd93|||||||||||||||
 get_carcass_bouts|function|28683c3852fd9433|||||||||||||||
 get_distances|function|656db71ac100a2f5|||||||||||||||
+get_dynamic_nets|function|5f1bb6c40908fa25|||||||||||||||
 get_firsts|function|8a550e0d5b44c179|||||||||||||||
 get_firsts_see|function|0d81fe982aca3cab|||||||||||||||
 get_fl_bin|function|e88d8749bfb822a8|||||||||||||||
@@ -90,8 +105,12 @@ get_has_sightings|function|bf6fc7a3add15b28|||||||||||||||
 get_has_visits|function|2f2e9cf43cf22753|||||||||||||||
 get_hires_tags|function|e3281777f5642b4a|||||||||||||||
 get_ilvs|function|453a702697ab6f00|||||||||||||||
+get_ilvs_lists|function|5071011760def858|||||||||||||||
 get_loginObject|function|3d0444bbc27ce24f|||||||||||||||
 get_matches|function|007f61d535e30c51|||||||||||||||
+get_N.RD|function|f61076475a36607e|||||||||||||||
+get_nbdaData_list|function|0d4167517c073c04|||||||||||||||
+get_nbdaData_list_dynamic|function|3486aa47a8a7d701|||||||||||||||
 get_nets|function|2a15a734c6f4639c|||||||||||||||
 get_nets_list|function|a72aef324f9acc31|||||||||||||||
 get_ornitela|function|a3621556651357d9|||||||||||||||
@@ -106,6 +125,7 @@ get_stat_feats|function|f7defc6f4304d34f|||||||||||||||
 get_wild_carcass_bouts|function|553e4e58eff382c6|||||||||||||||
 get_wild_carcasses|function|317a709b6d277d36|||||||||||||||
 get_www|function|a2bf6982bd1ad5d2|||||||||||||||
+get_years|function|b64546004099cfdb|||||||||||||||
 gps|stem|0ff7e00a99427b4e|3ed2192667e7ee52|1da7638e73eeb463|-1034569801||t20200.8998529562s|48226f576990f752|19465266|rds|local|vector|||1.937||
 gps_2023|stem|68ac320054a07a5a|c6150abb0bf0809a|2c530c1562a7fbd1|2090718017||t20200.8746771831s|fc787644241c2789|1881744|rds|local|vector|||1.953|package sf was built under R version 4.4.2. package doParallel was built under R version 4.4.2|
 gps_2024|stem|d0f59e34c53a1839|26a769e9f1e26c92|2c530c1562a7fbd1|322940411||t20200.8746878731s|5aaa4e370bba7cea|1509775|rds|local|vector|||0.079||
@@ -119,26 +139,51 @@ gps_flight_allday|stem|c66026c87d1da375|42bf6f9cc6ee7341|53d86c57e061d334|-44603
 gps_flight_allday_see|stem|09c445d3e565bb6f|cb49419bdbf1ec75|0f4027ef2118d850|1047463475||t20200.9393953209s|6d507a4f0538a814|19585210|rds|local|vector|||1.485||
 gps_flight_cumulative|stem|beea1841ba8a4e04|5c82cc48170a3928|b7f9229634c76ea1|540245365||t20200.9505640985s|71bfd85d03a943e2|137560878|rds|local|vector|||6.969||
 gps_flight_cumulative_see|stem|edf06545387dfcc5|b94c4f3b3a60709a|6a0665c1d4d5ebd6|-2099373567||t20200.9510569961s|1f0a3859dd62e136|137553211|rds|local|vector|||6.156||
+has_3_sightings|stem|8063c31cba360e62|a81a2330b38ce800|3b3c67aabff9d358|1468638185||t20201.774354077s|9769db91a3220414|126|rds|local|vector|||0||
+has_enough_sightings|stem|8063c31cba360e62|3085d8745b1387d3|4f1b0d790f696676|332892247||t20201.7773537446s|9769db91a3220414|126|rds|local|vector|||0||
 has_sightings|stem|a69fae369f170f01|0454b9798cd19439|1d3207596da9121f|-208344717||t20200.909318211s|1e2e749c6d4ad693|59|rds|local|vector|||0.063||
 has_visits|stem|cd6cc8c05b5ef170|4b3d7f4775749a14|24a4f7380179910e|1549758561||t20200.9093192972s|04fcf8b2530d31e5|77|rds|local|vector|||0.046||
 hours_after_carcass|stem|b82a7e80566ace47|da5014d78feb5a8e|2c530c1562a7fbd1|-1736445422||t20200.8532051598s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
 hours_before_carcass|stem|1f1424bcec121bff|bb375a30fa348382|2c530c1562a7fbd1|129936910||t20200.8532032072s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
 ilvs|stem|bd5c0e5956321a52|bc78159993d59ed2|45e584753aadb745|-1584093736||t20200.8960120207s|7b23693aa842647f|129891|rds|local|vector|||0.141||
+ilvs_lists|stem|error|f4fdbfb58de92fab|78a55176fbcde6ce|-1941029998||t20201.8493565534s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.125||Cant select columns that dont exist.x Column age_group doesnt exist.
+ilvs_nbda|stem|91db170a3738628d|52a094da00c0235f|3b263b333a5bba9b|909092668||t20201.8460218563s|d7cf3aa9d89ace4c|97227|rds|local|vector|||0.015||
 inpa|stem|97eb1f8a886bec33|37c727445087afb3|684b439fda0a1ca9|462496551||t20200.8726856524s|0b534cab64cc870b|4251|rds|local|vector|||0||
 inpa_carcs|stem|d36aa165f0328c14|ea645cd3cf984df9|ca6e8caae58026aa|-650389493||t20200.872686767s|608f361edecff773|7211|rds|local|vector|||0.047||
 loginObject|stem|affb390f070239b0|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t20200.853272751s|56f9cfb958dddea9|249|rds|local|vector|||5.734||
+matrix_orders_nbda|stem|61b223f4c4fde5b4|6db1efe27d499e5c|3c50629d4bd3f236|374844671||t20201.7896330686s|23a4ed5da340abcb|1205|rds|local|vector|||0.015||
 mean_amplitude|function|badaf723abe07336|||||||||||||||
+min_sightings|stem|209b2a0d9c68bcab|2eac0bc41fe1538f|2c530c1562a7fbd1|-1889081441||t20201.777351091s|b2d5d26f8983d7ae|52|rds|local|vector|||2.032|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
+mod_trycatch|function|d373adef9adc64e7|||||||||||||||
+Mods_N.FD_Aso|stem|eaf975b26a9e77c1|fe49f1009b539309|b3d6f53a3a238ec1|1457499457||t20201.8745275439s|5d609a3a11c7e003|505505|rds|local|vector|||0.062||
+Mods_N.FD_So|stem|8fe825ab22313e5e|18e39c0e27e64302|b3d6f53a3a238ec1|255934790||t20201.8745325416s|ff04a047434433a7|16904|rds|local|vector|||0.375|NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation|
+Mods_N.RD_Aso|stem|7ae9b258b6e0e812|b74929e4a9c15b25|05c921159fe18e68|-1266956719||t20201.8745842101s|0b6eaba5b4430820|583022|rds|local|vector|||0.062||
+Mods_N.RD_So|stem|3b2a5b6d39adac76|9dba2dfff292fc6d|05c921159fe18e68|-1147283786||t20201.8745755513s|4108f45f9c64426c|590517|rds|local|vector|||2.703||
+Mods_N.RS_Aso|stem|96003f551cef21ea|43a371637015d014|8e1ad6c057625150|-1203074726||t20201.8744732262s|9a98ba286e27313b|201034|rds|local|vector|||0.406||
+Mods_N.RS_So|stem|907009a52377485b|11c5424f03f209d5|8e1ad6c057625150|1018872523||t20201.8745152388s|446a0f819f01c5d2|207803|rds|local|vector|||3.422||
+N.FD|stem|29e6389bcba6dd56|a9a6373df24b69ea|a7570c19298c8755|969147786||t20201.8626990714s|9646c95d15aabfae|371701|rds|local|vector|||0.453||
+N.RD|stem|c86b375da1b95a7b|fde44754d022478a|10153236c93e1e1b|678914631||t20201.8627118811s|c3df56612510a1a7|443568|rds|local|vector|||0.266||
+N.RS|stem|2759f755257699cf|9c0851062513edb9|62395a91ecfb17d6|1194448061||t20201.8613803501s|7a71a868788ab03e|34298|rds|local|vector|||0||
+n_indivs|stem|824eead929f1cf4d|190afea820305d1a|3c50629d4bd3f236|-1719557170||t20201.8593843633s|1b577d9c0616ad7b|145|rds|local|vector|||0||
+n_timeperiods|stem|824eead929f1cf4d|b4f9d76acf9541d3|9a200ce6ba787262|-1057250930||t20201.8593872717s|1b577d9c0616ad7b|145|rds|local|vector|||0||
+nbdaData_list_dynamic_flight|stem|04bfacbd55214c9b|8e3b99d7f6508d50|a7ebe55235dffa6b|2021065099||t20201.8717445033s|e3f66993940d6948|500268|rds|local|vector|||3.328||
+nbdaData_list_dynamic_roost|stem|c28eb34eee8bca34|c01252827b556049|7f44537ad5fb4357|722048636||t20201.8711517292s|87b8196c3ba3e8b6|577539|rds|local|vector|||3.344||
+nbdaData_list_static_roost|stem|84b691faf14639c3|d3d9513204921683|9ee1ba367f4afb91|-1415753130||t20201.8717782276s|cfea2f0f38090665|196629|rds|local|vector|||2.703||
+nbdaModSum|function|54f71aa808eb8788|||||||||||||||
 oa|stem|d9396a4f1095fde7|5eab8936dbdd17eb|e08655a2c30d2230|1349497327||t20200.9110854757s|99c129c906151c58|2202|rds|local|vector|||0||
 oa_indivs_sorted|stem|2cb4cf65d049d5d6|e458c03b34d16230|14f4a0c1b3269b69|1559245335||t20200.9110868629s|98fa1a07c4abb547|1154|rds|local|vector|||0||
 oa_num|stem|24176514aad3e472|3868fcb0fcf9bece|14f4a0c1b3269b69|1096048686||t20200.911086562s|86b7064cf66fe42e|1565|rds|local|vector|||0||
 oa_see|stem|2c3fd2c01a2da7de|2fa9c91235159b46|3b3c67aabff9d358|1651638743||t20200.9110850256s|70d94f48aa9ff84f|2976|rds|local|vector|||0||
 oa_see_indivs_sorted|stem|d3f2ea1f43112454|28d465ed93945e78|5ac097721a2a9c1d|1377681695||t20200.911085938s|7a3a7d82650e944e|1267|rds|local|vector|||0.016||
 oa_see_num|stem|186e4c16b5337183|a0cca148cfb48df2|5ac097721a2a9c1d|1218802265||t20200.9110862731s|244125d0d04eea22|2212|rds|local|vector|||0||
+oas_nbda|stem|359b8743675a2f55|0cb33d97793ad548|0733151e962c6980|-734339478||t20201.7786969529s|b5913dc4e40cce3a|2921|rds|local|vector|||0||
+oas_nbda_updated|stem|e8b22d0d3b72dd40|d6cc18ab4a8eea39|baaf634ffb40c1d8|-1614846929||t20201.7896336481s|294379cb38e82383|2139|rds|local|vector|||0||
 prepare_dataset|function|52323c6a9a0c2004|||||||||||||||
 prepare_forloop|function|ab6c8d68711d5712|||||||||||||||
 prepare_full_dataset|function|b109f9773b98162d|||||||||||||||
 prepare_parallel|function|fd1e89eac5069279|||||||||||||||
 pw|stem|c004d56cab4ad004|27e4d6e31d138f35|2c530c1562a7fbd1|-1536787549|movebankCredentials/pw.Rda|t18907.7359670883s|36d9ea1c8315d78b|96|file|local|vector|||11.641||
+r_static_mns|stem|a43d08c32f2b4d3c|8eea4b09f482d204|9a200ce6ba787262|418674869||t20201.8441850604s|014535040189c30e|37903|rds|local|vector|||0.219||
 remaining_bouts|stem|444b39291ad8f767|bab897209c14da49|5d2a6f51c712b36b|-568710860||t20200.856853027s|272c07d889df28cb|173014|rds|local|vector|||0||
 remaining_bouts_2|stem|7dca91652c00a63b|93c2903439e2a770|b64c14a16e6b0473|-875668781||t20200.8568577991s|a1f0aaed0d341132|175148|rds|local|vector|||0.015||
 remove_bad_bouts|function|d4f88889a900892d|||||||||||||||
@@ -146,6 +191,9 @@ remove_captures|function|8ac8269f4c2d4c72|||||||||||||||
 remove_gps_rows|function|c420a2d7a3ac58fd|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 remove_points_before|function|4b1d419f68fcee87|||||||||||||||
+rename_roost_dates|function|6e654c485d04bb5c|||||||||||||||
+roost_mats_expanded|stem|c036de5f7dfe0708|6fe8c47954dfc544|a1af25eceb7aec31|-834803101||t20201.842364195s|da5ada99418685dd|552092|rds|local|vector|||1.031||
+roost_mats_nbda|stem|9494b675b3b4693c|708274e5dd9bb318|644724bea7eb1711|-1886955186||t20201.7896228899s|c4617e1d54de2884|73606|rds|local|vector|||0||
 roost_thresh|stem|5654ae499fd6c56c|f7fa471aa3f8197f|2c530c1562a7fbd1|393365559||t20200.961792549s|03d0c2cbf5aa332b|54|rds|local|vector|||1.781|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 roosts|stem|f96d85a93286726e|eb7053291138e663|553eb27881a72333|-1266328948||t20200.8943449093s|f33b18e6e5636ce2|190432|rds|local|vector|||215.671||
 roosts_bin|stem|c6fd6ab87a45834f|de79451bde7b2dba|4a24d9628e5be52b|-1036823890||t20200.9619923278s|461cdee831d4a9f7|133083|rds|local|vector|||7.25||
@@ -176,3 +224,4 @@ wild_carcs|stem|ea38595d1fbad127|50bf3b680df4e95a|703a2ff3bc46d661|1152211664||t
 ww|stem|3671723b38948200|ca683c339042d70a|2c530c1562a7fbd1|988165022||t20200.8947000753s|80019ba37f0b2d2c|36063|rds|local|vector|||5.328|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 ww_file|stem|1df606100b00afbb|cbd0c690d215ba61|2c530c1562a7fbd1|-814932461|data/raw/whoswho_vultures_20230920_new.xlsx|t19741.0464367943s|eeadd3240311275a|441300|file|local|vector|||11.734||
 www|stem|7881e84f642a98d1|31773ee6e2cefca0|69e86d0312058e93|1832508209||t20200.8947016001s|df551c280238e86f|3086|rds|local|vector|||0.032||
+years|stem|b3cc8928f9aa18ee|4ee6351114d33764|9ce64bbe5dff0e02|-251243143||t20201.7798969174s|7dc4ae8d7c3438d3|1409|rds|local|vector|||0.281||

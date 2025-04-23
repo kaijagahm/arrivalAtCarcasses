@@ -233,5 +233,62 @@ list(
   tar_target(fl_1hr_bin_nets, get_nets_list(fl_1hr_bin_fixed)),
   tar_target(fl_1hr_bin_nets_see, get_nets_list(fl_1hr_bin_fixed_see)),
   tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
-  tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see))
+  tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see)),
+
+  # NBDA --------------------------------------------------------------------
+  ## Define carcasses to run NBDA on
+  ## At least how many sightings?
+  tar_target(min_sightings, 3),
+  ## Going to use sightings, not arrivals, for NBDA.
+  tar_target(has_enough_sightings, which(map_dbl(firsts_see[has_sightings], nrow) >= min_sightings)),
+  tar_target(carcs_nbda, inpa_carcs[has_sightings][has_enough_sightings]),
+  tar_target(oas_nbda, oa_see[has_enough_sightings]),
+  tar_target(firsts_nbda, firsts_see[has_sightings][has_enough_sightings]),
+  tar_target(years, get_years(carcs_nbda, oas_nbda)),
+  tar_target(carcIDs_nbda, map_chr(carcs_nbda, ~as.character(.x$carcID[1]))),
+  ## Plots
+  tar_target(discovery_plots, map2(firsts_nbda, 
+                                   carcIDs_nbda, ~discoveryplot(.x, .y))),
+  ## Here we decide to use the cumulative flight networks for this. Will have to re-write the arguments to these targets if we decide to use different flight networks instead.
+  tar_target(fl_mats_nbda, fl_cumulative_bin_fixed_see[has_enough_sightings]),
+  tar_target(roost_mats_nbda, roosts_bin_fixed_see[has_enough_sightings]),
+  ## Need to convert the oas into numeric indices instead of a character vector
+  tar_target(matrix_orders_nbda, map(roost_mats_nbda, ~row.names(.x[[1]]))),
+  tar_target(oas_nbda_updated, map2(oas_nbda, matrix_orders_nbda, ~match(.x, .y))),
+  tar_target(dates_nbda, map2(carcs_nbda, firsts_nbda, ~mutate(data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(firsts_with_dates, map2(firsts_nbda, dates_nbda, ~left_join(.x, .y))),
+  tar_target(days_vec_nbda, map(firsts_with_dates, "day")),
+  tar_target(roost_mats_expanded, expand_roost_mats(roost_mats_nbda, fl_mats_nbda, days_vec_nbda)),
+  tar_target(fl_mats_expanded, map(fl_mats_nbda, ~map(.x, as.matrix))),
+  ## Create static roost networks
+  tar_target(r_static_mns, map(unique(roost_mats_expanded), ~as.matrix(Reduce("+", .x)/length(.x)))),
+  
+  ## Fix up ILVs
+  # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
+  tar_target(ilvs_nbda, map(ilvs[has_sightings][has_enough_sightings], rename_roost_dates)),
+  #tar_target(ilvs_lists, FIXME),
+  # First step: NBDA for all carcasses using dynamic roost network ----------
+  tar_target(n_indivs, map_dbl(roost_mats_nbda, ~nrow(.x[[1]]))),
+  tar_target(n_timeperiods, map_dbl(roost_mats_expanded, length)),
+  # Create static roost nets
+  tar_target(N.RS, map2(r_static_mns, n_indivs, ~array(.x, dim = c(.y, .y, 1)))),
+  #Create the empty arrays and slot in the network for each time period
+  tar_target(N.RD, get_dynamic_nets(n_indivs, n_timeperiods, roost_mats_expanded)),
+  tar_target(N.FD, get_dynamic_nets(n_indivs, n_timeperiods, fl_mats_expanded)),
+  # Now we need a vector specifying which time period corresponds to which detection event. Since we already did the work of expanding the matrices (oops), this vector will just be 1 through the number of detection events.
+  tar_target(assMatrixIndices, map(oas_nbda_updated, ~1:length(.x))),
+  #Now we enter the 4 dimensional network and assMatrixIndex as follows
+  tar_target(nbdaData_list_dynamic_roost, get_nbdaData_list(N.RD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
+  tar_target(nbdaData_list_static_roost, get_nbdaData_list(N.RS, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "static")),
+  tar_target(nbdaData_list_dynamic_flight, get_nbdaData_list(N.FD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
+  ## Make models
+  ### social
+  tar_target(Mods_N.RS_So, mod_trycatch(nbdaData_list_static_roost, type = "social")),
+  tar_target(Mods_N.RD_So, mod_trycatch(nbdaData_list_dynamic_roost, type = "social")),
+  tar_target(Mods_N.FD_So, mod_trycatch(nbdaData_list_dynamic_flight, type = "social")),
+  ### asocial
+  tar_target(Mods_N.RS_Aso, mod_trycatch(nbdaData_list_static_roost, type = "asocial")),
+  tar_target(Mods_N.RD_Aso, mod_trycatch(nbdaData_list_dynamic_roost, type = "asocial")),
+  tar_target(Mods_N.FD_Aso, mod_trycatch(nbdaData_list_dynamic_flight, type = "asocial"))
+  ## Get model stats
 )

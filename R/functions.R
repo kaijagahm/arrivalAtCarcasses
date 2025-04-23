@@ -824,3 +824,127 @@ get_nets <- function(fixed_list_subset){
 get_nets_list <- function(fixed_list){
   map(fixed_list, get_nets)
 }
+
+# NBDA --------------------------------------------------------------------
+nbdaModSum <- function(model){
+  dat <- data.frame(Variable = model@varNames,
+                    MLE = model@outputPar,
+                    SE = model@se)
+  return(dat)
+}
+
+get_years <- function(carcs, oas){
+  years <- map(carcs, ~st_drop_geometry(.x) %>% 
+        dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>%
+        mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% 
+        dplyr::select(-datetime)) %>% 
+    purrr::list_rbind() %>% 
+    mutate(n_detections = map_dbl(oas, length))
+  return(years)
+}
+
+discoveryplot <- function(firsts, carcID){
+  firsts %>% 
+    ggplot(aes(x = timestamp, y = rownumber))+
+    geom_line()+
+    geom_point(size = 2, pch = 21, fill = "white")+
+    theme_classic()+
+    labs(y = "Cumulative number of vultures", 
+         x = "Time", 
+         title = "Vultures discovering the carcass", 
+         caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
+    ggtitle(carcID)
+}
+
+expand_mats <- function(rm, fm, dv){
+  expanded <- vector(mode = "list", length = length(fm))
+  for(i in 1:length(dv)){
+    tryCatch(
+      #this is the chunk of code we want to run
+      {expanded[[i]] <- rm[[dv[i]]]
+      }, error = function(msg){
+        expanded[[i]] <- NULL
+      })
+  }
+  return(expanded)
+}
+
+expand_roost_mats <- function(roost_mats, fl_mats, days_vec){
+  rme <- vector(mode = "list", length = length(roost_mats))
+  for(i in 1:length(rme)){
+    expanded <- expand_mats(roost_mats[[i]], fl_mats[[i]], days_vec[[i]])
+    expanded_as_matrix <- map(expanded, ~{
+      if(!is.null(.x)){return(as.matrix(.x))}else{return(.x)}})
+    rme[[i]] <- expanded_as_matrix
+  }
+  return(rme)
+}
+
+rename_roost_dates <- function(df){
+  to_rename <- names(df)[grepl("roost_", names(df))]
+  new_names <- paste0("roost_night", 0:(length(to_rename)-1))
+  names(df)[names(df) %in% to_rename] <- new_names
+  return(df)
+}
+
+get_dynamic_nets <- function(ni, nt, matrices){
+  n_dynamic <- map2(ni, nt, ~array(NA, dim = c(.x, .x, 1, .y)))
+  for(i in 1:length(n_dynamic)){
+    for(j in 1:length(matrices[[i]])){
+      if(!is.null(matrices)){
+        n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], dim = c(ni[[i]], ni[[i]], 1))
+      }
+    }
+  }
+  return(n_dynamic)
+}
+
+get_nbdaData_list <- function(nets, cids, oas, amis, type){
+  outlist <- vector(mode = "list", length = length(nets))
+  for(i in 1:length(outlist)){
+    carcass <- cids[i]
+    if(type == "dynamic"){
+      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                               assMatrix = nets[[i]],
+                               orderAcq = oas[[i]],
+                               assMatrixIndex = amis[[i]])
+    }else{
+      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                               assMatrix = nets[[i]],
+                               orderAcq = oas[[i]])
+    }
+  }
+  return(outlist)
+}
+
+mod_trycatch <- function(datalist, type = "social"){
+  mod <- map(datalist, ~{
+    tryCatch({oadaFit(.x, type = type)}, error = function(msg){NULL})
+  })
+  return(mod)
+}
+
+getmodstats <- function(mod){
+  tryCatch({
+    ps <- ifelse(mod@type == "social", unname(nbdaPropSolveByST(model = mod)[1]), NA)
+    df <- data.frame(soc = mod@type,
+                     loglik = mod@loglik,
+                     aic = mod@aic,
+                     aicc = mod@aicc,
+                     varNames = mod@varNames,
+                     outputPar = mod@outputPar, #XXX this will need to change once the model has more params, but for now it's length 1, conveniently.
+                     se = mod@se,
+                     propsolve = ps)
+    return(df)}, 
+    error = function(msg){
+      df <- data.frame(soc = NA,
+                       loglik = NA, 
+                       aic = NA, 
+                       aicc = NA, 
+                       varNames = NA, 
+                       outputPar = NA, 
+                       se = NA,
+                       propsolve = NA)
+      return(df)})
+  
+}

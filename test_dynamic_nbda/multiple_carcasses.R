@@ -1,224 +1,225 @@
-# Multiple carcasses
-# - at least 3 vultures detecting
-# - at stations
-# - during the target time periods
-# - order of detection, not arrival
-# - roost nets (dynamic)
-# - flight nets (dynamic; 4km detection radius; cumulative)
-# - ILVs: age (static); distance from roost to carcass (time-varying)
+# # Multiple carcasses
+# # - at least 3 vultures detecting
+# # - at stations
+# # - during the target time periods
+# # - order of detection, not arrival
+# # - roost nets (dynamic)
+# # - flight nets (dynamic; 4km detection radius; cumulative)
+# # - ILVs: age (static); distance from roost to carcass (time-varying)
+# 
+# # Load packages -----------------------------------------------------------
+# library(here)
+# library(NBDA)
+# library(tidyverse)
+# library(sf)
+# library(lme4)
+# library(targets)
+# 
+# # Load data
+# tar_load(has_sightings)
+# tar_load(inpa_carcs)
+# tar_load(oa_see)
+# tar_load(firsts_see)
+# 
+# tar_load(fl_cumulative_bin_fixed_see)
+# tar_load(roosts_bin_fixed_see)
+# 
+# tar_load(gps)
+# tar_load(ilvs)
+# 
+# nbdaModSum <- function(model){
+#   dat <- data.frame(Variable = model@varNames,
+#                     MLE = model@outputPar,
+#                     SE = model@se)
+#   return(dat)
+# }
+# 
+# # Get the networks --------------------------------------------------------
+# which(has_sightings) %>% length() # we have 42 carcasses that have any sightings at all, but we also need to restrict it to carcasses with at least 3 vultures sighting the carcass
+# has_3_sightings <- which(map_dbl(firsts_see[has_sightings], nrow) >= 3)
+# length(has_3_sightings) # we will have 35 carcasses to work with that have at least 3 sightings.
+# carcs <- inpa_carcs[has_sightings][has_3_sightings]
+# oas <- oa_see[has_3_sightings]
+# firsts <- firsts_see[has_sightings][has_3_sightings]
+# all(map_dbl(oas, length) == map_dbl(firsts, nrow)) #TRUE (check for correspondence)
+# # check lengths--should all be 35
+# length(firsts)
+# length(oas)
+# length(carcs)
+# years <- map(carcs, ~st_drop_geometry(.x) %>% dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% dplyr::select(-datetime)) %>% purrr::list_rbind() %>% mutate(n_detections = map_dbl(oas, length))
+# 
+# # Make plots of carcass discoveries over time
+# carcIDs <- map_chr(carcs, ~as.character(.x$carcID[1]))
+# 
+# discoveryplot <- function(firsts, carcID){
+#   firsts %>% 
+#     ggplot(aes(x = timestamp, y = rownumber))+
+#     geom_line()+
+#     geom_point(size = 2, pch = 21, fill = "white")+
+#     theme_classic()+
+#     labs(y = "Cumulative number of vultures", 
+#          x = "Time", 
+#          title = "Vultures discovering the carcass", 
+#          caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
+#     ggtitle(carcID)
+# }
+# 
+# map2(firsts, carcIDs, ~discoveryplot(.x, .y))
+# 
+# fl_mats <- fl_cumulative_bin_fixed_see[has_3_sightings]
+# roost_mats <- roosts_bin_fixed_see[has_3_sightings]
+# 
+# # Need to convert the oas into numeric indices instead of a character vector
+# matrix_orders <- map(roost_mats, ~row.names(.x[[1]]))
+# oas <- map2(oas, matrix_orders, ~match(.x, .y))
+# 
+# # Need to change the roost networks to have the same number of slices as the flight networks
+# length(fl_mats[[1]])
+# length(roost_mats[[1]])
+# # This means we need to figure out which acquisition events happened on which days
+# dates <- map2(carcs, firsts, ~data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")) %>% mutate(day = 1:n()))
+# firsts <- map2(firsts, dates, ~.x %>%
+#                  left_join(.y))
+# days_vec <- map(firsts, ~.x$day)
+# 
+# expand <- function(roost_mats, fl_mats, days_vec){
+#   expanded <- vector(mode = "list", length = length(fl_mats))
+#   for(i in 1:length(days_vec)){
+#     tryCatch(
+#       #this is the chunk of code we want to run
+#       {expanded[[i]] <- roost_mats[[days_vec[i]]]
+#       }, error = function(msg){
+#         expanded[[i]] <- NULL
+#       })
+#   }
+#   return(expanded)
+# }
+# 
+# roost_mats_expanded <- map(1:length(roost_mats), ~{
+#   map(expand(roost_mats[[.x]], fl_mats[[.x]], days_vec[[.x]]), ~{
+#     if(!is.null(.x)){
+#       as.matrix(.x)
+#     }}
+#   )
+# })
+# 
+# fl_mats <- map(fl_mats, ~map(.x, as.matrix))
+# 
+# r_static_mns <- map(unique(roost_mats_expanded), ~as.matrix(Reduce("+", .x)/length(.x)))
+# 
+# # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
+# load(here("test_dynamic_nbda/data/ilvs.Rda"))
+# rename_roost_dates <- function(df){
+#   to_rename <- names(df)[grepl("roost_", names(df))]
+#   new_names <- paste0("roost_night", 0:(length(to_rename)-1))
+#   names(df)[names(df) %in% to_rename] <- new_names
+#   return(df)
+# }
+# 
+# my_ilvs <- map(ilvs[has_sightings][has_3_sightings], rename_roost_dates)
+# # XXX start here
+# ilvs_lists <- map(1:length(my_ilvs), ~{
+#   ilvs_list <- vector(mode = "list", length = length(roost_mats_expanded[[.x]]))
+#   for(i in 1:length(ilvs_list)){
+#     col <- paste0("roost_night", days_vec[[.x]][i]-1)
+#     if(col %in% names(my_ilvs[[.x]])){
+#       ilvs_list[[i]] <- my_ilvs[[.x]] %>%
+#         dplyr::select(local_identifier, age_group, all_of(col))
+#     }else{
+#       ilvs_list[[i]] <- "missing roost column"
+#     }
+#   }
+#   return(ilvs_list)
+# }, .progress = T)
+# 
+# length(ilvs_lists)
+# 
+# # First step: NBDA for all carcasses using dynamic roost network ----------
+# # No ILVs or flight networks yet--just testing this
+# n_indivs <- map_dbl(roost_mats, ~nrow(.x[[1]]))
+# 
+# n_timeperiods <- map_dbl(roost_mats_expanded, length)
+# 
+# # Create static roost nets
+# N.RS <- map2(r_static_mns, n_indivs, ~array(.x, dim = c(.y, .y, 1)))
+# 
+# #Create the empty arrays and slot in the network for each time period
+# N.RD <- map2(n_indivs, n_timeperiods, ~array(NA, dim = c(.x, .x, 1, .y)))
+# for(i in 1:length(N.RD)){
+#   for(j in 1:length(roost_mats_expanded[[i]])){
+#     if(!is.null(roost_mats_expanded[[i]][[1]])){
+#       N.RD[[i]][,,1,j] <- array(roost_mats_expanded[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+#     }
+#   }
+# }
 
-# Load packages -----------------------------------------------------------
-library(here)
-library(NBDA)
-library(tidyverse)
-library(sf)
-library(lme4)
-library(targets)
+# N.FD <- map2(n_indivs, n_timeperiods, ~array(NA, dim = c(.x, .x, 1, .y)))
+# for(i in 1:length(N.FD)){
+#   for(j in 1:length(fl_mats[[i]])){
+#     if(!is.null(fl_mats[[i]][[1]])){
+#       N.FD[[i]][,,1,j] <- array(fl_mats[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+#     }
+#   }
+# }
 
-# Load data
-tar_load(has_sightings)
-tar_load(inpa_carcs)
-tar_load(oa_see)
-tar_load(firsts_see)
+# # Now we need a vector specifying which time period corresponds to which detection event. Since we already did the work of expanding the matrices (oops), this vector will just be 1 through the number of detection events.
+# assMatrixIndices <- map(oas, ~1:length(.x))
+# 
+# #Now we enter the 4 dimensional network and assMatrixIndex as follows
+# nbdaData_list_dynamic <- vector(mode = "list", length = length(N.RD))
+# for(i in 1:length(nbdaData_list_dynamic)){
+#   carcass <- carcIDs[i]
+#   nbdaData_list_dynamic[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+#                                          assMatrix = N.RD[[i]],
+#                                          orderAcq = oas[[i]],
+#                                          assMatrixIndex = assMatrixIndices[[i]])
+#   cat("done with", i, "\n")
+# }
+# 
+# nbdaData_list_static <- vector(mode = "list", length = length(N.RS))
+# for(i in 1:length(nbdaData_list_static)){
+#   carcass <- carcIDs[i]
+#   nbdaData_list_static[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+#                                         assMatrix = N.RS[[i]],
+#                                         orderAcq = oas[[i]])
+#   cat("done with", i, "\n")
+# }
+# 
+# nbdaData_list_dynamic_flight <- vector(mode = "list", length = length(N.FD))
+# for(i in 1:length(nbdaData_list_dynamic_flight)){
+#   carcass <- carcIDs[i]
+#   nbdaData_list_dynamic_flight[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+#                                                 assMatrix = N.FD[[i]],
+#                                                 orderAcq = oas[[i]],
+#                                                 assMatrixIndex = assMatrixIndices[[i]])
+#   cat("done with", i, "\n")
+# }
+# 
+# Mods_N.RS_So <- map(nbdaData_list_static, ~{
+#   tryCatch({oadaFit(.x)}, error = function(msg){NULL})
+# })
+# 
+# Mods_N.RD_So <- map(nbdaData_list_dynamic, ~{
+#   tryCatch({oadaFit(.x)}, error = function(msg){NULL})
+# })
+# 
+# Mods_N.RS_Aso <- map(nbdaData_list_static, ~{
+#   tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
+# })
+# 
+# Mods_N.RD_Aso <- map(nbdaData_list_dynamic, ~{
+#   tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
+# })
+# 
+# Mods_N.FD_So <- map(nbdaData_list_dynamic_flight, ~{
+#   tryCatch({oadaFit(.x)}, error = function(msg){NULL})
+# })
+# 
+# Mods_N.FD_Aso <- map(nbdaData_list_dynamic_flight, ~{
+#   tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
+# })
 
-tar_load(fl_cumulative_bin_fixed_see)
-tar_load(roosts_bin_fixed_see)
-
-tar_load(gps)
-tar_load(ilvs)
-
-nbdaModSum <- function(model){
-  dat <- data.frame(Variable = model@varNames,
-                    MLE = model@outputPar,
-                    SE = model@se)
-  return(dat)
-}
-
-# Get the networks --------------------------------------------------------
-which(has_sightings) %>% length() # we have 42 carcasses that have any sightings at all, but we also need to restrict it to carcasses with at least 3 vultures sighting the carcass
-has_3_sightings <- which(map_dbl(firsts_see[has_sightings], nrow) >= 3)
-length(has_3_sightings) # we will have 35 carcasses to work with that have at least 3 sightings.
-carcs <- inpa_carcs[has_sightings][has_3_sightings]
-oas <- oa_see[has_3_sightings]
-firsts <- firsts_see[has_sightings][has_3_sightings]
-all(map_dbl(oas, length) == map_dbl(firsts, nrow)) #TRUE (check for correspondence)
-# check lengths--should all be 35
-length(firsts)
-length(oas)
-length(carcs)
-years <- map(carcs, ~st_drop_geometry(.x) %>% dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>% mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% dplyr::select(-datetime)) %>% purrr::list_rbind() %>% mutate(n_detections = map_dbl(oas, length))
-
-# Make plots of carcass discoveries over time
-carcIDs <- map_chr(carcs, ~as.character(.x$carcID[1]))
-
-discoveryplot <- function(firsts, carcID){
-  firsts %>% 
-    ggplot(aes(x = timestamp, y = rownumber))+
-    geom_line()+
-    geom_point(size = 2, pch = 21, fill = "white")+
-    theme_classic()+
-    labs(y = "Cumulative number of vultures", 
-         x = "Time", 
-         title = "Vultures discovering the carcass", 
-         caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
-    ggtitle(carcID)
-}
-
-map2(firsts, carcIDs, ~discoveryplot(.x, .y))
-
-fl_mats <- fl_cumulative_bin_fixed_see[has_3_sightings]
-roost_mats <- roosts_bin_fixed_see[has_3_sightings]
-
-# Need to convert the oas into numeric indices instead of a character vector
-matrix_orders <- map(roost_mats, ~row.names(.x[[1]]))
-oas <- map2(oas, matrix_orders, ~match(.x, .y))
-
-# Need to change the roost networks to have the same number of slices as the flight networks
-length(fl_mats[[1]])
-length(roost_mats[[1]])
-# This means we need to figure out which acquisition events happened on which days
-dates <- map2(carcs, firsts, ~data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")) %>% mutate(day = 1:n()))
-firsts <- map2(firsts, dates, ~.x %>%
-                 left_join(.y))
-days_vec <- map(firsts, ~.x$day)
-
-expand <- function(roost_mats, fl_mats, days_vec){
-  expanded <- vector(mode = "list", length = length(fl_mats))
-  for(i in 1:length(days_vec)){
-    tryCatch(
-      #this is the chunk of code we want to run
-      {expanded[[i]] <- roost_mats[[days_vec[i]]]
-      }, error = function(msg){
-        expanded[[i]] <- NULL
-      })
-  }
-  return(expanded)
-}
-
-roost_mats_expanded <- map(1:length(roost_mats), ~{
-  map(expand(roost_mats[[.x]], fl_mats[[.x]], days_vec[[.x]]), ~{
-    if(!is.null(.x)){
-      as.matrix(.x)
-    }}
-  )
-})
-
-fl_mats <- map(fl_mats, ~map(.x, as.matrix))
-
-r_static_mns <- map(unique(roost_mats_expanded), ~as.matrix(Reduce("+", .x)/length(.x)))
-
-# Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
-load(here("test_dynamic_nbda/data/ilvs.Rda"))
-rename_roost_dates <- function(df){
-  to_rename <- names(df)[grepl("roost_", names(df))]
-  new_names <- paste0("roost_night", 0:(length(to_rename)-1))
-  names(df)[names(df) %in% to_rename] <- new_names
-  return(df)
-}
-
-my_ilvs <- map(ilvs[has_sightings][has_3_sightings], rename_roost_dates)
-
-ilvs_lists <- map(1:length(my_ilvs), ~{
-  ilvs_list <- vector(mode = "list", length = length(roost_mats_expanded[[.x]]))
-  for(i in 1:length(ilvs_list)){
-    col <- paste0("roost_night", days_vec[[.x]][i]-1)
-    if(col %in% names(my_ilvs[[.x]])){
-      ilvs_list[[i]] <- my_ilvs[[.x]] %>%
-        dplyr::select(local_identifier, age_group, all_of(col))
-    }else{
-      ilvs_list[[i]] <- "missing roost column"
-    }
-  }
-  return(ilvs_list)
-}, .progress = T)
-
-length(ilvs_lists)
-
-# First step: NBDA for all carcasses using dynamic roost network ----------
-# No ILVs or flight networks yet--just testing this
-n_indivs <- map_dbl(roost_mats, ~nrow(.x[[1]]))
-
-n_timeperiods <- map_dbl(roost_mats_expanded, length)
-
-# Create static roost nets
-N.RS <- map2(r_static_mns, n_indivs, ~array(.x, dim = c(.y, .y, 1)))
-
-#Create the empty arrays and slot in the network for each time period
-N.RD <- map2(n_indivs, n_timeperiods, ~array(NA, dim = c(.x, .x, 1, .y)))
-for(i in 1:length(N.RD)){
-  for(j in 1:length(roost_mats_expanded[[i]])){
-    if(!is.null(roost_mats_expanded[[i]][[1]])){
-      N.RD[[i]][,,1,j] <- array(roost_mats_expanded[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
-    }
-  }
-}
-
-N.FD <- map2(n_indivs, n_timeperiods, ~array(NA, dim = c(.x, .x, 1, .y)))
-for(i in 1:length(N.FD)){
-  for(j in 1:length(fl_mats[[i]])){
-    if(!is.null(fl_mats[[i]][[1]])){
-      N.FD[[i]][,,1,j] <- array(fl_mats[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
-    }
-  }
-}
-
-# Now we need a vector specifying which time period corresponds to which detection event. Since we already did the work of expanding the matrices (oops), this vector will just be 1 through the number of detection events.
-assMatrixIndices <- map(oas, ~1:length(.x))
-
-#Now we enter the 4 dimensional network and assMatrixIndex as follows
-nbdaData_list_dynamic <- vector(mode = "list", length = length(N.RD))
-for(i in 1:length(nbdaData_list_dynamic)){
-  carcass <- carcIDs[i]
-  nbdaData_list_dynamic[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                                         assMatrix = N.RD[[i]],
-                                         orderAcq = oas[[i]],
-                                         assMatrixIndex = assMatrixIndices[[i]])
-  cat("done with", i, "\n")
-}
-
-nbdaData_list_static <- vector(mode = "list", length = length(N.RS))
-for(i in 1:length(nbdaData_list_static)){
-  carcass <- carcIDs[i]
-  nbdaData_list_static[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                                        assMatrix = N.RS[[i]],
-                                        orderAcq = oas[[i]])
-  cat("done with", i, "\n")
-}
-
-nbdaData_list_dynamic_flight <- vector(mode = "list", length = length(N.FD))
-for(i in 1:length(nbdaData_list_dynamic_flight)){
-  carcass <- carcIDs[i]
-  nbdaData_list_dynamic_flight[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                                                assMatrix = N.FD[[i]],
-                                                orderAcq = oas[[i]],
-                                                assMatrixIndex = assMatrixIndices[[i]])
-  cat("done with", i, "\n")
-}
-
-Mods_N.RS_So <- map(nbdaData_list_static, ~{
-  tryCatch({oadaFit(.x)}, error = function(msg){NULL})
-})
-
-Mods_N.RD_So <- map(nbdaData_list_dynamic, ~{
-  tryCatch({oadaFit(.x)}, error = function(msg){NULL})
-})
-
-Mods_N.RS_Aso <- map(nbdaData_list_static, ~{
-  tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
-})
-
-Mods_N.RD_Aso <- map(nbdaData_list_dynamic, ~{
-  tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
-})
-
-Mods_N.FD_So <- map(nbdaData_list_dynamic_flight, ~{
-  tryCatch({oadaFit(.x)}, error = function(msg){NULL})
-})
-
-Mods_N.FD_Aso <- map(nbdaData_list_dynamic_flight, ~{
-  tryCatch({oadaFit(.x, type = "asocial")}, error = function(msg){NULL})
-})
-
+# XXX START HERE
 # Things to get from the models:
 getmodstats <- function(mod){
   tryCatch({
