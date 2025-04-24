@@ -27,6 +27,14 @@ tar_load(roosts_bin_fixed_see)
 tar_load(gps)
 tar_load(ilvs)
 
+tar_load(Mods_N.RD_So)
+tar_load(Mods_N.RS_So)
+tar_load(Mods_N.RD_Aso)
+tar_load(Mods_N.RS_Aso)
+tar_load(Mods_N.FD_So)
+tar_load(Mods_N.FD_Aso)
+tar_load(carcIDs_nbda)
+
 search_roost <- data.frame(type = c(rep("dynamic", length(Mods_N.RD_So)),
                                     rep("static", length(Mods_N.RS_So))),
                            lower_min = NA,
@@ -35,7 +43,7 @@ search_roost <- data.frame(type = c(rep("dynamic", length(Mods_N.RD_So)),
                            upper_max = NA,
                            ci_lower = NA,
                            ci_upper = NA,
-                           carcID = c(carcIDs, carcIDs),
+                           carcID = c(carcIDs_nbda, carcIDs_nbda),
                            network = "roost")
 
 search_flight <- data.frame(type = rep("dynamic", length(Mods_N.RD_So)),
@@ -45,219 +53,100 @@ search_flight <- data.frame(type = rep("dynamic", length(Mods_N.RD_So)),
                             upper_max = NA,
                             ci_lower = NA,
                             ci_upper = NA,
-                            carcID = carcIDs,
+                            carcID = carcIDs_nbda,
                             network = "flight")
 
 ## Dynamic models (roosting)
 plotProfLik(which = 1, model = Mods_N.RD_So[[1]], range = c(0,1.5))
-search_roost[1,2:5] <- c(0, 0.2, 0.4, 0.6)
-profLikCI(which = 1, model = Mods_N.RD_So[[1]],
-          lowerRange = c(0, 0.2),
-          upperRange = c(0.5, 1)) # XXX this is an example of a thing i need to watch out for--make sure the lower and upper bounds are on the correct side of the minimum, otherwise it won't find them correctly.
-plotProfLik(which = 1, model = Mods_N.RD_So[[2]], range = c(0,2.5))
-search_roost[2,2:5] <- c(0, 0.2, 0.5, 1)
-plotProfLik(which = 1, model = Mods_N.RD_So[[3]], range = c(20,30))
-search_roost[3,2:5] <- c(NA, NA, 24, 28)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[4]], range = c(0, 1))
-search_roost[4,2:5] <- c(NA, NA, 0, 0.2)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[5]], range = c(0, 2.5))
-search_roost[5,2:5] <- c(NA, NA, 0.25, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[6]], range = c(0, 2.5))
-search_roost[6,2:5] <- c(0, 0.2, 0.4, 0.6)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[7]], range = c(0, 2.5))
-search_roost[7,2:5] <- c(NA, NA, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[8]], range = c(0, 1))
-search_roost[8,2:5] <- c(NA, NA, 0, 0.2)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[9]], range = c(0, 1))
-search_roost[9,2:5] <- c(0, 0.1, 0.4, 0.6)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[10]], range = c(0, 1))
-search_roost[10,2:5] <- c(NA, NA, 0.4, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[11]], range = c(0, 2))
-search_roost[11,2:5] <- c(0, 0.25, 1, 1.6)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[12]], range = c(0, 2))
-search_roost[12,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[12]], range = c(0, 2))
-search_roost[12,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[13]], range = c(0, 2))
-search_roost[13,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[14]], range = c(0, 10))
-search_roost[14,2:5] <- c(NA, NA, 4, 6)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[15]], range = c(0, 2.5))
-search_roost[15,2:5] <- c(0, 0.5, 1.5, 2.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[16]], range = c(0, 2))
-search_roost[16,2:5] <- c(NA, NA, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[17]], range = c(0, 50))
-search_roost[17,2:5] <- c(NA, NA, 30, 40)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[18]], range = c(0, 5))
-search_roost[18,2:5] <- c(NA, NA, 2, 3)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[19]], range = c(0, 30))
-search_roost[19,2:5] <- c(NA, NA, 25, 30)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[20]], range = c(0, 5))
-search_roost[20,2:5] <- c(NA, NA, 0, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[21]], range = c(0, 2))
-search_roost[21,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[22]], range = c(0, 2))
-search_roost[22,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[23]], range = c(0, 2.5))
-search_roost[23,2:5] <- c(0, 0.5, 2, 2.5)
-plotProfLik(which = 1, model = Mods_N.RD_So[[24]], range = c(0, 5))
-search_roost[24,2:5] <- c(NA, NA, 2, 4)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[25]], range = c(0, 2))
-search_roost[25,2:5] <- c(0, 0.25, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[26]], range = c(0, 2))
-search_roost[26,2:5] <- c(NA, NA, 1.5, 2)
-plotProfLik(which = 1, model = Mods_N.RD_So[[27]], range = c(0, 2))
-#search_roost[27,2:5] <- c(0, 0.25, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[28]], range = c(0, 2))
-search_roost[28,2:5] <- c(NA, NA, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[29]], range = c(0, 2))
-search_roost[29,2:5] <- c(0, 0.5, 1, 1.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[30]], range = c(0, 10))
-search_roost[30,2:5] <- c(NA, NA, 6, 8)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[31]], range = c(0, 2.5))
-search_roost[31,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[32]], range = c(0, 3))
-search_roost[32,2:5] <- c(0, 0.5, 2, 3)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[33]], range = c(0, 10))
-search_roost[33,2:5] <- c(0, 2, 6, 8)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[34]], range = c(0, 10))
-search_roost[34,2:5] <- c(NA, NA, 8, 9)
-#plotProfLik(which = 1, model = Mods_N.RD_So[[35]], range = c(0, 5))
-search_roost[35,2:5] <- c(NA, NA, 4, 5)
+search_roost[1,2:5] <- c(NA, NA, 0.1, 0.3)
+search_roost[2,2:5] <- c(NA, NA, 0.05, 0.1)
+search_roost[3,2:5] <- c(NA, NA, 10, 15)
+search_roost[4,2:5] <- c(NA, NA, 0.5, 1)
+search_roost[5,2:5] <- c(NA, NA, 0.25, 0.4)
+search_roost[6,2:5] <- c(NA, NA, 0.6, 0.8)
+search_roost[7,2:5] <- c(NA, NA, 0.6, 0.8)
+search_roost[8,2:5] <- c(NA, NA, 0.3, 0.4)
+search_roost[9,2:5] <- c(0, 0.5, 1, 1.5)
+search_roost[10,2:5] <- c(NA, NA, 0.1, 0.5)
+search_roost[11,2:5] <- c(NA, NA, 0.6, 1.0)
+search_roost[12,2:5] <- c(NA, NA, 0.4, 0.6)
+search_roost[13,2:5] <- c(NA, NA, 0.2, 0.4)
+search_roost[14,2:5] <- c(NA, NA, 10, 15)
+search_roost[15,2:5] <- c(0, 0.2, 0.8, 1)
+search_roost[16,2:5] <- c(NA, NA, 1, 2)
+search_roost[17,2:5] <- c(NA, NA, NA, NA)
+search_roost[18,2:5] <- c(0, 0.5, 1, 1.5)
+search_roost[19,2:5] <- c(NA, NA, 2, 3)
+search_roost[20,2:5] <- c(0, 1, 60, 80)
+search_roost[21,2:5] <- c(NA, NA, 0.1, 0.4)
+search_roost[22,2:5] <- c(NA, NA, 0.2, 0.4)
+search_roost[23,2:5] <- c(NA, NA, NA, NA)
+search_roost[24,2:5] <- c(NA, NA, 0.2, 0.4)
+search_roost[25,2:5] <- c(NA, NA, 0.6, 1)
+search_roost[26,2:5] <- c(NA, NA, 0.05, 0.1)
+search_roost[27,2:5] <- c(0, 0.25, 3, 4)
+search_roost[28,2:5] <- c(NA, NA, 0.8, 1)
+search_roost[29,2:5] <- c(NA, NA, 0.2, 0.4)
+search_roost[30,2:5] <- c(NA, NA, 4, 6)
+search_roost[31,2:5] <- c(NA, NA, 0.1, 0.2)
+search_roost[32,2:5] <- c(NA, NA, 0.4, 0.6)
+search_roost[33,2:5] <- c(0, 0.2, 0.6, 0.8)
+search_roost[34,2:5] <- c(NA, NA, NA, NA)
+search_roost[35,2:5] <- c(NA, NA, 0.05, 0.15)
+search_roost[36,2:5] <- c(0, 0.15, 0.6, 0.8)
+search_roost[37,2:5] <- c(0, 0.15, 0.6, 1)
+search_roost[38,2:5] <- c(NA, NA, NA, NA)
+search_roost[39,2:5] <- c(NA, NA, 0.01, 0.1)
+search_roost[40,2:5] <- c(0, 0.25, 0.5, 1)
+search_roost[41,2:5] <- c(0, 0.1, 1, 1.5)
 
 ## Dynamic models (flight)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[1]], range = c(5,300))
-search_flight[1,2:5] <- c(0, 50, 225, 250)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[2]], range = c(0,5))
-search_flight[2,2:5] <- c(0, 1, 2, 3)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[3]], range = c(0, 10))
-search_flight[3,2:5] <- c(NA, NA, 2, 4)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[4]], range = c(0, 3))
-search_flight[4,2:5] <- c(0, 0.5, 1, 1.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[5]], range = c(5, 40))
-search_flight[5,2:5] <- c(5, 10, 30, 35)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[6]], range = c(0, 2.5))
-search_flight[6,2:5] <- c(0, 0.1, 0.5, 1)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[7]], range = c(0, 10))
-search_flight[7,2:5] <- c(0, 1, 5, 7)
-# plotProfLik(which = 1, model = Mods_N.FD_So[[8]], range = c(0, 10))
-search_flight[8,2:5] <- c(NA, NA, 2, 4)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[9]], range = c(0, 10))
-search_flight[9,2:5] <- c(0, 2, 7, 9)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[10]], range = c(0, 1))
-search_flight[10,2:5] <- c(0, 0.2, 0.5, 0.7)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[11]], range = c(0, 3))
-search_flight[11,2:5] <- c(0, 0.25, 2, 2.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[12]], range = c(0, 3))
-search_flight[12,2:5] <- c(0, 0.25, 2, 2.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[12]], range = c(0, 3))
-search_flight[12,2:5] <- c(0, 0.5, 1.5, 2.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[13]], range = c(0, 2))
-search_flight[13,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[14]], range = c(0, 1000))
-search_flight[14,2:5] <- c(NA, NA, 400, 600)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[15]], range = c(3, 30))
-search_flight[15,2:5] <- c(2, 7, 20, 25)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[16]], range = c(0, 2))
-search_flight[16,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[17]], range = c(0, 2000))
-search_flight[17,2:5] <- c(0, 250, 1250, 1600)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[18]], range = c(0, 5))
-search_flight[18,2:5] <- c(NA, NA, 1, 2)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[19]], range = c(0, 200))
-search_flight[19,2:5] <- c(NA, NA, 150, 200)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[20]], range = c(0, 5))
-search_flight[20,2:5] <- c(0, 1, 2.5, 3.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[21]], range = c(0, 5))
-search_flight[21,2:5] <- c(0, 1, 3.5, 4.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[22]], range = c(0, 2))
-search_flight[22,2:5] <- c(NA, NA, 0.25, 0.50)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[23]], range = c(0, 30))
-search_flight[23,2:5] <- c(0, 5, 22, 26)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[24]], range = c(0, 5))
-search_flight[24,2:5] <- c(NA, NA, 3, 4)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[25]], range = c(0, 6))
-search_flight[25,2:5] <- c(0, 1, 4.5, 5.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[26]], range = c(0, 2))
-search_flight[26,2:5] <- c(NA, NA, 1.5, 2)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[27]], range = c(0, 10))
-search_flight[27,2:5] <- c(0, 2, 5, 6)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[28]], range = c(0, 2))
+search_flight[1,2:5] <- c(0, 25, 150, 200)
+search_flight[2,2:5] <- c(0, 0.5, 1.5, 2)
+search_flight[3,2:5] <- c(NA, NA, 1, 1.5)
+search_flight[4,2:5] <- c(NA, NA, 1, 1.5)
+search_flight[5,2:5] <- c(5, 10, 20, 25)
+search_flight[6,2:5] <- c(NA, NA, 0.4, 0.6)
+search_flight[7,2:5] <- c(0, 0.5, 10, 15)
+search_flight[8,2:5] <- c(0, 0.5, 4, 8)
+search_flight[9,2:5] <- c(0, 1, 6, 8)
+search_flight[10,2:5] <- c(NA, NA, 0.2, 0.4)
+search_flight[11,2:5] <- c(0, 1, 3, 4)
+search_flight[12,2:5] <- c(NA, NA, 0.5, 1)
+search_flight[13,2:5] <- c(NA, NA, 0.1, 0.3)
+search_flight[14,2:5] <- c(NA, NA, 10, 30)
+search_flight[15,2:5] <- c(2.5, 5, 20, 25)
+search_flight[16,2:5] <- c(0, 0.1, 0.5, 1)
+search_flight[17,2:5] <- c(NA, NA, 30, 50)
+search_flight[18,2:5] <- c(0, 2, 10, 15)
+search_flight[19,2:5] <- c(NA, NA, 1.5, 2)
+search_flight[20,2:5] <- c(0, 0.25, 1.5, 2)
+search_flight[21,2:5] <- c(NA, NA, 2, 2.5)
+search_flight[22,2:5] <- c(NA, NA, 0.4, 0.6)
+search_flight[23,2:5] <- c(NA, NA, NA, NA)
+search_flight[24,2:5] <- c(NA, NA, 1.5, 2.5)
+search_flight[25,2:5] <- c(0, 1, 2.5, 3)
+search_flight[26,2:5] <- c(NA, NA, 0.2, 0.4)
+search_flight[27,2:5] <- c(5, 10, 30, 40)
 search_flight[28,2:5] <- c(NA, NA, 1, 2)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[29]], range = c(0, 30))
-search_flight[29,2:5] <- c(2, 4, 20, 25)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[30]], range = c(0, 20))
-search_flight[30,2:5] <- c(NA, NA, 15, 20)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[31]], range = c(0, 2.5))
-search_flight[31,2:5] <- c(NA, NA, 0, 0.5)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[32]], range = c(0, 7))
-search_flight[32,2:5] <- c(0, 1, 4, 6)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[33]], range = c(0, 10))
+search_flight[29,2:5] <- c(NA, NA, 1.5, 2)
+search_flight[30,2:5] <- c(NA, NA, 3, 4)
+search_flight[31,2:5] <- c(0.5, 1.5, 6, 7)
+search_flight[32,2:5] <- c(0, 1, 6, 8)
 search_flight[33,2:5] <- c(NA, NA, 0, 2)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[34]], range = c(0, 65))
-search_flight[34,2:5] <- c(NA, NA, 50, 60)
-#plotProfLik(which = 1, model = Mods_N.FD_So[[35]], range = c(0, 20))
-search_flight[35,2:5] <- c(NA, NA, 15, 20)
+search_flight[34,2:5] <- c(0, 5, 15, 20)
+search_flight[35,2:5] <- c(NA, NA, 0.2, 1)
+search_flight[36,2:5] <- c(0, 1, 4, 6)
+search_flight[37,2:5] <- c(0, 0.5, 1.5, 2.5)
+search_flight[38,2:5] <- c(NA, NA, 10, 20)
+search_flight[39,2:5] <- c(0, 0.25, 1.5, 2)
+search_flight[40,2:5] <- c(0, 1, 6, 8)
+search_flight[41,2:5] <- c(0, 2, 18, 20)
 
-for(i in 1:length(Mods_N.RD_So)){
-  if(is.na(search_roost[i,2]) & !is.na(search_roost[i,4])){
-    ci <- profLikCI(which = 1, model = Mods_N.RD_So[[i]],
-                    upperRange = search_roost[i,4:5])
-  }else if(!is.na(search_roost[i,2]) & !is.na(search_roost[i,4])){
-    ci <- profLikCI(which = 1, model = Mods_N.RD_So[[i]],
-                    lowerRange = search_roost[i,2:3],
-                    upperRange = search_roost[i,4:5])
-  }else{
-    ci <- c(NA, NA)
-  }
-  search_roost[i,6:7] <- ci 
-  cat("done with ", i, "\n")
-}
+write_rds(search_flight, file = here("data/created/search_flight.RDS"))
+write_rds(search_roost, file = here("data/created/search_roost.RDS"))
 
-for(i in 1:length(Mods_N.FD_So)){
-  if(is.na(search_flight[i,2]) & !is.na(search_flight[i,4])){
-    ci <- profLikCI(which = 1, model = Mods_N.FD_So[[i]],
-                    upperRange = search_flight[i,4:5])
-  }else if(!is.na(search_flight[i,2]) & !is.na(search_flight[i,4])){
-    ci <- profLikCI(which = 1, model = Mods_N.FD_So[[i]],
-                    lowerRange = search_flight[i,2:3],
-                    upperRange = search_flight[i,4:5])
-  }else{
-    ci <- c(NA, NA)
-  }
-  search_flight[i,6:7] <- ci 
-  cat("done with ", i, "\n")
-}
-
-solveprops_dynamic_lower <- map2_dbl(search_roost$ci_lower[search_roost$type == "dynamic"], nbdaData_list_dynamic, ~{
-  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
-})
-
-solveprops_dynamic_upper <- map2_dbl(search_roost$ci_upper[search_roost$type == "dynamic"], nbdaData_list_dynamic, ~{
-  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
-})
-
-solveprops_dynamic_flight_lower <- map2_dbl(search_flight$ci_lower[search_flight$type == "dynamic"], nbdaData_list_dynamic_flight, ~{
-  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
-})
-
-solveprops_dynamic_flight_upper <- map2_dbl(search_flight$ci_upper[search_flight$type == "dynamic"], nbdaData_list_dynamic_flight, ~{
-  nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
-})
-
-search_roost$propsolve_lower[search_roost$type == "dynamic"] <- solveprops_dynamic_lower
-search_roost$propsolve_upper[search_roost$type == "dynamic"] <- solveprops_dynamic_upper
-search_flight$propsolve_lower[search_flight$type == "dynamic"] <- solveprops_dynamic_flight_lower
-search_flight$propsolve_upper[search_flight$type == "dynamic"] <- solveprops_dynamic_flight_upper
-
-search <- bind_rows(search_roost, search_flight)
-search <- search %>%
-  mutate(sig_ci = ifelse(propsolve_lower > 0, TRUE, FALSE),
-         soc = "social")
-
-# join all these calculated conf int params to the overall model summary table
-summaries <- left_join(summaries, search, by = c("carcID", "soc", "type", "network")) %>%
-  left_join(years) # this includes info not just on years but also on carcass location, station, and weight, so we can analyze social transmission by carcass characteristics.
+## back to the targets pipeline now.
 
 # Plotting ----------------------------------------------------------------
 # (Post-hoc analysis)

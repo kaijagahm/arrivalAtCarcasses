@@ -185,7 +185,8 @@ list(
   tar_target(oa_indivs_sorted, purrr::map(oa, sort)),
   tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
   tar_target(acq_times, purrr::map(firsts[has_visits], "timestamp")),
-  tar_target(see_times, purrr::map(firsts[has_sightings], "timestamp")),
+  tar_target(see_times, purrr::map(firsts_see[has_sightings], "timestamp")),
+  tar_target(check1, check_1(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times)),
   ## 15. Get GPS subsets for flight (four different intervals)
   tar_target(gps_flight_allday, get_flight_allday(gps, has_visits)),
   tar_target(gps_flight_allday_see, get_flight_allday(gps, has_sightings)),
@@ -195,6 +196,7 @@ list(
   tar_target(gps_flight_3hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 3)),
   tar_target(gps_flight_1hr, get_gps_flight_hr(gps, has_visits, acq_times, hrs = 1)),
   tar_target(gps_flight_1hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 1)),
+  tar_target(check2, check_2(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see)),
   ## 16. Get roost nets
   tar_target(roosts_dates, get_roost_dates(roosts, has_visits)),
   tar_target(roosts_dates_see, get_roost_dates(roosts, has_sightings)),
@@ -212,6 +214,7 @@ list(
   tar_target(fl_3hr_bin_see, get_fl_bin_list(gps_flight_3hr_see, detection_distance)),
   tar_target(fl_1hr_bin, get_fl_bin_list(gps_flight_1hr, detection_distance)),
   tar_target(fl_1hr_bin_see, get_fl_bin_list(gps_flight_1hr_see, detection_distance)),
+  tar_target(check3, check_3(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see)),
   # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
   tar_target(fl_allday_bin_fixed, fix_nets_list(fl_allday_bin, oa_indivs_sorted)),
   tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
@@ -297,5 +300,26 @@ list(
   tar_target(sums_RD_A, get_summaries(Mods_N.RD_Aso, carcIDs_nbda, "dynamic", "roost")),
   tar_target(sums_FD, get_summaries(Mods_N.FD_So, carcIDs_nbda, "dynamic", "flight")),
   tar_target(sums_FD_A, get_summaries(Mods_N.FD_Aso, carcIDs_nbda, "dynamic", "flight")),
-  tar_target(summaries, bind_rows(sums_RS, sums_RD, sums_RS_A, sums_RD_A, sums_FD, sums_FD_A))
+  tar_target(summaries, bind_rows(sums_RS, sums_RD, sums_RS_A, sums_RD_A, sums_FD, sums_FD_A)),
+  
+  # Move over to multiple_carcasses.R script to manually define the search areas for the confidence intervals
+  # Now back to here, loading in those files
+  tar_target(search_flight_file, here("data/created/search_flight.RDS"), format = "file"),
+  tar_target(search_roost_file, here("data/created/search_roost.RDS"), format = "file"),
+  tar_target(search_flight, readRDS(search_flight_file)),
+  tar_target(search_roost, readRDS(search_roost_file)),
+  tar_target(cis_flight, get_model_cis(Mods_N.FD_So, search_flight)),
+  tar_target(cis_roost, get_model_cis(Mods_N.RD_So, search_roost)),
+  ## Get prop solve for CIs
+  # actually get the confidence intervals now that we've defined the search space
+  tar_target(solveprops_roost_lower, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "lower")),
+  tar_target(solveprops_roost_upper, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "upper")),
+  tar_target(solveprops_flight_lower, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "lower")),
+  tar_target(solveprops_flight_upper, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "upper")),
+  ## Add these back to cis_roost and cis_flight
+  tar_target(cis_flight_updated, update_cis_dfs(cis_flight, solveprops_flight_lower, solveprops_flight_upper)),
+  tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
+  tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
+  tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years))
+
 )

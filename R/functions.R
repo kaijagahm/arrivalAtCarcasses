@@ -654,6 +654,16 @@ get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }
 
+check_1 <- function(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
+  if(length(oa) != length(oa_indivs_sorted)){stop("check1: length mismatch 1")}
+  if(length(oa_indivs_sorted) != length(oa_num)){stop("check1: length mismatch 2")}
+  if(length(oa_num) != length(oa)){stop("check1: length mismatch 3")}
+  
+  if(length(oa_see) != length(oa_see_indivs_sorted)){stop("check1: length mismatch 1")}
+  if(length(oa_see_indivs_sorted) != length(oa_see_num)){stop("check1: length mismatch 2")}
+  if(length(oa_see_num) != length(oa_see)){stop("check1: length mismatch 3")}
+}
+
 get_flight_allday <- function(gps, subsettor){
   flight_allday <- map(gps[subsettor], ~.x %>%
                          group_by(dateOnly) %>%
@@ -694,6 +704,11 @@ get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
     out[[i]] <- subsets
   }
   return(out)
+}
+
+check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see){
+  if(length(unique(map_dbl(list(gps_flight_1hr, gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
+  if(length(unique(map_dbl(list(gps_flight_1hr_see, gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
 }
 
 get_roost_dates <- function(roosts, subsettor){
@@ -803,6 +818,11 @@ fix_nets <- function(nets, indivs){
     updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
+}
+
+check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see){
+  if(length(unique(map_dbl(list(fl_1hr_bin, fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
+  if(length(unique(map_dbl(list(fl_1hr_bin_see, fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
 }
 
 fix_nets_list <- function(list, oa_sorted){
@@ -919,7 +939,7 @@ get_nbdaData_list <- function(nets, cids, oas, amis, type){
 
 mod_trycatch <- function(datalist, type = "social"){
   mod <- map(datalist, ~{
-    tryCatch({oadaFit(.x, type = type)}, error = function(msg){NULL})
+    tryCatch({oadaFit(.x, type = type)}, error = function(msg){"error!"})
   })
   return(mod)
 }
@@ -954,5 +974,49 @@ get_summaries <- function(models_list, cids, type, network){
     setNames(cids) %>%
     purrr::list_rbind(names_to = "carcID") %>%
     mutate(type = type, network = network)
+  return(out)
+}
+
+get_model_cis <- function(mods, search){
+  for(i in 1:length(mods)){
+    if(is.na(search[i,2]) & !is.na(search[i,4])){
+      ci <- profLikCI(which = 1, model = mods[[i]],
+                      upperRange = search[i,4:5])
+    }else if(!is.na(search[i,2]) & !is.na(search[i,4])){
+      ci <- profLikCI(which = 1, model = mods[[i]],
+                      lowerRange = search[i,2:3],
+                      upperRange = search[i,4:5])
+    }else{
+      ci <- c(NA, NA)
+    }
+    search[i,6:7] <- ci 
+  }
+  return(search)
+}
+
+get_solveprops_list <- function(cis, datalist, type = "dynamic", bound){
+  if(bound == "lower"){
+    out <- map2_dbl(cis$ci_lower[cis$type == type], datalist, ~{
+      nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+    })
+  }else if(bound == "upper"){
+    out <- map2_dbl(cis$ci_upper[cis$type == type], datalist, ~{
+      nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+    })
+  }
+
+  return(out)
+}
+
+update_cis_dfs <- function(cis_df, lower, upper){
+  cis_df$propsolve_lower[cis_df$type == "dynamic"] <- lower
+  cis_df$propsolve_upper[cis_df$type == "dynamic"] <- upper
+  return(cis_df)
+}
+
+bind_cis <- function(x, y){
+  out <- bind_rows(x, y) %>% 
+    mutate(sig_ci = ifelse(propsolve_lower > 0, T, F), 
+           soc = "social")
   return(out)
 }
