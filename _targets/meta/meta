@@ -122,10 +122,12 @@ get_see_carcass|function|3dde066daa9b0ef6|||||||||||||||
 get_seeds_gps|function|ad57bb52482179b3|||||||||||||||
 get_sns|function|3e407dcf3513d114|||||||||||||||
 get_stat_feats|function|f7defc6f4304d34f|||||||||||||||
+get_summaries|function|16ec8545fe3e007d|||||||||||||||
 get_wild_carcass_bouts|function|553e4e58eff382c6|||||||||||||||
 get_wild_carcasses|function|317a709b6d277d36|||||||||||||||
 get_www|function|a2bf6982bd1ad5d2|||||||||||||||
 get_years|function|b64546004099cfdb|||||||||||||||
+getmodstats|function|06d0b868b595a688|||||||||||||||
 gps|stem|0ff7e00a99427b4e|3ed2192667e7ee52|1da7638e73eeb463|-1034569801||t20200.8998529562s|48226f576990f752|19465266|rds|local|vector|||1.937||
 gps_2023|stem|68ac320054a07a5a|c6150abb0bf0809a|2c530c1562a7fbd1|2090718017||t20200.8746771831s|fc787644241c2789|1881744|rds|local|vector|||1.953|package sf was built under R version 4.4.2. package doParallel was built under R version 4.4.2|
 gps_2024|stem|d0f59e34c53a1839|26a769e9f1e26c92|2c530c1562a7fbd1|322940411||t20200.8746878731s|5aaa4e370bba7cea|1509775|rds|local|vector|||0.079||
@@ -215,6 +217,13 @@ split_data_fun_forloop|function|545d7387ee9580ac|||||||||||||||
 stations|stem|9572b8282927a24e|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t20200.8567886289s|ebea1b6d01620f94|4810|rds|local|vector|||0.016||
 stn_min_dists_bouts|stem|656a96a52f086c84|d3164736b6295c32|1c7a1ede0c3416f2|1596751479||t20200.8579793745s|d64aaaf5cdfe2009|44288|rds|local|vector|||90.89||
 stn_min_dists_carc|stem|144f091bdae6ccab|722d7af084a670b7|1da03adec2088010|-824407272||t20200.863802063s|4884540ddbee280a|1843|rds|local|vector|||3.375||
+summaries|stem|307a149d8e81fce5|95c2c0dd32e48147|19f46fecca793e86|470808022||t20202.711463904s|233fef9b074c8c0c|4246|rds|local|vector|||0||
+sums_FD|stem|546201940c8dd0e2|e3e8a0598c04a783|fc530d293f1297dd|282334182||t20202.7114473316s|6eb385e98fc4bce7|640|rds|local|vector|||0.172||
+sums_FD_A|stem|872fd31acb81f01a|bd33dd183e750f76|ad4ebc95af3d2969|-429537817||t20202.7114446552s|33561c5dd9f236a9|930|rds|local|vector|||0.046||
+sums_RD|stem|ea87d41b0786fae9|2ee89f63ea9e9be4|397d9c3dfc60066c|2088453774||t20202.7114584144s|bf53bb1bb5a89113|2032|rds|local|vector|||0.188||
+sums_RD_A|stem|a4296814dc5f1ef5|ea5572c6ab4482e9|b270b0ffb63f30b8|-1981577924||t20202.7114518209s|f62cdaa7feaae168|926|rds|local|vector|||0.031||
+sums_RS|stem|7bbbce827dcaeae0|e447060c0ac5638f|f1f9ca375e07a9ed|-14405386||t20202.7114619846s|a34ad12d7422e6dd|2159|rds|local|vector|||0.156||
+sums_RS_A|stem|19ccc21560726cdc|03ee8d5dd156fd23|b49687af159d0bba|-356826307||t20202.7114635098s|040b480daa46d076|922|rds|local|vector|||0.031||
 time_bouts_wild_carcass_cluster|stem|2a75e03b9a5773e7|df215f1d6d931697|2c530c1562a7fbd1|-1776093177||t20200.8532035797s|08ec9a1d380611bb|62|rds|local|vector|||0||
 transform_datetimes|function|f544daba49d91f68|||||||||||||||
 wild|stem|df9fc680099b75e3|3953c89e48864a24|684b439fda0a1ca9|2075403839||t20200.8747114421s|6d193ae8ae38d8fa|6023|rds|local|vector|||0||

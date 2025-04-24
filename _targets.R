@@ -289,6 +289,13 @@ list(
   ### asocial
   tar_target(Mods_N.RS_Aso, mod_trycatch(nbdaData_list_static_roost, type = "asocial")),
   tar_target(Mods_N.RD_Aso, mod_trycatch(nbdaData_list_dynamic_roost, type = "asocial")),
-  tar_target(Mods_N.FD_Aso, mod_trycatch(nbdaData_list_dynamic_flight, type = "asocial"))
+  tar_target(Mods_N.FD_Aso, mod_trycatch(nbdaData_list_dynamic_flight, type = "asocial")),
   ## Get model stats
+  tar_target(sums_RS, get_summaries(Mods_N.RS_So, carcIDs_nbda, "static", "roost")),
+  tar_target(sums_RD, get_summaries(Mods_N.RD_So, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_RS_A, get_summaries(Mods_N.RS_Aso, carcIDs_nbda, "static", "roost")),
+  tar_target(sums_RD_A, get_summaries(Mods_N.RD_Aso, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_FD, get_summaries(Mods_N.FD_So, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(sums_FD_A, get_summaries(Mods_N.FD_Aso, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(summaries, bind_rows(sums_RS, sums_RD, sums_RS_A, sums_RD_A, sums_FD, sums_FD_A))
 )

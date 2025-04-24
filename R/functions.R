@@ -948,3 +948,11 @@ getmodstats <- function(mod){
       return(df)})
   
 }
+
+get_summaries <- function(models_list, cids, type, network){
+  out <- map(models_list, getmodstats) %>%
+    setNames(cids) %>%
+    purrr::list_rbind(names_to = "carcID") %>%
+    mutate(type = type, network = network)
+  return(out)
+}
