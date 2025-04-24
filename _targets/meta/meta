@@ -4,6 +4,7 @@ a|stem|c6f1547f0c3278b7|c4b4990740854928|f2b0a7158cc9f060|-142220961||t20200.856
 aca|stem|cefe4264583450e4|37ac615a7c0a4948|b1f36b5be804e5af|-836938684||t20200.8713389575s|6e3b2ae7f2bd6ba8|8715|rds|local|vector|||0.047|attribute variables are assumed to be spatially constant throughout all geometries|
 acq_times|stem|dc4839c0e786112b|35ee3d518d92c7c6|e08655a2c30d2230|-719906112||t20200.9119402625s|e144b8694d2d9cc8|4007|rds|local|vector|||0.016||
 add_bout_ids|function|02d75280eca61955|||||||||||||||
+age_groups|stem|7a811fc47f4b32b1|33301c6c148cafe2|188c4d25e451d1bf|-1640320999||t20202.9033782433s|fd469b9c96ce9201|939|rds|local|vector|||79.891||
 all_bouts_annotated|stem|a83be4f69bf59506|f2ba4cc727ab35c9|fa36a96b275c4cfd|1695976617||t20200.8638034547s|f391d82a382b4abd|292168|rds|local|vector|||0||
 all_bouts_assigned|stem|9f5a24ffaf4ef4be|017bcb5e891d6b22|a3dc1eb4af4a7b03|-1740766730||t20200.8568710377s|a4a02518d2a5f1c9|423342|rds|local|vector|||0.031||
 all_carcasses|stem|da9527ff456f917c|57c30c682bdfcb5e|efa2b9ead2c7a7e9|-969723668||t20200.8568716337s|a72373eafcb7c2f1|8936|rds|local|vector|||0.016||
@@ -44,6 +45,7 @@ clean_data|function|da9b459d7f333e6e|||||||||||||||
 closest_stn_bouts|stem|69d233a19d6a9eed|b7df10f1caed29c9|1c7a1ede0c3416f2|-268495117||t20200.863568768s|09492122e8f179e2|40140|rds|local|vector|||482.828||
 closest_stn_carc|stem|d4042de04c2370e4|61a3b269197c7d66|1da03adec2088010|2004922924||t20200.8637624717s|a1579a136c79aa45|5793|rds|local|vector|||16.703||
 cluster_carcasses|function|6e9df3a52d1e3c8a|||||||||||||||
+correct_ages|function|c19796f9823a52e1|||||||||||||||
 dates|stem|35f2a995f015f9c2|5d57369745c075b6|2c530c1562a7fbd1|-1505472729||t20200.8567904816s|b3893c47d2f8b380|144|rds|local|vector|||0.016||
 dates_nbda|stem|4f3770dc6f85a8c0|09429013de105e7d|5c20411d8190c88d|-953116618||t20201.7944341171s|2b54411a22cedbd8|655|rds|local|vector|||0.078||
 days_after|stem|209b2a0d9c68bcab|2eac0bc41fe1538f|2c530c1562a7fbd1|-645242323||t20200.8707915817s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
@@ -54,7 +56,7 @@ discovery_plots|stem|480cfacc0fa1c801|e2451f01625abb05|a259a791451bbc60|-1908716
 discoveryplot|function|d284b11222d4b585|||||||||||||||
 dist_bouts_carcasses|stem|9c6a50905455a62b|2d06c1a214257fb1|2c530c1562a7fbd1|-1060658074||t20200.8532014053s|03d0c2cbf5aa332b|54|rds|local|vector|||0||
 dist_bouts_wild_carcass_cluster|stem|fd33222c47d4243d|002f55d84e724561|2c530c1562a7fbd1|-2145440048||t20200.8532024157s|03d0c2cbf5aa332b|54|rds|local|vector|||0||
-distances|stem|c23a34b5e3bac5a9|8e4c9e28fb599f5e|7bc1c8b9d061c2b8|672263520||t20200.8947771527s|4e74dcdf3e5f8a66|127491|rds|local|vector|||2.578||
+distances|stem|7441d38d200b3591|8e4c9e28fb599f5e|04bd3a53bc6546d4|672263520||t20202.8959832042s|aa2255fa32690564|128128|rds|local|vector|||2.125||
 exclude_incomplete_bouts|function|285e53585f0e6375|||||||||||||||
 expand|function|e92908f1b984db61|||||||||||||||
 expand_mats|function|b89843db444ed655|||||||||||||||
@@ -98,7 +100,7 @@ focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-88055213
 get_at_carcass|function|46e848c67ffeb4eb|||||||||||||||
 get_bouts_predictions|function|801ed5c4975fcd93|||||||||||||||
 get_carcass_bouts|function|28683c3852fd9433|||||||||||||||
-get_distances|function|656db71ac100a2f5|||||||||||||||
+get_distances|function|171afa7fb7d96182|||||||||||||||
 get_dynamic_nets|function|5f1bb6c40908fa25|||||||||||||||
 get_firsts|function|8a550e0d5b44c179|||||||||||||||
 get_firsts_see|function|0d81fe982aca3cab|||||||||||||||
@@ -116,8 +118,9 @@ get_gps_flight_hr|function|f4b411be8a81ffb3|||||||||||||||
 get_has_sightings|function|bf6fc7a3add15b28|||||||||||||||
 get_has_visits|function|2f2e9cf43cf22753|||||||||||||||
 get_hires_tags|function|e3281777f5642b4a|||||||||||||||
-get_ilvs|function|453a702697ab6f00|||||||||||||||
-get_ilvs_lists|function|5071011760def858|||||||||||||||
+get_ilv_separate|function|c8b6dfff29bc320b|||||||||||||||
+get_ilvs|function|7fe6524ff9eb4dc5|||||||||||||||
+get_ilvs_lists|function|ce57b1211a0e8f2d|||||||||||||||
 get_loginObject|function|3d0444bbc27ce24f|||||||||||||||
 get_matches|function|007f61d535e30c51|||||||||||||||
 get_model_cis|function|7bf7b23cf6bb4f3a|||||||||||||||
@@ -161,9 +164,10 @@ has_sightings|stem|a69fae369f170f01|0454b9798cd19439|1d3207596da9121f|-208344717
 has_visits|stem|cd6cc8c05b5ef170|4b3d7f4775749a14|24a4f7380179910e|1549758561||t20200.9093192972s|04fcf8b2530d31e5|77|rds|local|vector|||0.046||
 hours_after_carcass|stem|b82a7e80566ace47|da5014d78feb5a8e|2c530c1562a7fbd1|-1736445422||t20200.8532051598s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
 hours_before_carcass|stem|1f1424bcec121bff|bb375a30fa348382|2c530c1562a7fbd1|129936910||t20200.8532032072s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
-ilvs|stem|bd5c0e5956321a52|bc78159993d59ed2|45e584753aadb745|-1584093736||t20200.8960120207s|7b23693aa842647f|129891|rds|local|vector|||0.141||
-ilvs_lists|stem|error|f4fdbfb58de92fab|78a55176fbcde6ce|-1941029998||t20201.8493565534s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.125||Cant select columns that dont exist.x Column age_group doesnt exist.
-ilvs_nbda|stem|91db170a3738628d|52a094da00c0235f|3b263b333a5bba9b|909092668||t20201.8460218563s|d7cf3aa9d89ace4c|97227|rds|local|vector|||0.015||
+ilvs|stem|5497b2459f295cf5|bc78159993d59ed2|fb1cec92740a6c48|-1584093736||t20202.900555896s|b174d05befdb8975|128789|rds|local|vector|||0.281||
+ilvs_lists|stem|f10a363ef52bf64c|699b4906a7f7f58a|19d53dd34b9d2926|-1941029998||t20202.908432796s|245a45fecadc575e|21830|rds|local|vector|||2.796||
+ilvs_nbda|stem|f8e755670e56e16f|ea8160abefb444e0|c2f80d5d307ad42f|909092668||t20202.9010364281s|bfed54dd83edf4bc|96841|rds|local|vector|||0||
+ilvs_nbda_updated|stem|047727e614c29d81|30fe1c8fb32a9427|cf7e50a29740c1e8|-1545335457||t20202.8918437103s|fc7063b30ce7adfd|100806|rds|local|vector|||0.234||
 inpa|stem|97eb1f8a886bec33|37c727445087afb3|684b439fda0a1ca9|462496551||t20200.8726856524s|0b534cab64cc870b|4251|rds|local|vector|||0||
 inpa_carcs|stem|d36aa165f0328c14|ea645cd3cf984df9|ca6e8caae58026aa|-650389493||t20200.872686767s|608f361edecff773|7211|rds|local|vector|||0.047||
 loginObject|stem|affb390f070239b0|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t20200.853272751s|56f9cfb958dddea9|249|rds|local|vector|||5.734||
@@ -208,6 +212,7 @@ remove_gps_rows|function|c420a2d7a3ac58fd|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 remove_points_before|function|4b1d419f68fcee87|||||||||||||||
 rename_roost_dates|function|6e654c485d04bb5c|||||||||||||||
+roost_carc_distances|stem|7a811fc47f4b32b1|366c5a32db5546a6|188c4d25e451d1bf|1787171978||t20202.904274635s|fd469b9c96ce9201|939|rds|local|vector|||77.406|Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column dist_roost.. Unknown or uninitialised column|
 roost_mats_expanded|stem|c036de5f7dfe0708|6fe8c47954dfc544|1e583281a6e28305|-834803101||t20202.772299794s|da5ada99418685dd|552092|rds|local|vector|||0.813||
 roost_mats_nbda|stem|9494b675b3b4693c|708274e5dd9bb318|644724bea7eb1711|-1886955186||t20201.7896228899s|c4617e1d54de2884|73606|rds|local|vector|||0||
 roost_thresh|stem|5654ae499fd6c56c|f7fa471aa3f8197f|2c530c1562a7fbd1|393365559||t20200.961792549s|03d0c2cbf5aa332b|54|rds|local|vector|||1.781|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|

@@ -16,24 +16,8 @@ library(lme4)
 library(targets)
 
 # Load data
-tar_load(has_sightings)
-tar_load(inpa_carcs)
-tar_load(oa_see)
-tar_load(firsts_see)
-
-tar_load(fl_cumulative_bin_fixed_see)
-tar_load(roosts_bin_fixed_see)
-
-tar_load(gps)
-tar_load(ilvs)
-
 tar_load(Mods_N.RD_So)
 tar_load(Mods_N.RS_So)
-tar_load(Mods_N.RD_Aso)
-tar_load(Mods_N.RS_Aso)
-tar_load(Mods_N.FD_So)
-tar_load(Mods_N.FD_Aso)
-tar_load(carcIDs_nbda)
 
 search_roost <- data.frame(type = c(rep("dynamic", length(Mods_N.RD_So)),
                                     rep("static", length(Mods_N.RS_So))),
@@ -150,7 +134,9 @@ write_rds(search_roost, file = here("data/created/search_roost.RDS"))
 
 # Plotting ----------------------------------------------------------------
 # (Post-hoc analysis)
-summaries %>%
+tar_load(summaries_updated)
+
+summaries_updated %>%
   filter(type == "dynamic", soc == "social", !is.na(sig_ci)) %>%
   ggplot(aes(y = carcID, color = network))+
   geom_segment(aes(x = propsolve_lower, xend = propsolve_upper, linetype = sig_ci), position = position_dodge(width = 0.5))+
@@ -167,7 +153,7 @@ summaries %>%
 # Okay, this is great, we have info on both flight and roosting for the same carcasses.
 # Now we could ask whether there's a trend for number of detection events, weight of carcass, or location of carcass. And then we can incorporate ILVs and compete these against each other.
 
-test <- summaries %>%
+test <- summaries_updated %>%
   filter(type == "dynamic", soc == "social", !is.na(sig_ci)) 
 
 mylogit <- glm(sig_ci ~ network + n_detections + carcassWeight, data = test, family = "binomial") # XXX should probably standardize detections and carcassWeight
@@ -190,9 +176,11 @@ newdata %>%
              aes(x = carcassWeight, y = p, pch = network), size = 3)+
   scale_shape_manual(name = "Network", values = c(21, 8))
 
-# So, heavier carcasses are less likely to show a signal of social transmission; roost network is less likely to show social transmission; more detections is more likely to show a signal of social transmission. 
+# So, heavier carcasses are very slightly less likely to show a signal of social transmission; roost network is less likely to show social transmission; more detections is more likely to show a signal of social transmission. 
 
 # Okay, now, within the models that show significant evidence of social transmission, what relationships do we see?
+mod1 <- lm(propsolve ~ carcassWeight + n_detections + network, data = test[test$sig_ci,])
+summary(mod1) 
 test %>%
   filter(sig_ci) %>%
   ggplot(aes(x = carcassWeight, col = network, shape = network))+
@@ -201,13 +189,10 @@ test %>%
   scale_color_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   theme_minimal()+
   scale_shape_manual(name = "Network", values = c(19, 8))+
-  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2, linetype = 2)+
+  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2)+
   scale_fill_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   labs(y = "Proportion of detections by social transmission",
        x = "Carcass weight (kg)")
-
-mod1 <- lm(propsolve ~ carcassWeight + network, data = test[test$sig_ci,])
-summary(mod1)
 
 test %>%
   filter(sig_ci) %>%
@@ -218,7 +203,7 @@ test %>%
   scale_fill_manual(name = "Network", values = c("dodgerblue2", "olivedrab4"))+
   theme_minimal()+
   scale_shape_manual(name = "Network", values = c(19, 8))+
-  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2, linetype = 2)+
+  geom_smooth(method = "lm", aes(y = propsolve, fill = network), alpha = 0.2)+
   labs(y = "Proportion of detections by social transmission",
        x = "Number of detections") # we see that number of detections affected how likely we were to detect a social effect, but not the magnitude of the social effect once detected.
 
@@ -238,41 +223,25 @@ test %>%
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
   facet_wrap(~year, scales = "free_x", nrow = 2, strip.position="right")
 
-# Adding ILVs -------------------------------------------------------------
-length(ilvs)
-my_ilvs <- ilvs[has_sightings][has_3_sightings]
-my_ilvs <- map(my_ilvs, ~{
-  vec <- 0:((.x %>% dplyr::select(contains("roost_")) %>% length())-1)
-  new_names <- paste0("dist_roost_night_", vec)
-  names(.x)[2:(length(vec)+1)] <- new_names
-  return(.x)
-})
-ilvs_lists <- map2(my_ilvs, days_vec, ~{
-  lst <- vector(mode = "list", length = length(.y))
-  for(i in 1:length(lst)){
-    col <- paste0("dist_roost_night_", .y[i]-1)
-    lst[[i]] <- .x %>%
-      dplyr::select(local_identifier, age_group, "dist_roost" = any_of(col))
-  }
-  return(lst)
-})
-
-# Need to make a matrix where each row is an individual and each column is an acquisition event. Then we fill it with the values.
-roost_carc_distances <- map2(n_indivs, oas, 
-                             ~matrix(NA, nrow = .x, ncol = length(.y)))
-age_groups <- map2(n_indivs, oas,
-                   ~matrix(NA, nrow = .x, ncol = length(.y)))
-for(i in 1:length(age_groups)){ # loop on carcasses
-  ag <- age_groups[[i]]
-  rcd <- roost_carc_distances[[i]]
-  for(j in 1:nrow(ag)){ # loop on individuals
-    ag[j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))}, error = function(msg){NA})
-    rcd[j,] <- tryCatch({map_dbl(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))}, error = function(msg){NA})
-  }
-  roost_carc_distances[[i]] <- rcd
-  age_groups[[i]] <- ag
-  cat("done with carcass ", i, "\n")
-}
+# # Adding ILVs -------------------------------------------------------------
+# 
+# 
+# # Need to make a matrix where each row is an individual and each column is an acquisition event. Then we fill it with the values.
+# roost_carc_distances <- map2(n_indivs, oas, 
+#                              ~matrix(NA, nrow = .x, ncol = length(.y)))
+# age_groups <- map2(n_indivs, oas,
+#                    ~matrix(NA, nrow = .x, ncol = length(.y)))
+# for(i in 1:length(age_groups)){ # loop on carcasses
+#   ag <- age_groups[[i]]
+#   rcd <- roost_carc_distances[[i]]
+#   for(j in 1:nrow(ag)){ # loop on individuals
+#     ag[j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))}, error = function(msg){NA})
+#     rcd[j,] <- tryCatch({map_dbl(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))}, error = function(msg){NA})
+#   }
+#   roost_carc_distances[[i]] <- rcd
+#   age_groups[[i]] <- ag
+#   cat("done with carcass ", i, "\n")
+# }
 
 # Check for NA values
 map_dbl(roost_carc_distances, ~round(sum(is.na(.x))/length(.x), 2)) %>%  hist() # a very small proportion of values are NA, presumably when we didn't have distances to the carcass available.

@@ -268,8 +268,8 @@ list(
   
   ## Fix up ILVs
   # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
-  tar_target(ilvs_nbda, map(ilvs[has_sightings][has_enough_sightings], rename_roost_dates)),
-  #tar_target(ilvs_lists, FIXME),
+  tar_target(ilvs_nbda, ilvs[has_sightings][has_enough_sightings]),
+  tar_target(ilvs_lists, get_ilvs_lists(ilvs_nbda, oas_nbda_updated, days_vec_nbda)),
   # First step: NBDA for all carcasses using dynamic roost network ----------
   tar_target(n_indivs, map_dbl(roost_mats_nbda, ~nrow(.x[[1]]))),
   tar_target(n_timeperiods, map_dbl(roost_mats_expanded, length)),
@@ -320,6 +320,9 @@ list(
   tar_target(cis_flight_updated, update_cis_dfs(cis_flight, solveprops_flight_lower, solveprops_flight_upper)),
   tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
   tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
-  tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years))
-
+  tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
+  # XXX start here with adding ILVs and/or multimodel inference
+  tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),
+  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age"))
+  # Check for NA values in the distances and replace them with means
 )

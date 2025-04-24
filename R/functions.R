@@ -540,7 +540,8 @@ get_distances <- function(roosts, inpa_carcs){
         mutate(dist = as.numeric(st_distance(., .y))) %>%
         st_drop_geometry() %>%
         dplyr::select(local_identifier, roost_date, dist) %>%
-        pivot_wider(id_cols = "local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_")
+        pivot_wider(id_cols = "local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_") %>%
+        mutate(year = .y$year[1])
     }else{
       dist <- NULL
     }
@@ -566,10 +567,15 @@ get_www <- function(ww){
 }
 
 get_ilvs <- function(distances, www){
-  ilvs <- map(distances, ~{
-    .x %>%
-      left_join(www, by = "local_identifier")
-  }) # let's reduce this down to just one age group column, depending on the carcass
+  yrs <- map_dbl(distances, ~.x$year[1])
+  ilvs <- map2(distances, yrs, ~{
+    tojoin <- www %>%
+      select(local_identifier, "age_group" = paste0("age_group_", .y))
+    out <- left_join(.x, tojoin, by = "local_identifier")
+    to_rename <- names(out)[grepl("roost_", names(out))]
+    new_names <- paste0("roost_night", 0:(length(to_rename)-1))
+    names(out)[names(out) %in% to_rename] <- new_names
+    return(out)})
   return(ilvs)
 }
 
@@ -900,13 +906,6 @@ expand_roost_mats <- function(roost_mats, fl_mats, days_vec){
   return(rme)
 }
 
-rename_roost_dates <- function(df){
-  to_rename <- names(df)[grepl("roost_", names(df))]
-  new_names <- paste0("roost_night", 0:(length(to_rename)-1))
-  names(df)[names(df) %in% to_rename] <- new_names
-  return(df)
-}
-
 get_dynamic_nets <- function(ni, nt, matrices){
   n_dynamic <- map2(ni, nt, ~array(NA, dim = c(.x, .x, 1, .y)))
   for(i in 1:length(n_dynamic)){
@@ -1019,4 +1018,49 @@ bind_cis <- function(x, y){
     mutate(sig_ci = ifelse(propsolve_lower > 0, T, F), 
            soc = "social")
   return(out)
+}
+
+get_ilv_separate <- function(n_indivs, oas, ilvs_lists, ilv){
+  out <- map2(n_indivs, oas, ~matrix(NA, nrow = .x, ncol = length(.y)))
+  for(i in 1:length(out)){
+    for(j in 1:nrow(out[[i]])){
+      if(ilv == "age"){
+        out[[i]][j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))}, 
+                                error = function(msg){NA})
+      }else if(ilv == "dist"){
+        out[[i]][j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))}, 
+                                 error = function(msg){NA})
+      }
+    }
+  }
+  return(out)
+}
+
+# XXX FIXME
+get_ilvs_lists <- function(ilvs_nbda, oas_nbda_updated, days_vec_nbda){
+  ilvs_lists <- vector(mode = "list", length = length(ilvs_nbda))
+  for(i in 1:length(ilvs_lists)){
+    ilvs <- ilvs_nbda[[i]]
+    oas <- oas_nbda_updated[[i]]
+    dv <- days_vec_nbda[[i]]
+    
+  }
+  
+  
+  
+  
+  for(i in 1:length(ilvs_lists)){
+    lst <- vector(mode = "list", length = length(oas_nbda_updated[[i]]))
+    for(j in 1:length(lst)){
+      col <- paste0("roost_night", days_vec_nbda[[i]][j]-1)
+      if(col %in% names(ilvs_nbda[[i]])){
+        lst[[i]] <- ilvs_nbda[[i]] %>%
+          dplyr::select(local_identifier, age_group, all_of(col))
+      }else{
+        lst[[i]] <- "missing roost column"
+      }
+    }
+    ilvs_lists[[i]] <- lst
+  }
+  return(ilvs_lists)
 }
