@@ -269,7 +269,7 @@ list(
   ## Fix up ILVs
   # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
   tar_target(ilvs_nbda, ilvs[has_sightings][has_enough_sightings]),
-  tar_target(ilvs_lists, get_ilvs_lists(ilvs_nbda, oas_nbda_updated, days_vec_nbda)),
+  tar_target(ilvs_lists, get_ilvs_lists(ilvs_nbda, days_vec_nbda)),
   # First step: NBDA for all carcasses using dynamic roost network ----------
   tar_target(n_indivs, map_dbl(roost_mats_nbda, ~nrow(.x[[1]]))),
   tar_target(n_timeperiods, map_dbl(roost_mats_expanded, length)),
@@ -321,8 +321,27 @@ list(
   tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
   tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
   tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
-  # XXX start here with adding ILVs and/or multimodel inference
   tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),
-  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age"))
-  # Check for NA values in the distances and replace them with means
+  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age")), # XXX i'm noticing that these are all square matrices. we should be including individuals that never found the carcass, too--need to go back and make sure those are included in this.
+  tar_target(prop_nas_roost_carc_distances, map_dbl(roost_carc_distances, ~sum(is.na(.x))/length(.x))), # XXX probably later we should not use this ILV for any carcasses where too high a proportion of them are NA.
+  tar_target(roost_carc_distances_NAs_filled, substitute_na_distances(roost_carc_distances)),
+  tar_target(std_roost_carc_distances_NAs_filled, std_dists(roost_carc_distances_NAs_filled)),
+  tar_target(age_groups_bin, binarize_ages(age_groups)),
+  tar_target(age_groups_reversed, map(age_groups_bin, ~{+(!.x)})),
+  ## Get datasets for models containing one network and both ILVs
+  tar_target(nbdaData_list_dynamic_roost_ilvs, get_nbdaData_list_ilvs(N.RD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin)),
+  tar_target(nbdaData_list_dynamic_flight_ilvs, get_nbdaData_list_ilvs(N.FD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin)),
+  ## Make models
+  ### social
+  tar_target(Mods_N.RD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "social")),
+  tar_target(Mods_N.FD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "social")),
+  ### asocial
+  tar_target(Mods_N.RD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "asocial")),
+  tar_target(Mods_N.FD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "asocial")),
+  ## Get model stats
+  tar_target(sums_RD_ilvs, get_summaries(Mods_N.RD_So_ilvs, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_RD_A_ilvs, get_summaries(Mods_N.RD_Aso_ilvs, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_FD_ilvs, get_summaries(Mods_N.FD_So_ilvs, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(sums_FD_A_ilvs, get_summaries(Mods_N.FD_Aso_ilvs, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(summaries_ilvs, bind_rows(sums_RD_ilvs, sums_RD_A_ilvs, sums_FD_ilvs, sums_FD_A_ilvs))
 )

@@ -730,16 +730,16 @@ get_roost_dates <- function(roosts, subsettor){
 
 get_roost_pairwise_distances <- function(dates){
   map(dates, ~{
-      outout <- map(.x, ~{
-        ids <- .x$local_identifier
-        out <- as.data.frame(st_distance(.x)) %>%
-          mutate(across(everything(), as.numeric))
-        row.names(out) <- ids
-        colnames(out) <- ids
-        return(out)
-      })
-      return(outout)
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
     })
+    return(outout)
+  })
 }
 
 get_roosts_bin <- function(dates, roost_thresh){
@@ -861,9 +861,9 @@ nbdaModSum <- function(model){
 
 get_years <- function(carcs, oas){
   years <- map(carcs, ~st_drop_geometry(.x) %>% 
-        dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>%
-        mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% 
-        dplyr::select(-datetime)) %>% 
+                 dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>%
+                 mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% 
+                 dplyr::select(-datetime)) %>% 
     purrr::list_rbind() %>% 
     mutate(n_detections = map_dbl(oas, length))
   return(years)
@@ -1003,7 +1003,7 @@ get_solveprops_list <- function(cis, datalist, type = "dynamic", bound){
       nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
     })
   }
-
+  
   return(out)
 }
 
@@ -1025,42 +1025,79 @@ get_ilv_separate <- function(n_indivs, oas, ilvs_lists, ilv){
   for(i in 1:length(out)){
     for(j in 1:nrow(out[[i]])){
       if(ilv == "age"){
-        out[[i]][j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))}, 
-                                error = function(msg){NA})
+        out[[i]][j,] <- map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))
       }else if(ilv == "dist"){
-        out[[i]][j,] <- tryCatch({map_chr(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))}, 
-                                 error = function(msg){NA})
+        out[[i]][j,] <- map_dbl(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))
       }
     }
   }
   return(out)
 }
 
-# XXX FIXME
-get_ilvs_lists <- function(ilvs_nbda, oas_nbda_updated, days_vec_nbda){
+get_ilvs_lists <- function(ilvs_nbda, days_vec_nbda){
   ilvs_lists <- vector(mode = "list", length = length(ilvs_nbda))
   for(i in 1:length(ilvs_lists)){
     ilvs <- ilvs_nbda[[i]]
-    oas <- oas_nbda_updated[[i]]
-    dv <- days_vec_nbda[[i]]
-    
-  }
-  
-  
-  
-  
-  for(i in 1:length(ilvs_lists)){
-    lst <- vector(mode = "list", length = length(oas_nbda_updated[[i]]))
-    for(j in 1:length(lst)){
-      col <- paste0("roost_night", days_vec_nbda[[i]][j]-1)
-      if(col %in% names(ilvs_nbda[[i]])){
-        lst[[i]] <- ilvs_nbda[[i]] %>%
-          dplyr::select(local_identifier, age_group, all_of(col))
-      }else{
-        lst[[i]] <- "missing roost column"
-      }
-    }
-    ilvs_lists[[i]] <- lst
+    nights_vec <- days_vec_nbda[[i]]-1
+    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
+    ilvs_lists[[i]] <- ilvs_this_carcass
   }
   return(ilvs_lists)
 }
+
+substitute_na_distances <- function(roost_carc_distances){
+  map(roost_carc_distances, ~{
+    # Replace NA values with column means
+    mat_filled <- apply(.x, 2, function(col) {
+      col[is.na(col)] <- mean(col, na.rm = TRUE)
+      return(col)
+    })
+    
+    # Convert the result back to a matrix (apply returns a matrix here, but to be safe):
+    mat_filled <- as.matrix(mat_filled)
+    return(mat_filled)
+  })
+}
+
+std_dists <- function(distances){
+  out <- map(distances, ~{
+    (.x-mean(.x))/sd(.x)
+  })
+  return(out)
+}
+
+binarize_ages <- function(age_groups){
+  out <- map(age_groups, ~{
+    .x[.x == "01_juv_sub"] <- 0
+    .x[.x == "02_adult"] <- 1
+    .x <- apply(.x, 2, as.numeric)
+    return(.x)
+  })
+  return(out)
+}
+
+get_nbdaData_list_ilvs <- function(nets, cids, oas, amis, dists, ags){
+  # THIS IS SO DUMB! Because of the way the code is written for the nbdaData function, I need to create global environment variable that I can then refer to by name for the ILVs. I can't pass an *object* into the function for the ILV matrices. grrrrrrr
+  for(i in 1:length(dists)){
+    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+    name2 <- quo_name(paste0("age_groups_", i))
+    assign(name1, dists[[i]], envir = .GlobalEnv)
+    assign(name2, ags[[i]], envir = .GlobalEnv)
+  }
+  
+  # now we can use those to actually create the nbdadata objects
+  outlist <- vector(mode = "list", length = length(nets))
+  for(i in 1:length(outlist)){
+    ag_name <- paste0("age_groups_", i)
+    srcd_name <- paste0("std_roost_carc_distances_", i)
+    ilvs_to_use <- c(ag_name, srcd_name)
+    carcass <- cids[i]
+    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                             assMatrix = nets[[i]],
+                             orderAcq = oas[[i]],
+                             assMatrixIndex = amis[[i]],
+                             asoc_ilv = ilvs_to_use,
+                             asocialTreatment = "timevarying")}
+  return(outlist)
+}
+
