@@ -200,8 +200,8 @@ list(
   ## 16. Get roost nets
   tar_target(roosts_dates, get_roost_dates(roosts, has_visits)),
   tar_target(roosts_dates_see, get_roost_dates(roosts, has_sightings)),
-  tar_target(roosts_pairwise_distances, get_roost_pairwise_distances(roosts_dates)),
-  tar_target(roosts_pairwise_distances_see, get_roost_pairwise_distances(roosts_dates_see)),
+  # tar_target(roosts_pairwise_distances, get_roost_pairwise_distances(roosts_dates)),
+  # tar_target(roosts_pairwise_distances_see, get_roost_pairwise_distances(roosts_dates_see)),
   tar_target(roost_thresh, 500),
   tar_target(roosts_bin, get_roosts_bin(roosts_dates, roost_thresh)),
   tar_target(roosts_bin_see, get_roosts_bin(roosts_dates_see, roost_thresh)),
@@ -263,9 +263,7 @@ list(
   tar_target(days_vec_nbda, map(firsts_with_dates, "day")),
   tar_target(roost_mats_expanded, expand_roost_mats(roost_mats_nbda, fl_mats_nbda, days_vec_nbda)),
   tar_target(fl_mats_expanded, map(fl_mats_nbda, ~map(.x, as.matrix))),
-  ## Create static roost networks
-  tar_target(r_static_mns, map(unique(roost_mats_expanded), ~as.matrix(Reduce("+", .x)/length(.x)))),
-  
+
   ## Fix up ILVs
   # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
   tar_target(ilvs_nbda, ilvs[has_sightings][has_enough_sightings]),
@@ -273,8 +271,7 @@ list(
   # First step: NBDA for all carcasses using dynamic roost network ----------
   tar_target(n_indivs, map_dbl(roost_mats_nbda, ~nrow(.x[[1]]))),
   tar_target(n_timeperiods, map_dbl(roost_mats_expanded, length)),
-  # Create static roost nets
-  tar_target(N.RS, map2(r_static_mns, n_indivs, ~array(.x, dim = c(.y, .y, 1)))),
+  
   #Create the empty arrays and slot in the network for each time period
   tar_target(N.RD, get_dynamic_nets(n_indivs, n_timeperiods, roost_mats_expanded)),
   tar_target(N.FD, get_dynamic_nets(n_indivs, n_timeperiods, fl_mats_expanded)),
@@ -282,25 +279,20 @@ list(
   tar_target(assMatrixIndices, map(oas_nbda_updated, ~1:length(.x))),
   #Now we enter the 4 dimensional network and assMatrixIndex as follows
   tar_target(nbdaData_list_dynamic_roost, get_nbdaData_list(N.RD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
-  tar_target(nbdaData_list_static_roost, get_nbdaData_list(N.RS, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "static")),
   tar_target(nbdaData_list_dynamic_flight, get_nbdaData_list(N.FD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
   ## Make models
   ### social
-  tar_target(Mods_N.RS_So, mod_trycatch(nbdaData_list_static_roost, type = "social")),
   tar_target(Mods_N.RD_So, mod_trycatch(nbdaData_list_dynamic_roost, type = "social")),
   tar_target(Mods_N.FD_So, mod_trycatch(nbdaData_list_dynamic_flight, type = "social")),
   ### asocial
-  tar_target(Mods_N.RS_Aso, mod_trycatch(nbdaData_list_static_roost, type = "asocial")),
   tar_target(Mods_N.RD_Aso, mod_trycatch(nbdaData_list_dynamic_roost, type = "asocial")),
   tar_target(Mods_N.FD_Aso, mod_trycatch(nbdaData_list_dynamic_flight, type = "asocial")),
   ## Get model stats
-  tar_target(sums_RS, get_summaries(Mods_N.RS_So, carcIDs_nbda, "static", "roost")),
   tar_target(sums_RD, get_summaries(Mods_N.RD_So, carcIDs_nbda, "dynamic", "roost")),
-  tar_target(sums_RS_A, get_summaries(Mods_N.RS_Aso, carcIDs_nbda, "static", "roost")),
   tar_target(sums_RD_A, get_summaries(Mods_N.RD_Aso, carcIDs_nbda, "dynamic", "roost")),
   tar_target(sums_FD, get_summaries(Mods_N.FD_So, carcIDs_nbda, "dynamic", "flight")),
   tar_target(sums_FD_A, get_summaries(Mods_N.FD_Aso, carcIDs_nbda, "dynamic", "flight")),
-  tar_target(summaries, bind_rows(sums_RS, sums_RD, sums_RS_A, sums_RD_A, sums_FD, sums_FD_A)),
+  tar_target(summaries, bind_rows(sums_RD, sums_RD_A, sums_FD, sums_FD_A)),
   
   # Move over to multiple_carcasses.R script to manually define the search areas for the confidence intervals
   # Now back to here, loading in those files
@@ -321,6 +313,8 @@ list(
   tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
   tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
   tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
+
+  # Make single-network models with ILVs ------------------------------------
   tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),
   tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age")), # XXX i'm noticing that these are all square matrices. we should be including individuals that never found the carcass, too--need to go back and make sure those are included in this.
   tar_target(prop_nas_roost_carc_distances, map_dbl(roost_carc_distances, ~sum(is.na(.x))/length(.x))), # XXX probably later we should not use this ILV for any carcasses where too high a proportion of them are NA.
@@ -343,5 +337,18 @@ list(
   tar_target(sums_RD_A_ilvs, get_summaries(Mods_N.RD_Aso_ilvs, carcIDs_nbda, "dynamic", "roost")),
   tar_target(sums_FD_ilvs, get_summaries(Mods_N.FD_So_ilvs, carcIDs_nbda, "dynamic", "flight")),
   tar_target(sums_FD_A_ilvs, get_summaries(Mods_N.FD_Aso_ilvs, carcIDs_nbda, "dynamic", "flight")),
-  tar_target(summaries_ilvs, bind_rows(sums_RD_ilvs, sums_RD_A_ilvs, sums_FD_ilvs, sums_FD_A_ilvs))
+  tar_target(summaries_ilvs, bind_rows(sums_RD_ilvs, sums_RD_A_ilvs, sums_FD_ilvs, sums_FD_A_ilvs)),
+
+  # Make two-network models with ILVs ---------------------------------------
+  tar_target(nbdaData_list_2nets_ilvs, get_nbdaData_list_2nets_ilvs(nets1 = N.RD, nets2 = N.FD, cids = carcIDs_nbda, oas = oas_nbda_updated, amis = assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin, n_indivs = n_indivs, n_timeperiods = n_timeperiods)),
+  tar_target(Mods_2nets_So_ilvs, mod_trycatch(nbdaData_list_2nets_ilvs, type = "social")),
+  tar_target(summary_2nets, get_summaries(Mods_2nets_So_ilvs, carcIDs_nbda, "dynamic", "both")),
+
+  # Model averaging ---------------------------------------------------------
+  tar_target(constraintsVectMatrix, get_constraintsVectMatrix()),
+  tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
+  tar_target(networksSupport_list, map(modelset_list, networksSupport)),
+  tar_target(maes_list, get_maes(modelset_list)),
+  tar_target(lowerLimitsByModel, get_lowerlimits(modelset_list)),
+  tar_target(lowerLimits_propST_MA, sum(lowerLimitsByModel$propST*lowerLimitsByModel$adjAkWeight))
 )

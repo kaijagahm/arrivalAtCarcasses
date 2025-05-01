@@ -2,8 +2,6 @@
 # Created 2025-04-15
 # This will be important since we have a few possible ILVs to include and a few possible network models to try (flight, roosting, etc)
 
-# 4877850
-
 # Going to start with just one carcass so we don't get overwhelmed, so I've moved this code out of the multiple_carcasses.R script.
 library(tidyverse)
 library(NBDA)
@@ -332,12 +330,12 @@ for(i in 1:length(rme)){
 assMatrixIndex <- 1:length(oas[[idx]]) # already expanded the matrices
 
 nbdaData_multiNet <- nbdaData(label = paste0("Diffusion_", idx),
-                          assMatrix = N.RD_N.FD,
-                          orderAcq = oas[[idx]],  
-                          asoc_ilv = asoc,
-                          int_ilv = asoc,
-                          asocialTreatment = "timevarying", # I don't understand why this is "asocialTreatment" instead of "ilvsTreatment", since it seems to also apply to the multiplicative/interacting ILVs, but oh well. We need to specify this as time-varying because the default, constant, would assume that the ILVs do not change through time.
-                          assMatrixIndex = assMatrixIndex)
+                              assMatrix = N.RD_N.FD,
+                              orderAcq = oas[[idx]],  
+                              asoc_ilv = asoc,
+                              int_ilv = asoc,
+                              asocialTreatment = "timevarying", # I don't understand why this is "asocialTreatment" instead of "ilvsTreatment", since it seems to also apply to the multiplicative/interacting ILVs, but oh well. We need to specify this as time-varying because the default, constant, would assume that the ILVs do not change through time.
+                              assMatrixIndex = assMatrixIndex)
 
 #Then we go on to create our nbdaData object as before. Let us assume we are interested in the unconstrained model:
 #Then fit the model:
