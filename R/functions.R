@@ -1177,23 +1177,23 @@ get_constraintsVectMatrix <- function(){
     c(0,1,2,3,4,0),
     c(0,1,2,3,4,5),
     
-    #netcombo 1 1
-    c(1,1,0,0,0,0),
-    c(1,1,0,0,0,2),
-    c(1,1,0,0,2,0),
-    c(1,1,0,0,2,3),
-    c(1,1,0,2,0,0),
-    c(1,1,0,2,0,3),
-    c(1,1,0,2,3,0),
-    c(1,1,0,2,3,4),
-    c(1,1,2,0,0,0),
-    c(1,1,2,0,0,3),
-    c(1,1,2,0,3,0),
-    c(1,1,2,0,3,4),
-    c(1,1,2,3,0,0),
-    c(1,1,2,3,0,4),
-    c(1,1,2,3,4,0),
-    c(1,1,2,3,4,5),
+    # #netcombo 1 1
+    # c(1,1,0,0,0,0),
+    # c(1,1,0,0,0,2),
+    # c(1,1,0,0,2,0),
+    # c(1,1,0,0,2,3),
+    # c(1,1,0,2,0,0),
+    # c(1,1,0,2,0,3),
+    # c(1,1,0,2,3,0),
+    # c(1,1,0,2,3,4),
+    # c(1,1,2,0,0,0),
+    # c(1,1,2,0,0,3),
+    # c(1,1,2,0,3,0),
+    # c(1,1,2,0,3,4),
+    # c(1,1,2,3,0,0),
+    # c(1,1,2,3,0,4),
+    # c(1,1,2,3,4,0),
+    # c(1,1,2,3,4,5),
     
     #netcombo 1 2
     c(1,2,0,0,0,0),
@@ -1243,4 +1243,40 @@ get_lowerlimits <- function(modelset_list){
   return(out)
 }
   
+get_nbdaData_list_2nets_ilvs_add_multi <- function(nets1, nets2, cids, oas, amis, dists, ags, n_indivs, n_timeperiods){
+  # New version of the function with two dynamic networks
+  twonets_array_list <- vector(mode = "list", length = length(cids))
+  for(i in 1:length(twonets_array_list)){
+    twonets_array <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
+    #Slot in the network for each time period # XXX
+    for(j in 1:dim(twonets_array)[4]){
+      twonets_array[,,1,j] <- array(nets1[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+      twonets_array[,,2,j] <- array(nets2[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+    }
+    twonets_array_list[[i]] <- twonets_array
+  }
+  
+  for(i in 1:length(dists)){
+    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+    name2 <- quo_name(paste0("age_groups_", i))
+    assign(name1, dists[[i]], envir = .GlobalEnv)
+    assign(name2, ags[[i]], envir = .GlobalEnv)
+  }
+  
+  # now we can use those to actually create the nbdadata objects
+  outlist <- vector(mode = "list", length = length(twonets_array_list))
+  for(i in 1:length(outlist)){
+    ag_name <- paste0("age_groups_", i)
+    srcd_name <- paste0("std_roost_carc_distances_", i)
+    ilvs_to_use <- c(ag_name, srcd_name)
+    carcass <- cids[i]
+    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                             assMatrix = twonets_array_list[[i]],
+                             orderAcq = oas[[i]],
+                             assMatrixIndex = amis[[i]],
+                             asoc_ilv = ilvs_to_use,
+                             multi_ilv = ilvs_to_use,
+                             asocialTreatment = "timevarying")}
+  return(outlist)
+}
 

@@ -350,5 +350,6 @@ list(
   tar_target(networksSupport_list, map(modelset_list, networksSupport)),
   tar_target(maes_list, get_maes(modelset_list)),
   tar_target(lowerLimitsByModel, get_lowerlimits(modelset_list)),
-  tar_target(lowerLimits_propST_MA, sum(lowerLimitsByModel$propST*lowerLimitsByModel$adjAkWeight))
+  tar_target(lowerLimits_propST_MA, map_dbl(lowerLimitsByModel, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
+  
 )

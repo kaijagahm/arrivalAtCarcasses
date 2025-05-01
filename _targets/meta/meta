@@ -95,7 +95,7 @@ clean_data|function|da9b459d7f333e6e|||||||||||||||
 closest_stn_bouts|stem|69d233a19d6a9eed|b7df10f1caed29c9|1c7a1ede0c3416f2|-268495117||t20200.863568768s|09492122e8f179e2|40140|rds|local|vector|||482.828||
 closest_stn_carc|stem|d4042de04c2370e4|61a3b269197c7d66|1da03adec2088010|2004922924||t20200.8637624717s|a1579a136c79aa45|5793|rds|local|vector|||16.703||
 cluster_carcasses|function|6e9df3a52d1e3c8a|||||||||||||||
-constraintsVectMatrix|stem|c51a98db4a6e6342|518cc2cee7f35ca7|d6dfe0614f9e6250|-1031429725||t20209.7271410837s|afd7f87dad3f6f11|195|rds|local|vector|||2.063|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
+constraintsVectMatrix|stem|05e0c8eb5181f9b6|518cc2cee7f35ca7|c8e32c6f05ad4d47|-1031429725||t20209.8312220957s|1fa23b41a00fb676|188|rds|local|vector|||1.891|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 correct_ages|function|c19796f9823a52e1|||||||||||||||
 dates|stem|35f2a995f015f9c2|5d57369745c075b6|2c530c1562a7fbd1|-1505472729||t20200.8567904816s|b3893c47d2f8b380|144|rds|local|vector|||0.016||
 dates_nbda|stem|4f3770dc6f85a8c0|09429013de105e7d|5c20411d8190c88d|-953116618||t20201.7944341171s|2b54411a22cedbd8|655|rds|local|vector|||0.078||
@@ -152,7 +152,7 @@ focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-88055213
 get_at_carcass|function|46e848c67ffeb4eb|||||||||||||||
 get_bouts_predictions|function|801ed5c4975fcd93|||||||||||||||
 get_carcass_bouts|function|28683c3852fd9433|||||||||||||||
-get_constraintsVectMatrix|function|0c70c91c7964d7f8|||||||||||||||
+get_constraintsVectMatrix|function|b0c3401349edd2d7|||||||||||||||
 get_distances|function|171afa7fb7d96182|||||||||||||||
 get_dynamic_nets|function|5f1bb6c40908fa25|||||||||||||||
 get_firsts|function|8a550e0d5b44c179|||||||||||||||
@@ -183,6 +183,7 @@ get_modelset|function|7a9a489799eb83de|||||||||||||||
 get_N.RD|function|f61076475a36607e|||||||||||||||
 get_nbdaData_list|function|0d4167517c073c04|||||||||||||||
 get_nbdaData_list_2nets_ilvs|function|406e684fb07498a8|||||||||||||||
+get_nbdaData_list_2nets_ilvs_add_multi|function|ae57fb6281bab625|||||||||||||||
 get_nbdaData_list_dynamic|function|3486aa47a8a7d701|||||||||||||||
 get_nbdaData_list_ilvs|function|7e32fd0a388c67a0|||||||||||||||
 get_netcombo|function|7e65fd4ba3b4f649|||||||||||||||
@@ -230,13 +231,15 @@ ilvs_to_use|object|3f313ea6c8f0a098|||||||||||||||
 inpa|stem|97eb1f8a886bec33|37c727445087afb3|684b439fda0a1ca9|462496551||t20200.8726856524s|0b534cab64cc870b|4251|rds|local|vector|||0||
 inpa_carcs|stem|d36aa165f0328c14|ea645cd3cf984df9|ca6e8caae58026aa|-650389493||t20200.872686767s|608f361edecff773|7211|rds|local|vector|||0.047||
 loginObject|stem|affb390f070239b0|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t20200.853272751s|56f9cfb958dddea9|249|rds|local|vector|||5.734||
-maes_list|stem|b9a475a8c54a889b|428246d545abb23d|505d92b67dc32846|-1863764593||t20209.8239779887s|73ddace7642c7d5e|3862|rds|local|vector|||0.094||
+lowerLimits_propST_MA|stem|f937e7ef48c14348|5900b53f263e3586|8045826f5b288b43|-911081640||t20209.8757361713s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
+lowerLimitsByModel|stem|ae916b21b401c441|b59314f3cde61071|0838bde3f987cb9f|-1750491152||t20209.8725418927s|9c4fe1d5ab02dff6|27437|rds|local|vector|||2085.187|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
+maes_list|stem|fddde454ce8e114e|428246d545abb23d|4e2f3c8f7d7d42a9|-1863764593||t20209.8725452669s|310e49681d995377|3745|rds|local|vector|||0.062||
 matrix_orders_nbda|stem|4a0238e94113ed74|6db1efe27d499e5c|18c1ebc47b6731a0|374844671||t20209.7811880719s|07b9e52f93479ab4|1283|rds|local|vector|||0||
 mean_amplitude|function|badaf723abe07336|||||||||||||||
 min_sightings|stem|209b2a0d9c68bcab|2eac0bc41fe1538f|2c530c1562a7fbd1|-1889081441||t20201.777351091s|b2d5d26f8983d7ae|52|rds|local|vector|||2.032|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 mod_trycatch|function|94047a2bc4898740|||||||||||||||
 modelset|stem|error|ff7494ac5cf58ab9|f322e866cf8f3b0c|1739994993||t20209.7831446088s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.219||i In index 1.Caused by error in dimnamesconstraintsVectMatrix  list1noModels, pasteCONS, varNames,    sep   length of dimnames 2 not equal to array extent
-modelset_list|stem|a6c9d7389a927ac8|ff7494ac5cf58ab9|6ef849b1b29c254e|676814333||t20209.8174971614s|d5bfe0b9af79c85b|478394|rds|local|vector|||2150.61|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
+modelset_list|stem|2b0f525fbd960412|ff7494ac5cf58ab9|e0d6b372c3348450|676814333||t20209.8484037238s|a1989e849610b850|462504|rds|local|vector|||1478.829|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
 Mods_2nets_So_ilvs|stem|791c2c76c395620d|7202d3a047da5a00|06593e240fc12bbd|-1803605192||t20209.7907751148s|65306da85324faa8|330158|rds|local|vector|||99.125|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
 Mods_N.FD_Aso|stem|18420beca77bce97|fe49f1009b539309|07a93ecd45960002|1457499457||t20209.7814503132s|6d0cdca952b99d72|583436|rds|local|vector|||0.062||
 Mods_N.FD_Aso_ilvs|stem|c13516e2470f0a36|a23211c419056d67|2fc1424d5b351e87|-953877241||t20209.7827292178s|e5fba7094dd51562|665167|rds|local|vector|||7.531||
@@ -259,7 +262,7 @@ nbdaData_list_dynamic_roost|stem|bb227b2c669bce69|c01252827b556049|b1fbc75a2b1a8
 nbdaData_list_dynamic_roost_ilvs|stem|c3b2f6d2e34bae41|a2ef9d1b464086b2|a4b6cbab4a25178c|-1055521526||t20209.7815702394s|8361db423bc8227a|808249|rds|local|vector|||3.375||
 nbdaModSum|function|54f71aa808eb8788|||||||||||||||
 nets|object|6d157e325244b47d|||||||||||||||
-networksSupport_list|stem|b528e399567a58aa|efe6619d35279053|a53e322dd8a73117|-1862096167||t20209.8175158385s|02511e3fa59e0682|1420|rds|local|vector|||0.031||
+networksSupport_list|stem|9719c9a472175d4f|efe6619d35279053|c8eb806e8d4bb0a0|-1862096167||t20209.8725437531s|14e3c3a1470dcf2c|1393|rds|local|vector|||0.016||
 oa|stem|d9396a4f1095fde7|5eab8936dbdd17eb|e08655a2c30d2230|1349497327||t20200.9110854757s|99c129c906151c58|2202|rds|local|vector|||0||
 oa_indivs_sorted|stem|2cb4cf65d049d5d6|e458c03b34d16230|14f4a0c1b3269b69|1559245335||t20200.9110868629s|98fa1a07c4abb547|1154|rds|local|vector|||0||
 oa_num|stem|24176514aad3e472|3868fcb0fcf9bece|14f4a0c1b3269b69|1096048686||t20200.911086562s|86b7064cf66fe42e|1565|rds|local|vector|||0||
