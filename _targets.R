@@ -9,7 +9,7 @@ library(targets)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "sf", "tidyverse") # Packages that your targets need for their tasks.
+  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf") # Packages that your targets need for their tasks.
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
@@ -130,5 +130,227 @@ list(
              st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]),
                                   "ymin" = 3350000, 
                                   "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
-                                  "ymax" = 3500000)), a))
+                                  "ymax" = 3500000)), a)),
+  ## Dynamic NBDA testing
+  ## 0. Define parameters
+  tar_target(days_after, 3),
+  tar_target(seed_distance, 4000),
+  tar_target(seed_time_before, lubridate::hours(1)),
+  tar_target(detection_distance, 4000),
+  tar_target(arrival_distance, 400),
+  ## 1. Get carcasses and restrict to south
+  tar_target(aca, sf::st_crop(all_carcasses_annotated, bbox_south)),
+  ## 1a. Convert carcasses to Israel time
+  ##  XXX FIXME
+  ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
+  tar_target(inpa, filter(aca, carcType == "inpa")),
+  tar_target(inpa_carcs, group_split(group_by(inpa, carcID))),
+  tar_target(wild, filter(aca, carcType == "wild")),
+  tar_target(wild_carcs, group_split(group_by(wild, carcID))),
+  tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
+  tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
+  tar_target(gps_combined, get_gps_combined(gps_2023, gps_2024, bbox_south)),
+  ## 4a. Convert gps data to Israel time 
+  ## XXX fixme
+  ## 4b. Make gps_all
+  tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after)),
+  tar_target(roosts, get_roosts(gps_all)), 
+  ## 6. Get seeds
+  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance)),
+  ## 7. Get distances from roosts to carcasses
+  tar_target(distances, get_distances(roosts, inpa_carcs)),
+  ## 8. Load who's who
+  tar_target(ww, read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"), col_select = 1:40)),
+  ## 9. Get age_group ILV
+  tar_target(www, get_www(ww)),
+  ## 10. Combine age_group ILV with distances to get ILVs data frame
+  tar_target(ilvs, get_ilvs(distances, www)),
+  ## 11. Make gps (i.e. remove points before the carcass)
+  tar_target(gps, remove_points_before(gps_all, inpa_carcs, days_after)),
+  ## 12. Get arrivals/sightings of the carcass
+  tar_target(at_carcass, get_at_carcass(gps, inpa_carcs, arrival_distance)),
+  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, detection_distance)),
+  ## 13. Get firsts
+  # Get first arrival of each vulture to the carcass
+  tar_target(firsts, get_firsts(at_carcass, inpa_carcs)),
+  tar_target(firsts_see, get_firsts_see(see_carcass, inpa_carcs)),
+  tar_target(has_visits, get_has_visits(firsts)),
+  tar_target(has_sightings, get_has_sightings(firsts_see)),
+  # Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
+  ## 14. Get orders of arrival/acquisition
+  tar_target(oa, purrr::map(firsts[has_visits], "local_identifier")),
+  tar_target(oa_see, purrr::map(firsts_see[has_sightings], "local_identifier")),
+  tar_target(oa_num, purrr::map(oa, order)),
+  tar_target(oa_see_num, purrr::map(oa_see, order)),
+  tar_target(oa_indivs_sorted, purrr::map(oa, sort)),
+  tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
+  tar_target(acq_times, purrr::map(firsts[has_visits], "timestamp")),
+  tar_target(see_times, purrr::map(firsts_see[has_sightings], "timestamp")),
+  tar_target(check1, check_1(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times)),
+  ## 15. Get GPS subsets for flight (four different intervals)
+  tar_target(gps_flight_allday, get_flight_allday(gps, has_visits)),
+  tar_target(gps_flight_allday_see, get_flight_allday(gps, has_sightings)),
+  tar_target(gps_flight_cumulative, get_gps_flight(gps, has_visits, acq_times)),
+  tar_target(gps_flight_cumulative_see, get_gps_flight(gps, has_sightings, see_times)),
+  tar_target(gps_flight_3hr, get_gps_flight_hr(gps, has_visits, acq_times, hrs = 3)),
+  tar_target(gps_flight_3hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 3)),
+  tar_target(gps_flight_1hr, get_gps_flight_hr(gps, has_visits, acq_times, hrs = 1)),
+  tar_target(gps_flight_1hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 1)),
+  tar_target(check2, check_2(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see)),
+  ## 16. Get roost nets
+  tar_target(roosts_dates, get_roost_dates(roosts, has_visits)),
+  tar_target(roosts_dates_see, get_roost_dates(roosts, has_sightings)),
+  # tar_target(roosts_pairwise_distances, get_roost_pairwise_distances(roosts_dates)),
+  # tar_target(roosts_pairwise_distances_see, get_roost_pairwise_distances(roosts_dates_see)),
+  tar_target(roost_thresh, 500),
+  tar_target(roosts_bin, get_roosts_bin(roosts_dates, roost_thresh)),
+  tar_target(roosts_bin_see, get_roosts_bin(roosts_dates_see, roost_thresh)),
+  ## 17. Get flight nets (whole days)
+  tar_target(fl_allday_bin, get_fl_bin_list(gps_flight_allday, detection_distance)),
+  tar_target(fl_allday_bin_see, get_fl_bin_list(gps_flight_allday_see, detection_distance)),
+  tar_target(fl_cumulative_bin, get_fl_bin_list(gps_flight_cumulative, detection_distance)),
+  tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, detection_distance)),
+  tar_target(fl_3hr_bin, get_fl_bin_list(gps_flight_3hr, detection_distance)),
+  tar_target(fl_3hr_bin_see, get_fl_bin_list(gps_flight_3hr_see, detection_distance)),
+  tar_target(fl_1hr_bin, get_fl_bin_list(gps_flight_1hr, detection_distance)),
+  tar_target(fl_1hr_bin_see, get_fl_bin_list(gps_flight_1hr_see, detection_distance)),
+  tar_target(check3, check_3(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see)),
+  # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
+  tar_target(fl_allday_bin_fixed, fix_nets_list(fl_allday_bin, oa_indivs_sorted)),
+  tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_cumulative_bin_fixed, fix_nets_list(fl_cumulative_bin, oa_indivs_sorted)),
+  tar_target(fl_cumulative_bin_fixed_see, fix_nets_list(fl_cumulative_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_3hr_bin_fixed, fix_nets_list(fl_3hr_bin, oa_indivs_sorted)),
+  tar_target(fl_3hr_bin_fixed_see, fix_nets_list(fl_3hr_bin_see, oa_see_indivs_sorted)),
+  tar_target(fl_1hr_bin_fixed, fix_nets_list(fl_1hr_bin, oa_indivs_sorted)),
+  tar_target(fl_1hr_bin_fixed_see, fix_nets_list(fl_1hr_bin_see, oa_see_indivs_sorted)),
+  tar_target(roosts_bin_fixed, fix_nets_list(roosts_bin, oa_indivs_sorted)),
+  tar_target(roosts_bin_fixed_see, fix_nets_list(roosts_bin_see, oa_see_indivs_sorted)),
+  # Make networks -----------------------------------------------------------
+  tar_target(fl_allday_bin_nets, get_nets_list(fl_allday_bin_fixed)),
+  tar_target(fl_allday_bin_nets_see, get_nets_list(fl_allday_bin_fixed_see)),
+  tar_target(fl_cumulative_bin_nets, get_nets_list(fl_cumulative_bin_fixed)),
+  tar_target(fl_cumulative_bin_nets_see, get_nets_list(fl_cumulative_bin_fixed_see)),
+  tar_target(fl_3hr_bin_nets, get_nets_list(fl_3hr_bin_fixed)),
+  tar_target(fl_3hr_bin_nets_see, get_nets_list(fl_3hr_bin_fixed_see)),
+  tar_target(fl_1hr_bin_nets, get_nets_list(fl_1hr_bin_fixed)),
+  tar_target(fl_1hr_bin_nets_see, get_nets_list(fl_1hr_bin_fixed_see)),
+  tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
+  tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see)),
+
+  # NBDA --------------------------------------------------------------------
+  ## Define carcasses to run NBDA on
+  ## At least how many sightings?
+  tar_target(min_sightings, 3),
+  ## Going to use sightings, not arrivals, for NBDA.
+  tar_target(has_enough_sightings, which(map_dbl(firsts_see[has_sightings], nrow) >= min_sightings)),
+  tar_target(carcs_nbda, inpa_carcs[has_sightings][has_enough_sightings]),
+  tar_target(oas_nbda, oa_see[has_enough_sightings]),
+  tar_target(firsts_nbda, firsts_see[has_sightings][has_enough_sightings]),
+  tar_target(years, get_years(carcs_nbda, oas_nbda)),
+  tar_target(carcIDs_nbda, map_chr(carcs_nbda, ~as.character(.x$carcID[1]))),
+  ## Plots
+  tar_target(discovery_plots, map2(firsts_nbda, 
+                                   carcIDs_nbda, ~discoveryplot(.x, .y))),
+  ## Here we decide to use the cumulative flight networks for this. Will have to re-write the arguments to these targets if we decide to use different flight networks instead.
+  tar_target(fl_mats_nbda, fl_cumulative_bin_fixed_see[has_enough_sightings]),
+  tar_target(roost_mats_nbda, roosts_bin_fixed_see[has_enough_sightings]),
+  ## Need to convert the oas into numeric indices instead of a character vector
+  tar_target(matrix_orders_nbda, map(roost_mats_nbda, ~row.names(.x[[1]]))),
+  tar_target(oas_nbda_updated, map2(oas_nbda, matrix_orders_nbda, ~match(.x, .y))),
+  tar_target(dates_nbda, map2(carcs_nbda, firsts_nbda, ~mutate(data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(firsts_with_dates, map2(firsts_nbda, dates_nbda, ~left_join(.x, .y))),
+  tar_target(days_vec_nbda, map(firsts_with_dates, "day")),
+  tar_target(roost_mats_expanded, expand_roost_mats(roost_mats_nbda, fl_mats_nbda, days_vec_nbda)),
+  tar_target(fl_mats_expanded, map(fl_mats_nbda, ~map(.x, as.matrix))),
+
+  ## Fix up ILVs
+  # Okay, so now we have the roost and flight networks, in matrix format, that we're going to need to put into the model. Now let's grab the ilvs
+  tar_target(ilvs_nbda, ilvs[has_sightings][has_enough_sightings]),
+  tar_target(ilvs_lists, get_ilvs_lists(ilvs_nbda, days_vec_nbda)),
+  # First step: NBDA for all carcasses using dynamic roost network ----------
+  tar_target(n_indivs, map_dbl(roost_mats_nbda, ~nrow(.x[[1]]))),
+  tar_target(n_timeperiods, map_dbl(roost_mats_expanded, length)),
+  
+  #Create the empty arrays and slot in the network for each time period
+  tar_target(N.RD, get_dynamic_nets(n_indivs, n_timeperiods, roost_mats_expanded)),
+  tar_target(N.FD, get_dynamic_nets(n_indivs, n_timeperiods, fl_mats_expanded)),
+  # Now we need a vector specifying which time period corresponds to which detection event. Since we already did the work of expanding the matrices (oops), this vector will just be 1 through the number of detection events.
+  tar_target(assMatrixIndices, map(oas_nbda_updated, ~1:length(.x))),
+  #Now we enter the 4 dimensional network and assMatrixIndex as follows
+  tar_target(nbdaData_list_dynamic_roost, get_nbdaData_list(N.RD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
+  tar_target(nbdaData_list_dynamic_flight, get_nbdaData_list(N.FD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, type = "dynamic")),
+  ## Make models
+  ### social
+  tar_target(Mods_N.RD_So, mod_trycatch(nbdaData_list_dynamic_roost, type = "social")),
+  tar_target(Mods_N.FD_So, mod_trycatch(nbdaData_list_dynamic_flight, type = "social")),
+  ### asocial
+  tar_target(Mods_N.RD_Aso, mod_trycatch(nbdaData_list_dynamic_roost, type = "asocial")),
+  tar_target(Mods_N.FD_Aso, mod_trycatch(nbdaData_list_dynamic_flight, type = "asocial")),
+  ## Get model stats
+  tar_target(sums_RD, get_summaries(Mods_N.RD_So, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_RD_A, get_summaries(Mods_N.RD_Aso, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_FD, get_summaries(Mods_N.FD_So, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(sums_FD_A, get_summaries(Mods_N.FD_Aso, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(summaries, bind_rows(sums_RD, sums_RD_A, sums_FD, sums_FD_A)),
+  
+  # Move over to multiple_carcasses.R script to manually define the search areas for the confidence intervals
+  # Now back to here, loading in those files
+  tar_target(search_flight_file, here("data/created/search_flight.RDS"), format = "file"),
+  tar_target(search_roost_file, here("data/created/search_roost.RDS"), format = "file"),
+  tar_target(search_flight, readRDS(search_flight_file)),
+  tar_target(search_roost, readRDS(search_roost_file)),
+  tar_target(cis_flight, get_model_cis(Mods_N.FD_So, search_flight)),
+  tar_target(cis_roost, get_model_cis(Mods_N.RD_So, search_roost)),
+  ## Get prop solve for CIs
+  # actually get the confidence intervals now that we've defined the search space
+  tar_target(solveprops_roost_lower, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "lower")),
+  tar_target(solveprops_roost_upper, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "upper")),
+  tar_target(solveprops_flight_lower, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "lower")),
+  tar_target(solveprops_flight_upper, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "upper")),
+  ## Add these back to cis_roost and cis_flight
+  tar_target(cis_flight_updated, update_cis_dfs(cis_flight, solveprops_flight_lower, solveprops_flight_upper)),
+  tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
+  tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
+  tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
+
+  # Make single-network models with ILVs ------------------------------------
+  tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),
+  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age")), # XXX i'm noticing that these are all square matrices. we should be including individuals that never found the carcass, too--need to go back and make sure those are included in this.
+  tar_target(prop_nas_roost_carc_distances, map_dbl(roost_carc_distances, ~sum(is.na(.x))/length(.x))), # XXX probably later we should not use this ILV for any carcasses where too high a proportion of them are NA.
+  tar_target(roost_carc_distances_NAs_filled, substitute_na_distances(roost_carc_distances)),
+  tar_target(std_roost_carc_distances_NAs_filled, std_dists(roost_carc_distances_NAs_filled)),
+  tar_target(age_groups_bin, binarize_ages(age_groups)),
+  tar_target(age_groups_reversed, map(age_groups_bin, ~{+(!.x)})),
+  ## Get datasets for models containing one network and both ILVs
+  tar_target(nbdaData_list_dynamic_roost_ilvs, get_nbdaData_list_ilvs(N.RD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin)),
+  tar_target(nbdaData_list_dynamic_flight_ilvs, get_nbdaData_list_ilvs(N.FD, carcIDs_nbda, oas_nbda_updated, assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin)),
+  ## Make models
+  ### social
+  tar_target(Mods_N.RD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "social")),
+  tar_target(Mods_N.FD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "social")),
+  ### asocial
+  tar_target(Mods_N.RD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "asocial")),
+  tar_target(Mods_N.FD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "asocial")),
+  ## Get model stats
+  tar_target(sums_RD_ilvs, get_summaries(Mods_N.RD_So_ilvs, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_RD_A_ilvs, get_summaries(Mods_N.RD_Aso_ilvs, carcIDs_nbda, "dynamic", "roost")),
+  tar_target(sums_FD_ilvs, get_summaries(Mods_N.FD_So_ilvs, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(sums_FD_A_ilvs, get_summaries(Mods_N.FD_Aso_ilvs, carcIDs_nbda, "dynamic", "flight")),
+  tar_target(summaries_ilvs, bind_rows(sums_RD_ilvs, sums_RD_A_ilvs, sums_FD_ilvs, sums_FD_A_ilvs)),
+
+  # Make two-network models with ILVs ---------------------------------------
+  tar_target(nbdaData_list_2nets_ilvs, get_nbdaData_list_2nets_ilvs(nets1 = N.RD, nets2 = N.FD, cids = carcIDs_nbda, oas = oas_nbda_updated, amis = assMatrixIndices, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin, n_indivs = n_indivs, n_timeperiods = n_timeperiods)),
+  tar_target(Mods_2nets_So_ilvs, mod_trycatch(nbdaData_list_2nets_ilvs, type = "social")),
+  tar_target(summary_2nets, get_summaries(Mods_2nets_So_ilvs, carcIDs_nbda, "dynamic", "both")),
+
+  # Model averaging ---------------------------------------------------------
+  tar_target(constraintsVectMatrix, get_constraintsVectMatrix()),
+  tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
+  tar_target(networksSupport_list, map(modelset_list, networksSupport)),
+  tar_target(maes_list, get_maes(modelset_list)),
+  tar_target(lowerLimitsByModel_net1, get_lowerlimits(modelset_list, net = 1, conf_level = 0.95)),
+  tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
+  tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
+  tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
 )

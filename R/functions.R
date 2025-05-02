@@ -4,18 +4,6 @@ get_loginObject <- function(pw){
   rm(pw)
   return(loginObject)
 }
-# get_inpa <- function(loginObject){
-#   inpa <- move::getMovebankData(study = 6071688, 
-#                                 login = loginObject, 
-#                                 removeDuplicatedTimestamps = TRUE,
-#                                 timestamp_start = "2020010100000",
-#                                 timestamp_end = "2021021500000")
-#   inpa <- methods::as(inpa, "data.frame")
-#   inpa <- inpa %>%
-#     mutate(dateOnly = lubridate::ymd(substr(timestamp, 1, 10)),
-#            year = as.numeric(lubridate::year(timestamp)))
-#   return(inpa)
-# }
 
 get_ornitela <- function(loginObject){
   minDate <- "2023-06-10 00:00" # two days after 6/8/23, when tags were set to high res
@@ -495,3 +483,800 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
 dg <- function(x){
   return(sf::st_drop_geometry(x))
 }
+
+
+# prepare_data ------------------------------------------------------------
+get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
+  gps_combined <- bind_rows(gps_2023, gps_2024) %>%
+    st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+    bind_cols(st_coordinates(.)) %>%
+    rename("location_long" = X,
+           "location_lat" = Y) %>%
+    mutate(dateOnly = lubridate::ymd(dateOnly)) %>%
+    st_transform(32636) %>%
+    st_crop(bbox_south)
+  return(gps_combined)
+}
+
+get_gps_all <- function(inpa_carcs, gps_combined, days_after){
+  gps_all <- vector(mode = "list", length = length(inpa_carcs))
+  for(i in 1:length(inpa_carcs)){
+    ic <- inpa_carcs[[i]]
+    cid <- ic$carcID[1]
+    carcass_datetime <- ic$datetime[1]
+    out <- gps_combined %>%
+      filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
+      mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
+             time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
+             carcID = cid)
+    gps_all[[i]] <- out
+  }
+  return(gps_all)
+}
+
+get_roosts <- function(gps_all){
+  r <- map(gps_all, ~{
+    if(nrow(.x) > 0){return(get_roosts_df(.x, id = "local_identifier"))}
+    else{return(NULL)}
+  })
+  return(r)
+}
+
+get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance){
+  seeds_gps <- map2(gps_all, inpa_carcs, ~{
+    dttm <- .y$datetime[1]
+    .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
+      filter(dist_to_carcass < seed_distance)
+  })
+  return(seeds_gps)
+}
+
+get_distances <- function(roosts, inpa_carcs){
+  distances <- map2(roosts, inpa_carcs, ~{
+    if(!is.null(.x)){
+      dist <- .x %>%
+        sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+        sf::st_transform(32636) %>%
+        mutate(dist = as.numeric(st_distance(., .y))) %>%
+        st_drop_geometry() %>%
+        dplyr::select(local_identifier, roost_date, dist) %>%
+        pivot_wider(id_cols = "local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_") %>%
+        mutate(year = .y$year[1])
+    }else{
+      dist <- NULL
+    }
+    return(dist)
+  })
+  return(distances)
+}
+
+get_www <- function(ww){
+  www <- ww %>%
+    dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
+    mutate(age_2023 = 2023-birth_year,
+           age_2024 = 2024-birth_year,
+           age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
+                                      age_2023 <= 5 ~ "01_juv_sub",
+                                      .default = NA),
+           age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
+                                      age_2024 <= 5 ~ "01_juv_sub",
+                                      .default = NA)) %>%
+    dplyr::select("local_identifier" = "Movebank_id", age_group_2023, age_group_2024) %>%
+    distinct()
+  return(www)
+}
+
+get_ilvs <- function(distances, www){
+  yrs <- map_dbl(distances, ~.x$year[1])
+  ilvs <- map2(distances, yrs, ~{
+    tojoin <- www %>%
+      select(local_identifier, "age_group" = paste0("age_group_", .y))
+    out <- left_join(.x, tojoin, by = "local_identifier")
+    to_rename <- names(out)[grepl("roost_", names(out))]
+    new_names <- paste0("roost_night", 0:(length(to_rename)-1))
+    names(out)[names(out) %in% to_rename] <- new_names
+    return(out)})
+  return(ilvs)
+}
+
+remove_points_before <- function(gps_all, inpa_carcs, days_after){
+  gps <- map2(gps_all, inpa_carcs, ~{
+    dttm <- .y$datetime[1]
+    .x %>%
+      filter(timestamp >= lubridate::ymd_hms(dttm) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
+  })
+  return(gps)
+}
+
+get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
+  at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                       mutate(carcID = .y$carcID) %>%
+                       filter(dist_to_carcass < arrival_distance & ground_speed < 5))
+  return(at_carcass)
+}
+
+get_see_carcass <- function(gps, inpa_carcs, detection_distance){
+  see_carcass <- map2(gps, inpa_carcs, ~.x %>%
+                        mutate(carcID = .y$carcID) %>%
+                        filter(dist_to_carcass < detection_distance))
+  return(see_carcass)
+}
+
+get_firsts <- function(at_carcass, inpa_carcs){
+  firsts <- map2(at_carcass, inpa_carcs, ~{
+    if(nrow(.x) > 1){
+      out <- .x %>%
+        filter(timestamp >= .y$datetime) %>%
+        arrange(timestamp) %>%
+        group_by(local_identifier) %>%
+        slice(1) %>%
+        ungroup() %>%
+        arrange(timestamp)
+      if(nrow(out) > 0){
+        out$rownumber <- 1:nrow(out)
+        return(out)
+      }else{
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        return(out)
+      }
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  })
+  return(firsts)
+}
+
+get_firsts_see <- function(see_carcass, inpa_carcs){
+  firsts_see <- map2(see_carcass, inpa_carcs, ~{
+    if(nrow(.x) > 1){
+      out <- .x %>%
+        filter(timestamp >= .y$datetime) %>%
+        arrange(timestamp) %>%
+        group_by(local_identifier) %>%
+        slice(1) %>%
+        ungroup() %>%
+        arrange(timestamp)
+      if(nrow(out) > 0){
+        out$rownumber <- 1:nrow(out)
+        return(out)
+      }else{
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        return(out)
+      }
+    }else{
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      return(out)
+    }
+  }) 
+  return(firsts_see)
+}
+
+get_has_visits <- function(firsts){
+  map_dbl(firsts, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+}
+
+get_has_sightings <- function(firsts_see){
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
+}
+
+check_1 <- function(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
+  if(length(oa) != length(oa_indivs_sorted)){stop("check1: length mismatch 1")}
+  if(length(oa_indivs_sorted) != length(oa_num)){stop("check1: length mismatch 2")}
+  if(length(oa_num) != length(oa)){stop("check1: length mismatch 3")}
+  
+  if(length(oa_see) != length(oa_see_indivs_sorted)){stop("check1: length mismatch 1")}
+  if(length(oa_see_indivs_sorted) != length(oa_see_num)){stop("check1: length mismatch 2")}
+  if(length(oa_see_num) != length(oa_see)){stop("check1: length mismatch 3")}
+}
+
+get_flight_allday <- function(gps, subsettor){
+  flight_allday <- map(gps[subsettor], ~.x %>%
+                         group_by(dateOnly) %>%
+                         group_split())
+  return(flight_allday)
+}
+
+get_gps_flight <- function(gps, subsettor, times_list){
+  len <- length(gps[subsettor])
+  out <- vector(mode = "list", length = len)
+  for(i in 1:len){
+    times <- times_list[[i]]
+    subsets <- vector(mode = "list", length = length(times))
+    for(j in 1:length(times)){
+      subsets[[j]] <- gps[subsettor][[i]] %>%
+        filter(timestamp <= times[j])
+    }
+    out[[i]] <- subsets
+    #cat("done with", i, "\n")
+  }
+  return(out)
+}
+
+get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
+  len <- length(gps[subsettor])
+  out <- vector(mode = "list", length = len)
+  for(i in 1:len){
+    times <- times_list[[i]][!is.na(times_list[[i]])]
+    if(length(times) > 0){
+      subsets <- vector(mode = "list", length = length(times))
+      for(j in 1:length(times)){
+        subsets[[j]] <- gps[subsettor][[i]] %>%
+          filter(timestamp >= times[j]-hours(hrs) & timestamp <= times[j])
+      }
+    }else{
+      subsets <- "blank" # assigning this to NULL wasn't working
+    }
+    out[[i]] <- subsets
+  }
+  return(out)
+}
+
+check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see){
+  if(length(unique(map_dbl(list(gps_flight_1hr, gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
+  if(length(unique(map_dbl(list(gps_flight_1hr_see, gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
+}
+
+get_roost_dates <- function(roosts, subsettor){
+  out <- map(roosts[subsettor], ~{
+    .x %>%
+      group_by(roost_date) %>%
+      group_split() %>%
+      map(., ~st_as_sf(.x, coords = c("location_long", "location_lat"), crs = "WGS84") %>%
+            st_transform(32636))
+  })
+  return(out)
+}
+
+get_roost_pairwise_distances <- function(dates){
+  map(dates, ~{
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
+    })
+    return(outout)
+  })
+}
+
+get_roosts_bin <- function(dates, roost_thresh){
+  map(dates, ~{
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      out[out < roost_thresh] <- 1
+      out[out >= roost_thresh] <- 0
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
+    })
+    return(outout)
+  })
+}
+
+get_fl_bin <- function(dat, dist){
+  if(is.data.frame(dat)){
+    if(nrow(dat) > 0){
+      self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
+                               ID2 = sort(unique(dat$local_identifier)),
+                               value = 0)
+      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                           consecThreshold = 1,
+                                                           idCol = "local_identifier",
+                                                           return = "edges",
+                                                           distThreshold = dist)) %>%
+        dplyr::select(ID1, ID2) %>%
+        distinct() %>%
+        mutate(value = 1) %>%
+        bind_rows(self_edges) %>%
+        arrange(ID1, ID2) %>%
+        pivot_wider(id_cols = "ID1", names_from = "ID2", values_fill = 0) %>%
+        dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
+        as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else{
+      out <- "blank"
+    }
+  }else{
+    out <- "blank"
+  }
+  return(out)
+}
+
+get_fl_bin_list <- function(gps_list, detection_distance){
+  out <- vector(mode = "list", length = length(gps_list))
+  for(i in 1:length(out)){
+    out[[i]] <- map(gps_list[[i]], ~get_fl_bin(dat = .x, dist = detection_distance))
+  }
+  return(out)
+}
+
+fix_nets <- function(nets, indivs){
+  indivs <- indivs[!is.na(indivs)]
+  updated <- vector(mode = "list", length = length(nets))
+  for(nt in 1:length(nets)){
+    net <- nets[[nt]]
+    if(class(net) != "character" & !("ID1" %in% names(net))){ # this is a stupid workaround so the function will work with the co-roost network. Horribly inefficient.
+      net$ID1 <- row.names(net)
+      net <- net %>%
+        relocate(ID1)
+    }
+    
+    # Find any that are missing and add them
+    missing <- indivs[!(indivs %in% names(net))]
+    if(length(missing) > 0){
+      toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
+      if(!any(net == "blank")){
+        net_updated <- as.data.frame(bind_rows(net, toadd))
+      }else{
+        net_updated <- as.data.frame(toadd)
+      }
+      net_updated[is.na(net_updated)] <- 0
+      row.names(net_updated) <- net_updated$ID1
+    }else{
+      net_updated <- net
+    }
+    net_updated_2 <- net_updated %>% select(-ID1)
+    updated[[nt]] <- net_updated_2
+    #updated[[nt]] <- net_updated_2[indivs, indivs]
+  }
+  return(updated)
+}
+
+check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see){
+  if(length(unique(map_dbl(list(fl_1hr_bin, fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
+  if(length(unique(map_dbl(list(fl_1hr_bin_see, fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
+}
+
+fix_nets_list <- function(list, oa_sorted){
+  fixed_list <- vector(mode = "list", length = length(list))
+  for(i in 1:length(list)){
+    nets <- list[[i]]
+    indivs <- oa_sorted[[i]]
+    fixed_list[[i]] <- fix_nets(nets, indivs)
+  }
+  return(fixed_list)
+}
+
+get_nets <- function(fixed_list_subset){
+  map(fixed_list_subset, ~{
+    igraph::graph_from_adjacency_matrix(as.matrix(.x), mode = "undirected", diag = F)
+  })
+}
+
+get_nets_list <- function(fixed_list){
+  map(fixed_list, get_nets)
+}
+
+# NBDA --------------------------------------------------------------------
+nbdaModSum <- function(model){
+  dat <- data.frame(Variable = model@varNames,
+                    MLE = model@outputPar,
+                    SE = model@se)
+  return(dat)
+}
+
+get_years <- function(carcs, oas){
+  years <- map(carcs, ~st_drop_geometry(.x) %>% 
+                 dplyr::select(carcID, datetime, X, Y, stationName, carcassWeight) %>%
+                 mutate(year = lubridate::year(datetime), carcID = as.character(carcID)) %>% 
+                 dplyr::select(-datetime)) %>% 
+    purrr::list_rbind() %>% 
+    mutate(n_detections = map_dbl(oas, length))
+  return(years)
+}
+
+discoveryplot <- function(firsts, carcID){
+  firsts %>% 
+    ggplot(aes(x = timestamp, y = rownumber))+
+    geom_line()+
+    geom_point(size = 2, pch = 21, fill = "white")+
+    theme_classic()+
+    labs(y = "Cumulative number of vultures", 
+         x = "Time", 
+         title = "Vultures discovering the carcass", 
+         caption = "Number of unique vultures that flew within sight (1km)\nof the carcass since placement")+
+    ggtitle(carcID)
+}
+
+expand_mats <- function(rm, fm, dv){
+  expanded <- vector(mode = "list", length = length(fm))
+  for(i in 1:length(dv)){
+    tryCatch(
+      #this is the chunk of code we want to run
+      {expanded[[i]] <- rm[[dv[i]]]
+      }, error = function(msg){
+        expanded[[i]] <- NULL
+      })
+  }
+  return(expanded)
+}
+
+expand_roost_mats <- function(roost_mats, fl_mats, days_vec){
+  rme <- vector(mode = "list", length = length(roost_mats))
+  for(i in 1:length(rme)){
+    expanded <- expand_mats(roost_mats[[i]], fl_mats[[i]], days_vec[[i]])
+    expanded_as_matrix <- map(expanded, ~{
+      if(!is.null(.x)){return(as.matrix(.x))}else{return(.x)}})
+    rme[[i]] <- expanded_as_matrix
+  }
+  return(rme)
+}
+
+get_dynamic_nets <- function(ni, nt, matrices){
+  n_dynamic <- map2(ni, nt, ~array(NA, dim = c(.x, .x, 1, .y)))
+  for(i in 1:length(n_dynamic)){
+    for(j in 1:length(matrices[[i]])){
+      if(!is.null(matrices)){
+        n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], dim = c(ni[[i]], ni[[i]], 1))
+      }
+    }
+  }
+  return(n_dynamic)
+}
+
+get_nbdaData_list <- function(nets, cids, oas, amis, type){
+  outlist <- vector(mode = "list", length = length(nets))
+  for(i in 1:length(outlist)){
+    carcass <- cids[i]
+    if(type == "dynamic"){
+      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                               assMatrix = nets[[i]],
+                               orderAcq = oas[[i]],
+                               assMatrixIndex = amis[[i]])
+    }else{
+      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                               assMatrix = nets[[i]],
+                               orderAcq = oas[[i]])
+    }
+  }
+  return(outlist)
+}
+
+mod_trycatch <- function(datalist, type = "social"){
+  mod <- map(datalist, ~{
+    tryCatch({oadaFit(.x, type = type)}, error = function(msg){"error!"})
+  })
+  return(mod)
+}
+
+getmodstats <- function(mod){
+  tryCatch({
+    ps <- ifelse(mod@type == "social", unname(nbdaPropSolveByST(model = mod)[1]), NA)
+    df <- data.frame(soc = mod@type,
+                     loglik = mod@loglik,
+                     aic = mod@aic,
+                     aicc = mod@aicc,
+                     varNames = mod@varNames,
+                     outputPar = mod@outputPar, #XXX this will need to change once the model has more params, but for now it's length 1, conveniently.
+                     se = mod@se,
+                     propsolve = ps)
+    return(df)}, 
+    error = function(msg){
+      df <- data.frame(soc = NA,
+                       loglik = NA, 
+                       aic = NA, 
+                       aicc = NA, 
+                       varNames = NA, 
+                       outputPar = NA, 
+                       se = NA,
+                       propsolve = NA)
+      return(df)})
+  
+}
+
+get_summaries <- function(models_list, cids, type, network){
+  out <- map(models_list, getmodstats) %>%
+    setNames(cids) %>%
+    purrr::list_rbind(names_to = "carcID") %>%
+    mutate(type = type, network = network)
+  return(out)
+}
+
+get_model_cis <- function(mods, search){
+  for(i in 1:length(mods)){
+    if(is.na(search[i,2]) & !is.na(search[i,4])){
+      ci <- profLikCI(which = 1, model = mods[[i]],
+                      upperRange = search[i,4:5])
+    }else if(!is.na(search[i,2]) & !is.na(search[i,4])){
+      ci <- profLikCI(which = 1, model = mods[[i]],
+                      lowerRange = search[i,2:3],
+                      upperRange = search[i,4:5])
+    }else{
+      ci <- c(NA, NA)
+    }
+    search[i,6:7] <- ci 
+  }
+  return(search)
+}
+
+get_solveprops_list <- function(cis, datalist, type = "dynamic", bound){
+  if(bound == "lower"){
+    out <- map2_dbl(cis$ci_lower[cis$type == type], datalist, ~{
+      nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+    })
+  }else if(bound == "upper"){
+    out <- map2_dbl(cis$ci_upper[cis$type == type], datalist, ~{
+      nbdaPropSolveByST(par = .x, nbdadata = .y)[1]
+    })
+  }
+  
+  return(out)
+}
+
+update_cis_dfs <- function(cis_df, lower, upper){
+  cis_df$propsolve_lower[cis_df$type == "dynamic"] <- lower
+  cis_df$propsolve_upper[cis_df$type == "dynamic"] <- upper
+  return(cis_df)
+}
+
+bind_cis <- function(x, y){
+  out <- bind_rows(x, y) %>% 
+    mutate(sig_ci = ifelse(propsolve_lower > 0, T, F), 
+           soc = "social")
+  return(out)
+}
+
+get_ilv_separate <- function(n_indivs, oas, ilvs_lists, ilv){
+  out <- map2(n_indivs, oas, ~matrix(NA, nrow = .x, ncol = length(.y)))
+  for(i in 1:length(out)){
+    for(j in 1:nrow(out[[i]])){
+      if(ilv == "age"){
+        out[[i]][j,] <- map_chr(ilvs_lists[[i]], ~as.character(.x$age_group[j]))
+      }else if(ilv == "dist"){
+        out[[i]][j,] <- map_dbl(ilvs_lists[[i]], ~as.numeric(.x$dist_roost[j]))
+      }
+    }
+  }
+  return(out)
+}
+
+get_ilvs_lists <- function(ilvs_nbda, days_vec_nbda){
+  ilvs_lists <- vector(mode = "list", length = length(ilvs_nbda))
+  for(i in 1:length(ilvs_lists)){
+    ilvs <- ilvs_nbda[[i]]
+    nights_vec <- days_vec_nbda[[i]]-1
+    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
+    ilvs_lists[[i]] <- ilvs_this_carcass
+  }
+  return(ilvs_lists)
+}
+
+substitute_na_distances <- function(roost_carc_distances){
+  map(roost_carc_distances, ~{
+    # Replace NA values with column means
+    mat_filled <- apply(.x, 2, function(col) {
+      col[is.na(col)] <- mean(col, na.rm = TRUE)
+      return(col)
+    })
+    
+    # Convert the result back to a matrix (apply returns a matrix here, but to be safe):
+    mat_filled <- as.matrix(mat_filled)
+    return(mat_filled)
+  })
+}
+
+std_dists <- function(distances){
+  out <- map(distances, ~{
+    (.x-mean(.x))/sd(.x)
+  })
+  return(out)
+}
+
+binarize_ages <- function(age_groups){
+  out <- map(age_groups, ~{
+    .x[.x == "01_juv_sub"] <- 0
+    .x[.x == "02_adult"] <- 1
+    .x <- apply(.x, 2, as.numeric)
+    return(.x)
+  })
+  return(out)
+}
+
+get_nbdaData_list_ilvs <- function(nets, cids, oas, amis, dists, ags){
+  # THIS IS SO DUMB! Because of the way the code is written for the nbdaData function, I need to create global environment variable that I can then refer to by name for the ILVs. I can't pass an *object* into the function for the ILV matrices. grrrrrrr
+  for(i in 1:length(dists)){
+    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+    name2 <- quo_name(paste0("age_groups_", i))
+    assign(name1, dists[[i]], envir = .GlobalEnv)
+    assign(name2, ags[[i]], envir = .GlobalEnv)
+  }
+  
+  # now we can use those to actually create the nbdadata objects
+  outlist <- vector(mode = "list", length = length(nets))
+  for(i in 1:length(outlist)){
+    ag_name <- paste0("age_groups_", i)
+    srcd_name <- paste0("std_roost_carc_distances_", i)
+    ilvs_to_use <- c(ag_name, srcd_name)
+    carcass <- cids[i]
+    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                             assMatrix = nets[[i]],
+                             orderAcq = oas[[i]],
+                             assMatrixIndex = amis[[i]],
+                             asoc_ilv = ilvs_to_use,
+                             asocialTreatment = "timevarying")}
+  return(outlist)
+}
+
+get_nbdaData_list_2nets_ilvs <- function(nets1, nets2, cids, oas, amis, dists, ags, n_indivs, n_timeperiods){
+  # New version of the function with two dynamic networks
+  twonets_array_list <- vector(mode = "list", length = length(cids))
+  for(i in 1:length(twonets_array_list)){
+    twonets_array <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
+    #Slot in the network for each time period # XXX
+    for(j in 1:dim(twonets_array)[4]){
+      twonets_array[,,1,j] <- array(nets1[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+      twonets_array[,,2,j] <- array(nets2[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+    }
+    twonets_array_list[[i]] <- twonets_array
+  }
+  
+  for(i in 1:length(dists)){
+    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+    name2 <- quo_name(paste0("age_groups_", i))
+    assign(name1, dists[[i]], envir = .GlobalEnv)
+    assign(name2, ags[[i]], envir = .GlobalEnv)
+  }
+  
+  # now we can use those to actually create the nbdadata objects
+  outlist <- vector(mode = "list", length = length(twonets_array_list))
+  for(i in 1:length(outlist)){
+    ag_name <- paste0("age_groups_", i)
+    srcd_name <- paste0("std_roost_carc_distances_", i)
+    ilvs_to_use <- c(ag_name, srcd_name)
+    carcass <- cids[i]
+    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                             assMatrix = twonets_array_list[[i]],
+                             orderAcq = oas[[i]],
+                             assMatrixIndex = amis[[i]],
+                             asoc_ilv = ilvs_to_use,
+                             int_ilv = ilvs_to_use,
+                             asocialTreatment = "timevarying")}
+  return(outlist)
+}
+
+get_constraintsVectMatrix <- function(){
+  constraintsVectMatrix<-rbind(
+    #netcombo 1 0
+    c(1,0,0,0,0,0),
+    c(1,0,0,0,0,2),
+    c(1,0,0,0,2,0),
+    c(1,0,0,0,2,3),
+    c(1,0,0,2,0,0),
+    c(1,0,0,2,0,3),
+    c(1,0,0,2,3,0),
+    c(1,0,0,2,3,4),
+    c(1,0,2,0,0,0),
+    c(1,0,2,0,0,3),
+    c(1,0,2,0,3,0),
+    c(1,0,2,0,3,4),
+    c(1,0,2,3,0,0),
+    c(1,0,2,3,0,4),
+    c(1,0,2,3,4,0),
+    c(1,0,2,3,4,5),
+    
+    #netcombo 0 1
+    c(0,1,0,0,0,0),
+    c(0,1,0,0,0,2),
+    c(0,1,0,0,2,0),
+    c(0,1,0,0,2,3),
+    c(0,1,0,2,0,0),
+    c(0,1,0,2,0,3),
+    c(0,1,0,2,3,0),
+    c(0,1,0,2,3,4),
+    c(0,1,2,0,0,0),
+    c(0,1,2,0,0,3),
+    c(0,1,2,0,3,0),
+    c(0,1,2,0,3,4),
+    c(0,1,2,3,0,0),
+    c(0,1,2,3,0,4),
+    c(0,1,2,3,4,0),
+    c(0,1,2,3,4,5),
+    
+    # #netcombo 1 1
+    # c(1,1,0,0,0,0),
+    # c(1,1,0,0,0,2),
+    # c(1,1,0,0,2,0),
+    # c(1,1,0,0,2,3),
+    # c(1,1,0,2,0,0),
+    # c(1,1,0,2,0,3),
+    # c(1,1,0,2,3,0),
+    # c(1,1,0,2,3,4),
+    # c(1,1,2,0,0,0),
+    # c(1,1,2,0,0,3),
+    # c(1,1,2,0,3,0),
+    # c(1,1,2,0,3,4),
+    # c(1,1,2,3,0,0),
+    # c(1,1,2,3,0,4),
+    # c(1,1,2,3,4,0),
+    # c(1,1,2,3,4,5),
+    
+    #netcombo 1 2
+    c(1,2,0,0,0,0),
+    c(1,2,0,0,0,3),
+    c(1,2,0,0,3,0),
+    c(1,2,0,0,3,4),
+    c(1,2,0,3,0,0),
+    c(1,2,0,3,0,4),
+    c(1,2,0,3,4,0),
+    c(1,2,0,3,4,5),
+    c(1,2,3,0,0,0),
+    c(1,2,3,0,0,4),
+    c(1,2,3,0,4,0),
+    c(1,2,3,0,4,5),
+    c(1,2,3,4,0,0),
+    c(1,2,3,4,0,5),
+    c(1,2,3,4,5,0),
+    c(1,2,3,4,5,6),
+    
+    #netcombo 0 0 
+    c(0,0,0,0,0,0),
+    c(0,0,1,0,0,0),
+    c(0,0,0,1,0,0),
+    c(0,0,1,2,0,0)
+  )
+  return(constraintsVectMatrix)
+}
+
+get_modelset <- function(data, constraints){
+  out <- map(data, ~oadaAICtable(.x, constraints))
+  return(out)
+}
+
+get_maes <- function(modelset_list){
+  out <- map(modelset_list, ~{
+    rbind( support=variableSupport(.x),
+      MAE=modelAverageEstimates(.x),
+      USE=unconditionalStdErr(.x))
+  })
+  return(out)
+}
+
+get_lowerlimits <- function(modelset_list, net, conf_level){
+  out <- map(modelset_list, ~multiModelLowerLimits(which = net,
+                                            aicTable = .x,
+                                            conf = conf_level))
+  return(out)
+}
+  
+get_nbdaData_list_2nets_ilvs_add_multi <- function(nets1, nets2, cids, oas, amis, dists, ags, n_indivs, n_timeperiods){
+  # New version of the function with two dynamic networks
+  twonets_array_list <- vector(mode = "list", length = length(cids))
+  for(i in 1:length(twonets_array_list)){
+    twonets_array <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
+    #Slot in the network for each time period # XXX
+    for(j in 1:dim(twonets_array)[4]){
+      twonets_array[,,1,j] <- array(nets1[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+      twonets_array[,,2,j] <- array(nets2[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+    }
+    twonets_array_list[[i]] <- twonets_array
+  }
+  
+  for(i in 1:length(dists)){
+    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
+    name2 <- quo_name(paste0("age_groups_", i))
+    assign(name1, dists[[i]], envir = .GlobalEnv)
+    assign(name2, ags[[i]], envir = .GlobalEnv)
+  }
+  
+  # now we can use those to actually create the nbdadata objects
+  outlist <- vector(mode = "list", length = length(twonets_array_list))
+  for(i in 1:length(outlist)){
+    ag_name <- paste0("age_groups_", i)
+    srcd_name <- paste0("std_roost_carc_distances_", i)
+    ilvs_to_use <- c(ag_name, srcd_name)
+    carcass <- cids[i]
+    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
+                             assMatrix = twonets_array_list[[i]],
+                             orderAcq = oas[[i]],
+                             assMatrixIndex = amis[[i]],
+                             asoc_ilv = ilvs_to_use,
+                             multi_ilv = ilvs_to_use,
+                             asocialTreatment = "timevarying")}
+  return(outlist)
+}
+
