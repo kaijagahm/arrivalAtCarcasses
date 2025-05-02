@@ -1236,10 +1236,10 @@ get_maes <- function(modelset_list){
   return(out)
 }
 
-get_lowerlimits <- function(modelset_list){
-  out <- map(modelset_list, ~multiModelLowerLimits(which = 2,
+get_lowerlimits <- function(modelset_list, net, conf_level){
+  out <- map(modelset_list, ~multiModelLowerLimits(which = net,
                                             aicTable = .x,
-                                            conf = 0.95))
+                                            conf = conf_level))
   return(out)
 }
   

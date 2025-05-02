@@ -349,7 +349,8 @@ list(
   tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
   tar_target(networksSupport_list, map(modelset_list, networksSupport)),
   tar_target(maes_list, get_maes(modelset_list)),
-  tar_target(lowerLimitsByModel, get_lowerlimits(modelset_list)),
-  tar_target(lowerLimits_propST_MA, map_dbl(lowerLimitsByModel, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
-  
+  tar_target(lowerLimitsByModel_net1, get_lowerlimits(modelset_list, net = 1, conf_level = 0.95)),
+  tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
+  tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
+  tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
 )
