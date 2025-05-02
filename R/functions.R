@@ -1091,13 +1091,13 @@ get_nbdaData_list_ilvs <- function(nets, cids, oas, amis, dists, ags){
   for(i in 1:length(outlist)){
     ag_name <- paste0("age_groups_", i)
     srcd_name <- paste0("std_roost_carc_distances_", i)
-    ilvs_to_use <- c(ag_name, srcd_name)
     carcass <- cids[i]
     outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
                              assMatrix = nets[[i]],
                              orderAcq = oas[[i]],
                              assMatrixIndex = amis[[i]],
-                             asoc_ilv = ilvs_to_use,
+                             asoc_ilv = c(ag_name, srcd_name),
+                             int_ilv = ag_name,
                              asocialTreatment = "timevarying")}
   return(outlist)
 }
@@ -1127,97 +1127,66 @@ get_nbdaData_list_2nets_ilvs <- function(nets1, nets2, cids, oas, amis, dists, a
   for(i in 1:length(outlist)){
     ag_name <- paste0("age_groups_", i)
     srcd_name <- paste0("std_roost_carc_distances_", i)
-    ilvs_to_use <- c(ag_name, srcd_name)
     carcass <- cids[i]
     outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
                              assMatrix = twonets_array_list[[i]],
                              orderAcq = oas[[i]],
                              assMatrixIndex = amis[[i]],
-                             asoc_ilv = ilvs_to_use,
-                             int_ilv = ilvs_to_use,
+                             asoc_ilv = c(ag_name, srcd_name),
+                             int_ilv = ag_name,
                              asocialTreatment = "timevarying")}
   return(outlist)
 }
 
 get_constraintsVectMatrix <- function(){
   constraintsVectMatrix<-rbind(
+    #s1, s2, asocial_ag, asocial_srcd, social_ag. Not including social_srcd, since that wasn't specified in the models
+    # netcombo 1 0
     #netcombo 1 0
-    c(1,0,0,0,0,0),
-    c(1,0,0,0,0,2),
-    c(1,0,0,0,2,0),
-    c(1,0,0,0,2,3),
-    c(1,0,0,2,0,0),
-    c(1,0,0,2,0,3),
-    c(1,0,0,2,3,0),
-    c(1,0,0,2,3,4),
-    c(1,0,2,0,0,0),
-    c(1,0,2,0,0,3),
-    c(1,0,2,0,3,0),
-    c(1,0,2,0,3,4),
-    c(1,0,2,3,0,0),
-    c(1,0,2,3,0,4),
-    c(1,0,2,3,4,0),
-    c(1,0,2,3,4,5),
+    c(1,0,0,0,0),
+    c(1,0,0,0,2),
+    c(1,0,0,2,0),
+    c(1,0,0,2,3),
+    c(1,0,2,0,0),
+    c(1,0,2,0,3),
+    c(1,0,2,3,0),
+    c(1,0,2,3,4),
     
     #netcombo 0 1
-    c(0,1,0,0,0,0),
-    c(0,1,0,0,0,2),
-    c(0,1,0,0,2,0),
-    c(0,1,0,0,2,3),
-    c(0,1,0,2,0,0),
-    c(0,1,0,2,0,3),
-    c(0,1,0,2,3,0),
-    c(0,1,0,2,3,4),
-    c(0,1,2,0,0,0),
-    c(0,1,2,0,0,3),
-    c(0,1,2,0,3,0),
-    c(0,1,2,0,3,4),
-    c(0,1,2,3,0,0),
-    c(0,1,2,3,0,4),
-    c(0,1,2,3,4,0),
-    c(0,1,2,3,4,5),
+    c(0,1,0,0,0),
+    c(0,1,0,0,2),
+    c(0,1,0,2,0),
+    c(0,1,0,2,3),
+    c(0,1,2,0,0),
+    c(0,1,2,0,3),
+    c(0,1,2,3,0),
+    c(0,1,2,3,4),
     
-    # #netcombo 1 1
-    # c(1,1,0,0,0,0),
-    # c(1,1,0,0,0,2),
-    # c(1,1,0,0,2,0),
-    # c(1,1,0,0,2,3),
-    # c(1,1,0,2,0,0),
-    # c(1,1,0,2,0,3),
-    # c(1,1,0,2,3,0),
-    # c(1,1,0,2,3,4),
-    # c(1,1,2,0,0,0),
-    # c(1,1,2,0,0,3),
-    # c(1,1,2,0,3,0),
-    # c(1,1,2,0,3,4),
-    # c(1,1,2,3,0,0),
-    # c(1,1,2,3,0,4),
-    # c(1,1,2,3,4,0),
-    # c(1,1,2,3,4,5),
+    #netcombo 1 1
+    c(1,1,0,0,0),
+    c(1,1,0,0,2),
+    c(1,1,0,2,0),
+    c(1,1,0,2,3),
+    c(1,1,2,0,0),
+    c(1,1,2,0,3),
+    c(1,1,2,3,0),
+    c(1,1,2,3,4),
     
     #netcombo 1 2
-    c(1,2,0,0,0,0),
-    c(1,2,0,0,0,3),
-    c(1,2,0,0,3,0),
-    c(1,2,0,0,3,4),
-    c(1,2,0,3,0,0),
-    c(1,2,0,3,0,4),
-    c(1,2,0,3,4,0),
-    c(1,2,0,3,4,5),
-    c(1,2,3,0,0,0),
-    c(1,2,3,0,0,4),
-    c(1,2,3,0,4,0),
-    c(1,2,3,0,4,5),
-    c(1,2,3,4,0,0),
-    c(1,2,3,4,0,5),
-    c(1,2,3,4,5,0),
-    c(1,2,3,4,5,6),
-    
-    #netcombo 0 0 
-    c(0,0,0,0,0,0),
-    c(0,0,1,0,0,0),
-    c(0,0,0,1,0,0),
-    c(0,0,1,2,0,0)
+    c(1,2,0,0,0),
+    c(1,2,0,0,3),
+    c(1,2,0,3,0),
+    c(1,2,0,3,4),
+    c(1,2,3,0,0),
+    c(1,2,3,0,4),
+    c(1,2,3,4,0),
+    c(1,2,3,4,5),
+
+    #netcombo 0 0 (doesn't include age effect on social transmission, since there is by definition no social transmission in these models)
+    c(0,0,0,0,0),
+    c(0,0,1,0,0),
+    c(0,0,0,1,0),
+    c(0,0,1,2,0)
   )
   return(constraintsVectMatrix)
 }
@@ -1268,14 +1237,13 @@ get_nbdaData_list_2nets_ilvs_add_multi <- function(nets1, nets2, cids, oas, amis
   for(i in 1:length(outlist)){
     ag_name <- paste0("age_groups_", i)
     srcd_name <- paste0("std_roost_carc_distances_", i)
-    ilvs_to_use <- c(ag_name, srcd_name)
     carcass <- cids[i]
     outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
                              assMatrix = twonets_array_list[[i]],
                              orderAcq = oas[[i]],
                              assMatrixIndex = amis[[i]],
-                             asoc_ilv = ilvs_to_use,
-                             multi_ilv = ilvs_to_use,
+                             asoc_ilv = c(ag_name, srcd_name),
+                             multi_ilv = ag_name,
                              asocialTreatment = "timevarying")}
   return(outlist)
 }
