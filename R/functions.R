@@ -1134,7 +1134,7 @@ get_nbdaData_list_2nets_ilvs <- function(nets1, nets2, cids, oas, amis, dists, a
                              assMatrixIndex = amis[[i]],
                              asoc_ilv = c(ag_name, srcd_name),
                              int_ilv = ag_name,
-                             asocialTreatment = "timevarying")}
+                             asocialTreatment = "timevarying")} # XXX this raises the question of why we don't have to specify socialTreatment as "timevarying", since it is. There's no mention of this in the documentation, but I'm noticing that the summaries do not include n ILV effect on the social transmission, which is kind of suspicious.
   return(outlist)
 }
 
@@ -1211,40 +1211,69 @@ get_lowerlimits <- function(modelset_list, net, conf_level){
                                             conf = conf_level))
   return(out)
 }
+
+get_nbdaData_list_flex <- function(cids, oas, amis,
+                                   nets1, nets2 = NULL,
+                                   is_dynamic = FALSE,
+                                   dists = NULL, ags = NULL,
+                                   n_indivs = NULL, n_timeperiods = NULL) {
+  use_ilvs <- !is.null(dists) && !is.null(ags)
+  use_two_nets <- !is.null(nets2)
   
-get_nbdaData_list_2nets_ilvs_add_multi <- function(nets1, nets2, cids, oas, amis, dists, ags, n_indivs, n_timeperiods){
-  # New version of the function with two dynamic networks
-  twonets_array_list <- vector(mode = "list", length = length(cids))
-  for(i in 1:length(twonets_array_list)){
-    twonets_array <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
-    #Slot in the network for each time period # XXX
-    for(j in 1:dim(twonets_array)[4]){
-      twonets_array[,,1,j] <- array(nets1[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
-      twonets_array[,,2,j] <- array(nets2[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
+  if (use_ilvs) {
+    for (i in seq_along(dists)) {
+      name1 <- paste0("std_roost_carc_distances_", i)
+      name2 <- paste0("age_groups_", i)
+      assign(name1, dists[[i]], envir = .GlobalEnv)
+      assign(name2, ags[[i]], envir = .GlobalEnv)
     }
-    twonets_array_list[[i]] <- twonets_array
   }
   
-  for(i in 1:length(dists)){
-    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
-    name2 <- quo_name(paste0("age_groups_", i))
-    assign(name1, dists[[i]], envir = .GlobalEnv)
-    assign(name2, ags[[i]], envir = .GlobalEnv)
+  # If two networks are used, create combined 4D array list
+  if (use_two_nets) {
+    stopifnot(is_dynamic, !is.null(n_indivs), !is.null(n_timeperiods))
+    twonets_array_list <- vector("list", length(cids))
+    for (i in seq_along(cids)) {
+      arr <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
+      for (j in seq_len(n_timeperiods[[i]])) {
+        arr[,,1,j] <- nets1[[i]][[j]]
+        arr[,,2,j] <- nets2[[i]][[j]]
+      }
+      nets1[[i]] <- arr  # Replace nets1 with merged array
+    }
   }
   
-  # now we can use those to actually create the nbdadata objects
-  outlist <- vector(mode = "list", length = length(twonets_array_list))
-  for(i in 1:length(outlist)){
-    ag_name <- paste0("age_groups_", i)
-    srcd_name <- paste0("std_roost_carc_distances_", i)
+  outlist <- vector("list", length(cids))
+  for (i in seq_along(cids)) {
     carcass <- cids[i]
-    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                             assMatrix = twonets_array_list[[i]],
-                             orderAcq = oas[[i]],
-                             assMatrixIndex = amis[[i]],
-                             asoc_ilv = c(ag_name, srcd_name),
-                             multi_ilv = ag_name,
-                             asocialTreatment = "timevarying")}
+    label <- paste0("Carcass ", carcass)
+    
+    ilv_args <- list()
+    if (use_ilvs) {
+      ag_name <- paste0("age_groups_", i)
+      srcd_name <- paste0("std_roost_carc_distances_", i)
+      ilv_args <- list(
+        asoc_ilv = c(ag_name, srcd_name),
+        int_ilv = ag_name,
+        asocialTreatment = "timevarying"
+      )
+    }
+    
+    if (is_dynamic || use_two_nets) {
+      outlist[[i]] <- do.call(nbdaData, c(list(
+        label = label,
+        assMatrix = nets1[[i]],
+        orderAcq = oas[[i]],
+        assMatrixIndex = amis[[i]]
+      ), ilv_args))
+    } else {
+      outlist[[i]] <- do.call(nbdaData, c(list(
+        label = label,
+        assMatrix = nets1[[i]],
+        orderAcq = oas[[i]]
+      ), ilv_args))
+    }
+  }
+  
   return(outlist)
 }
-
