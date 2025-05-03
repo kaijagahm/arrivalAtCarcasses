@@ -919,24 +919,6 @@ get_dynamic_nets <- function(ni, nt, matrices){
   return(n_dynamic)
 }
 
-get_nbdaData_list <- function(nets, cids, oas, amis, type){
-  outlist <- vector(mode = "list", length = length(nets))
-  for(i in 1:length(outlist)){
-    carcass <- cids[i]
-    if(type == "dynamic"){
-      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                               assMatrix = nets[[i]],
-                               orderAcq = oas[[i]],
-                               assMatrixIndex = amis[[i]])
-    }else{
-      outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                               assMatrix = nets[[i]],
-                               orderAcq = oas[[i]])
-    }
-  }
-  return(outlist)
-}
-
 mod_trycatch <- function(datalist, type = "social"){
   mod <- map(datalist, ~{
     tryCatch({oadaFit(.x, type = type)}, error = function(msg){"error!"})
@@ -1077,67 +1059,6 @@ binarize_ages <- function(age_groups){
   return(out)
 }
 
-get_nbdaData_list_ilvs <- function(nets, cids, oas, amis, dists, ags){
-  # THIS IS SO DUMB! Because of the way the code is written for the nbdaData function, I need to create global environment variable that I can then refer to by name for the ILVs. I can't pass an *object* into the function for the ILV matrices. grrrrrrr
-  for(i in 1:length(dists)){
-    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
-    name2 <- quo_name(paste0("age_groups_", i))
-    assign(name1, dists[[i]], envir = .GlobalEnv)
-    assign(name2, ags[[i]], envir = .GlobalEnv)
-  }
-  
-  # now we can use those to actually create the nbdadata objects
-  outlist <- vector(mode = "list", length = length(nets))
-  for(i in 1:length(outlist)){
-    ag_name <- paste0("age_groups_", i)
-    srcd_name <- paste0("std_roost_carc_distances_", i)
-    carcass <- cids[i]
-    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                             assMatrix = nets[[i]],
-                             orderAcq = oas[[i]],
-                             assMatrixIndex = amis[[i]],
-                             asoc_ilv = c(ag_name, srcd_name),
-                             int_ilv = ag_name,
-                             asocialTreatment = "timevarying")}
-  return(outlist)
-}
-
-get_nbdaData_list_2nets_ilvs <- function(nets1, nets2, cids, oas, amis, dists, ags, n_indivs, n_timeperiods){
-  # New version of the function with two dynamic networks
-  twonets_array_list <- vector(mode = "list", length = length(cids))
-  for(i in 1:length(twonets_array_list)){
-    twonets_array <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
-    #Slot in the network for each time period # XXX
-    for(j in 1:dim(twonets_array)[4]){
-      twonets_array[,,1,j] <- array(nets1[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
-      twonets_array[,,2,j] <- array(nets2[[i]][[j]], dim = c(n_indivs[[i]], n_indivs[[i]], 1))
-    }
-    twonets_array_list[[i]] <- twonets_array
-  }
-  
-  for(i in 1:length(dists)){
-    name1 <- quo_name(paste0("std_roost_carc_distances_", i))
-    name2 <- quo_name(paste0("age_groups_", i))
-    assign(name1, dists[[i]], envir = .GlobalEnv)
-    assign(name2, ags[[i]], envir = .GlobalEnv)
-  }
-  
-  # now we can use those to actually create the nbdadata objects
-  outlist <- vector(mode = "list", length = length(twonets_array_list))
-  for(i in 1:length(outlist)){
-    ag_name <- paste0("age_groups_", i)
-    srcd_name <- paste0("std_roost_carc_distances_", i)
-    carcass <- cids[i]
-    outlist[[i]] <- nbdaData(label = paste0("Carcass ", carcass),
-                             assMatrix = twonets_array_list[[i]],
-                             orderAcq = oas[[i]],
-                             assMatrixIndex = amis[[i]],
-                             asoc_ilv = c(ag_name, srcd_name),
-                             int_ilv = ag_name,
-                             asocialTreatment = "timevarying")} # XXX this raises the question of why we don't have to specify socialTreatment as "timevarying", since it is. There's no mention of this in the documentation, but I'm noticing that the summaries do not include n ILV effect on the social transmission, which is kind of suspicious.
-  return(outlist)
-}
-
 get_constraintsVectMatrix <- function(){
   constraintsVectMatrix<-rbind(
     #s1, s2, asocial_ag, asocial_srcd, social_ag. Not including social_srcd, since that wasn't specified in the models
@@ -1233,13 +1154,13 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
   if (use_two_nets) {
     stopifnot(is_dynamic, !is.null(n_indivs), !is.null(n_timeperiods))
     twonets_array_list <- vector("list", length(cids))
-    for (i in seq_along(cids)) {
-      arr <- array(NA, dim = c(n_indivs[[i]], n_indivs[[i]], 2, n_timeperiods[[i]]))
+    for (i in seq_along(cids)) {# for each carcass
+      arr <- array(NA, dim = c(n_indivs[i], n_indivs[i], 2, n_timeperiods[i]))
       for (j in seq_len(n_timeperiods[[i]])) {
         arr[,,1,j] <- nets1[[i]][[j]]
         arr[,,2,j] <- nets2[[i]][[j]]
       }
-      nets1[[i]] <- arr  # Replace nets1 with merged array
+      nets1[[i]] <- arr  # Replace nets1 with merged array (so we still only pass one argument into the ultimate call to nbdaData, I think?)
     }
   }
   
@@ -1262,7 +1183,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     if (is_dynamic || use_two_nets) {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
-        assMatrix = nets1[[i]],
+        assMatrix = nets1[[i]], # because we replaced nets1 with the merged array before, we can still just pass nets1 in here, because it contains both networks.
         orderAcq = oas[[i]],
         assMatrixIndex = amis[[i]]
       ), ilv_args))
