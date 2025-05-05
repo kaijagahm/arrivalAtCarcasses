@@ -316,7 +316,7 @@ list(
 
   # Make single-network models with ILVs ------------------------------------
   tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),
-  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age")), # XXX i'm noticing that these are all square matrices. we should be including individuals that never found the carcass, too--need to go back and make sure those are included in this.
+  tar_target(age_groups, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "age")), 
   tar_target(prop_nas_roost_carc_distances, map_dbl(roost_carc_distances, ~sum(is.na(.x))/length(.x))), # XXX probably later we should not use this ILV for any carcasses where too high a proportion of them are NA.
   tar_target(roost_carc_distances_NAs_filled, substitute_na_distances(roost_carc_distances)),
   tar_target(std_roost_carc_distances_NAs_filled, std_dists(roost_carc_distances_NAs_filled)),
@@ -327,11 +327,11 @@ list(
   tar_target(nbdaData_list_dynamic_flight_ilvs, get_nbdaData_list_flex(cids = carcIDs_nbda, oas = oas_nbda_updated, amis = assMatrixIndices, nets1 = N.FD, is_dynamic = T, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin)),
   ## Make models
   ### social
-  tar_target(Mods_N.RD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "social")),
-  tar_target(Mods_N.FD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "social")),
+  tar_target(Mods_N.RD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "social", iterations = 1000)),
+  tar_target(Mods_N.FD_So_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "social", iterations = 1000)),
   ### asocial
-  tar_target(Mods_N.RD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "asocial")),
-  tar_target(Mods_N.FD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "asocial")),
+  tar_target(Mods_N.RD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_roost_ilvs, type = "asocial", iterations = 1000)),
+  tar_target(Mods_N.FD_Aso_ilvs, mod_trycatch(nbdaData_list_dynamic_flight_ilvs, type = "asocial", iterations = 1000)),
   ## Get model stats
   tar_target(sums_RD_ilvs, get_summaries(Mods_N.RD_So_ilvs, carcIDs_nbda, "dynamic", "roost")),
   tar_target(sums_RD_A_ilvs, get_summaries(Mods_N.RD_Aso_ilvs, carcIDs_nbda, "dynamic", "roost")),

@@ -919,9 +919,9 @@ get_dynamic_nets <- function(ni, nt, matrices){
   return(n_dynamic)
 }
 
-mod_trycatch <- function(datalist, type = "social"){
+mod_trycatch <- function(datalist, type = "social", iterations = 150){
   mod <- map(datalist, ~{
-    tryCatch({oadaFit(.x, type = type)}, error = function(msg){"error!"})
+    tryCatch({oadaFit(.x, type = type, iterations = iterations)}, error = function(msg){"error!"})
   })
   return(mod)
 }
