@@ -86,11 +86,9 @@ check1|stem|5490c1926e5fd3a8|b2b68eaa473e19f2|026777c1954493f5|1868508604||t2020
 check2|stem|5490c1926e5fd3a8|e18e34081d9ac70a|561c466a44651bb1|1369319214||t20202.7548934266s|b1b25f7c3fdf8f19|45|rds|local|vector|||0||
 check3|stem|5490c1926e5fd3a8|a27aca9c420f6cc4|926912557782afbe|358762463||t20202.7685700101s|b1b25f7c3fdf8f19|45|rds|local|vector|||0||
 cids|object|ae74efd314ac541e|||||||||||||||
-cis|stem|error|45d19ec0d456cd78|a7f6545163baabfb|-225083358||t20214.033079195s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.125||i In argument sig_ci  ifelsepropsolve_lower  0, T, F.Caused by error object propsolve_lower not found
-cis_flight|stem|94bc75c2395da243|51da05562bace64d|87512f00e1a7be18|-1410411490||t20213.9994838211s|c96990241ba32a5f|1073|rds|local|vector|||13.5||
-cis_flight_updated|stem|94bc75c2395da243|3313119e90850ac3|36a7eb9a8b0bd0e9|1115487112||t20214.030073387s|c96990241ba32a5f|1073|rds|local|vector|||0.016||
-cis_roost|stem|cf664f5434dc21bc|1f9cb446945ba5fe|326059ba1337b2b2|-1178131236||t20213.9993235255s|2515b5bcc97038fd|1032|rds|local|vector|||9.828||
-cis_roost_updated|stem|cf664f5434dc21bc|b7576e836b5f4b05|b69d00287e9a4739|-879371623||t20214.0300724359s|2515b5bcc97038fd|1032|rds|local|vector|||0||
+cis|stem|error|45d19ec0d456cd78|cea2bc00630832d1|-225083358||t20214.6928409624s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.125||i In argument sig_ci  ifelsepropsolve_lower  0, T, F.Caused by error object propsolve_lower not found
+cis_flight_updated|stem|error|3313119e90850ac3|0d565f0955a8f115|1115487112||t20214.6928341796s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.062||object solveprops_flight_lower not found
+cis_roost_updated|stem|error|b7576e836b5f4b05|0d565f0955a8f115|-879371623||t20214.6928323332s|b1b25f7c3fdf8f19|45|rds|local|vector|||1.828|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|object solveprops_roost_lower not found
 clean_data|function|da9b459d7f333e6e|||||||||||||||
 closest_stn_bouts|stem|69d233a19d6a9eed|b7df10f1caed29c9|1c7a1ede0c3416f2|-268495117||t20200.863568768s|09492122e8f179e2|40140|rds|local|vector|||482.828||
 closest_stn_carc|stem|d4042de04c2370e4|61a3b269197c7d66|1da03adec2088010|2004922924||t20200.8637624717s|a1579a136c79aa45|5793|rds|local|vector|||16.703||
@@ -177,7 +175,7 @@ get_nbdaData_list|function|0d4167517c073c04|||||||||||||||
 get_nbdaData_list_2nets_ilvs|function|908d7a1e9b6c23ae|||||||||||||||
 get_nbdaData_list_2nets_ilvs_add_multi|function|b7d23b525efd0108|||||||||||||||
 get_nbdaData_list_dynamic|function|3486aa47a8a7d701|||||||||||||||
-get_nbdaData_list_flex|function|854348573b44ccae|||||||||||||||
+get_nbdaData_list_flex|function|7426bc09cdf5ec07|||||||||||||||
 get_nbdaData_list_ilvs|function|0527d27e164cfd27|||||||||||||||
 get_netcombo|function|7e65fd4ba3b4f649|||||||||||||||
 get_nets|function|2a15a734c6f4639c|||||||||||||||
@@ -224,39 +222,39 @@ ilvs_to_use|object|3f313ea6c8f0a098|||||||||||||||
 inpa|stem|97eb1f8a886bec33|37c727445087afb3|684b439fda0a1ca9|462496551||t20200.8726856524s|0b534cab64cc870b|4251|rds|local|vector|||0||
 inpa_carcs|stem|d36aa165f0328c14|ea645cd3cf984df9|ca6e8caae58026aa|-650389493||t20200.872686767s|608f361edecff773|7211|rds|local|vector|||0.047||
 loginObject|stem|affb390f070239b0|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t20200.853272751s|56f9cfb958dddea9|249|rds|local|vector|||5.734||
-lowerLimits_propST_MA_net1|stem|cd90f9d1cf75f5cc|37e30e7a995cfd5b|f0ca1fbfa0e552c5|-569869723||t20214.0300702659s|e7b83425a991cb39|73|rds|local|vector|||0||
-lowerLimits_propST_MA_net2|stem|007d4f271a15132d|124266faaa985a7b|953c5a4b04781f80|979563300||t20214.0300713511s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
-lowerLimitsByModel_net1|stem|5e73f9c174c25143|4297865764e84004|18172e5ff1b956af|-1512300547||t20214.0149086114s|b9f93be68a374e51|19128|rds|local|vector|||1330.672|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
-lowerLimitsByModel_net2|stem|366d78197500999c|7bed9aad5f4268a8|18172e5ff1b956af|1203600399||t20214.0286317716s|b7eb8c3b18b3d9c5|20782|rds|local|vector|||1185.5|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
-maes_list|stem|844f21d4a750d2c3|428246d545abb23d|eb94687ebf7cb150|-1863764593||t20213.9995046544s|9b7c13b784736be5|3120|rds|local|vector|||0.047|number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is not a multiple of vector length arg 2. number of columns of result is n|
+lowerLimits_propST_MA_net1|stem|295918361e5cba9b|37e30e7a995cfd5b|5c37433e29117920|-569869723||t20214.6904730445s|d3a7b4f13c88e37f|47|rds|local|vector|||0||
+lowerLimits_propST_MA_net2|stem|295918361e5cba9b|124266faaa985a7b|9bd33f49d78efc9d|979563300||t20214.6904741406s|d3a7b4f13c88e37f|47|rds|local|vector|||0||
+lowerLimitsByModel_net1|stem|150006249866f474|4297865764e84004|a4203d1b212dda1e|-1512300547||t20214.6904506288s|d3a7b4f13c88e37f|47|rds|local|vector|||0||
+lowerLimitsByModel_net2|stem|150006249866f474|7bed9aad5f4268a8|a4203d1b212dda1e|1203600399||t20214.6904515006s|d3a7b4f13c88e37f|47|rds|local|vector|||0.015||
+maes_list|stem|150006249866f474|428246d545abb23d|7b57c2e15554ed82|-1863764593||t20214.6904523098s|d3a7b4f13c88e37f|47|rds|local|vector|||0||
 matrix_orders_nbda|stem|6dc880b13d9898d4|6db1efe27d499e5c|e8892849491ad178|374844671||t20213.987670933s|35f88461d872da97|1225|rds|local|vector|||0||
 mean_amplitude|function|badaf723abe07336|||||||||||||||
 min_sightings|stem|05fa983ebc3446a4|3aecd493438d20d7|2c530c1562a7fbd1|-1889081441||t20213.9875926159s|b2d5d26f8983d7ae|52|rds|local|vector|||1.922|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 mod_trycatch|function|fd89cff39d467555|||||||||||||||
-modelset_list|stem|1fa41fe28ae3a506|ff7494ac5cf58ab9|0c6e3cbedabd12a6|676814333||t20213.9985506872s|926ae81c59a491f8|401946|rds|local|vector|||770.719|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
-Mods_2nets_So_ilvs|stem|6e8700e504c395fa|3aac9181ddd24618|9ba35d3407cc2e69|-1803605192||t20213.9992069012s|bc553d7ba0988d14|310135|rds|local|vector|||55.703||
+modelset_list|stem|error|ff7494ac5cf58ab9|8c23cb6544d90fa3|676814333||t20214.6928886789s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.172||i In index 1.Caused by error in dimnamesconstraintsVectMatrix  list1noModels, pasteCONS, varNames,    sep   length of dimnames 2 not equal to array extent
+Mods_2nets_So_ilvs|stem|cb86951bb0a16f76|3aac9181ddd24618|3b4f20323cfb8782|-1803605192||t20214.6882690369s|63b456e2ae5ebcd0|298148|rds|local|vector|||34.281||
 Mods_N.FD_Aso|stem|90552232441afcc8|6babc66637cbb7bd|ebbeccca5c35a14d|1457499457||t20213.9882135933s|ce4a735ab7c0e1ab|576262|rds|local|vector|||0.078||
-Mods_N.FD_Aso_ilvs|stem|d32dfee5cae9d021|caeb71865dd18724|64941b9d8961b3f1|-953877241||t20213.9890893106s|e8556815328f04a0|663027|rds|local|vector|||7.5||
+Mods_N.FD_Aso_ilvs|stem|2da27ed9cd9122b0|caeb71865dd18724|0831b916e15ed3ed|-953877241||t20214.6883664049s|ed24569d49774409|653087|rds|local|vector|||7.579||
 Mods_N.FD_So|stem|344b4f0a90a4e57b|33d9a5b4e3c5f44e|ebbeccca5c35a14d|255934790||t20213.9882030977s|7b55f6de46a1dd6e|584395|rds|local|vector|||2.953||
-Mods_N.FD_So_ilvs|stem|dfc2ab5f85bdbbbf|c6e4931238b4c22d|64941b9d8961b3f1|234575136||t20213.9896182068s|f3dd0e0d1b9c5b1a|668384|rds|local|vector|||44.812|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
+Mods_N.FD_So_ilvs|stem|6d7c3e06ab1344cb|c6e4931238b4c22d|0831b916e15ed3ed|234575136||t20214.6886019775s|392f23217aa5f263|656308|rds|local|vector|||19.516||
 Mods_N.RD_Aso|stem|9a2ba0ed95811219|c59ea0681cfbe5e9|38985a2c6339c3cd|-1266956719||t20213.9881108259s|ee64b1c163c7ccc0|735861|rds|local|vector|||0.36||
-Mods_N.RD_Aso_ilvs|stem|ac77153edccb838f|85a648b0d5a83a93|27d7da15daa4b2c0|256924025||t20213.9889929696s|cbf1ebdf8fc92f4a|821383|rds|local|vector|||7.454||
+Mods_N.RD_Aso_ilvs|stem|6462b63e3e3812d7|85a648b0d5a83a93|51d654022d583da6|256924025||t20214.6889569439s|1922775b1ed2750c|812382|rds|local|vector|||7.625||
 Mods_N.RD_So|stem|c4f70a61c8c8f79a|66ddc9d535e88975|38985a2c6339c3cd|-1147283786||t20213.988159265s|c1800d7f16f05da2|743959|rds|local|vector|||3.344||
-Mods_N.RD_So_ilvs|stem|a102fd933201ba83|0fb78129b0a5577a|27d7da15daa4b2c0|1365117563||t20213.9888957912s|d5e76e4827b421e3|826867|rds|local|vector|||57.969|NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced. NaNs produced|
+Mods_N.RD_So_ilvs|stem|c608584512c642ac|0fb78129b0a5577a|51d654022d583da6|1365117563||t20214.6888591386s|55d91a520a670419|815484|rds|local|vector|||21.39||
 N.FD|stem|1efad247a4582cdf|a9a6373df24b69ea|4b2048463e5954fa|969147786||t20213.9878442733s|ea02ebe0a6392c28|422751|rds|local|vector|||0.328||
 N.RD|stem|f19988bf5dfb0462|fde44754d022478a|8811fda54697809e|678914631||t20213.9878319744s|8a8a67dbc4e68b18|574036|rds|local|vector|||0.172||
 n_indivs|stem|b207ae1b101640cd|190afea820305d1a|e8892849491ad178|-1719557170||t20213.9876718249s|17f345a2c6dbc64a|124|rds|local|vector|||0||
 n_timeperiods|stem|d0780711ace74244|b4f9d76acf9541d3|61e6ea8cd8362af7|-1057250930||t20213.9878184015s|c53c8dfbbcdc4d53|138|rds|local|vector|||0||
 name1|object|fb666bb232075919|||||||||||||||
 name2|object|ee83a14d534dd4c5|||||||||||||||
-nbdaData_list_2nets_ilvs|stem|37f3e2b3292797b6|59135ced11cc6db4|6a72bf72e5e10b09|1390333741||t20213.9880967267s|6cae8089da3052cd|290700|rds|local|vector|||3.875||
-nbdaData_list_dynamic_flight|stem|ddf8f1a68b843c6d|122db8dcbb1f3cf6|5f18506f62de3bfb|2021065099||t20213.9879476286s|e73b8e810a056dd7|570537|rds|local|vector|||3.047||
-nbdaData_list_dynamic_flight_ilvs|stem|8028cdce77024086|ac9b86428abd8cac|59d834cda06cbb4b|-1512680101||t20213.9880391951s|0047833f88cd527e|647066|rds|local|vector|||3.031||
-nbdaData_list_dynamic_roost|stem|07fdb827e3355da0|790978bb1f9a057c|51433e873ad77012|722048636||t20213.9879025074s|b9c490dd0a332764|730092|rds|local|vector|||4.016||
-nbdaData_list_dynamic_roost_ilvs|stem|304770a63a4fc6c9|9e732fa5551caa7e|c54920d137e1a07c|-1055521526||t20213.9879940527s|e6eb0aa055819bfc|805070|rds|local|vector|||3.156||
+nbdaData_list_2nets_ilvs|stem|dfcb6feed1141532|59135ced11cc6db4|8091518fe8313c01|1390333741||t20214.687761268s|04388725b53492b8|280423|rds|local|vector|||4.047||
+nbdaData_list_dynamic_flight|stem|ddf8f1a68b843c6d|122db8dcbb1f3cf6|d99214df757f9270|2021065099||t20214.6876491153s|e73b8e810a056dd7|570537|rds|local|vector|||3.938||
+nbdaData_list_dynamic_flight_ilvs|stem|32924e345a97d17a|ac9b86428abd8cac|ae8877568d61c038|-1512680101||t20214.687806558s|992c308dad4da2da|637516|rds|local|vector|||3.015||
+nbdaData_list_dynamic_roost|stem|07fdb827e3355da0|790978bb1f9a057c|ab773a0728ae751b|722048636||t20214.6877003717s|b9c490dd0a332764|730092|rds|local|vector|||3.25||
+nbdaData_list_dynamic_roost_ilvs|stem|c79bbe6b8b4ad541|9e732fa5551caa7e|fcd4549fc6910619|-1055521526||t20214.6878547249s|07982783c6c3cb1d|795809|rds|local|vector|||3.359||
 nbdaModSum|function|54f71aa808eb8788|||||||||||||||
 nets|object|6d157e325244b47d|||||||||||||||
-networksSupport_list|stem|bef3cdd11e7a773f|efe6619d35279053|6f88164dbb2e3781|-1862096167||t20213.9995061167s|9557ae99dc4fd0e1|1321|rds|local|vector|||0.031||
+networksSupport_list|stem|150006249866f474|efe6619d35279053|4ccc4c0331176f1c|-1862096167||t20214.6904496331s|d3a7b4f13c88e37f|47|rds|local|vector|||0||
 oa|stem|d9396a4f1095fde7|5eab8936dbdd17eb|e08655a2c30d2230|1349497327||t20200.9110854757s|99c129c906151c58|2202|rds|local|vector|||0||
 oa_indivs_sorted|stem|2cb4cf65d049d5d6|e458c03b34d16230|14f4a0c1b3269b69|1559245335||t20200.9110868629s|98fa1a07c4abb547|1154|rds|local|vector|||0||
 oa_num|stem|24176514aad3e472|3868fcb0fcf9bece|14f4a0c1b3269b69|1096048686||t20200.911086562s|86b7064cf66fe42e|1565|rds|local|vector|||0||
@@ -293,19 +291,11 @@ roosts_bin_fixed_see|stem|79f5a8bde284b251|8cf614910a1784ec|e850bad2ebc75fd4|-76
 roosts_bin_see|stem|7685736bffb3918d|2abc3a04aef64185|dfbb5865a4f5a237|-142634523||t20200.9619056181s|0e87c7a4a9019fc0|176715|rds|local|vector|||9.313||
 roosts_dates|stem|72a45974ee55e117|60d81b4348ddc884|347d3d2533f9eb63|-1695174610||t20200.9605462154s|95ae8bd2cbbbd8b1|270971|rds|local|vector|||1.75||
 roosts_dates_see|stem|33225c767e51d53d|4ce4201a8c06b48b|9aaa056176cd3ff8|1900017566||t20200.9605235297s|75b597166bdb9263|373989|rds|local|vector|||2.422||
-search_flight|stem|90c4d52c959412ed|d3e19ead1423a713|7f9b933f62d32289|1204020482||t20202.8108237935s|671e55e001d03194|679|rds|local|vector|||0||
-search_flight_file|stem|da417cf8ef004aa8|a999fe0fb6bd397a|2c530c1562a7fbd1|-1008080826|C:/Users/Kaija/Desktop/projects/arrivalAtCarcasses/data/created/search_flight.RDS|t20202.8094949705s|8bc39dbb5e525ced|3800|file|local|vector|||0||
-search_roost|stem|1aa040764adf640d|0256bcda233ff610|a16f1dd341981f9d|-2108298968||t20202.8143638632s|5ff8cd298726653b|695|rds|local|vector|||0||
-search_roost_file|stem|9eedb10fe947e239|e977a7d689f6b547|2c530c1562a7fbd1|-102319146|C:/Users/Kaija/Desktop/projects/arrivalAtCarcasses/data/created/search_roost.RDS|t20202.8094949936s|95001439504e270c|7121|file|local|vector|||1.843|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 see_carcass|stem|13f0bfcae9854cab|3eba08de6939d8b5|7b7fcf4cafe07447|-1027215457||t20200.9038913428s|f39facb92ec0aa88|2155685|rds|local|vector|||0.25||
 see_times|stem|977ee1ec1ad5af06|6763c3e4bea6f4a6|3b3c67aabff9d358|52806774||t20202.7375674623s|20b6f8c71c6f8235|5692|rds|local|vector|||0||
 seed_distance|stem|5e34fbc23d2414ef|29749851874b2fbd|2c530c1562a7fbd1|967986520||t20200.8707899464s|03d0c2cbf5aa332b|54|rds|local|vector|||2.016|package sf was built under R version 4.4.2. package doParallel was built under R version 4.4.2|
 seed_time_before|stem|6158f2079108c32a|daaf4f49175e8594|2c530c1562a7fbd1|1873616799||t20200.8707911924s|5a04a740e1697d34|146|rds|local|vector|||0||
 seeds_gps|stem|598c5378ae0394fd|8b8d028fea6811b7|a7be50f0417fd430|18975320||t20200.8947467022s|8e7c418884448c46|88157|rds|local|vector|||0.407||
-solveprops_flight_lower|stem|error|86b227484894fb29|7004d2d676d41dd8|-2128342626||t20214.0318892723s|b1b25f7c3fdf8f19|45|rds|local|vector|||34.344||Cant recycle .x size 41 to match .y size 37.
-solveprops_flight_upper|stem|error|6796f33cd01be944|7004d2d676d41dd8|1775308310||t20214.0322754138s|b1b25f7c3fdf8f19|45|rds|local|vector|||33.282||Cant recycle .x size 41 to match .y size 37.
-solveprops_roost_lower|stem|error|05fb4f76a987ec65|e36e973f87b2c9fc|414313837||t20214.0330714545s|b1b25f7c3fdf8f19|45|rds|local|vector|||33.984||Cant recycle .x size 41 to match .y size 37.
-solveprops_roost_upper|stem|error|6cfffab1fb6ae666|e36e973f87b2c9fc|396066719||t20214.0326772232s|b1b25f7c3fdf8f19|45|rds|local|vector|||34.234||Cant recycle .x size 41 to match .y size 37.
 split_data_fun_forloop|function|545d7387ee9580ac|||||||||||||||
 srcd_name|object|fb666bb232075919|||||||||||||||
 stations|stem|9572b8282927a24e|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t20200.8567886289s|ebea1b6d01620f94|4810|rds|local|vector|||0.016||
@@ -356,17 +346,17 @@ stn_min_dists_bouts|stem|656a96a52f086c84|d3164736b6295c32|1c7a1ede0c3416f2|1596
 stn_min_dists_carc|stem|144f091bdae6ccab|722d7af084a670b7|1da03adec2088010|-824407272||t20200.863802063s|4884540ddbee280a|1843|rds|local|vector|||3.375||
 substitute_na_distances|function|e85b4e4ccaa38fee|||||||||||||||
 summaries|stem|5a35516f07683d97|43425e03742310d4|45d43619279db978|470808022||t20214.0300683008s|a1d2cfc060623e06|3719|rds|local|vector|||0||
-summaries_ilvs|stem|3f003aeb05036657|ea1ac78daeb71a43|a3c7a4f43bcb101c|524718723||t20214.0300693011s|3f9a4880d359fcab|9345|rds|local|vector|||0||
-summaries_updated|stem|error|8811d1df53ab6ed2|161a705ae33ef1c8|-59215921||t20214.0330816634s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.141||x and y must share the same src.i x is a data.frame object.i y is NULL.i Set copy  TRUE if y can be copied to the same source as x may be  slow.
-summary_2nets|stem|ad3066b84f44639a|a6f4ffdb45d34c8d|7d129e59b278dbf7|2137208729||t20214.0286388647s|8fc277365374260f|2911|rds|local|vector|||0.516||
+summaries_ilvs|stem|c7d2455d9cd563bb|ea1ac78daeb71a43|c7b60648ed0f765b|524718723||t20214.6904749396s|ced7f708fb09dfe7|8286|rds|local|vector|||0||
+summaries_updated|stem|error|8811d1df53ab6ed2|161a705ae33ef1c8|-59215921||t20214.6928945905s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.141||x and y must share the same src.i x is a data.frame object.i y is NULL.i Set copy  TRUE if y can be copied to the same source as x may be  slow.
+summary_2nets|stem|afaeb1b7031b2813|a6f4ffdb45d34c8d|40f7c4927c5ef77c|2137208729||t20214.690457914s|3387e69bd584a6f2|2589|rds|local|vector|||0.407||
 sums_FD|stem|90186a3d6e89788a|e3e8a0598c04a783|927267fa1b63020e|282334182||t20213.9994869524s|4751c916c112ea01|1889|rds|local|vector|||0.172||
 sums_FD_A|stem|5e2a1500af403f59|bd33dd183e750f76|a3ff4eb54ea748b0|-429537817||t20213.9994885953s|f88e81ccf19db469|882|rds|local|vector|||0.016||
-sums_FD_A_ilvs|stem|9719daba341ccb9c|753f40a518a0d4bf|f71b1d5cad7224b6|-1541267453||t20213.9994976994s|e57f9674fe686b6f|2804|rds|local|vector|||0.031||
-sums_FD_ilvs|stem|38d43f881fefd83c|8af02db51a291137|8b03b992fae6a931|2085692217||t20213.9995030968s|a3e5add48b8bcf92|3998|rds|local|vector|||0.375||
+sums_FD_A_ilvs|stem|9719daba341ccb9c|753f40a518a0d4bf|43307b8b8eda6e50|-1541267453||t20214.6904593528s|e57f9674fe686b6f|2804|rds|local|vector|||0.047||
+sums_FD_ilvs|stem|54e4db6b5c9be24b|8af02db51a291137|289fe3b6e6eb7522|2085692217||t20214.6904640463s|197e580026131cc6|3402|rds|local|vector|||0.328||
 sums_RD|stem|84d704e0c5a1a85b|2ee89f63ea9e9be4|0a154e84734d3342|2088453774||t20213.9993263391s|062c7eab31c9373a|2012|rds|local|vector|||0.172||
 sums_RD_A|stem|91475c10e92cd581|ea5572c6ab4482e9|4740efd8117e6775|-1981577924||t20213.9992083839s|e931040e58b53988|890|rds|local|vector|||0.047||
-sums_RD_A_ilvs|stem|f24fdd0804a7b24f|12f9e7827bf68d63|c0a16b583bb98e07|658088041||t20213.9994962086s|43f05aaa5b76cbfd|2801|rds|local|vector|||0.032||
-sums_RD_ilvs|stem|d3900f5de921ab0a|f73ab04f421c25cd|c61cc498dffe66d4|-271503497||t20213.9994946467s|50f15a7357742424|4256|rds|local|vector|||0.453||
+sums_RD_A_ilvs|stem|f24fdd0804a7b24f|12f9e7827bf68d63|effa4555789282dc|658088041||t20214.6904711455s|43f05aaa5b76cbfd|2801|rds|local|vector|||0.031||
+sums_RD_ilvs|stem|dd027b0e25f2b90d|f73ab04f421c25cd|4448341896ad10d9|-271503497||t20214.6904695094s|10a6a45f2a29989b|3611|rds|local|vector|||0.375||
 time_bouts_wild_carcass_cluster|stem|2a75e03b9a5773e7|df215f1d6d931697|2c530c1562a7fbd1|-1776093177||t20200.8532035797s|08ec9a1d380611bb|62|rds|local|vector|||0||
 transform_datetimes|function|f544daba49d91f68|||||||||||||||
 update_cis_dfs|function|563b72fb2dfe22f2|||||||||||||||
@@ -378,3 +368,88 @@ ww|stem|3671723b38948200|ca683c339042d70a|2c530c1562a7fbd1|988165022||t20200.894
 ww_file|stem|1df606100b00afbb|cbd0c690d215ba61|2c530c1562a7fbd1|-814932461|data/raw/whoswho_vultures_20230920_new.xlsx|t19741.0464367943s|eeadd3240311275a|441300|file|local|vector|||11.734||
 www|stem|7881e84f642a98d1|31773ee6e2cefca0|69e86d0312058e93|1832508209||t20200.8947016001s|df551c280238e86f|3086|rds|local|vector|||0.032||
 years|stem|788900c188ee60ec|4ee6351114d33764|cd19f3e81d3ac592|-251243143||t20213.9876276869s|cf4da06c1b7d862c|1309|rds|local|vector|||0.234||
+get_roosts_bin|function|9e9ce8d7ff094008
+get_wild_carcasses|function|317a709b6d277d36
+get_www|function|a2bf6982bd1ad5d2
+get_years|function|b64546004099cfdb
+prepare_full_dataset|function|b109f9773b98162d
+get_fl_bin|function|e88d8749bfb822a8
+get_nets|function|2a15a734c6f4639c
+get_roosts|function|e142f097b2824a8a
+get_firsts_see|function|0d81fe982aca3cab
+get_has_sightings|function|bf6fc7a3add15b28
+fix_nets|function|9379cc5f41b4a1e9
+get_geofences|function|01b60579b893f749
+exclude_incomplete_bouts|function|285e53585f0e6375
+update_cis_dfs|function|563b72fb2dfe22f2
+get_loginObject|function|3d0444bbc27ce24f
+remove_points_before|function|4b1d419f68fcee87
+get_hires_tags|function|e3281777f5642b4a
+get_gps_combined|function|881d0a98469376c4
+discoveryplot|function|d284b11222d4b585
+mean_amplitude|function|badaf723abe07336
+remove_gps_rows|function|c420a2d7a3ac58fd
+get_distances|function|171afa7fb7d96182
+get_ilvs|function|7fe6524ff9eb4dc5
+get_carcass_bouts|function|28683c3852fd9433
+add_bout_ids|function|02d75280eca61955
+dg|function|3b1743e3bc54f78c
+get_gps_flight|function|f0752840cfeee8e6
+get_focal|function|2373944c578a933f
+assign_fs|function|e5bbd0a2c3efcd3a
+get_has_visits|function|2f2e9cf43cf22753
+get_sns|function|3e407dcf3513d114
+attach_age_sex|function|7e7940be2c76b765
+get_ilvs_lists|function|b22f84b31ac4fd6d
+calibrate|function|f0791eb1960fb053
+remove_bad_bouts|function|d4f88889a900892d
+transform_datetimes|function|f544daba49d91f68
+get_focal2|function|a7e32f0ec16d50f3
+expand_mats|function|b89843db444ed655
+get_gps_all|function|7006a97d20207123
+get_model_cis|function|7bf7b23cf6bb4f3a
+get_bouts_predictions|function|801ed5c4975fcd93
+nbdaModSum|function|54f71aa808eb8788
+get_flight_allday|function|8abfcc7b94557606
+get_gps_flight_hr|function|f4b411be8a81ffb3
+get_roost_pairwise_distances|function|47682ba59fe72bc9
+std_dists|function|7655cfbbfbae7acb
+bind_cis|function|4268666a8b997418
+get_nbdaData_list_flex|function|7426bc09cdf5ec07
+get_roost_dates|function|f95c759b9a6a71ba
+binarize_ages|function|3fea64c9664fc2dd
+get_modelset|function|7a9a489799eb83de
+get_solveprops_list|function|0bcc02b7f83263ed
+getmodstats|function|06d0b868b595a688
+get_lowerlimits|function|cfe2899ca0d355df
+get_seeds_gps|function|ad57bb52482179b3
+get_dynamic_nets|function|5f1bb6c40908fa25
+clean_data|function|da9b459d7f333e6e
+get_maes|function|0bd45cfb01a551ec
+get_at_carcass|function|46e848c67ffeb4eb
+get_firsts|function|8a550e0d5b44c179
+get_see_carcass|function|3dde066daa9b0ef6
+fix_names|function|552429cdeaa613d4
+cluster_carcasses|function|6e9df3a52d1e3c8a
+mod_trycatch|function|fd89cff39d467555
+get_wild_carcass_bouts|function|553e4e58eff382c6
+remove_captures|function|8ac8269f4c2d4c72
+split_data_fun_forloop|function|545d7387ee9580ac
+get_constraintsVectMatrix|function|9c3622c78d6b0a2e
+check_1|function|537c4c62f1e6e32c
+get_ornitela|function|a3621556651357d9
+get_ilv_separate|function|40bec117d7cfa933
+check_2|function|96ad4cfb68731a08
+check_3|function|651edfad331fff08
+remove_periods|function|9cdf1954c1717169
+substitute_na_distances|function|e85b4e4ccaa38fee
+get_fl_bin_list|function|57cbbb34e0df6f92
+get_nets_list|function|a72aef324f9acc31
+fix_nets_list|function|aa0579cffe0dd4c0
+get_stat_feats|function|f7defc6f4304d34f
+expand_roost_mats|function|010f90ba651bc930
+get_summaries|function|16ec8545fe3e007d
+prepare_dataset|function|52323c6a9a0c2004
+prepare_parallel|function|fd1e89eac5069279
+prepare_forloop|function|ab6c8d68711d5712
+constraintsVectMatrix|stem|e9db804c09ceb1b3|518cc2cee7f35ca7|26854d02f62dc430|-1031429725||t20214.6954039557s|9769db91a3220414|126|rds|local|vector|||1.86|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|

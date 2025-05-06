@@ -295,24 +295,24 @@ list(
   tar_target(summaries, bind_rows(sums_RD, sums_RD_A, sums_FD, sums_FD_A)),
   
   # Move over to multiple_carcasses.R script to manually define the search areas for the confidence intervals
-  # Now back to here, loading in those files
-  tar_target(search_flight_file, here("data/created/search_flight.RDS"), format = "file"),
-  tar_target(search_roost_file, here("data/created/search_roost.RDS"), format = "file"),
-  tar_target(search_flight, readRDS(search_flight_file)),
-  tar_target(search_roost, readRDS(search_roost_file)),
-  tar_target(cis_flight, get_model_cis(Mods_N.FD_So, search_flight)),
-  tar_target(cis_roost, get_model_cis(Mods_N.RD_So, search_roost)),
-  ## Get prop solve for CIs
-  # actually get the confidence intervals now that we've defined the search space
-  tar_target(solveprops_roost_lower, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "lower")),
-  tar_target(solveprops_roost_upper, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "upper")),
-  tar_target(solveprops_flight_lower, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "lower")),
-  tar_target(solveprops_flight_upper, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "upper")),
-  ## Add these back to cis_roost and cis_flight
-  tar_target(cis_flight_updated, update_cis_dfs(cis_flight, solveprops_flight_lower, solveprops_flight_upper)),
-  tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
-  tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
-  tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
+  # # Now back to here, loading in those files
+  # tar_target(search_flight_file, here("data/created/search_flight.RDS"), format = "file"),
+  # tar_target(search_roost_file, here("data/created/search_roost.RDS"), format = "file"),
+  # tar_target(search_flight, readRDS(search_flight_file)),
+  # tar_target(search_roost, readRDS(search_roost_file)),
+  # tar_target(cis_flight, get_model_cis(Mods_N.FD_So, search_flight)),
+  # tar_target(cis_roost, get_model_cis(Mods_N.RD_So, search_roost)),
+  # ## Get prop solve for CIs
+  # # actually get the confidence intervals now that we've defined the search space
+  # tar_target(solveprops_roost_lower, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "lower")),
+  # tar_target(solveprops_roost_upper, get_solveprops_list(cis_roost, nbdaData_list_dynamic_roost, type = "dynamic", bound = "upper")),
+  # tar_target(solveprops_flight_lower, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "lower")),
+  # tar_target(solveprops_flight_upper, get_solveprops_list(cis_flight, nbdaData_list_dynamic_flight, type = "dynamic", bound = "upper")),
+  # Add these back to cis_roost and cis_flight
+  # tar_target(cis_flight_updated, update_cis_dfs(cis_flight, solveprops_flight_lower, solveprops_flight_upper)),
+  # tar_target(cis_roost_updated, update_cis_dfs(cis_roost, solveprops_roost_lower, solveprops_roost_upper)),
+  # tar_target(cis, bind_cis(cis_flight_updated, cis_roost_updated)),
+  # tar_target(summaries_updated, left_join(left_join(summaries, cis, by = c("carcID", "soc", "type", "network")), years)),
 
   # Make single-network models with ILVs ------------------------------------
   tar_target(roost_carc_distances, get_ilv_separate(n_indivs, oas_nbda_updated, ilvs_lists, ilv = "dist")),

@@ -1061,53 +1061,37 @@ binarize_ages <- function(age_groups){
 
 get_constraintsVectMatrix <- function(){
   constraintsVectMatrix<-rbind(
-    #s1, s2, asocial_ag, asocial_srcd, social_ag. Not including social_srcd, since that wasn't specified in the models
+    #s1, s2, asocial_ag, asocial_srcd
     # netcombo 1 0
     #netcombo 1 0
-    c(1,0,0,0,0),
-    c(1,0,0,0,2),
-    c(1,0,0,2,0),
-    c(1,0,0,2,3),
-    c(1,0,2,0,0),
-    c(1,0,2,0,3),
-    c(1,0,2,3,0),
-    c(1,0,2,3,4),
-    
+    c(1,0,0,0),
+    c(1,0,0,2),
+    c(1,0,2,0),
+    c(1,0,2,3),
+
     #netcombo 0 1
-    c(0,1,0,0,0),
-    c(0,1,0,0,2),
-    c(0,1,0,2,0),
-    c(0,1,0,2,3),
-    c(0,1,2,0,0),
-    c(0,1,2,0,3),
-    c(0,1,2,3,0),
-    c(0,1,2,3,4),
-    
+    c(0,1,0,0),
+    c(0,1,0,2),
+    c(0,1,2,0),
+    c(0,1,2,3),
+
     #netcombo 1 1
-    c(1,1,0,0,0),
-    c(1,1,0,0,2),
-    c(1,1,0,2,0),
-    c(1,1,0,2,3),
-    c(1,1,2,0,0),
-    c(1,1,2,0,3),
-    c(1,1,2,3,0),
-    c(1,1,2,3,4),
-    
+    c(1,1,0,0),
+    c(1,1,0,2),
+    c(1,1,2,0),
+    c(1,1,2,3),
+
     #netcombo 1 2
-    c(1,2,0,0,0),
-    c(1,2,0,0,3),
-    c(1,2,0,3,0),
-    c(1,2,0,3,4),
-    c(1,2,3,0,0),
-    c(1,2,3,0,4),
-    c(1,2,3,4,0),
-    c(1,2,3,4,5),
+    c(1,2,0,0),
+    c(1,2,0,3),
+    c(1,2,3,0),
+    c(1,2,3,4),
 
     #netcombo 0 0 (doesn't include age effect on social transmission, since there is by definition no social transmission in these models)
-    c(0,0,0,0,0),
-    c(0,0,1,0,0),
-    c(0,0,0,1,0),
-    c(0,0,1,2,0)
+    c(0,0,0,0),
+    c(0,0,1,0),
+    c(0,0,0,1),
+    c(0,0,1,2)
   )
   return(constraintsVectMatrix)
 }
@@ -1175,7 +1159,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
       srcd_name <- paste0("std_roost_carc_distances_", i)
       ilv_args <- list(
         asoc_ilv = c(ag_name, srcd_name),
-        int_ilv = ag_name,
+        #int_ilv = ag_name,
         asocialTreatment = "timevarying"
       )
     }
