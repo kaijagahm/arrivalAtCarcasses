@@ -227,21 +227,21 @@ list(
   tar_target(roosts_bin_fixed, fix_nets_list(roosts_bin, oa_indivs_sorted)),
   tar_target(roosts_bin_fixed_see, fix_nets_list(roosts_bin_see, oa_see_indivs_sorted)),
   # Make networks -----------------------------------------------------------
-  tar_target(fl_allday_bin_nets, get_nets_list(fl_allday_bin_fixed)),
-  tar_target(fl_allday_bin_nets_see, get_nets_list(fl_allday_bin_fixed_see)),
-  tar_target(fl_cumulative_bin_nets, get_nets_list(fl_cumulative_bin_fixed)),
-  tar_target(fl_cumulative_bin_nets_see, get_nets_list(fl_cumulative_bin_fixed_see)),
-  tar_target(fl_3hr_bin_nets, get_nets_list(fl_3hr_bin_fixed)),
-  tar_target(fl_3hr_bin_nets_see, get_nets_list(fl_3hr_bin_fixed_see)),
-  tar_target(fl_1hr_bin_nets, get_nets_list(fl_1hr_bin_fixed)),
-  tar_target(fl_1hr_bin_nets_see, get_nets_list(fl_1hr_bin_fixed_see)),
-  tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
-  tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see)),
+  #tar_target(fl_allday_bin_nets, get_nets_list(fl_allday_bin_fixed)),
+  #tar_target(fl_allday_bin_nets_see, get_nets_list(fl_allday_bin_fixed_see)),
+  #tar_target(fl_cumulative_bin_nets, get_nets_list(fl_cumulative_bin_fixed)),
+  #tar_target(fl_cumulative_bin_nets_see, get_nets_list(fl_cumulative_bin_fixed_see)),
+  #tar_target(fl_3hr_bin_nets, get_nets_list(fl_3hr_bin_fixed)),
+  #tar_target(fl_3hr_bin_nets_see, get_nets_list(fl_3hr_bin_fixed_see)),
+  #tar_target(fl_1hr_bin_nets, get_nets_list(fl_1hr_bin_fixed)),
+  #tar_target(fl_1hr_bin_nets_see, get_nets_list(fl_1hr_bin_fixed_see)),
+  #tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
+  #tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see)),
 
   # NBDA --------------------------------------------------------------------
   ## Define carcasses to run NBDA on
   ## At least how many sightings?
-  tar_target(min_sightings, 3),
+  tar_target(min_sightings, 5),
   ## Going to use sightings, not arrivals, for NBDA.
   tar_target(has_enough_sightings, which(map_dbl(firsts_see[has_sightings], nrow) >= min_sightings)),
   tar_target(carcs_nbda, inpa_carcs[has_sightings][has_enough_sightings]),
