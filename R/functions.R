@@ -712,9 +712,9 @@ get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
   return(out)
 }
 
-check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see){
-  if(length(unique(map_dbl(list(gps_flight_1hr, gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
-  if(length(unique(map_dbl(list(gps_flight_1hr_see, gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
+check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see){
+  if(length(unique(map_dbl(list(gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
+  if(length(unique(map_dbl(list(gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
 }
 
 get_roost_dates <- function(roosts, subsettor){
@@ -726,20 +726,6 @@ get_roost_dates <- function(roosts, subsettor){
             st_transform(32636))
   })
   return(out)
-}
-
-get_roost_pairwise_distances <- function(dates){
-  map(dates, ~{
-    outout <- map(.x, ~{
-      ids <- .x$local_identifier
-      out <- as.data.frame(st_distance(.x)) %>%
-        mutate(across(everything(), as.numeric))
-      row.names(out) <- ids
-      colnames(out) <- ids
-      return(out)
-    })
-    return(outout)
-  })
 }
 
 get_roosts_bin <- function(dates, roost_thresh){
@@ -757,6 +743,49 @@ get_roosts_bin <- function(dates, roost_thresh){
     return(outout)
   })
 }
+
+get_roosts_weighted <- function(dates){
+  map(dates, ~{ # XXX start here
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      out <- 1/sqrt(out)
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
+    })
+    return(outout)
+  })
+}
+
+get_fl_weighted <- function(dat, dist){
+  if(is.data.frame(dat)){
+    if(nrow(dat) > 0){
+      self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
+                               ID2 = sort(unique(dat$local_identifier)),
+                               sri = 0)
+      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                           consecThreshold = 1,
+                                                           idCol = "local_identifier",
+                                                           return = "sri",
+                                                           distThreshold = dist)) %>%
+        bind_rows(self_edges) %>%
+        mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
+        arrange(ID1, ID2) %>%
+        pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
+        dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
+        as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else{
+      out <- "blank"
+    }
+  }else{
+    out <- "blank"
+  }
+  return(out)
+}
+
 
 get_fl_bin <- function(dat, dist){
   if(is.data.frame(dat)){
@@ -827,9 +856,9 @@ fix_nets <- function(nets, indivs){
   return(updated)
 }
 
-check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see){
-  if(length(unique(map_dbl(list(fl_1hr_bin, fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
-  if(length(unique(map_dbl(list(fl_1hr_bin_see, fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
+check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see){
+  if(length(unique(map_dbl(list(fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
+  if(length(unique(map_dbl(list(fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
 }
 
 fix_nets_list <- function(list, oa_sorted){
