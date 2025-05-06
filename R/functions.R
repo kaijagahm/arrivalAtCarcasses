@@ -660,14 +660,9 @@ get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }
 
-check_1 <- function(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
+check_1 <- function(oa, oa_see, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
   if(length(oa) != length(oa_indivs_sorted)){stop("check1: length mismatch 1")}
-  if(length(oa_indivs_sorted) != length(oa_num)){stop("check1: length mismatch 2")}
-  if(length(oa_num) != length(oa)){stop("check1: length mismatch 3")}
-  
   if(length(oa_see) != length(oa_see_indivs_sorted)){stop("check1: length mismatch 1")}
-  if(length(oa_see_indivs_sorted) != length(oa_see_num)){stop("check1: length mismatch 2")}
-  if(length(oa_see_num) != length(oa_see)){stop("check1: length mismatch 3")}
 }
 
 get_flight_allday <- function(gps, subsettor){

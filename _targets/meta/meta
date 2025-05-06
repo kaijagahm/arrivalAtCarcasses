@@ -78,11 +78,11 @@ carcasses_focal|stem|abd252b3a33eb500|04496db8f4732205|d3c1abb0ae1242e0|12030395
 carcasses_split|stem|e44b22f673ea87ce|8965196b0f85648f|e4744394fd46e568|-783125107||t20200.8569271998s|2eb2d0f5bdb6a898|18202|rds|local|vector|||0.141||
 carcIDs_nbda|stem|fcd4a9befeed24ef|3597eb3e21c4279b|80e54eb7c43a9819|-110516357||t20213.9876287551s|4fb7122a4503ae71|200|rds|local|vector|||0||
 carcs_nbda|stem|024a0578027b910c|f1315bb519a1934b|a82375a70e15102b|-1659008119||t20213.9876193802s|52ccee56fd151b8a|5258|rds|local|vector|||0||
-check_1|function|537c4c62f1e6e32c|||||||||||||||
+check_1|function|3fb137b45671df35|||||||||||||||
 check_2|function|f21c5473bcf37272|||||||||||||||
 check_3|function|42459273719113db|||||||||||||||
 check_for_NAs|function|cab8e0ec8e477de9|||||||||||||||
-check1|stem|5490c1926e5fd3a8|b2b68eaa473e19f2|026777c1954493f5|1868508604||t20202.7424495181s|b1b25f7c3fdf8f19|45|rds|local|vector|||0||
+check1|stem|5490c1926e5fd3a8|4a2f8e8a329154ac|50c06dd0b4da6909|1868508604||t20214.8159168042s|b1b25f7c3fdf8f19|45|rds|local|vector|||0||
 check2|stem|5490c1926e5fd3a8|1476b8de902e137f|e25f73d8f458f910|1369319214||t20214.7231862882s|b1b25f7c3fdf8f19|45|rds|local|vector|||0.015||
 check3|stem|5490c1926e5fd3a8|19e51561949661eb|4d244965de397979|358762463||t20214.7220875255s|b1b25f7c3fdf8f19|45|rds|local|vector|||0||
 cids|object|ae74efd314ac541e|||||||||||||||
@@ -289,8 +289,11 @@ roosts_wt_see|stem|04f039004735e3c4|2b1e525d0125d859|24095ed4cf30cebb|-103383408
 see_carcass|stem|13f0bfcae9854cab|3eba08de6939d8b5|7b7fcf4cafe07447|-1027215457||t20200.9038913428s|f39facb92ec0aa88|2155685|rds|local|vector|||0.25||
 see_times|stem|977ee1ec1ad5af06|6763c3e4bea6f4a6|3b3c67aabff9d358|52806774||t20202.7375674623s|20b6f8c71c6f8235|5692|rds|local|vector|||0||
 seed_distance|stem|5e34fbc23d2414ef|29749851874b2fbd|2c530c1562a7fbd1|967986520||t20200.8707899464s|03d0c2cbf5aa332b|54|rds|local|vector|||2.016|package sf was built under R version 4.4.2. package doParallel was built under R version 4.4.2|
-seed_time_before|stem|6158f2079108c32a|daaf4f49175e8594|2c530c1562a7fbd1|1873616799||t20200.8707911924s|5a04a740e1697d34|146|rds|local|vector|||0||
-seeds_gps|stem|598c5378ae0394fd|8b8d028fea6811b7|a7be50f0417fd430|18975320||t20200.8947467022s|8e7c418884448c46|88157|rds|local|vector|||0.407||
+seed_indivs|stem|e74304cc4be5a563|8c216b2d10e6e1bc|5125e0e8429ed132|2064401993||t20214.8141649648s|c0119327fdf11954|827|rds|local|vector|||0.015||
+seed_time_before|stem|e76035bdc0c0cc30|4747fb653211e1b0|2c530c1562a7fbd1|1873616799||t20214.8092932356s|5a04a740e1697d34|146|rds|local|vector|||1.921|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
+seeds_gps|stem|739782d4b117b24a|8b8d028fea6811b7|92cc465be6c25980|18975320||t20214.809344437s|3a81e9b1e7b25736|52561|rds|local|vector|||0.344||
+seeds_see|stem|508de7d38e0e73f2|b8fe09f4871f9748|14dbd9e50f1dafc7|1692631326||t20214.8185352175s|c0119327fdf11954|827|rds|local|vector|||0||
+seeds_visit|stem|1b8743fc16fb0cb6|3eaaad0c1073bc26|cb23c1bc3a7bf27d|-254275915||t20214.8185363525s|8a8ec59c95b0aaa1|753|rds|local|vector|||0||
 split_data_fun_forloop|function|545d7387ee9580ac|||||||||||||||
 srcd_name|object|fb666bb232075919|||||||||||||||
 stations|stem|9572b8282927a24e|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t20200.8567886289s|ebea1b6d01620f94|4810|rds|local|vector|||0.016||

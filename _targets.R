@@ -135,7 +135,7 @@ list(
   ## 0. Define parameters
   tar_target(days_after, 3),
   tar_target(seed_distance, 4000),
-  tar_target(seed_time_before, lubridate::hours(1)),
+  tar_target(seed_time_before, lubridate::minutes(30)),
   tar_target(detection_distance, 4000),
   tar_target(arrival_distance, 400),
   ## 1. Get carcasses and restrict to south
@@ -157,6 +157,7 @@ list(
   tar_target(roosts, get_roosts(gps_all)), 
   ## 6. Get seeds
   tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance)),
+  tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
   ## 7. Get distances from roosts to carcasses
   tar_target(distances, get_distances(roosts, inpa_carcs)),
   ## 8. Load who's who
@@ -180,13 +181,13 @@ list(
   ## 14. Get orders of arrival/acquisition
   tar_target(oa, purrr::map(firsts[has_visits], "local_identifier")),
   tar_target(oa_see, purrr::map(firsts_see[has_sightings], "local_identifier")),
-  tar_target(oa_num, purrr::map(oa, order)),
-  tar_target(oa_see_num, purrr::map(oa_see, order)),
-  tar_target(oa_indivs_sorted, purrr::map(oa, sort)),
+  tar_target(oa_indivs_sorted, purrr::map(oa, sort)), # for row names in nets
   tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
+  tar_target(seeds_visit, seed_indivs[has_visits]),
+  tar_target(seeds_see, seed_indivs[has_sightings]),
   tar_target(acq_times, purrr::map(firsts[has_visits], "timestamp")),
   tar_target(see_times, purrr::map(firsts_see[has_sightings], "timestamp")),
-  tar_target(check1, check_1(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times)),
+  tar_target(check1, check_1(oa, oa_see, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times)),
   ## 15. Get GPS subsets for flight (four different intervals)
   tar_target(gps_flight_allday, get_flight_allday(gps, has_visits)),
   tar_target(gps_flight_allday_see, get_flight_allday(gps, has_sightings)),
