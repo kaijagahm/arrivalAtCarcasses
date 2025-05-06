@@ -12,7 +12,9 @@ test <- summaries_ilvs %>% mutate(varNames = str_remove(varNames, "^[0-9]\\s"),
                               varNames == "Asocial: std_roost_carc_distances" ~ "Asoc: dist",
                               varNames == "Social: age_groups" ~ "Soc: age",
                               .default = varNames),
-         sig = case_when(0>(outputPar-se) & 0<(outputPar+se) ~ F, .default = T))
+         sig = case_when(0>(outputPar-se) & 0<(outputPar+se) ~ F,
+                         outputPar == 0 ~ F,
+                         .default = T))
 
 # Noticing that there are a lot of NaN's in the SE column. Are there any patterns?
 test <- test %>%
@@ -20,44 +22,18 @@ test <- test %>%
 
 test %>%
   ggplot(aes(x = outputPar, y = nan_se, col = varNames))+
-  geom_point() # No clear pattern with outputPar
-
-# Asking chatGPT why there are NaNs for SE:
-# Hessian may not have converged
-tar_load(Mods_N.RD_So_ilvs)
-summary(Mods_N.RD_So_ilvs[[1]])
-str(Mods_N.RD_So_ilvs[[1]])
-Mods_N.RD_So_ilvs[[1]]@hessian # aha, it looks like there are some NaN values in the hessian.
-Mods_N.RD_So_ilvs[[4]]@hessian # this one had NaNs for one of the coefficients only, not all of them. And here the hessian looks totally fine.
-# Maybe in this case there's something weird about the ages?
-table(Mods_N.RD_So_ilvs[[4]]@nbdadata[[1]]@asocILVdata[,1]) # ages--looks diverse enough
-hist(Mods_N.RD_So_ilvs[[4]]@nbdadata[[1]]@asocILVdata[,2]) # distances--also looks fine
-# And this one has 36 individuals participating in the acquisition, so low sample size doesn't seem like the problem either. The coefficient that was the problem was the social effect of age.
-
-Mods_N.RD_So_ilvs[[23]]@hessian # this one also has all the SEs as NA, but its hessian looks fine. What's going on?
-
-# Hypothesis: if all coefs are NaN, the hessian will have pro
-
-# I wonder if this happens when the network is all 1s or all 0s, or close to it?
-str(Mods_N.RD_So_ilvs[[1]]@nbdadata,3)
-sum(Mods_N.RD_So_ilvs[[1]]@nbdadata[[1]]@assMatrix)/length(Mods_N.RD_So_ilvs[[1]]@nbdadata[[1]]@assMatrix) # 23% matrix density. That doesn't seem to be the problem.
-
-table(Mods_N.RD_So_ilvs[[1]]@nbdadata[[1]]@asocILVdata[,1]) # ages
-hist(Mods_N.RD_So_ilvs[[1]]@nbdadata[[1]]@asocILVdata[,2]) # distances
-# neither of these look bad a priori...
-tar_load(oas_nbda_updated)
-length(oas_nbda_updated[[1]]) # 69 individuals; so this isn't just due to few individuals arriving at this carcass.
-# XXX start here with trying to narrow down what's going on here.
+  geom_point() # The majority of the NaN values for SE are when the parameter is estimated at exactly 0.
 
 test %>%
+  filter(outputPar < 20) %>%
   ggplot(aes(x = outputPar, y = carcID, col = network))+
   geom_segment(aes(x = outputPar-se, xend = outputPar + se, linetype = sig), position = position_dodge(width = 0.5))+
   geom_vline(aes(xintercept = 0), alpha = 0.2, linetype = 2)+
   geom_point(aes(pch = sig), position = position_dodge(width = 0.5))+
   scale_shape_manual(values = c(1, 19))+
   scale_linetype_manual(values = c(2, 1))+
-  facet_wrap(~varNames)+
-  scale_x_continuous(limits = c(-4, 4))+
+  facet_wrap(~varNames, scales = "free_x")+
+  #scale_x_continuous(limits = c(-4, 4))+
   theme_classic() # okay, so we see hardly any social effect, but we do see some carcasses with significant age and/or distance effects on social transmission. We see almost no carcasses with significant age effects on social transmission.
 
 # Only S
