@@ -5,11 +5,14 @@
 
 # Load packages required to define the pipeline:
 library(targets)
+library(here)
+library(vultureUtils)
+library(NBDA)
 
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf") # Packages that your targets need for their tasks.
+  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr") # Packages that your targets need for their tasks.
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
@@ -134,11 +137,14 @@ list(
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
-  tar_target(seed_distance, 4000),
+  tar_target(seed_distance_flight, 2000),
+  tar_target(seed_distance_stationary, 1000),
   tar_target(seed_time_before, lubridate::minutes(30)),
-  tar_target(detection_distance, 4000),
+  tar_target(detection_distance, 2000),
+  tar_target(detection_distance_flight, 2000),
+  tar_target(detection_distance_stationary, 1000),
   tar_target(arrival_distance, 400),
-  ## 1. Get carcasses and restrict to south
+  ## 1. Get carcasses and refstrict to south
   tar_target(aca, sf::st_crop(all_carcasses_annotated, bbox_south)),
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
@@ -156,7 +162,7 @@ list(
   tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after)),
   tar_target(roosts, get_roosts(gps_all)), 
   ## 6. Get seeds
-  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance)),
+  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary)),
   tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
   ## 7. Get distances from roosts to carcasses
   tar_target(distances, get_distances(roosts, inpa_carcs)),
@@ -170,7 +176,7 @@ list(
   tar_target(gps, remove_points_before(gps_all, inpa_carcs, days_after)),
   ## 12. Get arrivals/sightings of the carcass
   tar_target(at_carcass, get_at_carcass(gps, inpa_carcs, arrival_distance)),
-  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, detection_distance)),
+  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, detection_distance_flight, detection_distance_stationary)),
   ## 13. Get firsts
   # Get first arrival of each vulture to the carcass
   tar_target(firsts, get_firsts(at_carcass, inpa_carcs)),
@@ -315,15 +321,15 @@ list(
   # Make two-network models with ILVs ---------------------------------------
   tar_target(nbdaData_list_2nets_ilvs, get_nbdaData_list_flex(cids = carcIDs_nbda, oas = oas_nbda_updated, amis = assMatrixIndices, nets1 = N.RD, nets2 = N.FD, is_dynamic = T, dists = std_roost_carc_distances_NAs_filled, ags = age_groups_bin, n_indivs = n_indivs, n_timeperiods = n_timeperiods)),
   tar_target(Mods_2nets_So_ilvs, mod_trycatch(nbdaData_list_2nets_ilvs, type = "social", iterations = 1000)),
-  tar_target(summary_2nets, get_summaries(Mods_2nets_So_ilvs, carcIDs_nbda, "dynamic", "both")),
+  tar_target(summary_2nets, get_summaries(Mods_2nets_So_ilvs, carcIDs_nbda, "dynamic", "both"))#,
 
   # Model averaging ---------------------------------------------------------
-  tar_target(constraintsVectMatrix, get_constraintsVectMatrix()),
-  tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
-  tar_target(networksSupport_list, map(modelset_list, networksSupport)),
-  tar_target(maes_list, get_maes(modelset_list)),
-  tar_target(lowerLimitsByModel_net1, get_lowerlimits(modelset_list, net = 1, conf_level = 0.95)),
-  tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
-  tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
-  tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
+  # tar_target(constraintsVectMatrix, get_constraintsVectMatrix()),
+  # tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
+  # tar_target(networksSupport_list, map(modelset_list, networksSupport)),
+  # tar_target(maes_list, get_maes(modelset_list)),
+  # tar_target(lowerLimitsByModel_net1, get_lowerlimits(modelset_list, net = 1, conf_level = 0.95)),
+  # tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
+  # tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
+  # tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
 )

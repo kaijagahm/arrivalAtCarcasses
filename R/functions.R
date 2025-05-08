@@ -522,11 +522,11 @@ get_roosts <- function(gps_all){
   return(r)
 }
 
-get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance){
+get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
   seeds_gps <- map2(gps_all, inpa_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
-      filter(dist_to_carcass < seed_distance)
+      filter((ground_speed >= 5 & dist_to_carcass < seed_distance_flight) | (ground_speed < 5 & dist_to_carcass < seed_distance_stationary))
   })
   return(seeds_gps)
 }
@@ -595,10 +595,10 @@ get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
   return(at_carcass)
 }
 
-get_see_carcass <- function(gps, inpa_carcs, detection_distance){
+get_see_carcass <- function(gps, inpa_carcs, detection_distance_flight, detection_distance_stationary){
   see_carcass <- map2(gps, inpa_carcs, ~.x %>%
                         mutate(carcID = .y$carcID) %>%
-                        filter(dist_to_carcass < detection_distance))
+                        filter((ground_speed < 5 & dist_to_carcass < detection_distance_stationary) | (ground_speed >= 5 & dist_to_carcass < detection_distance_flight)))
   return(see_carcass)
 }
 
