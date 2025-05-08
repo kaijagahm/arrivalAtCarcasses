@@ -819,6 +819,14 @@ get_fl_bin_list <- function(gps_list, detection_distance){
   return(out)
 }
 
+get_fl_wt_list <- function(gps_list, detection_distance){
+  out <- vector(mode = "list", length = length(gps_list))
+  for(i in 1:length(out)){
+    out[[i]] <- map(gps_list[[i]], ~get_fl_wt(dat = .x, dist = detection_distance))
+  }
+  return(out)
+}
+
 fix_nets <- function(nets, indivs){
   indivs <- indivs[!is.na(indivs)]
   updated <- vector(mode = "list", length = length(nets))
