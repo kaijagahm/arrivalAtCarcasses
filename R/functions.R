@@ -765,6 +765,7 @@ get_fl_weighted <- function(dat, dist){
                                                            idCol = "local_identifier",
                                                            return = "sri",
                                                            distThreshold = dist)) %>%
+        mutate(across(c("ID1", "ID2"), as.character)) %>%
         bind_rows(self_edges) %>%
         mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
         arrange(ID1, ID2) %>%
@@ -822,7 +823,8 @@ get_fl_bin_list <- function(gps_list, detection_distance){
 get_fl_wt_list <- function(gps_list, detection_distance){
   out <- vector(mode = "list", length = length(gps_list))
   for(i in 1:length(out)){
-    out[[i]] <- map(gps_list[[i]], ~get_fl_wt(dat = .x, dist = detection_distance))
+    out[[i]] <- map(gps_list[[i]], ~get_fl_weighted(dat = .x, dist = detection_distance))
+    cat(i, "\n")
   }
   return(out)
 }
