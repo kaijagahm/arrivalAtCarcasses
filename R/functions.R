@@ -660,11 +660,6 @@ get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }
 
-check_1 <- function(oa, oa_see, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
-  if(length(oa) != length(oa_indivs_sorted)){stop("check1: length mismatch 1")}
-  if(length(oa_see) != length(oa_see_indivs_sorted)){stop("check1: length mismatch 1")}
-}
-
 get_flight_allday <- function(gps, subsettor){
   flight_allday <- map(gps[subsettor], ~.x %>%
                          group_by(dateOnly) %>%
@@ -705,11 +700,6 @@ get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
     out[[i]] <- subsets
   }
   return(out)
-}
-
-check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see){
-  if(length(unique(map_dbl(list(gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
-  if(length(unique(map_dbl(list(gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
 }
 
 get_roost_dates <- function(roosts, subsettor){
@@ -859,11 +849,6 @@ fix_nets <- function(nets, indivs){
     #updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
-}
-
-check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see){
-  if(length(unique(map_dbl(list(fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
-  if(length(unique(map_dbl(list(fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
 }
 
 fix_nets_list <- function(list, oa_sorted){
