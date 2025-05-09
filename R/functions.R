@@ -750,11 +750,15 @@ get_fl_weighted <- function(dat, dist){
       self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
                                ID2 = sort(unique(dat$local_identifier)),
                                sri = 0)
-      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                           consecThreshold = 1,
-                                                           idCol = "local_identifier",
-                                                           return = "sri",
-                                                           distThreshold = dist)) %>%
+      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                            consecThreshold = 1,
+                                                            idCol = "local_identifier",
+                                                            return = "sri",
+                                                            distThreshold = dist))
+      out2 <- out1[,c("ID2", "ID1", "sri")]
+      names(out2) <- c("ID1", "ID2", "sri")
+      out <- bind_rows(out1, out2)
+      out <- out %>%
         mutate(across(c("ID1", "ID2"), as.character)) %>%
         bind_rows(self_edges) %>%
         mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
@@ -779,14 +783,17 @@ get_fl_bin <- function(dat, dist){
       self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
                                ID2 = sort(unique(dat$local_identifier)),
                                value = 0)
-      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
                                                            consecThreshold = 1,
                                                            idCol = "local_identifier",
                                                            return = "edges",
                                                            distThreshold = dist)) %>%
         dplyr::select(ID1, ID2) %>%
         distinct() %>%
-        mutate(value = 1) %>%
+        mutate(value = 1)
+      out2 <- out1[,c("ID2", "ID1", "value")]
+      names(out2) <- c("ID1", "ID2", "value")
+      out <- bind_rows(out1, out2) %>%
         bind_rows(self_edges) %>%
         arrange(ID1, ID2) %>%
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_fill = 0) %>%
