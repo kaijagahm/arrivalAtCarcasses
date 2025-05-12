@@ -43,18 +43,17 @@ feeding_bouts|stem|a9817eca76ee1f2e|39bd8a9d78d9ca41|2c530c1562a7fbd1|-944299867
 firsts_nbda|stem|0d4ab9ac9d066258|6270039eb88a84c3|4306a707c72a8cee|622710536||t20216.8082124598s|2510978f3d45cf70|80206|rds|local|vector|||0||
 firsts_see|stem|d14490668163d002|d9f46911c32dc52e|673d178a1ad3e970|-1198234657||t20216.8081762501s|0fb23ec8c1816008|83188|rds|local|vector|||1.13||
 firsts_with_dates|stem|68cacd2274860271|06b1ef360751dd97|a6493e26ca513dc1|1155041364||t20216.8171423244s|e8da5b5217ef14c4|81317|rds|local|vector|||1.33||
-fl_3hr_bin_fixed_see|stem|89491cd45fc3aa32|437c8ddb8eec4c5a|3850bcc0dcc0554a|1178083649||t20216.8173232791s|bee13e4ec5343783|669391|rds|local|vector|||14.75||
-fl_3hr_bin_see|stem|6715e063a8bebcb3|55cc3b1929cb588c|654bbcd12f6095fe|1412395382||t20216.812617648s|cd00abf448b59986|641773|rds|local|vector|||290.83|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_3hr_wt_see|stem|80f52e56920e45b7|01c6c975ac1d7053|9826a0f57874ff5d|672629473||t20216.8772492192s|e212777883a87c8f|1284054|rds|local|vector|||1046.39|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_allday_bin_fixed_see|stem|378669da3e1f1009|29b3d0ea7638c3ae|2519a7f7b4478473|-832338190||t20216.7971467035s|e7946c1af32debd7|111875|rds|local|vector|||0.61||
-fl_allday_bin_see|stem|4039e3a9e3e65dcb|361c7ef353d57ff6|4eb0fca013d24d88|-1269306067||t20216.809242315s|5b14c27fb9f329f2|114401|rds|local|vector|||49.17|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_allday_wt_fixed_see|stem|error|ba4137d0193d9354|b024a972f461ac67|901526545||t20217.753299852s||0|null|local|vector|||||_store_ missing files _targetsobjectsfl_allday_wt_fixed_see
-fl_allday_wt_see|stem|8a4df2ff1212076f|797d64f95e8d5720|d9a65c142e885152|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|rds|local|vector|||316.563|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_cumulative_bin_fixed_see|stem|8887ab7ad1b03191|ff894b367864382b|30c1a8c9acc2db3a|-1767349496||t20216.8174383988s|d63ac5cfceaa8675|864615|rds|local|vector|||9.08||
-fl_cumulative_bin_see|stem|6da18fc302168474|8abaa3427a36615e|d41a986aa34ce4a3|-2037854133||t20216.8171171373s|43d3bcdb8255bd93|852894|rds|local|vector|||371.33|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_cumulative_wt_see|stem|9eaf5b65b8cc1a14|2f787c6a39917bcb|7eec0dd4ded85397|-772806056||t20216.8651041933s|f588740e9b0c32a6|1888010|rds|local|vector|||2139.985|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_mats_expanded|stem|69c73cca86cf510c|071f06e21eb7da78|2438a060102eb8e7|-1527837250||t20216.8175150339s|643e44393e66c50f|722649|rds|local|vector|||0.67||
-fl_mats_nbda|stem|c885f37f8aa4a496|c06bcdc5f2f02068|86dae779593bcca0|1506892933||t20216.8174503839s|73822549f4c46a9e|851210|rds|local|vector|||0||
+fl_3hr_bin_fixed_see|stem|ca5282c08b8974fe|437c8ddb8eec4c5a|4a4ad51034bace2b|1178083649||t20217.8590383248s|66c2787a0cb94814|845895|rds|local|vector|||13.937||
+fl_3hr_bin_see|stem|341a4e917d4a09a6|55cc3b1929cb588c|465891765ab152a4|1412395382||t20217.827456788s|5bc96a11b9db43a6|813570|rds|local|vector|||261.187|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_3hr_wt_see|stem|error|01c6c975ac1d7053|44e627a4c79b868c|672629473||t20216.8772492192s|e212777883a87c8f|1284054|null|local|vector|||810.281|After filtering, the dataset had 0 rows.|i In index 2.Caused by error in .data.frame undefined columns selected
+fl_allday_bin_fixed_see|stem|d611d1b2cc329ba4|29b3d0ea7638c3ae|cdde0e8eaa8a6f38|-832338190||t20217.8588671021s|6a4ed0937153414c|157710|rds|local|vector|||0.578||
+fl_allday_bin_see|stem|1d91c030d74fb621|361c7ef353d57ff6|18967b6c7443cd3b|-1269306067||t20217.8243860809s|c8e883772378e82d|160192|rds|local|vector|||48.187|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_allday_wt_fixed_see|stem|error|ba4137d0193d9354|562681a24274523c|901526545||t20217.858858361s||0|null|local|vector|||||_store_ missing files _targetsobjectsfl_allday_wt_fixed_see
+fl_cumulative_bin_fixed_see|stem|620bff65bd89015b|ff894b367864382b|715e51f0270924c7|-1767349496||t20217.8591529991s|be29fee49c312b20|1243110|rds|local|vector|||8.828||
+fl_cumulative_bin_see|stem|c6acc8cccd0de7c2|8abaa3427a36615e|f35f49284c0fb472|-2037854133||t20217.8414257853s|3ddc9bce8ceb3e40|1228774|rds|local|vector|||379.735|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_cumulative_wt_see|stem|error|2f787c6a39917bcb|b7b36e9faf0c9716|-772806056||t20216.8651041933s|f588740e9b0c32a6|1888010|null|local|vector|||1505.891|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
+fl_mats_expanded|stem|1cae582de7b847d3|071f06e21eb7da78|cb178423ec073b1a|-1527837250||t20217.8592087673s|bc750bb82dc65c6f|1097940|rds|local|vector|||0.735||
+fl_mats_nbda|stem|ba73a28269db7ef2|c06bcdc5f2f02068|2bd8fa363de2d88a|1506892933||t20217.8591671408s|9942475f887bc21b|1225161|rds|local|vector|||0||
 focal_gps_2023|stem|231561050f958003|e9624e70a001ad03|2c530c1562a7fbd1|-849282975||t20200.8678835349s|30ade5c2c0ef7956|1794891|rds|local|vector|||6.14|package sf was built under R version 4.4.2|
 focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-880552134||t20200.8678892539s|73b89784be840c80|1130121|rds|local|vector|||0.047||
 gps|stem|722c0bc86f2096b7|3ed2192667e7ee52|6f2fe1d4d78fd233|-1034569801||t20216.8081533202s|faa95a1ba468eb97|19465289|rds|local|vector|||1.56||
@@ -77,24 +76,24 @@ inpa_carcs|stem|bdc10784bb07de34|ea645cd3cf984df9|f613433e23535b88|-650389493||t
 loginObject|stem|affb390f070239b0|09276ad0d9744a86|c41411cb35a9bc5c|-1147792597||t20200.853272751s|56f9cfb958dddea9|249|rds|local|vector|||5.734||
 matrix_orders_nbda|stem|ba177e4d22c2b070|6db1efe27d499e5c|e0d1a986a31b7060|374844671||t20216.8174406865s|89d13bbcff3b1d51|1232|rds|local|vector|||0||
 min_sightings|stem|05fa983ebc3446a4|3aecd493438d20d7|2c530c1562a7fbd1|-1889081441||t20213.9875926159s|b2d5d26f8983d7ae|52|rds|local|vector|||1.922|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
-Mods_2nets_So|stem|f1fb0b084a8c9d42|c3a4005c087b14db|7d60ddea3cf4bbe4|1045423500||t20217.7533735705s|3fb5600ccfdde740|197261|rds|local|vector|||4.156||
-Mods_2nets_So_ilvs|stem|b0b97aaf1171fd3d|3aac9181ddd24618|cf7f1db001a73fa0|-1803605192||t20216.8184742014s|e9b2f99b1b8e72fe|257541|rds|local|vector|||28.39||
-Mods_N.FD_Aso|stem|66c84270e11726a1|6babc66637cbb7bd|9c32ce504b58250a|1457499457||t20216.8178619011s|473bdff61094c6a8|453907|rds|local|vector|||0.06||
-Mods_N.FD_Aso_ilvs|stem|6b3e3cdca95d20a9|caeb71865dd18724|1fa56c3e0bb55961|-953877241||t20216.8187401879s|77b624061fbbeca6|523785|rds|local|vector|||5.47||
-Mods_N.FD_So|stem|243506f2e55b0e4c|33d9a5b4e3c5f44e|9c32ce504b58250a|255934790||t20216.8178529112s|b91244edf036d2c2|461398|rds|local|vector|||2.41||
-Mods_N.FD_So_ilvs|stem|c118ba9f3fb38a5f|c6e4931238b4c22d|1fa56c3e0bb55961|234575136||t20216.8186697135s|faa5134ff7998d2c|526311|rds|local|vector|||16.27||
+Mods_2nets_So|stem|f00165bb828307c0|c3a4005c087b14db|229bce41009237f4|1045423500||t20217.8594350982s|8ba62acd1e027914|198414|rds|local|vector|||3.203||
+Mods_2nets_So_ilvs|stem|29b73895877de897|3aac9181ddd24618|f3868cee1fa3de4a|-1803605192||t20217.8598796115s|f65700f93b77b492|258824|rds|local|vector|||29.344||
+Mods_N.FD_Aso|stem|2854c68cb7bfb173|6babc66637cbb7bd|1c925df49b006695|1457499457||t20217.8593884957s|a2857f1ee50a3b99|780270|rds|local|vector|||0.047||
+Mods_N.FD_Aso_ilvs|stem|0e557ee76acd0356|caeb71865dd18724|a6e4a98718bcf6cc|-953877241||t20217.8601649135s|cfaf7c74cb8bb769|849308|rds|local|vector|||6.046||
+Mods_N.FD_So|stem|e1e8828c624fbe93|33d9a5b4e3c5f44e|1c925df49b006695|255934790||t20217.8593776844s|3b3ff0fd55476451|787894|rds|local|vector|||4.015||
+Mods_N.FD_So_ilvs|stem|42559e2f21019046|c6e4931238b4c22d|a6e4a98718bcf6cc|234575136||t20217.8600847657s|c0d365f1d5b914e4|852123|rds|local|vector|||16.75||
 Mods_N.RD_Aso|stem|ce8cfa298008fa6e|c59ea0681cfbe5e9|fb4fd00da8ef217b|-1266956719||t20216.8177772287s|6db9785938a373da|655564|rds|local|vector|||0.36||
 Mods_N.RD_Aso_ilvs|stem|82ee4a20a7a63975|85a648b0d5a83a93|ec7486d28dd9c8e7|256924025||t20216.8181360048s|45b11b033323e50e|724284|rds|local|vector|||5.64||
 Mods_N.RD_So|stem|c9071c430ef57560|66ddc9d535e88975|fb4fd00da8ef217b|-1147283786||t20216.8178170667s|27ff72d66fffb707|663078|rds|local|vector|||2.75||
 Mods_N.RD_So_ilvs|stem|129bbd6c2bf78a70|0fb78129b0a5577a|ec7486d28dd9c8e7|1365117563||t20216.8180626102s|1ccf0da34f9c0e3c|727080|rds|local|vector|||16.55||
-N.FD|stem|727552fcab9e236c|a9a6373df24b69ea|d2a2e0fbb2c6038e|969147786||t20216.8175655244s|f5ccb3aa8f86a77e|322282|rds|local|vector|||0.09||
+N.FD|stem|3310191f918a4f61|a9a6373df24b69ea|dc6348d6b9334a1d|969147786||t20217.859220531s|a81adf510a9735b2|635579|rds|local|vector|||0.109||
 N.RD|stem|39cef4d89eb974e6|fde44754d022478a|c488f2715b4b90e1|678914631||t20216.8175586802s|e5b511f63e80455e|511156|rds|local|vector|||0.11||
 n_indivs|stem|dfe484045e20095a|190afea820305d1a|e0d1a986a31b7060|-1719557170||t20216.8174399083s|06ecd420619ded44|130|rds|local|vector|||0||
 n_timeperiods|stem|86e6d26912c63e4b|b4f9d76acf9541d3|18430e001a44c6e1|-1057250930||t20216.8175474567s|c33c60f7554ab437|137|rds|local|vector|||0||
-nbdaData_list_2nets|stem|df2d2558ddc376d7|57038c8217e873e8|3007a67867c68532|-1416645024||t20217.7464360362s|e73e4a641012cdd0|185677|rds|local|vector|||4.766||
-nbdaData_list_2nets_ilvs|stem|be4b2f848cebf9f2|59135ced11cc6db4|70b165f10ec32c71|1390333741||t20216.8177288741s|0a08224e279734a4|241049|rds|local|vector|||3.08||
-nbdaData_list_dynamic_flight|stem|156ed8bced44982a|122db8dcbb1f3cf6|7dd560fd61c85206|2021065099||t20216.8176460605s|6dad829cd2f1d43e|448765|rds|local|vector|||2.47||
-nbdaData_list_dynamic_flight_ilvs|stem|ef310489c6da428f|ac9b86428abd8cac|8c1bd7e8b948012b|-1512680101||t20216.8177656489s|88e67e422f42bef2|509570|rds|local|vector|||2.56||
+nbdaData_list_2nets|stem|cee5273366f0fbf2|57038c8217e873e8|8e3e57df577fa4ed|-1416645024||t20217.8593188809s|6e22a833ee658727|186658|rds|local|vector|||3.172||
+nbdaData_list_2nets_ilvs|stem|dfc12300200cfa03|59135ced11cc6db4|98ee4ceea7cdd1bb|1390333741||t20217.8594807366s|28b66cc3b67edc71|242134|rds|local|vector|||3.062||
+nbdaData_list_dynamic_flight|stem|500547c91f552408|122db8dcbb1f3cf6|979d616fa1b40cec|2021065099||t20217.8592708157s|75a9e5581f63a600|775287|rds|local|vector|||3.25||
+nbdaData_list_dynamic_flight_ilvs|stem|ef8893f7cb61dd79|ac9b86428abd8cac|e2cfa05dc5fbfa36|-1512680101||t20217.8595211933s|88326a751a1ab099|835139|rds|local|vector|||2.516||
 nbdaData_list_dynamic_roost|stem|3dc01121c9eed21c|790978bb1f9a057c|a26fa88399ef8466|722048636||t20216.8176104142s|c34bd294fcf50437|650188|rds|local|vector|||3.05||
 nbdaData_list_dynamic_roost_ilvs|stem|0ce478ccf663ccd3|9e732fa5551caa7e|2e1e0073271fc857|-1055521526||t20216.8176836412s|625530a0d82c29e1|709815|rds|local|vector|||2.47||
 oa_see|stem|ea7b3fa69d8b7d6b|2fa9c91235159b46|db0fee8b49978f4a|1651638743||t20216.8081808762s|60ba39f5aa9ac680|2594|rds|local|vector|||0||
@@ -107,7 +106,7 @@ remaining_bouts|stem|f4dbc30f8782a68c|bab897209c14da49|086df068fcd9fdda|-5687108
 remaining_bouts_2|stem|e1a6db6a7633f343|93c2903439e2a770|9a91b84110524ed9|-875668781||t20216.7094100404s|29821b01fd81c6cb|175146|rds|local|vector|||0.03||
 roost_carc_distances|stem|69f0c7004c058847|366c5a32db5546a6|ecf8ce079607ddd3|1787171978||t20216.8175400025s|1382092494a14aa7|47700|rds|local|vector|||0.46||
 roost_carc_distances_NAs_filled|stem|746487bae6670178|54be8e05eee6d241|5fb1a57c50b656d3|209835824||t20216.8175495698s|b9da99b5c71fff1c|47843|rds|local|vector|||0.03||
-roost_mats_expanded|stem|f348c69a537b6da9|6fe8c47954dfc544|bd6dcf94033bc62a|-834803101||t20216.8175330648s|5d380d8ba82d39db|850855|rds|local|vector|||0.75||
+roost_mats_expanded|stem|f348c69a537b6da9|6fe8c47954dfc544|d9fd20cae46eac8f|-834803101||t20217.8591868587s|5d380d8ba82d39db|850855|rds|local|vector|||0.718||
 roost_mats_nbda|stem|9215510bf0badf15|708274e5dd9bb318|6eca3b8e8eedec55|-1886955186||t20216.8171450111s|6cf240bf66710ca7|130115|rds|local|vector|||0||
 roost_thresh|stem|5654ae499fd6c56c|f7fa471aa3f8197f|2c530c1562a7fbd1|393365559||t20200.961792549s|03d0c2cbf5aa332b|54|rds|local|vector|||1.781|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 roosts|stem|8c8476f5dbedb3b0|eb7053291138e663|498c87cd84a9dacd|-1266328948||t20216.8080687251s|f33b18e6e5636ce2|190432|rds|local|vector|||215.11||
@@ -127,14 +126,14 @@ stations|stem|9572b8282927a24e|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t2
 std_roost_carc_distances_NAs_filled|stem|1032acf808e77016|3e592429eb87a7a8|44da9c64904775bf|2008412225||t20216.8175666747s|e482d92f34338473|48494|rds|local|vector|||0||
 stn_min_dists_bouts|stem|28c83f18e714ebac|d3164736b6295c32|1e715c6f7cc48b29|1596751479||t20216.7494196498s|d64aaaf5cdfe2009|44288|rds|local|vector|||94.1||
 stn_min_dists_carc|stem|4340b8e4e4601ebe|722d7af084a670b7|73d66beb23eebe81|-824407272||t20216.8032109569s|4884540ddbee280a|1843|rds|local|vector|||3.47||
-summaries|stem|a95db0caba2b6182|43425e03742310d4|ebd812499a79e86b|470808022||t20216.8187632896s|656ad79b6670fddc|3493|rds|local|vector|||0||
-summaries_ilvs|stem|51e8b405d5ffc153|ea1ac78daeb71a43|1e0c128e8d0cf4c8|524718723||t20216.8187641658s|64d7050d31ef3ba0|7891|rds|local|vector|||0||
-summary_2nets|stem|95a6a0eec0336741|48f55aa284794039|a1d24bfcf5209dcf|2137208729||t20217.7533792454s|d60b03d6022c6995|1316|rds|local|vector|||0.203||
-summary_2nets_ilvs|stem|22914f74267c47ce|a6f4ffdb45d34c8d|6448a34b4a389f76|1822308192||t20217.7468503105s|bc46acac2f88f035|2496|rds|local|vector|||0.313||
-sums_FD|stem|392c7b22e4f625f0|e3e8a0598c04a783|253ea2a1d15467cf|282334182||t20216.8187472822s|72f1c319e9ce030d|1849|rds|local|vector|||0.12||
-sums_FD_A|stem|0fc93a7ca860974d|bd33dd183e750f76|4251e0591ef5c2a6|-429537817||t20216.818748383s|0fb32e65ec01821e|901|rds|local|vector|||0.01||
-sums_FD_A_ilvs|stem|6cf011f802cea14d|753f40a518a0d4bf|80eec03ad93b2f06|-1541267453||t20216.8187622383s|81ee45c18d69efa4|2750|rds|local|vector|||0.04||
-sums_FD_ilvs|stem|0559bf9dda195aeb|8af02db51a291137|c74eb057dd4c062a|2085692217||t20216.8187608465s|f8bd7f40b8992c03|3355|rds|local|vector|||0.2||
+summaries|stem|90e3b15c13559e0c|43425e03742310d4|bd646a83bebc32dd|470808022||t20217.860166173s|8967e270745eb5b5|3510|rds|local|vector|||0||
+summaries_ilvs|stem|f1b21f014583ca75|ea1ac78daeb71a43|f972942edbfd4180|524718723||t20217.8601772332s|c12443974f4f3615|7976|rds|local|vector|||0||
+summary_2nets|stem|6d7d1866fabb1ec7|48f55aa284794039|e14b770cdbec7f76|2137208729||t20217.8595293631s|6b2c4bbe83fb8e9a|1324|rds|local|vector|||0.203||
+summary_2nets_ilvs|stem|910500f5918b410a|a6f4ffdb45d34c8d|d0ef80f1e21d3c20|1822308192||t20217.8601700211s|5d441aba9ebba21f|2565|rds|local|vector|||0.265||
+sums_FD|stem|b294c1954e9ef274|e3e8a0598c04a783|f96174444a134b9f|282334182||t20217.8595243596s|6789c682b2eb707b|1869|rds|local|vector|||0.156||
+sums_FD_A|stem|0fc93a7ca860974d|bd33dd183e750f76|79b1e81b46a3983d|-429537817||t20217.8595259312s|0fb32e65ec01821e|901|rds|local|vector|||0.016||
+sums_FD_A_ilvs|stem|6cf011f802cea14d|753f40a518a0d4bf|ddff77a4957d13d3|-1541267453||t20217.8601759967s|81ee45c18d69efa4|2750|rds|local|vector|||0.016||
+sums_FD_ilvs|stem|c6c3d6e52b9ebc6c|8af02db51a291137|0e3ae30dcbace469|2085692217||t20217.8601746807s|6fdc283992ca9885|3426|rds|local|vector|||0.25||
 sums_RD|stem|485b990eb1d9252e|2ee89f63ea9e9be4|ed944006469464f5|2088453774||t20216.8187446567s|cf35f5ffdb223e38|1874|rds|local|vector|||0.17||
 sums_RD_A|stem|a2c9476874a829b1|ea5572c6ab4482e9|4a8ad98c70a96610|-1981577924||t20216.8187420573s|13d8ffe70ecdd995|899|rds|local|vector|||0.08||
 sums_RD_A_ilvs|stem|5963aacb28adc8c1|12f9e7827bf68d63|0a8fa8a909f0c35b|658088041||t20216.8187532601s|52550efceb24262b|2746|rds|local|vector|||0.03||
@@ -153,7 +152,7 @@ get_wild_carcasses|function|317a709b6d277d36|||||||||||||||
 get_www|function|a2bf6982bd1ad5d2|||||||||||||||
 get_years|function|b64546004099cfdb|||||||||||||||
 prepare_full_dataset|function|b109f9773b98162d|||||||||||||||
-get_fl_bin|function|e88d8749bfb822a8|||||||||||||||
+get_fl_bin|function|82e080e845382d59|||||||||||||||
 get_nets|function|2a15a734c6f4639c|||||||||||||||
 get_roosts|function|e142f097b2824a8a|||||||||||||||
 get_firsts_see|function|0d81fe982aca3cab|||||||||||||||
@@ -221,7 +220,7 @@ get_ornitela|function|a3621556651357d9|||||||||||||||
 get_ilv_separate|function|40bec117d7cfa933|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 substitute_na_distances|function|e85b4e4ccaa38fee|||||||||||||||
-get_fl_bin_list|function|57cbbb34e0df6f92|||||||||||||||
+get_fl_bin_list|function|17a1ef74456f157d|||||||||||||||
 get_nets_list|function|a72aef324f9acc31|||||||||||||||
 get_fl_wt_list|function|c505fecd9747a3d3|||||||||||||||
 fix_nets_list|function|aa0579cffe0dd4c0|||||||||||||||
@@ -231,6 +230,7 @@ get_summaries|function|16ec8545fe3e007d|||||||||||||||
 prepare_dataset|function|52323c6a9a0c2004|||||||||||||||
 prepare_parallel|function|fd1e89eac5069279|||||||||||||||
 prepare_forloop|function|ab6c8d68711d5712|||||||||||||||
+fl_allday_wt_see|stem|error|797d64f95e8d5720|8201cd80c9a375e6|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|null|local|vector|||1|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
 get_roosts_bin|function|9e9ce8d7ff094008
 get_wild_carcasses|function|317a709b6d277d36
 get_www|function|a2bf6982bd1ad5d2
@@ -251,6 +251,7 @@ remove_points_before|function|4b1d419f68fcee87
 get_hires_tags|function|e3281777f5642b4a
 get_gps_combined|function|881d0a98469376c4
 discoveryplot|function|d284b11222d4b585
+.Random.seed|object|7915a39a768e6f73
 mean_amplitude|function|badaf723abe07336
 remove_gps_rows|function|c420a2d7a3ac58fd
 get_distances|function|171afa7fb7d96182
@@ -314,5 +315,9 @@ get_summaries|function|16ec8545fe3e007d
 prepare_dataset|function|52323c6a9a0c2004
 prepare_parallel|function|fd1e89eac5069279
 prepare_forloop|function|ab6c8d68711d5712
-fl_allday_wt_see|stem|8a4df2ff1212076f|797d64f95e8d5720|8201cd80c9a375e6|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|rds|local|vector|||0.796|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
-fl_allday_wt_see|stem|error|797d64f95e8d5720|8201cd80c9a375e6|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|null|local|vector|||0.796|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
+fl_allday_wt_see|stem|error|797d64f95e8d5720|8201cd80c9a375e6|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|null|local|vector|||6.593|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
+fl_allday_wt_see|stem|error|797d64f95e8d5720|8201cd80c9a375e6|190457146||t20216.840129585s|59be5fdd6d8e77c4|253786|null|local|vector|||6.593|After filtering, the dataset had 0 rows.|i In index 1.Caused by error in .data.frame undefined columns selected
+fl_allday_wt_fixed_see|stem|error|ba4137d0193d9354|562681a24274523c|901526545||t20217.858858361s||0|null|local|vector|||||_store_ missing files _targetsobjectsfl_allday_wt_fixed_see
+fl_allday_wt_fixed_see|stem|error|ba4137d0193d9354|562681a24274523c|901526545||t20220.8196157803s||0|null|local|vector|||||_store_ missing files _targetsobjectsfl_allday_wt_fixed_see
+fl_3hr_wt_see|stem|error|01c6c975ac1d7053|44e627a4c79b868c|672629473||t20216.8772492192s|e212777883a87c8f|1284054|null|local|vector|||814.672|After filtering, the dataset had 0 rows.|i In index 2.Caused by error in .data.frame undefined columns selected
+fl_3hr_wt_see|stem|error|01c6c975ac1d7053|44e627a4c79b868c|672629473||t20216.8772492192s|e212777883a87c8f|1284054|null|local|vector|||814.672|After filtering, the dataset had 0 rows.|i In index 2.Caused by error in .data.frame undefined columns selected

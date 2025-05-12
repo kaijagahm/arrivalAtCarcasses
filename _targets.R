@@ -8,11 +8,14 @@ library(targets)
 library(here)
 library(vultureUtils)
 library(NBDA)
+library(tarchetypes)
+library(crew)
 
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr") # Packages that your targets need for their tasks.
+  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr"), # Packages that your targets need for their tasks.
+  controller = crew_controller_local(workers = 4)
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
@@ -188,7 +191,6 @@ list(
   ## 15. Get GPS subsets for flight (four different intervals)
   tar_target(gps_flight_allday_see, get_flight_allday(gps, has_sightings)),
   tar_target(gps_flight_cumulative_see, get_gps_flight(gps, has_sightings, see_times)),
-  tar_target(gps_flight_3hr_see, get_gps_flight_hr(gps, has_sightings, see_times, hrs = 3)),
   ## 16. Get roost nets
   tar_target(roosts_dates_see, get_roost_dates(roosts, has_sightings)),
   tar_target(roost_thresh, 500),
@@ -199,23 +201,11 @@ list(
   tar_target(fl_allday_wt_see, get_fl_wt_list(gps_flight_allday_see, detection_distance_flight)),
   tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, detection_distance_flight)),
   tar_target(fl_cumulative_wt_see, get_fl_wt_list(gps_flight_cumulative_see, detection_distance_flight)),
-  tar_target(fl_3hr_bin_see, get_fl_bin_list(gps_flight_3hr_see, detection_distance_flight)),
-  tar_target(fl_3hr_wt_see, get_fl_wt_list(gps_flight_3hr_see, detection_distance_flight)),
-  # Now we need to edit these networks to make sure 1) they include all individuals that eventually arrived at the carcass, even if just with zeroes, and 2) they don't include any individuals except the ones that arrived at the carcass (since this seems to be a requirement for NBDA, although to be honest I feel kind of uncomfortable with this, so I might revisit it later...)
+  # Fix networks to make sure they include all indivs
   tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
   tar_target(fl_allday_wt_fixed_see, fix_nets_list(fl_allday_wt_see, oa_see_indivs_sorted)), # XXX the networks seem to have NAs, so check this
   tar_target(fl_cumulative_bin_fixed_see, fix_nets_list(fl_cumulative_bin_see, oa_see_indivs_sorted)),
-  tar_target(fl_3hr_bin_fixed_see, fix_nets_list(fl_3hr_bin_see, oa_see_indivs_sorted)),
   tar_target(roosts_bin_fixed_see, fix_nets_list(roosts_bin_see, oa_see_indivs_sorted)),
-  # Make networks -----------------------------------------------------------
-  #tar_target(fl_allday_bin_nets, get_nets_list(fl_allday_bin_fixed)),
-  #tar_target(fl_allday_bin_nets_see, get_nets_list(fl_allday_bin_fixed_see)),
-  #tar_target(fl_cumulative_bin_nets, get_nets_list(fl_cumulative_bin_fixed)),
-  #tar_target(fl_cumulative_bin_nets_see, get_nets_list(fl_cumulative_bin_fixed_see)),
-  #tar_target(fl_3hr_bin_nets, get_nets_list(fl_3hr_bin_fixed)),
-  #tar_target(fl_3hr_bin_nets_see, get_nets_list(fl_3hr_bin_fixed_see)),
-  #tar_target(roosts_bin_nets, get_nets_list(roosts_bin_fixed)),
-  #tar_target(roosts_bin_nets_see, get_nets_list(roosts_bin_fixed_see)),
 
   # NBDA --------------------------------------------------------------------
   ## Define carcasses to run NBDA on
@@ -228,6 +218,7 @@ list(
   tar_target(firsts_nbda, firsts_see[has_sightings][has_enough_sightings]),
   tar_target(years, get_years(carcs_nbda, oas_nbda)),
   tar_target(carcIDs_nbda, map_chr(carcs_nbda, ~as.character(.x$carcID[1]))),
+  tar_target(seed_indivs_nbda, seed_indivs[has_sightings][has_enough_sightings]),
   ## Plots
   tar_target(discovery_plots, map2(firsts_nbda, 
                                    carcIDs_nbda, ~discoveryplot(.x, .y))),

@@ -1147,6 +1147,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
                                    nets1, nets2 = NULL,
                                    is_dynamic = FALSE,
                                    dists = NULL, ags = NULL,
+                                   seeds = NULL,
                                    n_indivs = NULL, n_timeperiods = NULL) {
   use_ilvs <- !is.null(dists) && !is.null(ags)
   use_two_nets <- !is.null(nets2)
@@ -1193,6 +1194,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     if (is_dynamic || use_two_nets) {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
+        demons = seeds,
         assMatrix = nets1[[i]], # because we replaced nets1 with the merged array before, we can still just pass nets1 in here, because it contains both networks.
         orderAcq = oas[[i]],
         assMatrixIndex = amis[[i]]
@@ -1200,6 +1202,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     } else {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
+        demons = seeds,
         assMatrix = nets1[[i]],
         orderAcq = oas[[i]]
       ), ilv_args))
