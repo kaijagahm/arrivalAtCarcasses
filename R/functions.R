@@ -660,6 +660,10 @@ get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }
 
+get_has_enough_sightings <- function(firsts_see, min_sightings){
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > min_sightings
+}
+
 get_flight_allday <- function(gps, subsettor){
   flight_allday <- map(gps[subsettor], ~.x %>%
                          group_by(dateOnly) %>%
@@ -852,8 +856,7 @@ fix_nets <- function(nets, indivs){
       net_updated <- net
     }
     net_updated_2 <- net_updated %>% select(-ID1)
-    updated[[nt]] <- net_updated_2
-    #updated[[nt]] <- net_updated_2[indivs, indivs]
+    updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
 }
