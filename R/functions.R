@@ -522,11 +522,11 @@ get_roosts <- function(gps_all){
   return(r)
 }
 
-get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance){
+get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
   seeds_gps <- map2(gps_all, inpa_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
-      filter(dist_to_carcass < seed_distance)
+      filter((ground_speed >= 5 & dist_to_carcass < seed_distance_flight) | (ground_speed < 5 & dist_to_carcass < seed_distance_stationary))
   })
   return(seeds_gps)
 }
@@ -595,10 +595,10 @@ get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
   return(at_carcass)
 }
 
-get_see_carcass <- function(gps, inpa_carcs, detection_distance){
+get_see_carcass <- function(gps, inpa_carcs, detection_distance_flight, detection_distance_stationary){
   see_carcass <- map2(gps, inpa_carcs, ~.x %>%
                         mutate(carcID = .y$carcID) %>%
-                        filter(dist_to_carcass < detection_distance))
+                        filter((ground_speed < 5 & dist_to_carcass < detection_distance_stationary) | (ground_speed >= 5 & dist_to_carcass < detection_distance_flight)))
   return(see_carcass)
 }
 
@@ -660,14 +660,8 @@ get_has_sightings <- function(firsts_see){
   map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > 0
 }
 
-check_1 <- function(oa, oa_see, oa_num, oa_see_num, oa_indivs_sorted, oa_see_indivs_sorted, acq_times, see_times){
-  if(length(oa) != length(oa_indivs_sorted)){stop("check1: length mismatch 1")}
-  if(length(oa_indivs_sorted) != length(oa_num)){stop("check1: length mismatch 2")}
-  if(length(oa_num) != length(oa)){stop("check1: length mismatch 3")}
-  
-  if(length(oa_see) != length(oa_see_indivs_sorted)){stop("check1: length mismatch 1")}
-  if(length(oa_see_indivs_sorted) != length(oa_see_num)){stop("check1: length mismatch 2")}
-  if(length(oa_see_num) != length(oa_see)){stop("check1: length mismatch 3")}
+get_has_enough_sightings <- function(firsts_see, min_sightings){
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$local_identifier),])) > min_sightings
 }
 
 get_flight_allday <- function(gps, subsettor){
@@ -712,11 +706,6 @@ get_gps_flight_hr <- function(gps, subsettor, times_list, hrs){
   return(out)
 }
 
-check_2 <- function(gps_flight_allday, gps_flight_allday_see, gps_flight_cumulative, gps_flight_cumulative_see, gps_flight_3hr, gps_flight_3hr_see, gps_flight_1hr, gps_flight_1hr_see){
-  if(length(unique(map_dbl(list(gps_flight_1hr, gps_flight_3hr, gps_flight_allday, gps_flight_cumulative), length))) != 1){stop("check2: length mismatch 1")}
-  if(length(unique(map_dbl(list(gps_flight_1hr_see, gps_flight_3hr_see, gps_flight_allday_see, gps_flight_cumulative_see), length))) != 1){stop("check2: length mismatch 2")}
-}
-
 get_roost_dates <- function(roosts, subsettor){
   out <- map(roosts[subsettor], ~{
     .x %>%
@@ -726,20 +715,6 @@ get_roost_dates <- function(roosts, subsettor){
             st_transform(32636))
   })
   return(out)
-}
-
-get_roost_pairwise_distances <- function(dates){
-  map(dates, ~{
-    outout <- map(.x, ~{
-      ids <- .x$local_identifier
-      out <- as.data.frame(st_distance(.x)) %>%
-        mutate(across(everything(), as.numeric))
-      row.names(out) <- ids
-      colnames(out) <- ids
-      return(out)
-    })
-    return(outout)
-  })
 }
 
 get_roosts_bin <- function(dates, roost_thresh){
@@ -758,20 +733,71 @@ get_roosts_bin <- function(dates, roost_thresh){
   })
 }
 
+get_roosts_weighted <- function(dates){
+  map(dates, ~{ # XXX start here
+    outout <- map(.x, ~{
+      ids <- .x$local_identifier
+      out <- as.data.frame(st_distance(.x)) %>%
+        mutate(across(everything(), as.numeric))
+      out <- 1/sqrt(out)
+      row.names(out) <- ids
+      colnames(out) <- ids
+      return(out)
+    })
+    return(outout)
+  })
+}
+
+get_fl_weighted <- function(dat, dist){
+  if(is.data.frame(dat)){
+    if(nrow(dat) > 0){
+      self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
+                               ID2 = sort(unique(dat$local_identifier)),
+                               sri = 0)
+      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                            consecThreshold = 1,
+                                                            idCol = "local_identifier",
+                                                            return = "sri",
+                                                            distThreshold = dist))
+      out2 <- out1[,c("ID2", "ID1", "sri")]
+      names(out2) <- c("ID1", "ID2", "sri")
+      out <- bind_rows(out1, out2)
+      out <- out %>%
+        mutate(across(c("ID1", "ID2"), as.character)) %>%
+        bind_rows(self_edges) %>%
+        mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
+        arrange(ID1, ID2) %>%
+        pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
+        dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
+        as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else{
+      out <- "blank"
+    }
+  }else{
+    out <- "blank"
+  }
+  return(out)
+}
+
+
 get_fl_bin <- function(dat, dist){
   if(is.data.frame(dat)){
     if(nrow(dat) > 0){
       self_edges <- data.frame(ID1 = sort(unique(dat$local_identifier)),
                                ID2 = sort(unique(dat$local_identifier)),
                                value = 0)
-      out <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                           consecThreshold = 1,
-                                                           idCol = "local_identifier",
-                                                           return = "edges",
-                                                           distThreshold = dist)) %>%
+      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
+                                                            consecThreshold = 1,
+                                                            idCol = "local_identifier",
+                                                            return = "edges",
+                                                            distThreshold = dist)) %>%
         dplyr::select(ID1, ID2) %>%
         distinct() %>%
-        mutate(value = 1) %>%
+        mutate(value = 1)
+      out2 <- out1[,c("ID2", "ID1", "value")]
+      names(out2) <- c("ID1", "ID2", "value")
+      out <- bind_rows(out1, out2) %>%
         bind_rows(self_edges) %>%
         arrange(ID1, ID2) %>%
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_fill = 0) %>%
@@ -791,6 +817,15 @@ get_fl_bin_list <- function(gps_list, detection_distance){
   out <- vector(mode = "list", length = length(gps_list))
   for(i in 1:length(out)){
     out[[i]] <- map(gps_list[[i]], ~get_fl_bin(dat = .x, dist = detection_distance))
+  }
+  return(out)
+}
+
+get_fl_wt_list <- function(gps_list, detection_distance){
+  out <- vector(mode = "list", length = length(gps_list))
+  for(i in 1:length(out)){
+    out[[i]] <- map(gps_list[[i]], ~get_fl_weighted(dat = .x, dist = detection_distance))
+    cat(i, "\n")
   }
   return(out)
 }
@@ -821,15 +856,9 @@ fix_nets <- function(nets, indivs){
       net_updated <- net
     }
     net_updated_2 <- net_updated %>% select(-ID1)
-    updated[[nt]] <- net_updated_2
-    #updated[[nt]] <- net_updated_2[indivs, indivs]
+    updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
-}
-
-check_3 <- function(fl_allday_bin, fl_allday_bin_see, fl_cumulative_bin, fl_cumulative_bin_see, fl_3hr_bin, fl_3hr_bin_see, fl_1hr_bin, fl_1hr_bin_see){
-  if(length(unique(map_dbl(list(fl_1hr_bin, fl_3hr_bin, fl_allday_bin, fl_cumulative_bin), length))) != 1){stop("check3: length mismatch 1")}
-  if(length(unique(map_dbl(list(fl_1hr_bin_see, fl_3hr_bin_see, fl_allday_bin_see, fl_cumulative_bin_see), length))) != 1){stop("check3: length mismatch 2")}
 }
 
 fix_nets_list <- function(list, oa_sorted){
@@ -909,11 +938,10 @@ expand_roost_mats <- function(roost_mats, fl_mats, days_vec){
 
 get_dynamic_nets <- function(ni, nt, matrices){
   n_dynamic <- map2(ni, nt, ~array(NA, dim = c(.x, .x, 1, .y)))
-  for(i in 1:length(n_dynamic)){
-    for(j in 1:length(matrices[[i]])){
-      if(!is.null(matrices)){
-        n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], dim = c(ni[[i]], ni[[i]], 1))
-      }
+  for(i in 1:length(matrices)){
+    for(j in 1:nt[[i]]){
+      n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], 
+                                     dim = c(ni[[i]], ni[[i]], 1))
     }
   }
   return(n_dynamic)
@@ -1061,53 +1089,37 @@ binarize_ages <- function(age_groups){
 
 get_constraintsVectMatrix <- function(){
   constraintsVectMatrix<-rbind(
-    #s1, s2, asocial_ag, asocial_srcd, social_ag. Not including social_srcd, since that wasn't specified in the models
+    #s1, s2, asocial_ag, asocial_srcd
     # netcombo 1 0
     #netcombo 1 0
-    c(1,0,0,0,0),
-    c(1,0,0,0,2),
-    c(1,0,0,2,0),
-    c(1,0,0,2,3),
-    c(1,0,2,0,0),
-    c(1,0,2,0,3),
-    c(1,0,2,3,0),
-    c(1,0,2,3,4),
+    c(1,0,0,0),
+    c(1,0,0,2),
+    c(1,0,2,0),
+    c(1,0,2,3),
     
     #netcombo 0 1
-    c(0,1,0,0,0),
-    c(0,1,0,0,2),
-    c(0,1,0,2,0),
-    c(0,1,0,2,3),
-    c(0,1,2,0,0),
-    c(0,1,2,0,3),
-    c(0,1,2,3,0),
-    c(0,1,2,3,4),
+    c(0,1,0,0),
+    c(0,1,0,2),
+    c(0,1,2,0),
+    c(0,1,2,3),
     
     #netcombo 1 1
-    c(1,1,0,0,0),
-    c(1,1,0,0,2),
-    c(1,1,0,2,0),
-    c(1,1,0,2,3),
-    c(1,1,2,0,0),
-    c(1,1,2,0,3),
-    c(1,1,2,3,0),
-    c(1,1,2,3,4),
+    c(1,1,0,0),
+    c(1,1,0,2),
+    c(1,1,2,0),
+    c(1,1,2,3),
     
     #netcombo 1 2
-    c(1,2,0,0,0),
-    c(1,2,0,0,3),
-    c(1,2,0,3,0),
-    c(1,2,0,3,4),
-    c(1,2,3,0,0),
-    c(1,2,3,0,4),
-    c(1,2,3,4,0),
-    c(1,2,3,4,5),
-
+    c(1,2,0,0),
+    c(1,2,0,3),
+    c(1,2,3,0),
+    c(1,2,3,4),
+    
     #netcombo 0 0 (doesn't include age effect on social transmission, since there is by definition no social transmission in these models)
-    c(0,0,0,0,0),
-    c(0,0,1,0,0),
-    c(0,0,0,1,0),
-    c(0,0,1,2,0)
+    c(0,0,0,0),
+    c(0,0,1,0),
+    c(0,0,0,1),
+    c(0,0,1,2)
   )
   return(constraintsVectMatrix)
 }
@@ -1120,16 +1132,16 @@ get_modelset <- function(data, constraints){
 get_maes <- function(modelset_list){
   out <- map(modelset_list, ~{
     rbind( support=variableSupport(.x),
-      MAE=modelAverageEstimates(.x),
-      USE=unconditionalStdErr(.x))
+           MAE=modelAverageEstimates(.x),
+           USE=unconditionalStdErr(.x))
   })
   return(out)
 }
 
 get_lowerlimits <- function(modelset_list, net, conf_level){
   out <- map(modelset_list, ~multiModelLowerLimits(which = net,
-                                            aicTable = .x,
-                                            conf = conf_level))
+                                                   aicTable = .x,
+                                                   conf = conf_level))
   return(out)
 }
 
@@ -1137,6 +1149,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
                                    nets1, nets2 = NULL,
                                    is_dynamic = FALSE,
                                    dists = NULL, ags = NULL,
+                                   seeds = NULL,
                                    n_indivs = NULL, n_timeperiods = NULL) {
   use_ilvs <- !is.null(dists) && !is.null(ags)
   use_two_nets <- !is.null(nets2)
@@ -1175,7 +1188,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
       srcd_name <- paste0("std_roost_carc_distances_", i)
       ilv_args <- list(
         asoc_ilv = c(ag_name, srcd_name),
-        int_ilv = ag_name,
+        #int_ilv = ag_name,
         asocialTreatment = "timevarying"
       )
     }
@@ -1183,6 +1196,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     if (is_dynamic || use_two_nets) {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
+        demons = seeds[[i]],
         assMatrix = nets1[[i]], # because we replaced nets1 with the merged array before, we can still just pass nets1 in here, because it contains both networks.
         orderAcq = oas[[i]],
         assMatrixIndex = amis[[i]]
@@ -1190,6 +1204,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     } else {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
+        demons = seeds[[i]],
         assMatrix = nets1[[i]],
         orderAcq = oas[[i]]
       ), ilv_args))
