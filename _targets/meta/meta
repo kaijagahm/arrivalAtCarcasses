@@ -1,14 +1,18 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|81e7c183dae0bf77|||||||||||||||
+.Random.seed|object|640e1b8afc29aa65|||||||||||||||
 a|stem|c6f1547f0c3278b7|c4b4990740854928|f2b0a7158cc9f060|-142220961||t20200.8567920612s|6632ce5cbfcda6f5|874|rds|local|vector|||0||
 aca|stem|d21bf82286bdf602|37ac615a7c0a4948|96253d7a607dde04|-836938684||t20220.8610005891s|80122d35b071e50e|8714|rds|local|vector|||0.407|attribute variables are assumed to be spatially constant throughout all geometries|
 add_bout_ids|function|02d75280eca61955|||||||||||||||
+age_groups|stem|a36ad95e4ccef543|152f9c94a7aedaeb|ca672d1e9ccfb94d|-1640320999||t20221.6860208216s|6657d6cea09fa517|7858|rds|local|vector|||0.531||
+age_groups_bin|stem|39efb5e257b7efbe|e665eb9ffb338422|d354c78e1c59a109|-377029433||t20221.6868107977s|271d9bdd60b36a71|8089|rds|local|vector|||0.032||
+age_groups_reversed|stem|c7c0c690a8609e0c|4eb4500052cc97e5|b1520c4d716f30e6|493585157||t20221.6868131889s|221c77bececb24c5|2669|rds|local|vector|||0||
 all_bouts_annotated|stem|9ca4c0ca7521c1cc|f2ba4cc727ab35c9|7496ed714c1056c7|1695976617||t20220.862247605s|a48401c8ad16b01c|292167|rds|local|vector|||0.64||
 all_bouts_assigned|stem|a49f43980fca3cb5|017bcb5e891d6b22|cfe0f5bf9f136c02|-1740766730||t20216.7094137088s|7bfbb0b5a78f6984|423339|rds|local|vector|||0.03||
 all_carcasses|stem|336f55f09850fc3a|57c30c682bdfcb5e|5ded417423a86422|-969723668||t20220.8608850276s|d8b199c0d3ac1cda|8934|rds|local|vector|||0.375||
 all_carcasses_annotated|stem|c1db9a7126240511|1ac31d9e12591c04|2e6d304ea5577bf8|1081868741||t20216.7494207475s|b6e5a54d0b06a933|11449|rds|local|vector|||0.02||
 arrival_distance|stem|aec6477eafbe80ca|f3081ebfafff83fb|2c530c1562a7fbd1|-1771894113||t20200.8707905799s|b2d5d26f8983d7ae|52|rds|local|vector|||0||
 assign_fs|function|e5bbd0a2c3efcd3a|||||||||||||||
+assMatrixIndices|stem|fc3c5878f086f5ea|24200ac76bbc6ce1|df0f5e36dcf3c2ec|-722223532||t20221.6524025883s|d4e1dc8172cd9f87|229|rds|local|vector|||0||
 attach_age_sex|function|7e7940be2c76b765|||||||||||||||
 bbox_bouts_hf|stem|1355211f2a572e54|cd31ca9c63241cd8|8812ab5d272dd2d0|-1394417539||t20200.8567909091s|718c2568442c2067|972|rds|local|vector|||0||
 bbox_inpa_carcasses|stem|8251aeecfc6ae26e|96659312e506984a|d07087f86b09eaa3|626028772||t20200.8567912412s|9ea7237e53374bcb|973|rds|local|vector|||0||
@@ -54,7 +58,9 @@ fix_nets|function|b67a0c8e35a04c0c|||||||||||||||
 fix_nets_list|function|dddd927bf12261fe|||||||||||||||
 fl_allday_bin_fixed_see|stem|0bac8833cf918f1d|29b3d0ea7638c3ae|aa2a9b21a52b7b72|-832338190||t20220.9010997772s|49f31a2d141e8c63|62983|rds|local|vector|||0.672||
 fl_allday_bin_see|stem|2aea02daaa9859b2|361c7ef353d57ff6|2b5a0779b690348e|-1269306067||t20220.8622420884s|faf5f6f51f7589af|121378|rds|local|vector|||35.265|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_mats_expanded|stem|8902417e279f799b|51901051f83724d1|d047ee2a948231df|-1527837250||t20220.9120734664s|33e10a0715948963|53702|rds|local|vector|||0.047||
+fl_cumulative_bin_fixed_see|stem|2cdcf103a5d38189|ff894b367864382b|144d6c47214fd1c6|-1767349496||t20221.6843365952s|4c46ed9fd7d9e13e|621356|rds|local|vector|||10.782||
+fl_cumulative_bin_see|stem|825611284c24cf85|8abaa3427a36615e|ab2b90a50aa433ff|-2037854133||t20221.6823671599s|e31be60a1e4d360a|1200002|rds|local|vector|||392.687|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_mats_expanded|stem|3a5f3eafe87020f1|eeaffbcd98610c65|776e082ad1a8a3d7|-1527837250||t20221.6843535824s|9633dd2fdc44d544|580175|rds|local|vector|||0.641||
 fl_mats_nbda|stem|07526bd4770ba26c|3a83cd759e12cea5|80f1c80014894f50|1506892933||t20220.9011033407s|68794631d542b66c|40595|rds|local|vector|||0||
 focal_gps_2023|stem|231561050f958003|e9624e70a001ad03|2c530c1562a7fbd1|-849282975||t20200.8678835349s|30ade5c2c0ef7956|1794891|rds|local|vector|||6.14|package sf was built under R version 4.4.2|
 focal_gps_2024|stem|d2e890470c1d606d|a934f6787f48acc2|2c530c1562a7fbd1|-880552134||t20200.8678892539s|73b89784be840c80|1130121|rds|local|vector|||0.047||
@@ -63,7 +69,7 @@ get_bouts_predictions|function|801ed5c4975fcd93|||||||||||||||
 get_carcass_bouts|function|28683c3852fd9433|||||||||||||||
 get_constraintsVectMatrix|function|9c3622c78d6b0a2e|||||||||||||||
 get_distances|function|171afa7fb7d96182|||||||||||||||
-get_dynamic_nets|function|5f1bb6c40908fa25|||||||||||||||
+get_dynamic_nets|function|50bc3ac7dfc41d07|||||||||||||||
 get_firsts|function|8a550e0d5b44c179|||||||||||||||
 get_firsts_see|function|0d81fe982aca3cab|||||||||||||||
 get_fl_bin|function|82e080e845382d59|||||||||||||||
@@ -90,7 +96,7 @@ get_lowerlimits|function|cfe2899ca0d355df|||||||||||||||
 get_maes|function|0bd45cfb01a551ec|||||||||||||||
 get_model_cis|function|7bf7b23cf6bb4f3a|||||||||||||||
 get_modelset|function|7a9a489799eb83de|||||||||||||||
-get_nbdaData_list_flex|function|9a280d7c3dda6e29|||||||||||||||
+get_nbdaData_list_flex|function|6b1f39937aa09cfd|||||||||||||||
 get_nets|function|2a15a734c6f4639c|||||||||||||||
 get_nets_list|function|a72aef324f9acc31|||||||||||||||
 get_ornitela|function|a3621556651357d9|||||||||||||||
@@ -129,18 +135,26 @@ matrix_orders_nbda|stem|dc0f4d84fa3a6d3a|c1509408305fc189|ff3f76cb5205df54|37484
 mean_amplitude|function|badaf723abe07336|||||||||||||||
 min_sightings|stem|05fa983ebc3446a4|3aecd493438d20d7|2c530c1562a7fbd1|-1889081441||t20213.9875926159s|b2d5d26f8983d7ae|52|rds|local|vector|||1.922|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 mod_trycatch|function|fd89cff39d467555|||||||||||||||
-N.FD|stem|e8e28fc9bc84a29a|a9a6373df24b69ea|3a65b9bf2da0532f|969147786||t20220.9135379179s|f648b77e94205826|87242|rds|local|vector|||0.187||
-N.RD|stem|8a65835dc76cdc81|fde44754d022478a|d0f313a8d2cb9664|678914631||t20220.9135307683s|85f952f4af77cfd1|375561|rds|local|vector|||0.437||
+Mods_N.FD_Aso|stem|b63788a53fe05c5d|6babc66637cbb7bd|72006f0e0ecc251c|1457499457||t20221.6942180517s|842155f6d1a62cc1|102286|rds|local|vector|||0.343||
+Mods_N.FD_So|stem|48a526c14bfa2678|33d9a5b4e3c5f44e|72006f0e0ecc251c|255934790||t20221.6942314008s|755f54ed7bfce7f3|104215|rds|local|vector|||0.953|NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation|
+Mods_N.RD_Aso|stem|1353dd27c6635771|c59ea0681cfbe5e9|1ca6574e277277c3|-1266956719||t20221.6930082578s|516189fec98fdba6|87409|rds|local|vector|||0.047||
+Mods_N.RD_So|stem|292f119d6489b18a|66ddc9d535e88975|1ca6574e277277c3|-1147283786||t20221.6930060268s|8d8007fc1c8f3bb2|89322|rds|local|vector|||0.813|NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation. NANaN function evaluation|
+N.FD|stem|e8aa48554d95edee|a9a6373df24b69ea|9f193703da8ee8cb|969147786||t20221.6843666732s|07182c31a08d5a9e|495606|rds|local|vector|||0.329||
+N.RD|stem|8a65835dc76cdc81|fde44754d022478a|db1fdd90643c11f4|678914631||t20221.682379602s|85f952f4af77cfd1|375561|rds|local|vector|||0.078||
 n_indivs|stem|34efbcdeefd11cfd|d9ef3c9773c65561|ff3f76cb5205df54|-1719557170||t20220.9126659555s|759dc689e48aedcc|132|rds|local|vector|||0||
 n_timeperiods|stem|34efbcdeefd11cfd|b4f9d76acf9541d3|ecb2b47a62608727|-1057250930||t20220.9120883001s|759dc689e48aedcc|132|rds|local|vector|||0||
+nbdaData_list_dynamic_flight|stem|8fb118a39739ce52|cd103f6857081896|615c47599db75f62|2021065099||t20221.6942110721s|8c4c3dd89b98870a|609616|rds|local|vector|||2.61||
+nbdaData_list_dynamic_roost|stem|d44d7e3e8ec09517|e417ef8f308a4e43|4036533ad20533f3|722048636||t20221.692958798s|0c5f35e223442c49|485813|rds|local|vector|||2.516||
+nbdaData_list_dynamic_roost_ilvs|stem|007a9bfe44a8a1d2|4f37c1ab1299ed98|93aa8017dce3b4e3|-1055521526||t20221.6930373573s|bfbd9c2ac9305645|533292|rds|local|vector|||1.969||
 nbdaModSum|function|54f71aa808eb8788|||||||||||||||
 oa_see|stem|9c6bd4fb24d8a47f|b08e9dc72cd8294d|d9282e357fa99471|1651638743||t20220.8611413183s|e1a361f88254358e|2515|rds|local|vector|||4.281||
 oa_see_indivs_sorted|stem|dc0f4d84fa3a6d3a|28d465ed93945e78|44994a8146c4c40d|1377681695||t20220.8611463441s|659b947fb428b684|1197|rds|local|vector|||0.343||
-oas_nbda_numbers|stem|b779da16eb644b0d|4725d060b5e9b12a|07bf679105f7847f|-344157267||t20220.9126681149s|973ce29d4f5dc732|1867|rds|local|vector|||0||
+oas_nbda_numbers|stem|b779da16eb644b0d|bd84a0cd3292c2f0|a4ca0c93550a7b43|-344157267||t20221.6625446724s|973ce29d4f5dc732|1867|rds|local|vector|||0||
 prepare_dataset|function|52323c6a9a0c2004|||||||||||||||
 prepare_forloop|function|ab6c8d68711d5712|||||||||||||||
 prepare_full_dataset|function|b109f9773b98162d|||||||||||||||
 prepare_parallel|function|fd1e89eac5069279|||||||||||||||
+prop_nas_roost_carc_distances|stem|203ed4bd0fede676|1022c4255c23270b|7cc1036486e8af08|1254580518||t20221.686030318s|af94fcb8e6165bbe|176|rds|local|vector|||0||
 pw|stem|c004d56cab4ad004|27e4d6e31d138f35|2c530c1562a7fbd1|-1536787549|movebankCredentials/pw.Rda|t18907.7359670883s|36d9ea1c8315d78b|96|file|local|vector|||11.641||
 remaining_bouts|stem|f4dbc30f8782a68c|bab897209c14da49|086df068fcd9fdda|-568710860||t20216.7092760938s|02ad6ac46035fe33|173011|rds|local|vector|||0.01||
 remaining_bouts_2|stem|e1a6db6a7633f343|93c2903439e2a770|9a91b84110524ed9|-875668781||t20220.8608813262s|29821b01fd81c6cb|175146|rds|local|vector|||0.359||
@@ -149,6 +163,8 @@ remove_captures|function|8ac8269f4c2d4c72|||||||||||||||
 remove_gps_rows|function|c420a2d7a3ac58fd|||||||||||||||
 remove_periods|function|9cdf1954c1717169|||||||||||||||
 remove_points_before|function|4b1d419f68fcee87|||||||||||||||
+roost_carc_distances|stem|0b83c40f95da44e6|972509bd3a92b4ae|ca672d1e9ccfb94d|1787171978||t20221.6860269901s|957c7d053f7a7fa6|38501|rds|local|vector|||0.421||
+roost_carc_distances_NAs_filled|stem|88823e80376ec1e1|54be8e05eee6d241|188e66737e584fc3|209835824||t20221.6860293588s|c22c776064e11c99|38615|rds|local|vector|||0.032||
 roost_mats_expanded|stem|26656caa253b17b3|67f34d83dcbeef02|3917634ee3ad963b|-834803101||t20220.9120872571s|055a71569c1a5d27|459061|rds|local|vector|||0.61||
 roost_mats_nbda|stem|efaa05f400cf702f|708274e5dd9bb318|5344ca1f11e7b806|-1886955186||t20220.9011016665s|63a5b80049db0086|38611|rds|local|vector|||0||
 roost_thresh|stem|5654ae499fd6c56c|f7fa471aa3f8197f|2c530c1562a7fbd1|393365559||t20200.961792549s|03d0c2cbf5aa332b|54|rds|local|vector|||1.781|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
@@ -164,12 +180,19 @@ seed_indivs|stem|9c0c58ceb30efb93|8c216b2d10e6e1bc|605da6a5d5da09a8|2064401993||
 seed_time_before|stem|e76035bdc0c0cc30|4747fb653211e1b0|2c530c1562a7fbd1|1873616799||t20214.8092932356s|5a04a740e1697d34|146|rds|local|vector|||1.921|package doParallel was built under R version 4.4.2. package sf was built under R version 4.4.2|
 seeds_gps|stem|1ff756c5a899eae7|4b79e4b8374ae587|801c6cc2f5208061|18975320||t20216.7928682031s|9fb1e8ccd83930ba|24357|rds|local|vector|||0.35||
 seeds_see|stem|f3bd41065bcc8494|d0c30c34dd8702ff|b04d31366bfa51e3|1692631326||t20220.8487229824s|22b9072548525589|488|rds|local|vector|||0.344||
+seeds_see_binary|stem|78a703c845d135b6|c1f131e2fcc684c6|2046968365893392|990566037||t20221.6914536214s|f9f676f264d3eac5|464|rds|local|vector|||0||
 split_data_fun_forloop|function|545d7387ee9580ac|||||||||||||||
 stations|stem|9572b8282927a24e|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t20200.8567886289s|ebea1b6d01620f94|4810|rds|local|vector|||0.016||
 std_dists|function|7655cfbbfbae7acb|||||||||||||||
+std_roost_carc_distances_NAs_filled|stem|2a2e95e699cd2587|3e592429eb87a7a8|2f1047167dbd61d5|2008412225||t20221.6868143314s|bb3b0f2de336498e|39100|rds|local|vector|||0||
 stn_min_dists_bouts|stem|28c83f18e714ebac|d3164736b6295c32|1e715c6f7cc48b29|1596751479||t20220.862235991s|d64aaaf5cdfe2009|44288|rds|local|vector|||95.641||
 stn_min_dists_carc|stem|4340b8e4e4601ebe|722d7af084a670b7|73d66beb23eebe81|-824407272||t20220.8609904401s|4884540ddbee280a|1843|rds|local|vector|||3.891||
 substitute_na_distances|function|e85b4e4ccaa38fee|||||||||||||||
+summaries|stem|bf169eca2a050eac|43425e03742310d4|37457f33043c9324|470808022||t20221.6942362038s|a3718bc628ff97c2|1691|rds|local|vector|||0||
+sums_FD|stem|5f06ecda101d767a|e3e8a0598c04a783|baecce8a809ecaad|282334182||t20221.6942351874s|bd53e84c211c86f4|1025|rds|local|vector|||0.063||
+sums_FD_A|stem|3c7fee3b4be3b436|bd33dd183e750f76|31f8ddd41c621691|-429537817||t20221.6942335s|5d60fa1948699324|682|rds|local|vector|||0.031||
+sums_RD|stem|2d65229edde5d794|2ee89f63ea9e9be4|dc6d93209660a6bc|2088453774||t20221.6930389667s|07f04c03e00def62|936|rds|local|vector|||0.078||
+sums_RD_A|stem|f341bb7ba03dc335|ea5572c6ab4482e9|4f6343b27ba946a5|-1981577924||t20221.6930403438s|671e55e001d03194|679|rds|local|vector|||0.047||
 time_bouts_wild_carcass_cluster|stem|2a75e03b9a5773e7|df215f1d6d931697|2c530c1562a7fbd1|-1776093177||t20200.8532035797s|08ec9a1d380611bb|62|rds|local|vector|||0||
 transform_datetimes|function|f544daba49d91f68|||||||||||||||
 update_cis_dfs|function|563b72fb2dfe22f2|||||||||||||||

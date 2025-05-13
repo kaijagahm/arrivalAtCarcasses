@@ -788,10 +788,10 @@ get_fl_bin <- function(dat, dist){
                                ID2 = sort(unique(dat$local_identifier)),
                                value = 0)
       out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                           consecThreshold = 1,
-                                                           idCol = "local_identifier",
-                                                           return = "edges",
-                                                           distThreshold = dist)) %>%
+                                                            consecThreshold = 1,
+                                                            idCol = "local_identifier",
+                                                            return = "edges",
+                                                            distThreshold = dist)) %>%
         dplyr::select(ID1, ID2) %>%
         distinct() %>%
         mutate(value = 1)
@@ -938,11 +938,10 @@ expand_roost_mats <- function(roost_mats, fl_mats, days_vec){
 
 get_dynamic_nets <- function(ni, nt, matrices){
   n_dynamic <- map2(ni, nt, ~array(NA, dim = c(.x, .x, 1, .y)))
-  for(i in 1:length(n_dynamic)){
-    for(j in 1:length(matrices[[i]])){
-      if(!is.null(matrices)){
-        n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], dim = c(ni[[i]], ni[[i]], 1))
-      }
+  for(i in 1:length(matrices)){
+    for(j in 1:nt[[i]]){
+      n_dynamic[[i]][,,1,j] <- array(matrices[[i]][[j]], 
+                                     dim = c(ni[[i]], ni[[i]], 1))
     }
   }
   return(n_dynamic)
@@ -1097,25 +1096,25 @@ get_constraintsVectMatrix <- function(){
     c(1,0,0,2),
     c(1,0,2,0),
     c(1,0,2,3),
-
+    
     #netcombo 0 1
     c(0,1,0,0),
     c(0,1,0,2),
     c(0,1,2,0),
     c(0,1,2,3),
-
+    
     #netcombo 1 1
     c(1,1,0,0),
     c(1,1,0,2),
     c(1,1,2,0),
     c(1,1,2,3),
-
+    
     #netcombo 1 2
     c(1,2,0,0),
     c(1,2,0,3),
     c(1,2,3,0),
     c(1,2,3,4),
-
+    
     #netcombo 0 0 (doesn't include age effect on social transmission, since there is by definition no social transmission in these models)
     c(0,0,0,0),
     c(0,0,1,0),
@@ -1133,16 +1132,16 @@ get_modelset <- function(data, constraints){
 get_maes <- function(modelset_list){
   out <- map(modelset_list, ~{
     rbind( support=variableSupport(.x),
-      MAE=modelAverageEstimates(.x),
-      USE=unconditionalStdErr(.x))
+           MAE=modelAverageEstimates(.x),
+           USE=unconditionalStdErr(.x))
   })
   return(out)
 }
 
 get_lowerlimits <- function(modelset_list, net, conf_level){
   out <- map(modelset_list, ~multiModelLowerLimits(which = net,
-                                            aicTable = .x,
-                                            conf = conf_level))
+                                                   aicTable = .x,
+                                                   conf = conf_level))
   return(out)
 }
 
@@ -1197,7 +1196,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     if (is_dynamic || use_two_nets) {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
-        demons = seeds,
+        demons = seeds[[i]],
         assMatrix = nets1[[i]], # because we replaced nets1 with the merged array before, we can still just pass nets1 in here, because it contains both networks.
         orderAcq = oas[[i]],
         assMatrixIndex = amis[[i]]
@@ -1205,7 +1204,7 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
     } else {
       outlist[[i]] <- do.call(nbdaData, c(list(
         label = label,
-        demons = seeds,
+        demons = seeds[[i]],
         assMatrix = nets1[[i]],
         orderAcq = oas[[i]]
       ), ilv_args))
