@@ -63,9 +63,9 @@ list(
   tar_target(carcass_bouts_df, purrr::list_rbind(carcass_bouts)), # note: each bout might be affiliated with more than one carcass here!
   tar_target(remaining_bouts, filter(feeding_bouts, !(boutID %in% carcass_bouts_df$boutID))),
   
-  ## Cluster the remaining bouts
-  tar_target(dist_bouts_wild_carcass_cluster, 250), # updated to 250 to match Gideon's thresholds
-  tar_target(time_bouts_wild_carcass_cluster, '24 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way.
+  ## Cluster the remaining bouts to detect wild carcasses
+  tar_target(dist_bouts_wild_carcass_cluster, 200), # updated to 250 to match Gideon's thresholds
+  tar_target(time_bouts_wild_carcass_cluster, '12 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way.
   tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
                                                            dist = dist_bouts_wild_carcass_cluster,
@@ -100,7 +100,8 @@ list(
                                                year = lubridate::year(datetime)),
                                       wild_carcasses %>%
                                         select(carcID, X, Y,
-                                               year, dateOnly, nBouts, nIndivs) %>%
+                                               year, dateOnly, nBouts, nIndivs,
+                                               "datetime" = mintime) %>%
                                         mutate(carcType = "wild"))),
   
   ## Assign carcasses (INPA and wild) to stations
@@ -133,15 +134,17 @@ list(
                                   "ymin" = 3350000, 
                                   "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
                                   "ymax" = 3500000)), a)),
+  
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
+  tar_target(days_before, 1),
+  tar_target(days_before_wild, 3),
   tar_target(seed_distance_flight, 2000),
   tar_target(seed_distance_stationary, 1000),
   tar_target(seed_time_before, lubridate::minutes(30)),
   tar_target(detection_distance_flight, 2000),
   tar_target(detection_distance_stationary, 1000),
-  tar_target(arrival_distance, 400),
   ## 1. Get carcasses and refstrict to south
   tar_target(aca, sf::st_crop(all_carcasses_annotated, bbox_south)),
   ## 1a. Convert carcasses to Israel time
@@ -157,8 +160,10 @@ list(
   ## 4a. Convert gps data to Israel time 
   ## XXX fixme
   ## 4b. Make gps_all
-  tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after)),
+  tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after, days_before)),
+  tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
   tar_target(roosts, get_roosts(gps_all)), 
+  #tar_target(roosts_wild, get_roosts(gps_all_wild)),
   ## 6. Get seeds
   tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary)),
   tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
@@ -293,4 +298,5 @@ list(
   #   # tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
   #   # tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
   #   # tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
+
 )

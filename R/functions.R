@@ -426,9 +426,8 @@ cluster_carcasses <- function(carcasses, dist){
 }
 
 get_wild_carcass_bouts <- function(remaining_bouts, time, dist, minBouts, stations, stationDist){
-  # Remove any that are within a certain distance of a known station
-  stations_buffered <- st_buffer(stations, stationDist) %>%
-    st_union()
+  # Remove any that are too close to a known station
+  stations_buffered <- st_buffer(stations, stationDist)
   tokeep <- map_dbl(st_intersects(remaining_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
   remaining_bouts <- remaining_bouts[tokeep,]
   
@@ -464,7 +463,9 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
     summarize(geometry = sf::st_union(geometry),
               dateOnly = dateOnly[1],
               nBouts = n(),
-              nIndivs = length(unique(individualID))) %>%
+              nIndivs = length(unique(individualID)),
+              mintime = min(start),
+              maxtime = max(end)) %>%
     sf::st_centroid() %>%
     ungroup() %>%
     bind_cols(sf::st_coordinates(.)) 
@@ -498,14 +499,14 @@ get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
   return(gps_combined)
 }
 
-get_gps_all <- function(inpa_carcs, gps_combined, days_after){
-  gps_all <- vector(mode = "list", length = length(inpa_carcs))
-  for(i in 1:length(inpa_carcs)){
-    ic <- inpa_carcs[[i]]
+get_gps_all <- function(carcs, gps_combined, days_after, days_before){
+  gps_all <- vector(mode = "list", length = length(carcs))
+  for(i in 1:length(carcs)){
+    ic <- carcs[[i]]
     cid <- ic$carcID[1]
     carcass_datetime <- ic$datetime[1]
     out <- gps_combined %>%
-      filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
+      filter(timestamp >= (carcass_datetime-days(days_before)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
       mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
