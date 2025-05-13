@@ -15,8 +15,7 @@ tar_option_set(
   #controller = crew_controller_local(workers = 4)
 )
 
-# Run the R scripts in the R/ folder with your custom functions:
-lapply(list.files("R", full.names = TRUE), source) # source all scripts in the R directory
+lapply(list.files("R", full.names = TRUE), source) 
 
 list(
   tar_target(pw, "movebankCredentials/pw.Rda", format = "file"),
