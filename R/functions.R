@@ -425,7 +425,7 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3, stations, stationDist = 750){
+get_wild_carcass_bouts <- function(remaining_bouts, time, dist, minBouts, stations, stationDist){
   # Remove any that are within a certain distance of a known station
   stations_buffered <- st_buffer(stations, stationDist) %>%
     st_union()
