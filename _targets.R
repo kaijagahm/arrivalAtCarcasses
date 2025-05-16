@@ -52,47 +52,37 @@ list(
   tar_target(carcasses_focal, get_focal(carcasses_audited, dates)),
   
   ## Match bouts to carcasses
-  tar_target(dist_bouts_carcasses, 750),
-  tar_target(hours_before_carcass, 1),
+  tar_target(dist_bouts_carcasses, 750), # xxx seems maybe too high
   tar_target(hours_after_carcass, 72),
   tar_target(carcass_bouts, get_carcass_bouts(bouts = feeding_bouts,
                                               carcasses = carcasses_focal,
                                               dist = dist_bouts_carcasses,
-                                              hours_before = hours_before_carcass,
                                               hours_after = hours_after_carcass)),
   tar_target(carcass_bouts_df, purrr::list_rbind(carcass_bouts)), # note: each bout might be affiliated with more than one carcass here!
-  tar_target(remaining_bouts, filter(feeding_bouts, !(boutID %in% carcass_bouts_df$boutID))),
+  tar_target(non_carcass_bouts, filter(feeding_bouts, !(boutID %in% carcass_bouts_df$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
-  tar_target(dist_bouts_wild_carcass_cluster, 200), # updated to 250 to match Gideon's thresholds
+  tar_target(dist_bouts_wild_carcass_cluster, 200), 
   tar_target(time_bouts_wild_carcass_cluster, '12 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way.
-  tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(remaining_bouts,
+  tar_target(wild_carcass_bouts_df, get_wild_carcass_bouts(non_carcass_bouts,
                                                            time = time_bouts_wild_carcass_cluster,
                                                            dist = dist_bouts_wild_carcass_cluster,
                                                            minBouts = 3,
                                                            stations = stations,
-                                                           stationDist = 750)),
+                                                           stationDist = 750,
+                                                           minIndivs = 3)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bouts_df) %>%
                mutate(carcType = "wild")),
-  tar_target(remaining_bouts_2, left_join(remaining_bouts,
-                                          sf::st_drop_geometry(wild_carcass_bouts_df) %>%
-                                            select(boutID, carcID),
-                                          by = "boutID") %>%
-               mutate(carcType = case_when(!is.na(carcID) ~"wild",
-                                           .default = NA))),
-  tar_target(bouts_double_assigned, group_by(carcass_bouts_df, boutID) %>%
-               filter(n() > 1) %>%
-               pull(boutID)),
+  tar_target(wild_carcass_bouts_again, assign_time_dist(wild_carcass_bouts_df, wild_carcasses)),
   tar_target(carcass_bouts_dedup, group_by(carcass_bouts_df, boutID) %>%
                arrange(boutID, time_since_carcass) %>%
-               slice(1)),  # HEURISTIC: TAKE THE ONE CLOSER TO THE TIME OF CARCASS PLACEMENT
-  tar_target(all_bouts_assigned, bind_rows(carcass_bouts_dedup %>%
-                                             mutate(carcType = "inpa"),
-                                           remaining_bouts_2)), # note: all bouts are now assigned to a "carcass". We might want to consider redefining singleton bouts as not actually representing a wild carcass all on their own, or set some sort of threshold for groups...,
-  
+               slice(1) %>%
+               ungroup()),  # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
+  tar_target(all_bouts_assigned, combine_all_bouts(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts)),
   ## Combine carcasses
-  tar_target(all_carcasses, bind_rows(carcasses_focal %>%
-                                        select(carcID, X, Y,
+  tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bouts_df)),
+  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>%
+                                        select(carcID, X, Y, nBouts, nIndivs,
                                                stationName, carcassWeight,
                                                datetime, cage) %>%
                                         mutate(dateOnly = lubridate::date(datetime),
@@ -104,27 +94,6 @@ list(
                                                "datetime" = mintime) %>%
                                         mutate(carcType = "wild"))),
   
-  ## Assign carcasses (INPA and wild) to stations
-  tar_target(carcasses_split, group_by(all_carcasses, carcID) %>% group_split()),
-  tar_target(bouts_split, sf::st_as_sf(all_bouts_assigned, coords = c("X", "Y"), crs = 32636, remove = F) %>%
-               group_by(boutID) %>%
-               group_split()),
-  ### Carcasses
-  tar_target(stn_min_dists_carc, map_dbl(carcasses_split, ~min(st_distance(.x, stations)))),
-  tar_target(closest_stn_carc, purrr::list_rbind(map(carcasses_split, ~stations[which.min(st_distance(.x, stations)),]))),
-  tar_target(all_carcasses_annotated, all_carcasses %>%
-               mutate(dist_stn = stn_min_dists_carc) %>%
-               bind_cols(st_drop_geometry(closest_stn_carc) %>%
-                           select("stn" = stationName))),
-  ### Bouts
-  tar_target(stn_min_dists_bouts, map_dbl(bouts_split, ~min(st_distance(.x, stations)))),
-  tar_target(closest_stn_bouts, purrr::list_rbind(map(bouts_split, ~stations[which.min(st_distance(.x, stations)),]))),
-  tar_target(all_bouts_annotated, all_bouts_assigned %>%
-               ungroup() %>%
-               mutate(dist_stn = stn_min_dists_bouts) %>%
-               bind_cols(st_drop_geometry(closest_stn_bouts) %>%
-                           select("stn" = stationName)) %>%
-               select(-c(prob, start, end, location_lat, location_long))),
   tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
   tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
   tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
@@ -145,8 +114,9 @@ list(
   tar_target(seed_time_before, lubridate::minutes(30)),
   tar_target(detection_distance_flight, 2000),
   tar_target(detection_distance_stationary, 1000),
-  ## 1. Get carcasses and refstrict to south
-  tar_target(aca, sf::st_crop(all_carcasses_annotated, bbox_south)),
+  ## 1. Get carcasses and restrict to south
+  tar_target(aca, sf::st_crop(all_carcasses, bbox_south)),
+  tar_target(aba, sf::st_crop(all_bouts_assigned, bbox_south)),
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
   ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
@@ -161,6 +131,7 @@ list(
   ## XXX fixme
   ## 4b. Make gps_all
   tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after, days_before)),
+  tar_target(gps_all_inpa, get_gps_all(inpa_carcs, gps_combined, days_after, days_before_wild)),
   tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
   tar_target(roosts, get_roosts(gps_all)), 
   #tar_target(roosts_wild, get_roosts(gps_all_wild)),

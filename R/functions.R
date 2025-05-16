@@ -389,7 +389,7 @@ get_focal2 <- function(carcasses, times){
   return(focal)
 }
 
-get_carcass_bouts <- function(bouts, carcasses, dist, hours_before, hours_after){
+get_carcass_bouts <- function(bouts, carcasses, dist, hours_after){
   carcass_bouts <- map(1:nrow(carcasses), ~{
     carcass <- carcasses[.x,]
     id <- carcasses$carcID[.x]
@@ -400,14 +400,34 @@ get_carcass_bouts <- function(bouts, carcasses, dist, hours_before, hours_after)
     keep_distance <- bouts %>%
       filter(dist_to_carcass <= dist)
     keep_time <- keep_distance %>%
-      filter(start >= (carcass$datetime - hours(hours_before)), 
-             end <= (carcass$datetime + hours(hours_after))) %>% 
+      filter(end <= (carcass$datetime + hours(hours_after))) %>% 
       mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
     return(keep_time)
   })
   return(carcass_bouts)
 }
 
+get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
+  stats <- carcass_bouts_df %>%
+    select(carcID, boutID, individualID) %>%
+    group_by(carcID) %>% 
+    summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individualID))) %>%
+    ungroup()
+  out <- left_join(carcasses_focal, stats, by = "carcID")
+  return(out)
+}
+
+combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts){
+  # Get bouts assigned to an INPA carcass
+  inpa <- carcass_bouts_dedup %>% mutate(carcType = "inpa")
+  # Get bouts assigned to a wild carcass
+  wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild")
+  # Get bouts not assigned to either
+  neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID))
+  out <- bind_rows(inpa, wild, neither) %>%
+    sf::st_as_sf(crs = 32636)
+  return(out)
+}
 
 # Clustering --------------------------------------------------------------
 cluster_carcasses <- function(carcasses, dist){
@@ -425,31 +445,31 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time, dist, minBouts, stations, stationDist){
+get_wild_carcass_bouts <- function(non_carcass_bouts, time, dist, minBouts, stations, stationDist, minIndivs){
   # Remove any that are too close to a known station
   stations_buffered <- st_buffer(stations, stationDist)
-  tokeep <- map_dbl(st_intersects(remaining_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
-  remaining_bouts <- remaining_bouts[tokeep,]
+  tokeep <- map_dbl(st_intersects(non_carcass_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
+  non_carcass_bouts <- non_carcass_bouts[tokeep,]
   
   # Format appropriately for spatsoc
-  remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
-  remaining_bouts <- data.table::data.table(remaining_bouts)
+  non_carcass_bouts$timestamp <- as.POSIXct(non_carcass_bouts$start)
+  non_carcass_bouts <- data.table::data.table(non_carcass_bouts)
   
-  spatsoc::group_times(remaining_bouts, 
+  spatsoc::group_times(non_carcass_bouts, 
                        datetime = 'timestamp', 
                        threshold = time)
-  spatsoc::group_pts(remaining_bouts, threshold = dist, 
+  spatsoc::group_pts(non_carcass_bouts, threshold = dist, 
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
   
   # Restrict to groups that have at least 3 bouts and at least 2 individuals
-  remaining_bouts <- remaining_bouts %>%
+  non_carcass_bouts <- non_carcass_bouts %>%
     group_by(group) %>%
     filter(n() >= minBouts,
-           length(unique(individualID)) > 1)
+           length(unique(individualID)) > minIndivs)
   
   # convert back to sf object for mapping
-  wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
+  wild_carcass_bouts_df <- as.data.frame(non_carcass_bouts) %>%
     rename("carcID" = group) %>%
     sf::st_as_sf(crs = 32636)
   
@@ -466,9 +486,10 @@ get_wild_carcasses <- function(wild_carcass_bouts_df){
               nIndivs = length(unique(individualID)),
               mintime = min(start),
               maxtime = max(end)) %>%
-    sf::st_centroid() %>%
+    sf::st_centroid() %>% # take spatial centroid to define the position of the "carcass"
     ungroup() %>%
-    bind_cols(sf::st_coordinates(.)) 
+    bind_cols(sf::st_coordinates(.)) %>%
+    mutate(datetime = mintime) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
 # "Limitations of threshold
@@ -1213,4 +1234,30 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
   }
   
   return(outlist)
+}
+
+get_closest_station <- function(all_bouts_assigned, stations){
+  bouts_split <- sf::st_as_sf(all_bouts_assigned, coords = c("X", "Y"), crs = 32636, remove = F) %>%
+    group_by(boutID) %>%
+    group_split()
+  stn_min_dists_bouts <- map_dbl(bouts_split, ~min(st_distance(.x, stations)))
+  closest_stn_bouts <- purrr::list_rbind(map(bouts_split, ~stations[which.min(st_distance(.x, stations)),]))
+  return(closest_stn_bouts)
+}
+
+assign_time_dist <- function(wild_carcass_bouts_df, wild_carcasses){
+  wc <- wild_carcasses %>% select(carcID, datetime, X, Y)
+  ids <- unique(wild_carcass_bouts_df$carcID)
+  lst <- vector(mode = "list", length = length(ids))
+  for(i in 1:length(lst)){
+    c <- wc[wc$carcID == ids[i],]
+    b <- wild_carcass_bouts_df %>% filter(carcID == ids[i])
+    dists <- as.numeric(st_distance(b, c))
+    b$dist_to_carcass <- dists
+    times <- difftime(b$timestamp, c$datetime, units = "hours")
+    b$time_since_carcass <- times
+    lst[[i]] <- b
+  }
+  df <- purrr::list_rbind(lst)
+  return(df)
 }
