@@ -115,6 +115,53 @@ get_hires_tags <- function(with_age_sex, tag_sns){
   return(hires_tags)
 }
 
+get_acc_data <- function(data_files){
+  out <- purrr::list_rbind(purrr::map(data_files, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z"))))) %>% filter(!is.na(datatype))
+  return(out)
+}
+
+flip_devices <- function(unobs_raw_acc){
+  toflip_y <- unobs_raw_acc %>%
+    group_by(device_id) %>%
+    summarize(mny = mean(acc_y)) %>%
+    filter(mny < 0) %>%
+    pull(device_id)
+  if(length(toflip_y) >0){
+    out <- unobs_raw_acc %>%
+      mutate(acc_y = case_when(device_id %in% toflip_y ~ -1*acc_y,
+                               .default = acc_y))
+  }else{
+    out <- unobs_raw_acc
+  }
+  return(out)
+}
+
+calibrate_devices <- function(splitup, calibration_data){
+  prepared <- map(splitup, ~prepare_dataset(.x, calibration = calibration_data))
+  return(prepared)
+}
+
+get_bouts <- function(single_device){
+  out <- single_device[,c("bout_id", "device_id", "start_int")] %>%
+    group_by(device_id, bout_id) %>%
+    summarize(start = min(start_int),
+              end = max(start_int),
+              .groups = "drop")
+  return(out)
+}
+
+get_predictions <- function(single_device, mod){
+  single_device$start_int <- as.character(single_device$start_int)
+  out <- predict(mod, single_device)
+  return(out)
+}
+
+get_scores <- function(single_device, mod){
+  single_device$start_int <- as.character(single_device$start_int)
+  out <- predict(mod, single_device, type = "prob")
+  return(out)
+}
+
 ################################### Bout classification functions
 
 mean_amplitude <- function(x) {
@@ -192,12 +239,12 @@ get_stat_feats <- function(x){
               sd_x = sd(acc_x),
               sd_y = sd(acc_y),
               sd_z = sd(acc_z),
-              skewness_x = skewness(acc_x),
-              skewness_y = skewness(acc_y),
-              skewness_z = skewness(acc_z),
-              kurtosis_x = kurtosis(acc_x),
-              kurtosis_y = kurtosis(acc_y),
-              kurtosis_z = kurtosis(acc_z),
+              skewness_x = moments::skewness(acc_x),
+              skewness_y = moments::skewness(acc_y),
+              skewness_z = moments::skewness(acc_z),
+              kurtosis_x = moments::kurtosis(acc_x),
+              kurtosis_y = moments::kurtosis(acc_y),
+              kurtosis_z = moments::kurtosis(acc_z),
               max_x = max(acc_x),
               max_y = max(acc_y),
               max_z = max(acc_z),
@@ -427,6 +474,22 @@ combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, fee
   out <- bind_rows(inpa, wild, neither) %>%
     sf::st_as_sf(crs = 32636)
   return(out)
+}
+
+get_feeding_bouts <- function(file ="data/created/feeding_bouts.RDS"){
+  fb <- readRDS(here(file)) 
+  out <- fb %>%
+    mutate(boutID = paste(year, device_id, bout_id, sep = "_")) %>%
+    select(boutID,
+           "individualID" = device_id,
+           "prob" = .pred_Eating,
+           start, end, dateOnly, year, location_lat, location_long) %>%
+    bind_cols(sf::st_coordinates(.))
+  return(out)
+}
+
+remove_feeding_bouts_inflight <- function(feeding_bouts){
+  # XXX need to filter out high ground speeds, which means I need ground speeds, which means I can't just get the bouts from a file
 }
 
 # Clustering --------------------------------------------------------------

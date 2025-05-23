@@ -28,36 +28,36 @@ unobs_raw_acc_2023 <- readRDS(here("data/created/unobs_raw_acc_2023.RDS"))
 unobs_raw_acc_2024 <- readRDS(here("data/created/unobs_raw_acc_2024.RDS"))
 
 # Fix INPA tags with backwards acc_y sensor -------------------------------
-# # Look for ones that need to be flipped
-inpa_taglist_full <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 1)
-inpa_taglist_partial <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 2)
-
-inpa_taglist <- inpa_taglist_full %>%
-  mutate(type = "full") %>%
-  bind_rows(inpa_taglist_partial %>%
-              mutate(type = "partial"))
-
-tags_2023 <- unobs_raw_acc_2023 %>%
-  dplyr::select(device_id) %>%
-  distinct() %>%
-  left_join(inpa_taglist, by = "device_id") %>%
-  mutate(tagtype = case_when(!is.na(movebank_id) ~ "INPA",
-                             .default = "TAU")) # none of the tags included in the attached list seem to match the 2023 data.
-
-# 2024-10-22 I have realized that this is because Gideon never sent me the INPA tag high-frequency data for 2023, only 2024. So I actually don't have any INPA tags in here, which explains why none of them need to be flipped. Have to wait for Gideon to send me the INPA data for 2023.
-
-length(unique(unobs_raw_acc_2023$device_id)) # 57 unique individuals
-length(unique(unobs_raw_acc_2024$device_id)) # 80 individuals. This number is so much higher because I also included individuals that weren't set to high frequency.
-
-unobs_raw_acc_2023 %>%
-  group_by(device_id) %>%
-  summarize(mny = mean(acc_y)) %>%
-  arrange(mny) # no negative means here--no need to flip
-
-write_csv(unobs_raw_acc_2023 %>%
-            group_by(device_id) %>%
-            summarize(mny = mean(acc_y)) %>%
-            arrange(mny), file = here("data/created/2023_device_ymeans_forGideon_2024-10-22.csv"))
+# # # Look for ones that need to be flipped
+# inpa_taglist_full <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 1)
+# inpa_taglist_partial <- readxl::read_excel(here("data/raw/INPA_tag_list_Kaija.xlsx"), sheet = 2)
+# 
+# inpa_taglist <- inpa_taglist_full %>%
+#   mutate(type = "full") %>%
+#   bind_rows(inpa_taglist_partial %>%
+#               mutate(type = "partial"))
+# 
+# tags_2023 <- unobs_raw_acc_2023 %>%
+#   dplyr::select(device_id) %>%
+#   distinct() %>%
+#   left_join(inpa_taglist, by = "device_id") %>%
+#   mutate(tagtype = case_when(!is.na(movebank_id) ~ "INPA",
+#                              .default = "TAU")) # none of the tags included in the attached list seem to match the 2023 data.
+# 
+# # 2024-10-22 I have realized that this is because Gideon never sent me the INPA tag high-frequency data for 2023, only 2024. So I actually don't have any INPA tags in here, which explains why none of them need to be flipped. Have to wait for Gideon to send me the INPA data for 2023.
+# 
+# length(unique(unobs_raw_acc_2023$device_id)) # 57 unique individuals
+# length(unique(unobs_raw_acc_2024$device_id)) # 80 individuals. This number is so much higher because I also included individuals that weren't set to high frequency.
+# 
+# unobs_raw_acc_2023 %>%
+#   group_by(device_id) %>%
+#   summarize(mny = mean(acc_y)) %>%
+#   arrange(mny) # no negative means here--no need to flip
+# 
+# write_csv(unobs_raw_acc_2023 %>%
+#             group_by(device_id) %>%
+#             summarize(mny = mean(acc_y)) %>%
+#             arrange(mny), file = here("data/created/2023_device_ymeans_forGideon_2024-10-22.csv"))
 
 unobs_raw_acc_2023 %>%
   group_by(device_id, UTC_date) %>%
@@ -79,6 +79,21 @@ unobs_raw_acc_2024 %>%
   summarize(mny = mean(acc_y)) %>%
   arrange(mny) # need to flip several
 
+unobs_raw_acc_2024 %>%
+  group_by(device_id, UTC_date) %>%
+  summarize(mny = mean(acc_y)) %>%
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(factor(device_id), mny, .fun = "median"), 
+             y = mny))+
+  geom_boxplot(outlier.size = 0.5, fill = "lightgray", linewidth = 0.5)+
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 5))+
+  geom_hline(aes(yintercept = 0), lty = 2, col = "red", linewidth = 0.75)+
+  labs(y = "Mean daily y acceleration",
+       x = "Tag",
+       title = "2023 HF period")+
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) # it's very evident which ones need to be flipped here
+
 toflip_y <- unobs_raw_acc_2024 %>%
   group_by(device_id) %>%
   summarize(mny = mean(acc_y)) %>%
@@ -93,6 +108,21 @@ unobs_raw_acc_2024 %>%
   group_by(device_id) %>%
   summarize(mny = mean(acc_y)) %>%
   arrange(mny) # that's better--no negatives!
+
+unobs_raw_acc_2024 %>%
+  group_by(device_id, UTC_date) %>%
+  summarize(mny = mean(acc_y)) %>%
+  ungroup() %>%
+  ggplot(aes(x = fct_reorder(factor(device_id), mny, .fun = "median"), 
+             y = mny))+
+  geom_boxplot(outlier.size = 0.5, fill = "lightgray", linewidth = 0.5)+
+  theme_classic()+
+  theme(axis.text.x = element_text(size = 5))+
+  geom_hline(aes(yintercept = 0), lty = 2, col = "red", linewidth = 0.75)+
+  labs(y = "Mean daily y acceleration",
+       x = "Tag",
+       title = "2023 HF period")+
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) # much better
 
 # mindate_23 <- lubridate::ymd_hms(min(unobs_raw_acc_2023$UTC_datetime))
 # maxdate_23 <- lubridate::ymd_hms(max(unobs_raw_acc_2023$UTC_datetime)) + days(5)

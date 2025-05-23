@@ -11,8 +11,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr")#, # Packages that your targets need for their tasks.
-  #controller = crew_controller_local(workers = 4)
+  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo"),
+  controller = crew_controller_local(workers = 8)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -21,6 +21,53 @@ list(
   tar_target(pw, "movebankCredentials/pw.Rda", format = "file"),
   tar_target(loginObject, get_loginObject(pw)),
   tar_target(ww_file, "data/raw/whoswho_vultures_20230920_new.xlsx", format = "file"),
+  ## ACC data files for classifying the bouts
+  tar_target(data_files_2023, list.files(here("data/ACC/2023_hf_period/raw/"), full.names = T, pattern = ".csv")),
+  tar_target(data_files_2024, list.files(here("data/ACC/2024_hf_period/raw/"), full.names = T, pattern = ".csv")),
+  tar_target(unobs_raw_acc_2023, get_acc_data(data_files_2023)),
+  tar_target(unobs_raw_acc_2024, get_acc_data(data_files_2024)),
+  tar_target(acc_2023_flipped, flip_devices(unobs_raw_acc_2023)),
+  tar_target(acc_2024_flipped, flip_devices(unobs_raw_acc_2024)),
+  tar_target(mindate_23, lubridate::ymd_hms(min(acc_2023_flipped$UTC_datetime))),
+  tar_target(maxdate_23, lubridate::ymd_hms(max(acc_2023_flipped$UTC_datetime)) + lubridate::days(5)),
+  tar_target(mindate_24, lubridate::ymd_hms(min(acc_2024_flipped$UTC_datetime))),
+  tar_target(maxdate_24, lubridate::ymd_hms(max(acc_2024_flipped$UTC_datetime)) + lubridate::days(5)),
+  tar_target(minmax_dates, list(mindate_23, maxdate_23, mindate_24, maxdate_24)),
+  
+  ## Calibration
+  tar_target(calibration_data, read_csv(here("ACC_algo_Marta_draft/Data/example_calibration.csv"))),
+  tar_target(splitup_23, group_split(group_by(as.data.frame(acc_2023_flipped)), device_id)),
+  tar_target(splitup_24, group_split(group_by(as.data.frame(acc_2024_flipped)), device_id)),
+  tar_target(calibrated_23_1, calibrate_devices(splitup_23[1:10], calibration_data)),
+  tar_target(calibrated_23_2, calibrate_devices(splitup_23[11:20], calibration_data)),
+  tar_target(calibrated_23_3, calibrate_devices(splitup_23[21:30], calibration_data)),
+  tar_target(calibrated_23_4, calibrate_devices(splitup_23[31:40], calibration_data)),
+  tar_target(calibrated_23_5, calibrate_devices(splitup_23[41:50], calibration_data)),
+  tar_target(calibrated_23_6, calibrate_devices(splitup_23[51:60], calibration_data)),
+  tar_target(calibrated_23_7, calibrate_devices(splitup_23[61:70], calibration_data)),
+  tar_target(calibrated_23_8, calibrate_devices(splitup_23[71:length(splitup_23)], calibration_data)),
+  tar_target(calibrated_24_1, calibrate_devices(splitup_24[1:10], calibration_data)),
+  tar_target(calibrated_24_2, calibrate_devices(splitup_24[11:20], calibration_data)),
+  tar_target(calibrated_24_3, calibrate_devices(splitup_24[21:30], calibration_data)),
+  tar_target(calibrated_24_4, calibrate_devices(splitup_24[31:40], calibration_data)),
+  tar_target(calibrated_24_5, calibrate_devices(splitup_24[41:50], calibration_data)),
+  tar_target(calibrated_24_6, calibrate_devices(splitup_24[51:60], calibration_data)),
+  tar_target(calibrated_24_7, calibrate_devices(splitup_24[61:70], calibration_data)),
+  tar_target(calibrated_24_8, calibrate_devices(splitup_24[71:length(splitup_24)], calibration_data)),
+  
+  tar_target(calibrated_23, c(calibrated_23_1, calibrated_23_2, calibrated_23_3, calibrated_23_4, calibrated_23_5, calibrated_23_6, calibrated_23_7, calibrated_23_8)),
+  tar_target(calibrated_24, c(calibrated_24_1, calibrated_24_2, calibrated_24_3, calibrated_24_4, calibrated_24_5, calibrated_24_6, calibrated_24_7, calibrated_24_8)),
+  tar_target(bouts_23, map(calibrated_23, get_bouts)),
+  tar_target(bouts_24, map(calibrated_24, get_bouts)),
+  
+  ## Get classification model
+  tar_target(classification_model, readRDS(here("ACC_algo_Marta_draft/Data/gv_final_model_fit.rda"))),
+  
+  
+  
+  
+  
+  
   
   ## GPS data for the focal periods (in case we need it later)
   tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
@@ -28,13 +75,8 @@ list(
   
   ## Feeding bouts (2023 and 2024 high-frequency periods only)
   ### These were created in 01_classify_localize_bouts_2023.R because targets was being a poop.
-  tar_target(feeding_bouts, readRDS(here("data/created/feeding_bouts.RDS")) %>%
-               mutate(boutID = paste(year, device_id, bout_id, sep = "_")) %>%
-               select(boutID,
-                      "individualID" = device_id,
-                      "prob" = .pred_Eating,
-                      start, end, dateOnly, year, location_lat, location_long) %>%
-               bind_cols(sf::st_coordinates(.))),
+  tar_target(feeding_bouts, get_feeding_bouts(file ="data/created/feeding_bouts.RDS")),
+  tar_target(feeding_bouts_nonflight, remove_feeding_bouts_inflight(feeding_bouts)),
   
   ## Feeding stations
   ### Created in 00_carcass_data_translation.R
