@@ -157,14 +157,14 @@ calibration_data <- read_csv(here("ACC_algo_Marta_draft/Data/example_calibration
 #   cat("done with", i, "\n")
 # }
 
-for(i in 1:length(splitup_24)){
-  name <- paste0("device_", devices_24[i])
-  prepared <- prepare_dataset(splitup_24[[i]], calibration = calibration_data)
-  write_csv(prepared, paste0(here("data/ACC/2024_hf_period/created/prepared/"), "/", name, "_prepared.csv"))
-  cat("done with", i, "\n")
-}
+# for(i in 1:length(splitup_24)){
+#   name <- paste0("device_", devices_24[i])
+#   prepared <- prepare_dataset(splitup_24[[i]], calibration = calibration_data)
+#   write_csv(prepared, paste0(here("data/ACC/2024_hf_period/created/prepared/"), "/", name, "_prepared.csv"))
+#   cat("done with", i, "\n")
+# }
 
-# files_23 <- list.files(here("data/ACC/2023_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
+files_23 <- list.files(here("data/ACC/2023_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
 files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), pattern = ".csv", full.names = T)
 
 # bouts_2023 <- vector(mode = "list", length = length(files_23))
@@ -177,40 +177,40 @@ files_24 <- list.files(here("data/ACC/2024_hf_period/created/prepared/"), patter
 #               .groups = "drop")
 #   cat("Done with bouts for", i, "\n")
 # }
-
-bouts_2024 <- vector(mode = "list", length = length(files_24))
-for(i in 1:length(files_24)){
-  file <- as.data.frame(data.table::fread(files_24[i]))
-  bouts_2024[[i]] <- file[,c("bout_id", "device_id", "start_int")] %>%
-    group_by(device_id, bout_id) %>%
-    summarize(start = min(start_int),
-              end = max(start_int),
-              .groups = "drop")
-  cat("Done with bouts for", i, "\n")
-}
+# 
+# bouts_2024 <- vector(mode = "list", length = length(files_24))
+# for(i in 1:length(files_24)){
+#   file <- as.data.frame(data.table::fread(files_24[i]))
+#   bouts_2024[[i]] <- file[,c("bout_id", "device_id", "start_int")] %>%
+#     group_by(device_id, bout_id) %>%
+#     summarize(start = min(start_int),
+#               end = max(start_int),
+#               .groups = "drop")
+#   cat("Done with bouts for", i, "\n")
+# }
 
 # write_rds(bouts_2023, here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
-write_rds(bouts_2024, here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
+# write_rds(bouts_2024, here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
 
-# bouts_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
+bouts_2023 <- readRDS(here("data/ACC/2023_hf_period/created/bouts_2023.RDS"))
 bouts_2024 <- readRDS(here("data/ACC/2024_hf_period/created/bouts_2024.RDS"))
 
 mod <- readRDS(here("ACC_algo_Marta_draft/Data/gv_final_model_fit.rda"))
 # XXX START HERE
 gc()
 
-# predictions_2023 <- vector(mode = "list", length = length(files_23))
-# scores_2023 <- vector(mode = "list", length = length(files_23))
-# for(i in 1:length(files_23)){
-#   file <- as.data.frame(data.table::fread(files_23[i]))
-#   if(nrow(file) > 0){
-#     file$start_int <- as.character(file$start_int)
-#     predictions_2023[[i]] <- predict(mod, file)
-#     scores_2023[[i]] <- predict(mod, file, type = "prob")
-#   }
-#   cat("Done with predictions and scores for", i, "\n")
-# }
-# 
+predictions_2023 <- vector(mode = "list", length = length(files_23))
+scores_2023 <- vector(mode = "list", length = length(files_23))
+for(i in 1:length(files_23)){
+  file <- as.data.frame(data.table::fread(files_23[i]))
+  if(nrow(file) > 0){
+    file$start_int <- as.character(file$start_int)
+    predictions_2023[[i]] <- predict(mod, file)
+    scores_2023[[i]] <- predict(mod, file, type = "prob")
+  }
+  cat("Done with predictions and scores for", i, "\n")
+}
+
 predictions_2024 <- vector(mode = "list", length = length(files_24))
 scores_2024 <- vector(mode = "list", length = length(files_24))
 for(i in 1:length(files_24)){
@@ -272,25 +272,25 @@ targets::tar_load(loginObject)
 minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 
 # Matching to GPS data (Gideon code, merged with Kaija code) --------------------------------------
-ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
-                                          removeDup = T, dfConvert = T,
-                                          quiet = T,
-                                          dateTimeStartUTC = minmax_dates[[1]],
-                                          dateTimeEndUTC = minmax_dates[[2]])
-
-ornitela_data_2024 <- vultureUtils::downloadVultures(loginObject = loginObject,
-                                          removeDup = T, dfConvert = T,
-                                          quiet = T,
-                                          dateTimeStartUTC = minmax_dates[[3]],
-                                          dateTimeEndUTC = minmax_dates[[4]])
-gps_2023 <- dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-gps_2024 <- dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-rm(ornitela_data_2023)
-rm(ornitela_data_2024)
-gc()
-
-data.table::fwrite(gps_2023, file = here("data/ACC/2023_hf_period/created/gps_2023.csv"))
-data.table::fwrite(gps_2024, file = here("data/ACC/2024_hf_period/created/gps_2024.csv"))
+# ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
+#                                           removeDup = T, dfConvert = T,
+#                                           quiet = T,
+#                                           dateTimeStartUTC = minmax_dates[[1]],
+#                                           dateTimeEndUTC = minmax_dates[[2]])
+# 
+# ornitela_data_2024 <- vultureUtils::downloadVultures(loginObject = loginObject,
+#                                           removeDup = T, dfConvert = T,
+#                                           quiet = T,
+#                                           dateTimeStartUTC = minmax_dates[[3]],
+#                                           dateTimeEndUTC = minmax_dates[[4]])
+# gps_2023 <- dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
+# gps_2024 <- dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
+# rm(ornitela_data_2023)
+# rm(ornitela_data_2024)
+# gc()
+# 
+# data.table::fwrite(gps_2023, file = here("data/ACC/2023_hf_period/created/gps_2023.csv"))
+# data.table::fwrite(gps_2024, file = here("data/ACC/2024_hf_period/created/gps_2024.csv"))
 gps_2023 <- data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")
 gps_2024 <- data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")
 # gc()

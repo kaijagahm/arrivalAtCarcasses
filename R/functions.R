@@ -150,15 +150,38 @@ get_bouts <- function(single_device){
   return(out)
 }
 
-get_predictions <- function(single_device, mod){
-  single_device$start_int <- as.character(single_device$start_int)
-  out <- predict(mod, single_device)
-  return(out)
+# get_preds <- function(single_device, mod){
+#   if(nrow(single_device) > 0){
+#     single_device <- as.data.frame(single_device)
+#     single_device$start_int <- as.character(single_device$start_int)
+#     single_device$bout_id <- as.integer(single_device$bout_id)
+#     single_device$device_id <- as.integer(single_device$device_id)
+#     out <- predict(mod, single_device)
+#   }else{
+#     out <- NULL
+#   }
+#   return(out)
+# } # XXX this doesn't work for some reason
+
+get_preds_from_scores <- function(scores){
+  if(!is.null(scores)){
+    out <- apply(scores, 1, which.max)
+    out_vals <- names(scores)[out]
+    preds <- str_remove(out_vals, ".pred_")
+    return(tibble(".pred_class" = preds))
+  }else{
+    return(NULL)
+  }
 }
 
 get_scores <- function(single_device, mod){
-  single_device$start_int <- as.character(single_device$start_int)
-  out <- predict(mod, single_device, type = "prob")
+  if(nrow(single_device) > 0){
+    single_device <- as.data.frame(single_device)
+    single_device$start_int <- as.character(single_device$start_int)
+    out <- predict(mod, single_device, type = "prob")
+  }else{
+    out <- NULL
+  }  
   return(out)
 }
 
@@ -324,6 +347,7 @@ prepare_dataset <- function(x, calibration){
   full <- prepare_full_dataset(x, stat_feats = stat_feats)
   cat("Removing bad bouts\n")
   full <- remove_bad_bouts(full)
+  # deduplicate--kg addition 6/2/25
   rm(x)
   rm(stat_feats)
   return(full)
@@ -348,55 +372,69 @@ prepare_parallel <- function(x, cal){
 
 get_bouts_predictions <- function(prepared, predictions, 
                                   scores, bouts){
-  prepared %>%
-    dplyr::ungroup() %>%
-    dplyr::select(bout_id, device_id) %>%
-    dplyr::bind_cols(predictions) %>%
-    dplyr::bind_cols(scores) %>%
-    dplyr::rename("pred" = ".pred_class") %>%
-    dplyr::left_join(bouts, by = c("device_id", "bout_id"))
+  if(nrow(prepared) > 0){
+    out <- prepared %>%
+      dplyr::ungroup() %>%
+      dplyr::select(bout_id, device_id) %>%
+      dplyr::bind_cols(predictions) %>%
+      dplyr::bind_cols(scores) %>%
+      dplyr::rename("pred" = ".pred_class") %>%
+      dplyr::left_join(bouts, by = c("device_id", "bout_id"))
+  }else{
+    out <- NULL
+  }
+  return(out)
 }
 
-# get_matches <- function(df, foc){
-#   with_middles <- df %>%
-#     mutate(start = lubridate::ymd_hms(start),
-#            end = lubridate::ymd_hms(end),
-#            middle = start + difftime(end, start)/2) %>%
-#     group_by(bout_id) %>%
-#     group_split()
-#   
-#   within_5min <- map(with_middles, ~{
-#     foc[(.x$start[1] - minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),] 
-#   }, .progress = T)
-#   
-#   within_5min_speed <- map(within_5min, ~.x[.x$ground_speed <= 4,])
-#   
-#   within_11min_speed <- map(with_middles, ~{
-#     foc[(.x$start[1] - minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(11)) & foc$ground_speed < 4,] 
-#   }, .progress = T)
-#   
-#   keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
-#     if(nrow(..2) > 0){
-#       match <- ..2
-#     }else if(nrow(..3) > 0){
-#       match <- ..3
-#     }else if(nrow(..1) > 0){
-#       match <- ..1
-#     }else{
-#       match <- foc[0,]
-#     }
-#     if(nrow(match) > 1){
-#       match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
-#     }
-#     if(nrow(match) > 0){
-#       match$bout_id <- ..4$bout_id[1]
-#       return(match)
-#     }else{
-#       return(NULL)
-#     }
-#   })
-#   keep_df <- purrr::list_rbind(keep)
-#   return(keep_df)
+get_matches <- function(df, foc, spd){
+  if(!is.null(df)){
+    with_middles <- df %>%
+      dplyr::mutate(start = lubridate::ymd_hms(start),
+             end = lubridate::ymd_hms(end),
+             middle = start + difftime(end, start)/2) %>%
+      dplyr::group_by(bout_id) %>%
+      dplyr::group_split()
+
+    within_5min <- purrr::map(with_middles, ~{
+      foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
+    }, .progress = T)
+
+    within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
+
+    within_11min_speed <- purrr::map(with_middles, ~{
+      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
+    }, .progress = T)
+
+    keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
+      if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
+        match <- ..2
+      }else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
+        match <- ..3
+      }else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
+        match <- ..1
+      }else{
+        match <- foc[0,] # if none of those is true, return a 0-row data frame
+      }
+      if(nrow(match) > 1){
+        match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
+      }
+      if(nrow(match) > 0){ # for all bouts where we got any gps match at all...
+        match$bout_id <- ..4$bout_id[1] # assign the bout id of the current bout to the match as well
+        return(match)
+      }else{
+        return(foc[0,])
+      }
+    })
+  }else{
+    keep <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- list(keep[0,])
+  }
+  keep_df <- purrr::list_rbind(keep)
+  return(keep_df)
+}
+# 
+# get_matches <- function(pred, indiv, gps_spd) {
+#   paste("Matched", pred, indiv, gps_spd)
 # }
 
 assign_fs <- function(data, fs){
@@ -486,10 +524,6 @@ get_feeding_bouts <- function(file ="data/created/feeding_bouts.RDS"){
            start, end, dateOnly, year, location_lat, location_long) %>%
     bind_cols(sf::st_coordinates(.))
   return(out)
-}
-
-remove_feeding_bouts_inflight <- function(feeding_bouts){
-  # XXX need to filter out high ground speeds, which means I need ground speeds, which means I can't just get the bouts from a file
 }
 
 # Clustering --------------------------------------------------------------
@@ -1323,4 +1357,137 @@ assign_time_dist <- function(wild_carcass_bouts_df, wild_carcasses){
   }
   df <- purrr::list_rbind(lst)
   return(df)
+}
+
+get_merged <- function(bouts_predictions){
+  merged <- purrr::list_rbind(bouts_predictions)
+  merged$sensor <- "ACC"
+  merged <- merged %>%
+    dplyr::rename("tag_local_identifier" = device_id,
+                  "timestamp" = start) %>%
+    dplyr::mutate(timestamp = case_when(nchar(timestamp) == 10 ~ paste0(timestamp, " 00:00:00"),
+                                        .default = timestamp)) %>%
+    dplyr::mutate(timestamp = lubridate::ymd_hms(timestamp))
+  return(merged)
+}
+
+get_full <- function(gps, merged){
+  full <- bind_rows(gps, mutate(merged, timestamp = lubridate::ymd_hms(timestamp)))
+  full <- full %>%
+    group_by(tag_local_identifier) %>%
+    arrange(timestamp) %>%
+    mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+    ungroup()
+  return(full)
+}
+
+prepare_gps_crossref <- function(full){
+  full <- full %>%
+    group_by(tag_local_identifier) %>%
+    arrange(timestamp) %>%
+    mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+    ungroup()
+  return(full)
+}
+
+# attach_gps <- function(x, a = gps_bef, b = gps_aft, spd = gps_spd){
+#   out <- x %>% 
+#     group_by(tag_local_identifier) %>%
+#     arrange(timestamp) %>%
+#     rename("llo" = location_long, "lla" = location_lat, "td" = time_diff) %>%
+#     mutate(
+#       llo2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(llo),
+#                        is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(llo),
+#                        is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(llo),
+#                        is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(llo),
+#                        .default = llo),
+#       lla2 = case_when(is.na(lla) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(lla),
+#                        is.na(lla) & td < a & lead(ground_speed <= spd) ~ lead(lla),
+#                        is.na(lla) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(lla),
+#                        is.na(lla) & td < b & lead(ground_speed <= spd) ~ lead(lla),
+#                        .default =lla),
+#       gs2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(ground_speed),
+#                       is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(ground_speed),
+#                       is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(ground_speed),
+#                       is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(ground_speed),
+#                       .default = ground_speed)
+#     )%>% 
+#     # try another method of assigning still-unassigned acc bouts
+#     mutate(
+#       llo3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(llo),
+#                        is.na(llo2) & td < a ~ lead(llo), 
+#                        .default = llo2),
+#       lla3 = case_when(is.na(lla2) & lag(td) <= a ~ lag(lla2),
+#                        is.na(lla2) & td < a ~ lead(lla), 
+#                        .default = lla2),
+#       gs3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(ground_speed),
+#                       is.na(llo2) & td < a ~ lead(ground_speed), 
+#                       .default =  gs2)
+#     ) %>%
+#     ungroup()
+#   return(out)
+# }
+# 
+# keep_highest_gps_pair <- function(attached){
+#   out <- attached %>%
+#     dplyr::filter(sensor == "ACC") %>%
+#     dplyr::mutate(location_long = dplyr::case_when(!is.na(llo2) ~ llo2,
+#                                                    is.na(llo2) & !is.na(llo3) ~ llo3,
+#                                                    .default = location_long),
+#                   location_lat = dplyr::case_when(!is.na(lla2) ~ lla2,
+#                                                   is.na(lla2) & !is.na(lla3) ~ lla3,
+#                                                   .default = location_lat),
+#                   ground_speed = dplyr::case_when(!is.na(gs2) ~ gs2,
+#                                                   is.na(gs2) & !is.na(gs3) ~ gs3,
+#                                                   .default = ground_speed)) %>%
+#     dplyr::select(-c("llo2", "lla2", "gs2", "llo3", "lla3", "gs3"))
+#   return(out)
+# }
+
+getfeeding <- function(x, thresh){
+  out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > thresh)
+  out <- sf::st_as_sf(out, coords = c("location_long", "location_lat"),
+                      crs = "WGS84", remove = F) %>%
+    st_transform(32636)
+  return(out)
+}
+
+get_gps_forbouts_indivs <- function(device_ids, gps){
+  out <- map(device_ids, ~{
+    if(length(.x) > 0){
+      filter(gps, tag_local_identifier == .x)
+    }else{NULL}})
+  return(out)
+}
+
+buffer_cliffs <- function(cliffs, buffer_m, crs_to_transform = 32636){
+  transf <- sf::st_transform(cliffs, crs_to_transform)
+  out_polys <- st_buffer(transf, buffer_m)
+  out_multipoly <- st_union(out_polys)
+  return(out_multipoly)
+}
+
+zip_and_chunk <- function(bp, gps, n_chunks = 8) {
+  zipped <- purrr::map2(bp, gps, ~list(bp = .x, gps = .y))
+  chunk_size <- ceiling(length(zipped) / n_chunks)
+  out <- split(zipped, ceiling(seq_along(zipped) / chunk_size))
+  return(out)
+}
+
+process_chunk <- function(chunk, gps_spd) {
+  out <- purrr::map(chunk, ~get_matches(.x$bp, .x$gps, gps_spd))
+  return(out)
+}
+
+join_gps_bouts <- function(bp, wg){
+  if(!is.null(bp) & !is.null(wg)){
+    first_gps <- as.data.frame(wg) %>% group_by(tag_local_identifier, bout_id) %>%
+      arrange(timestamp) %>%
+      slice(1) %>%
+      ungroup()
+    out <- left_join(bp, first_gps, by = c("device_id" = "tag_local_identifier", "bout_id"))
+  }else{
+    out <- NULL
+  }
+  return(out)
 }

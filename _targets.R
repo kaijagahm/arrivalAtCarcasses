@@ -11,7 +11,7 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo"),
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move"),
   controller = crew_controller_local(workers = 8)
 )
 
@@ -55,28 +55,152 @@ list(
   tar_target(calibrated_24_7, calibrate_devices(splitup_24[61:70], calibration_data)),
   tar_target(calibrated_24_8, calibrate_devices(splitup_24[71:length(splitup_24)], calibration_data)),
   
-  tar_target(calibrated_23, c(calibrated_23_1, calibrated_23_2, calibrated_23_3, calibrated_23_4, calibrated_23_5, calibrated_23_6, calibrated_23_7, calibrated_23_8)),
-  tar_target(calibrated_24, c(calibrated_24_1, calibrated_24_2, calibrated_24_3, calibrated_24_4, calibrated_24_5, calibrated_24_6, calibrated_24_7, calibrated_24_8)),
-  tar_target(bouts_23, map(calibrated_23, get_bouts)),
-  tar_target(bouts_24, map(calibrated_24, get_bouts)),
+  tar_target(cal_23_1, map(calibrated_23_1, distinct)),
+  tar_target(cal_23_2, map(calibrated_23_2, distinct)),
+  tar_target(cal_23_3, map(calibrated_23_3, distinct)),
+  tar_target(cal_23_4, map(calibrated_23_4, distinct)),
+  tar_target(cal_23_5, map(calibrated_23_5, distinct)),
+  tar_target(cal_23_6, map(calibrated_23_6, distinct)),
+  tar_target(cal_23_7, map(calibrated_23_7, distinct)),
+  tar_target(cal_23_8, map(calibrated_23_8, distinct)),
+  
+  tar_target(cal_24_1, map(calibrated_24_1, distinct)),
+  tar_target(cal_24_2, map(calibrated_24_2, distinct)),
+  tar_target(cal_24_3, map(calibrated_24_3, distinct)),
+  tar_target(cal_24_4, map(calibrated_24_4, distinct)),
+  tar_target(cal_24_5, map(calibrated_24_5, distinct)),
+  tar_target(cal_24_6, map(calibrated_24_6, distinct)),
+  tar_target(cal_24_7, map(calibrated_24_7, distinct)),
+  tar_target(cal_24_8, map(calibrated_24_8, distinct)),
+  
+  tar_target(bouts_23_1, map(cal_23_1, get_bouts)),
+  tar_target(bouts_23_2, map(cal_23_2, get_bouts)),
+  tar_target(bouts_23_3, map(cal_23_3, get_bouts)),
+  tar_target(bouts_23_4, map(cal_23_4, get_bouts)),
+  tar_target(bouts_23_5, map(cal_23_5, get_bouts)),
+  tar_target(bouts_23_6, map(cal_23_6, get_bouts)),
+  tar_target(bouts_23_7, map(cal_23_7, get_bouts)),
+  tar_target(bouts_23_8, map(cal_23_8, get_bouts)),
+  tar_target(bouts_24_1, map(cal_24_1, get_bouts)),
+  tar_target(bouts_24_2, map(cal_24_2, get_bouts)),
+  tar_target(bouts_24_3, map(cal_24_3, get_bouts)),
+  tar_target(bouts_24_4, map(cal_24_4, get_bouts)),
+  tar_target(bouts_24_5, map(cal_24_5, get_bouts)),
+  tar_target(bouts_24_6, map(cal_24_6, get_bouts)),
+  tar_target(bouts_24_7, map(cal_24_7, get_bouts)),
+  tar_target(bouts_24_8, map(cal_24_8, get_bouts)),
+  
+  # The predictions didn't work for some reason, even though the same code used to work fine, so I'm going to derive predictions from the scores objects by just taking the highest one
+
+  tar_target(scores_23_1, map(cal_23_1, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_2, map(cal_23_2, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_3, map(cal_23_3, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_4, map(cal_23_4, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_5, map(cal_23_5, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_6, map(cal_23_6, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_7, map(cal_23_7, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_23_8, map(cal_23_8, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_1, map(cal_24_1, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_2, map(cal_24_2, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_3, map(cal_24_3, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_4, map(cal_24_4, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_5, map(cal_24_5, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_6, map(cal_24_6, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_7, map(cal_24_7, ~get_scores(.x, mod = classification_model))),
+  tar_target(scores_24_8, map(cal_24_8, ~get_scores(.x, mod = classification_model))),
+  
+  tar_target(preds_23_1, map(scores_23_1, get_preds_from_scores)), # completed
+  tar_target(preds_23_2, map(scores_23_2, get_preds_from_scores)), # completed
+  tar_target(preds_23_3, map(scores_23_3, get_preds_from_scores)), # completed
+  tar_target(preds_23_4, map(scores_23_4, get_preds_from_scores)), # errored
+  tar_target(preds_23_5, map(scores_23_5, get_preds_from_scores)),
+  tar_target(preds_23_6, map(scores_23_6, get_preds_from_scores)),
+  tar_target(preds_23_7, map(scores_23_7, get_preds_from_scores)), # completed
+  tar_target(preds_23_8, map(scores_23_8, get_preds_from_scores)), # completed
+  tar_target(preds_24_1, map(scores_24_1, get_preds_from_scores)), # errored
+  tar_target(preds_24_2, map(scores_24_2, get_preds_from_scores)), # completed
+  tar_target(preds_24_3, map(scores_24_3, get_preds_from_scores)), # errored
+  tar_target(preds_24_4, map(scores_24_4, get_preds_from_scores)), # errored
+  tar_target(preds_24_5, map(scores_24_5, get_preds_from_scores)), # errored
+  tar_target(preds_24_6, map(scores_24_6, get_preds_from_scores)), # completed
+  tar_target(preds_24_7, map(scores_24_7, get_preds_from_scores)), # completed
+  tar_target(preds_24_8, map(scores_24_8, get_preds_from_scores)), # completed
+  
+  tar_target(bouts_23, c(bouts_23_1, bouts_23_2, bouts_23_3, bouts_23_4, bouts_23_5, bouts_23_6, bouts_23_7, bouts_23_8)),
+  tar_target(bouts_24, c(bouts_24_1, bouts_24_2, bouts_24_3, bouts_24_4, bouts_24_5, bouts_24_6, bouts_24_7, bouts_24_8)),
+  tar_target(scores_23, c(scores_23_1, scores_23_2, scores_23_3, scores_23_4, scores_23_5, scores_23_6, scores_23_7, scores_23_8)),
+  tar_target(scores_24, c(scores_24_1, scores_24_2, scores_24_3, scores_24_4, scores_24_5, scores_24_6, scores_24_7, scores_24_8)),
   
   ## Get classification model
   tar_target(classification_model, readRDS(here("ACC_algo_Marta_draft/Data/gv_final_model_fit.rda"))),
   
+  tar_target(bouts_predictions_23_1, pmap(.l = list(cal_23_1, preds_23_1, scores_23_1, bouts_23_1), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_2, pmap(.l = list(cal_23_2, preds_23_2, scores_23_2, bouts_23_2), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_3, pmap(.l = list(cal_23_3, preds_23_3, scores_23_3, bouts_23_3), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_4, pmap(.l = list(cal_23_4, preds_23_4, scores_23_4, bouts_23_4), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_5, pmap(.l = list(cal_23_5, preds_23_5, scores_23_5, bouts_23_5), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_6, pmap(.l = list(cal_23_6, preds_23_6, scores_23_6, bouts_23_6), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_7, pmap(.l = list(cal_23_7, preds_23_7, scores_23_7, bouts_23_7), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_23_8, pmap(.l = list(cal_23_8, preds_23_8, scores_23_8, bouts_23_8), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_1, pmap(.l = list(cal_24_1, preds_24_1, scores_24_1, bouts_24_1), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_2, pmap(.l = list(cal_24_2, preds_24_2, scores_24_2, bouts_24_2), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_3, pmap(.l = list(cal_24_3, preds_24_3, scores_24_3, bouts_24_3), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_4, pmap(.l = list(cal_24_4, preds_24_4, scores_24_4, bouts_24_4), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_5, pmap(.l = list(cal_24_5, preds_24_5, scores_24_5, bouts_24_5), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_6, pmap(.l = list(cal_24_6, preds_24_6, scores_24_6, bouts_24_6), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_7, pmap(.l = list(cal_24_7, preds_24_7, scores_24_7, bouts_24_7), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_24_8, pmap(.l = list(cal_24_8, preds_24_8, scores_24_8, bouts_24_8), .f = ~get_bouts_predictions(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
+  tar_target(bouts_predictions_2023, c(bouts_predictions_23_1, bouts_predictions_23_2, bouts_predictions_23_3, bouts_predictions_23_4, bouts_predictions_23_5, bouts_predictions_23_6, bouts_predictions_23_7, bouts_predictions_23_8)),
+  tar_target(bouts_predictions_2024, c(bouts_predictions_24_1, bouts_predictions_24_2, bouts_predictions_24_3, bouts_predictions_24_4, bouts_predictions_24_5, bouts_predictions_24_6, bouts_predictions_24_7, bouts_predictions_24_8)),
+  # Get the individual IDs so we can match them to gps points
+  tar_target(device_ids_2023, purrr::map(bouts_predictions_2023, ~.x$device_id[1])),
+  tar_target(device_ids_2024, purrr::map(bouts_predictions_2024, ~.x$device_id[1])),
+  tar_target(gps_focal_indivs_2023, get_gps_forbouts_indivs(device_ids_2023, gps_2023)),
+  tar_target(gps_focal_indivs_2024, get_gps_forbouts_indivs(device_ids_2024, gps_2024)),
+  tar_target(gps_spd, 4),
   
+  tar_target(wg23_1, purrr::map2(bouts_predictions_2023[1:10], gps_focal_indivs_2023[1:10], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_2, purrr::map2(bouts_predictions_2023[11:20], gps_focal_indivs_2023[11:20], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_3, purrr::map2(bouts_predictions_2023[21:30], gps_focal_indivs_2023[21:30], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_4, purrr::map2(bouts_predictions_2023[31:40], gps_focal_indivs_2023[31:40], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_5, purrr::map2(bouts_predictions_2023[41:50], gps_focal_indivs_2023[41:50], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_6, purrr::map2(bouts_predictions_2023[51:60], gps_focal_indivs_2023[51:60], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_7, purrr::map2(bouts_predictions_2023[61:70], gps_focal_indivs_2023[61:70], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_8, purrr::map2(bouts_predictions_2023[71:length(bouts_predictions_2023)], gps_focal_indivs_2023[71:length(gps_focal_indivs_2023)], ~get_matches(.x, .y, gps_spd))),
   
+  tar_target(wg24_1, purrr::map2(bouts_predictions_2024[1:10], gps_focal_indivs_2024[1:10], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_2, purrr::map2(bouts_predictions_2024[11:20], gps_focal_indivs_2024[11:20], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_3, purrr::map2(bouts_predictions_2024[21:30], gps_focal_indivs_2024[21:30], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_4, purrr::map2(bouts_predictions_2024[31:40], gps_focal_indivs_2024[31:40], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_5, purrr::map2(bouts_predictions_2024[41:50], gps_focal_indivs_2024[41:50], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_6, purrr::map2(bouts_predictions_2024[51:60], gps_focal_indivs_2024[51:60], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_7, purrr::map2(bouts_predictions_2024[61:70], gps_focal_indivs_2024[61:70], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_8, purrr::map2(bouts_predictions_2024[71:length(bouts_predictions_2024)], gps_focal_indivs_2024[71:length(gps_focal_indivs_2024)], ~get_matches(.x, .y, gps_spd))),
   
+  tar_target(with_gps_2023, c(wg23_1, wg23_2, wg23_3, wg23_4, wg23_5, wg23_6, wg23_7, wg23_8)),
+  tar_target(with_gps_2024, c(wg24_1, wg24_2, wg24_3, wg24_4, wg24_5, wg24_6, wg24_7, wg24_8)),
   
-  
-  
+  ## Attach the gps data back to the bouts and predictions
+  tar_target(full_2023, map2(bouts_predictions_2023, with_gps_2023, ~join_gps_bouts(.x, .y))),
+  tar_target(full_2024, map2(bouts_predictions_2024, with_gps_2024, ~join_gps_bouts(.x, .y))),
+
   ## GPS data for the focal periods (in case we need it later)
   tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
   tar_target(focal_gps_2024, readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))),
   
   ## Feeding bouts (2023 and 2024 high-frequency periods only)
-  ### These were created in 01_classify_localize_bouts_2023.R because targets was being a poop.
-  tar_target(feeding_bouts, get_feeding_bouts(file ="data/created/feeding_bouts.RDS")),
-  tar_target(feeding_bouts_nonflight, remove_feeding_bouts_inflight(feeding_bouts)),
+  tar_target(feeding_bouts_prob_thresh, 0.75),
+  tar_target(feeding_bouts_2023, getfeeding(full_2023_bouts, feeding_bouts_prob_thresh)),
+  tar_target(feeding_bouts_2024, getfeeding(full_2024_bouts, feeding_bouts_prob_thresh)),
+  ## Bind them together to get all feeding bouts
+  tar_target(feeding_bouts, bind_rows(feeding_bouts_2023, feeding_bouts_2024)),
+  
+  ## Further restrictions on feeding bouts
+  ### 1. Must be non-flight--already taken care of in the gps matching algorithm with gps_spd thresholding
+  ### 2. Must not be on cliffs. For now, I'm going to use a 10m buffer for the linestrings
+  tar_target(cliffs, sf::st_read(here("data/BNTL202203_Cliff/"))),
+  tar_target(cliffs_buffer_m, 10),
+  tar_target(cliffs_buffered, buffer_cliffs(cliffs, cliffs_buffer_m, 32636)),
   
   ## Feeding stations
   ### Created in 00_carcass_data_translation.R

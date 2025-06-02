@@ -284,7 +284,7 @@ unobs_fit <- readRDS("../Data/gv_final_model_fit.rda")
 # Separate - another chunk
 full_unobs_data$start_int <- as.character(full_unobs_data$UTC_datetime)
 
-predictions <-  predict(unobs_fit, full_unobs_data)
+predictions <- predict(unobs_fit, full_unobs_data) # XXX as of 2025-05-23, this is not working, whereas I know it used to work before.
 
 # Separate - another chunk
 # Calculate a confidence score for each prediction
