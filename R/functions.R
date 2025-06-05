@@ -154,7 +154,7 @@ get_bouts <- function(single_device){
 #   if(nrow(single_device) > 0){
 #     single_device <- as.data.frame(single_device)
 #     single_device$start_int <- as.character(single_device$start_int)
-#     single_device$bout_id <- as.integer(single_device$bout_id)
+#     single_device$bout_id <- as.integefr(single_device$bout_id)
 #     single_device$device_id <- as.integer(single_device$device_id)
 #     out <- predict(mod, single_device)
 #   }else{
@@ -379,7 +379,8 @@ get_bouts_predictions <- function(prepared, predictions,
       dplyr::bind_cols(predictions) %>%
       dplyr::bind_cols(scores) %>%
       dplyr::rename("pred" = ".pred_class") %>%
-      dplyr::left_join(bouts, by = c("device_id", "bout_id"))
+      dplyr::left_join(bouts, by = c("device_id", "bout_id")) %>%
+      distinct()
   }else{
     out <- NULL
   }
@@ -422,7 +423,9 @@ get_matches <- function(df, foc, spd){
         match$bout_id <- ..4$bout_id[1] # assign the bout id of the current bout to the match as well
         return(match)
       }else{
-        return(foc[0,])
+        match <- as.data.frame(foc[0,])
+        match$bout_id <- numeric(0)
+        return(match)
       }
     })
   }else{
@@ -494,11 +497,11 @@ get_carcass_bouts <- function(bouts, carcasses, dist, hours_after){
 
 get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
   stats <- carcass_bouts_df %>%
-    select(carcID, boutID, individualID) %>%
-    group_by(carcID) %>% 
-    summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individualID))) %>%
-    ungroup()
-  out <- left_join(carcasses_focal, stats, by = "carcID")
+    dplyr::select(carcID, boutID, individual_id) %>%
+    dplyr::group_by(carcID) %>% 
+    dplyr::summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individual_id))) %>%
+    dplyr::ungroup()
+  out <- dplyr::left_join(carcasses_focal, stats, by = "carcID")
   return(out)
 }
 
@@ -508,7 +511,7 @@ combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, fee
   # Get bouts assigned to a wild carcass
   wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild")
   # Get bouts not assigned to either
-  neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID))
+  neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID)) %>% mutate(across(c(individual_id, tag_id), as.numeric))
   out <- bind_rows(inpa, wild, neither) %>%
     sf::st_as_sf(crs = 32636)
   return(out)
@@ -545,28 +548,29 @@ cluster_carcasses <- function(carcasses, dist){
 get_wild_carcass_bouts <- function(non_carcass_bouts, time, dist, minBouts, stations, stationDist, minIndivs){
   # Remove any that are too close to a known station
   stations_buffered <- st_buffer(stations, stationDist)
-  tokeep <- map_dbl(st_intersects(non_carcass_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
+  ncb <- sf::st_as_sf(non_carcass_bouts, crs = 32636) %>% bind_cols(st_coordinates(.))
+  tokeep <- map_dbl(st_intersects(ncb, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
   non_carcass_bouts <- non_carcass_bouts[tokeep,]
   
   # Format appropriately for spatsoc
-  non_carcass_bouts$timestamp <- as.POSIXct(non_carcass_bouts$start)
-  non_carcass_bouts <- data.table::data.table(non_carcass_bouts)
+  ncb$timestamp <- as.POSIXct(ncb$start, tz = "UTC")
+  ncb <- data.table::data.table(ncb)
   
-  spatsoc::group_times(non_carcass_bouts, 
+  spatsoc::group_times(ncb, 
                        datetime = 'timestamp', 
                        threshold = time)
-  spatsoc::group_pts(non_carcass_bouts, threshold = dist, 
+  spatsoc::group_pts(ncb, threshold = dist, 
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
   
-  # Restrict to groups that have at least 3 bouts and at least 2 individuals
-  non_carcass_bouts <- non_carcass_bouts %>%
+  # Restrict to groups that have at least 3 bouts and at least 3 individuals
+  ncb <- ncb %>%
     group_by(group) %>%
     filter(n() >= minBouts,
-           length(unique(individualID)) > minIndivs)
+           length(unique(individual_id)) > minIndivs)
   
   # convert back to sf object for mapping
-  wild_carcass_bouts_df <- as.data.frame(non_carcass_bouts) %>%
+  wild_carcass_bouts_df <- as.data.frame(ncb) %>%
     rename("carcID" = group) %>%
     sf::st_as_sf(crs = 32636)
   
@@ -576,17 +580,19 @@ get_wild_carcass_bouts <- function(non_carcass_bouts, time, dist, minBouts, stat
 get_wild_carcasses <- function(wild_carcass_bouts_df){
   # Get carcasses
   wild_carcasses <- wild_carcass_bouts_df %>%
+    mutate(year = lubridate::year(dateOnly)) %>%
     group_by(year, carcID) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = dateOnly[1],
               nBouts = n(),
-              nIndivs = length(unique(individualID)),
+              nIndivs = length(unique(individual_id)),
               mintime = min(start),
               maxtime = max(end)) %>%
     sf::st_centroid() %>% # take spatial centroid to define the position of the "carcass"
     ungroup() %>%
     bind_cols(sf::st_coordinates(.)) %>%
-    mutate(datetime = mintime) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
+    mutate(datetime = mintime,
+           datetime = lubridate::ymd_hms(datetime)) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
 # "Limitations of threshold
@@ -1343,12 +1349,12 @@ get_closest_station <- function(all_bouts_assigned, stations){
 }
 
 assign_time_dist <- function(wild_carcass_bouts_df, wild_carcasses){
-  wc <- wild_carcasses %>% select(carcID, datetime, X, Y)
+  wc <- wild_carcasses %>% dplyr::select(carcID, datetime, X, Y)
   ids <- unique(wild_carcass_bouts_df$carcID)
   lst <- vector(mode = "list", length = length(ids))
   for(i in 1:length(lst)){
     c <- wc[wc$carcID == ids[i],]
-    b <- wild_carcass_bouts_df %>% filter(carcID == ids[i])
+    b <- wild_carcass_bouts_df %>% dplyr::filter(carcID == ids[i])
     dists <- as.numeric(st_distance(b, c))
     b$dist_to_carcass <- dists
     times <- difftime(b$timestamp, c$datetime, units = "hours")
@@ -1445,10 +1451,11 @@ prepare_gps_crossref <- function(full){
 # }
 
 getfeeding <- function(x, thresh){
-  out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > thresh)
-  out <- sf::st_as_sf(out, coords = c("location_long", "location_lat"),
-                      crs = "WGS84", remove = F) %>%
-    st_transform(32636)
+  if(!is.null(x)){
+    out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > thresh)
+  }else{
+    out <- NULL
+  }
   return(out)
 }
 
@@ -1467,18 +1474,6 @@ buffer_cliffs <- function(cliffs, buffer_m, crs_to_transform = 32636){
   return(out_multipoly)
 }
 
-zip_and_chunk <- function(bp, gps, n_chunks = 8) {
-  zipped <- purrr::map2(bp, gps, ~list(bp = .x, gps = .y))
-  chunk_size <- ceiling(length(zipped) / n_chunks)
-  out <- split(zipped, ceiling(seq_along(zipped) / chunk_size))
-  return(out)
-}
-
-process_chunk <- function(chunk, gps_spd) {
-  out <- purrr::map(chunk, ~get_matches(.x$bp, .x$gps, gps_spd))
-  return(out)
-}
-
 join_gps_bouts <- function(bp, wg){
   if(!is.null(bp) & !is.null(wg)){
     first_gps <- as.data.frame(wg) %>% group_by(tag_local_identifier, bout_id) %>%
@@ -1487,7 +1482,16 @@ join_gps_bouts <- function(bp, wg){
       ungroup()
     out <- left_join(bp, first_gps, by = c("device_id" = "tag_local_identifier", "bout_id"))
   }else{
-    out <- NULL
+    out <- data.frame(bout_id = NA, device_id = NA, pred = NA, .pred_Eating = NA, .pred_Flapping = NA, .pred_Ground = NA, .pred_Lying = NA, .pred_Soaring = NA, .pred_Standing = NA, start = NA, end = NA, local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA)
+    out <- out[0,]
   }
   return(out)
+}
+
+remove_bouts_on_cliffs <- function(bouts, cliffs){
+  intersections <- st_intersects(bouts, cliffs)
+  lgl <- map_dbl(intersections, length)
+  tokeep <- which(lgl == 0)
+  keep <- bouts[tokeep,]
+  return(keep)
 }

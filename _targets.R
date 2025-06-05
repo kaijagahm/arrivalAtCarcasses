@@ -184,23 +184,26 @@ list(
   tar_target(full_2023, map2(bouts_predictions_2023, with_gps_2023, ~join_gps_bouts(.x, .y))),
   tar_target(full_2024, map2(bouts_predictions_2024, with_gps_2024, ~join_gps_bouts(.x, .y))),
 
-  ## GPS data for the focal periods (in case we need it later)
-  tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
-  tar_target(focal_gps_2024, readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))),
+  # ## GPS data for the focal periods (in case we need it later)
+  # tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
+  # tar_target(focal_gps_2024, readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))),
   
   ## Feeding bouts (2023 and 2024 high-frequency periods only)
   tar_target(feeding_bouts_prob_thresh, 0.75),
-  tar_target(feeding_bouts_2023, getfeeding(full_2023_bouts, feeding_bouts_prob_thresh)),
-  tar_target(feeding_bouts_2024, getfeeding(full_2024_bouts, feeding_bouts_prob_thresh)),
+  tar_target(feeding_bouts_2023, map(full_2023, ~getfeeding(.x, feeding_bouts_prob_thresh))),
+  tar_target(feeding_bouts_2024, map(full_2024, ~getfeeding(.x, feeding_bouts_prob_thresh))),
   ## Bind them together to get all feeding bouts
-  tar_target(feeding_bouts, bind_rows(feeding_bouts_2023, feeding_bouts_2024)),
+  tar_target(feeding_bouts, mutate(bind_rows(data.table::rbindlist(feeding_bouts_2023), data.table::rbindlist(feeding_bouts_2024)), boutID = paste(device_id, bout_id, sep = "_"))),
+  tar_target(feeding_bouts_spatial, st_transform(sf::st_as_sf(feeding_bouts, coords = c("location_long", "location_lat"), crs = "WGS84"), 32636)),
   
   ## Further restrictions on feeding bouts
-  ### 1. Must be non-flight--already taken care of in the gps matching algorithm with gps_spd thresholding
-  ### 2. Must not be on cliffs. For now, I'm going to use a 10m buffer for the linestrings
+  ### 1. Must be non-flight--mostly taken care of in the GPS matching, but occasionally we kept something with a higher ground speed. Let's remove those.
+  tar_target(feeding_bouts_stationary, dplyr::filter(feeding_bouts_spatial, ground_speed <= gps_spd)),
+  ### 2. Must not be on cliffs. For now, I'm going to use a 50m buffer for the linestrings
   tar_target(cliffs, sf::st_read(here("data/BNTL202203_Cliff/"))),
-  tar_target(cliffs_buffer_m, 10),
+  tar_target(cliffs_buffer_m, 50),
   tar_target(cliffs_buffered, buffer_cliffs(cliffs, cliffs_buffer_m, 32636)),
+  tar_target(feeding_bouts_nocliffs, remove_bouts_on_cliffs(feeding_bouts_stationary, cliffs_buffered)),
   
   ## Feeding stations
   ### Created in 00_carcass_data_translation.R
@@ -220,12 +223,12 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bouts_carcasses, 750), # xxx seems maybe too high
   tar_target(hours_after_carcass, 72),
-  tar_target(carcass_bouts, get_carcass_bouts(bouts = feeding_bouts,
+  tar_target(carcass_bouts, get_carcass_bouts(bouts = feeding_bouts_nocliffs,
                                               carcasses = carcasses_focal,
                                               dist = dist_bouts_carcasses,
                                               hours_after = hours_after_carcass)),
   tar_target(carcass_bouts_df, purrr::list_rbind(carcass_bouts)), # note: each bout might be affiliated with more than one carcass here!
-  tar_target(non_carcass_bouts, filter(feeding_bouts, !(boutID %in% carcass_bouts_df$boutID))),
+  tar_target(non_carcass_bouts, filter(feeding_bouts_nocliffs, !(boutID %in% carcass_bouts_df$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
   tar_target(dist_bouts_wild_carcass_cluster, 200), 
@@ -247,20 +250,9 @@ list(
   tar_target(all_bouts_assigned, combine_all_bouts(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts)),
   ## Combine carcasses
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bouts_df)),
-  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>%
-                                        select(carcID, X, Y, nBouts, nIndivs,
-                                               stationName, carcassWeight,
-                                               datetime, cage) %>%
-                                        mutate(dateOnly = lubridate::date(datetime),
-                                               carcType = "inpa",
-                                               year = lubridate::year(datetime)),
-                                      wild_carcasses %>%
-                                        select(carcID, X, Y,
-                                               year, dateOnly, nBouts, nIndivs,
-                                               "datetime" = mintime) %>%
-                                        mutate(carcType = "wild"))),
+  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa"), wild_carcasses)),
   
-  tar_target(bbox_bouts_hf, st_bbox(feeding_bouts)),
+  tar_target(bbox_bouts_hf, st_bbox(feeding_bouts_nocliffs)),
   tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
   tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
   tar_target(a, st_crs(bbox_bouts_hf)),
@@ -268,6 +260,11 @@ list(
              st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]),
                                   "ymin" = 3350000, 
                                   "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
+                                  "ymax" = 3500000)), a)),
+  tar_target(bbox_south_new,
+             st_set_crs(st_bbox(c("xmin" = 641000,
+                                  "ymin" = 3350000,
+                                  "xmax" = 728000,
                                   "ymax" = 3500000)), a)),
   
   ## Dynamic NBDA testing
@@ -281,14 +278,14 @@ list(
   tar_target(detection_distance_flight, 2000),
   tar_target(detection_distance_stationary, 1000),
   ## 1. Get carcasses and restrict to south
-  tar_target(aca, sf::st_crop(all_carcasses, bbox_south)),
-  tar_target(aba, sf::st_crop(all_bouts_assigned, bbox_south)),
+  tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_new)), # XXX I'm not sure we want to crop these so tightly. Let's rethink this. If we do mapview(all_carcasses)+mapview(all_carcasses_cropped, col.regions = "red"), we see that this cuts off some of the carcasses in the south quite arbitrarily. Will need to change this. We do want to crop it to the south generally and avoid anything super far away, but the bounding box needs to change.
+  tar_target(all_bouts_cropped, sf::st_crop(all_bouts_assigned, bbox_south_new)),
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
   ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
-  tar_target(inpa, filter(aca, carcType == "inpa")),
+  tar_target(inpa, filter(all_carcasses_cropped, carcType == "inpa")),
   tar_target(inpa_carcs, group_split(group_by(inpa, carcID))),
-  tar_target(wild, filter(aca, carcType == "wild")),
+  tar_target(wild, filter(all_carcasses_cropped, carcType == "wild")),
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
   tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
@@ -297,7 +294,7 @@ list(
   ## XXX fixme
   ## 4b. Make gps_all
   tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after, days_before)),
-  tar_target(gps_all_inpa, get_gps_all(inpa_carcs, gps_combined, days_after, days_before_wild)),
+  tar_target(gps_all_inpa, get_gps_all(inpa_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
   tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
   tar_target(roosts, get_roosts(gps_all)), 
   #tar_target(roosts_wild, get_roosts(gps_all_wild)),
@@ -346,7 +343,7 @@ list(
   tar_target(carcs_nbda, inpa_carcs[has_enough_sightings]),
   
   tar_target(oa_see, purrr::map(firsts_see[has_enough_sightings], "local_identifier")),
-  tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
+  tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sfort)),
   tar_target(seeds_see, seed_indivs[has_enough_sightings]),
   tar_target(seeds_see_binary, map2(oa_see_indivs_sorted, seeds_see, ~{as.numeric(.x %in% .y)})),
   tar_target(see_times, purrr::map(firsts_see[has_enough_sightings], "timestamp")),
