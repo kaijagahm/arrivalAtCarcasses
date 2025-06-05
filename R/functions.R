@@ -391,27 +391,31 @@ get_matches <- function(df, foc, spd){
   if(!is.null(df)){
     with_middles <- df %>%
       dplyr::mutate(start = lubridate::ymd_hms(start),
-             end = lubridate::ymd_hms(end),
-             middle = start + difftime(end, start)/2) %>%
+                    end = lubridate::ymd_hms(end),
+                    middle = start + difftime(end, start)/2) %>%
       dplyr::group_by(bout_id) %>%
       dplyr::group_split()
-
+    
     within_5min <- purrr::map(with_middles, ~{
       foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
     }, .progress = T)
-
+    
     within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
-
-    within_11min_speed <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
-    }, .progress = T)
-
-    keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
+    
+    # within_11min_speed <- purrr::map(with_middles, ~{
+    #   foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
+    # }, .progress = T)
+    
+    keep <- purrr::pmap(list(within_5min, within_5min_speed#, 
+                             #within_11min_speed, with_middles
+    ), ~{
       if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
         match <- ..2
-      }else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
-        match <- ..3
-      }else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
+      }
+      # else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
+      #   match <- ..3
+      # }
+      else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
         match <- ..1
       }else{
         match <- foc[0,] # if none of those is true, return a 0-row data frame
