@@ -199,9 +199,9 @@ list(
   ## Further restrictions on feeding bouts
   ### 1. Must be non-flight--mostly taken care of in the GPS matching, but occasionally we kept something with a higher ground speed. Let's remove those.
   tar_target(feeding_bouts_stationary, dplyr::filter(feeding_bouts_spatial, ground_speed <= gps_spd)),
-  ### 2. Must not be on cliffs. For now, I'm going to use a 50m buffer for the linestrings
+  ### 2. Must not be on cliffs. For now, I'm going to use a 100m buffer for the linestrings
   tar_target(cliffs, sf::st_read(here("data/BNTL202203_Cliff/"))),
-  tar_target(cliffs_buffer_m, 50),
+  tar_target(cliffs_buffer_m, 100),
   tar_target(cliffs_buffered, buffer_cliffs(cliffs, cliffs_buffer_m, 32636)),
   tar_target(feeding_bouts_nocliffs, remove_bouts_on_cliffs(feeding_bouts_stationary, cliffs_buffered)),
   

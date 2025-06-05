@@ -402,12 +402,13 @@ get_matches <- function(df, foc, spd){
     
     within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
     
-    # within_11min_speed <- purrr::map(with_middles, ~{
-    #   foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
-    # }, .progress = T)
+    within_11min_speed <- purrr::map(with_middles, ~{
+      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
+    }, .progress = T)
     
-    keep <- purrr::pmap(list(within_5min, within_5min_speed#, 
-                             #within_11min_speed, with_middles
+    keep <- purrr::pmap(list(within_5min, within_5min_speed, 
+                             within_11min_speed, 
+                             with_middles
     ), ~{
       if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
         match <- ..2
