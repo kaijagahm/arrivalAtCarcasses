@@ -5,12 +5,14 @@ library(targets)
 library(ggplot2)
 library(viridis)
 
-tar_load(gps_all_wild) # down to 37 carcasses with tightened restrictions and southern bounding box filter
-tar_load(gps_all_inpa) # allowing 3 days before, for direct comparison with wild. 57 carcasses
+tar_load(gps_all_wild) 
+length(gps_all_wild) # down to 16 carcasses with southern bounding box filter and most restrictive slope criteria (no feeding bouts with slope > 5% considered).
+tar_load(gps_all_inpa) # allowing 3 days before, for direct comparison with wild.
+length(gps_all_inpa) #57 carcasses
 tar_load(detection_distance_flight)
 tar_load(detection_distance_stationary)
-tar_load(wild_carcasses)
-mapview(wild_carcasses) # looks somewhat reasonable?--ah, no, there are still a bunch on cliffs.
+tar_load(wild_carcasses_5)
+mapview(wild_carcasses_5) # looks somewhat reasonable?--ah, no, there are still a bunch on cliffs.
 tar_load(all_carcasses_cropped)
 
 ## Timeline
@@ -48,44 +50,6 @@ all_carcasses_cropped %>%
        x = "Date")+
   theme(text = element_text(size = 14),
         legend.position = "bottom")
-
-## Choosing a cliff buffer distance
-# Currently, I've arbitrarily chosen a 50m buffer for the cliff linestrings. Let's see if this seems reasonable based on the distances.
-tar_load(cliffs)
-tar_load(bbox_south_new)
-tar_load(feeding_bouts_stationary)
-
-nearest <- sf::st_nearest_feature(feeding_bouts_stationary, sf::st_transform(cliffs, 32636))
-dist = sf::st_distance(feeding_bouts_stationary, sf::st_transform(cliffs, 32636)[nearest,], by_element=TRUE)
-fbs <- feeding_bouts_stationary %>% mutate(dist_to_nearest_cliff = as.numeric(dist))
-hist(fbs$dist_to_nearest_cliff) # the reason this is so insanely skewed is that we are including feeding bouts that are not within the southern region at all. Let's crop it
-fbs <- st_crop(fbs, bbox_south_new)
-hist(fbs$dist_to_nearest_cliff) # this looks better--but we still have some points over in Jordan that are quite far from the cliffs.
-
-fbs %>%
-  filter(dist_to_nearest_cliff < 15000) %>%
-  ggplot(aes(x = dist_to_nearest_cliff))+
-  geom_histogram()+
-  labs(x = "Dist to nearest cliff (m)", y = "Frequency")+
-  theme_minimal()
-
-# Let's do the same thing but zoom in on points within 2km of a cliff to see if there's a cutoff.
-fbs %>%
-  filter(dist_to_nearest_cliff < 2000) %>%
-  ggplot(aes(x = dist_to_nearest_cliff))+
-  geom_histogram(fill = "skyblue4", col = "skyblue2")+
-  labs(x = "Distance to nearest cliff (m)", y = "Frequency")+
-  theme_minimal() # There definitely seems to be a cutoff around 500m.
-
-toview <- fbs %>%
-  mutate(dist_bins = case_when(dist_to_nearest_cliff < 50 ~ "under 50",
-                               dist_to_nearest_cliff >= 50 & dist_to_nearest_cliff < 100 ~ "under 100", 
-                               dist_to_nearest_cliff >= 100 & dist_to_nearest_cliff < 250 ~ "under 250",
-                               dist_to_nearest_cliff >= 250 & dist_to_nearest_cliff < 500 ~ "under 500",
-                               dist_to_nearest_cliff >= 500 ~ "x_over 500", .default = NA))
-mapview(st_crop(st_transform(cliffs, 32636), bbox_south_new))+mapview(toview, zcol = "dist_bins") # okay, does this look reasonable? What would be a good threshold to choose? Zoom in.
-# In vultour, determined that I should be using a DEM or a better way to measure the cliffs, since this shapefile isn't complete enough.
-mapview(cliffs_buffered) + mapview(wild_carcasses) # if you set this to topo and zoom in, you can clearly see that a bunch of them are still on cliffs.
 
 # Let's create a test set of wild carcasses that we know are actually wild based on looking at the map
 stn <- pustn <- pustn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% mutate(type = "inpa")
