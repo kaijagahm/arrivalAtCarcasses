@@ -12,7 +12,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
-  controller = crew_controller_local(workers = 3)
+  controller = crew_controller_local(workers = 4)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -207,13 +207,10 @@ list(
   
   ## Using DEM to remove "feeding bouts" that are too much on a slope
   tar_target(filenames, list.files(here("data/raw/DEMs/ASTER/"), pattern = ".tif", full.names = T)),
-  tar_target(feeding_bouts_stationary_withslopes, get_slopes(filenames, bbox_south_new, neighbors = 8, feeding_bouts_stationary)),
+  tar_target(feeding_bouts_stationary_withslopes, get_slopes(filenames, bbox_south_big, neighbors = 8, feeding_bouts_stationary)),
   tar_target(feeding_bouts_noslope_15, filter(feeding_bouts_stationary_withslopes, slope < 15)),
   tar_target(feeding_bouts_noslope_10, filter(feeding_bouts_stationary_withslopes, slope < 10)),
   tar_target(feeding_bouts_noslope_5, filter(feeding_bouts_stationary_withslopes, slope < 5)),
-  tar_target(feeding_bouts_touse_15, feeding_bouts_noslope_15),
-  tar_target(feeding_bouts_touse_10, feeding_bouts_noslope_10),
-  tar_target(feeding_bouts_touse_5, feeding_bouts_noslope_5),
   
   ## Feeding stations
   ### Created in 00_carcass_data_translation.R
@@ -233,24 +230,24 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bouts_carcasses, 750), # xxx seems maybe too high
   tar_target(hours_after_carcass, 72),
-  tar_target(carcass_bouts_15, get_carcass_bouts(bouts = feeding_bouts_touse_15,
+  tar_target(carcass_bouts_15, get_carcass_bouts(bouts = feeding_bouts_noslope_15,
                                               carcasses = carcasses_focal,
                                               dist = dist_bouts_carcasses,
                                               hours_after = hours_after_carcass)),
-  tar_target(carcass_bouts_10, get_carcass_bouts(bouts = feeding_bouts_touse_10,
+  tar_target(carcass_bouts_10, get_carcass_bouts(bouts = feeding_bouts_noslope_10,
                                                  carcasses = carcasses_focal,
                                                  dist = dist_bouts_carcasses,
                                                  hours_after = hours_after_carcass)),
-  tar_target(carcass_bouts_5, get_carcass_bouts(bouts = feeding_bouts_touse_5,
+  tar_target(carcass_bouts_5, get_carcass_bouts(bouts = feeding_bouts_noslope_5,
                                                  carcasses = carcasses_focal,
                                                  dist = dist_bouts_carcasses,
                                                  hours_after = hours_after_carcass)),
   tar_target(carcass_bouts_df_15, purrr::list_rbind(carcass_bouts_15)), # note: each bout might be affiliated with more than one carcass here!
   tar_target(carcass_bouts_df_10, purrr::list_rbind(carcass_bouts_10)), # note: each bout might be affiliated with more than one carcass here!
   tar_target(carcass_bouts_df_5, purrr::list_rbind(carcass_bouts_5)), # note: each bout might be affiliated with more than one carcass here!
-  tar_target(non_carcass_bouts_15, filter(feeding_bouts_touse_15, !(boutID %in% carcass_bouts_df_15$boutID))),
-  tar_target(non_carcass_bouts_10, filter(feeding_bouts_touse_10, !(boutID %in% carcass_bouts_df_10$boutID))),
-  tar_target(non_carcass_bouts_5, filter(feeding_bouts_touse_5, !(boutID %in% carcass_bouts_df_5$boutID))),
+  tar_target(non_carcass_bouts_15, filter(feeding_bouts_noslope_15, !(boutID %in% carcass_bouts_df_15$boutID))),
+  tar_target(non_carcass_bouts_10, filter(feeding_bouts_noslope_10, !(boutID %in% carcass_bouts_df_10$boutID))),
+  tar_target(non_carcass_bouts_5, filter(feeding_bouts_noslope_5, !(boutID %in% carcass_bouts_df_5$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
   tar_target(dist_bouts_wild_carcass_cluster, 200), 
@@ -292,21 +289,10 @@ list(
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bouts_df_5)),
   tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa"), wild_carcasses_5)),
   
-  tar_target(bbox_bouts_hf, st_bbox(feeding_bouts_stationary)),
-  tar_target(bbox_inpa_carcasses, st_bbox(carcasses_audited)),
-  tar_target(bbox_inpa_carcasses_hf, st_bbox(carcasses_focal)),
-  tar_target(a, st_crs(bbox_bouts_hf)),
-  tar_target(bbox_south, 
-             st_set_crs(st_bbox(c("xmin" = as.numeric(bbox_inpa_carcasses_hf[1]),
-                                  "ymin" = 3350000, 
-                                  "xmax" = as.numeric(bbox_inpa_carcasses_hf[3]),
-                                  "ymax" = 3500000)), a)),
-  tar_target(bbox_south_new,
-             st_set_crs(st_bbox(c("xmin" = 641000,
-                                  "ymin" = 3350000,
-                                  "xmax" = 728000,
-                                  "ymax" = 3500000)), a)),
-  
+  tar_target(bbox_south_big, sf::st_transform(st_as_sfc(st_set_crs(st_bbox(c("xmin" = 34.205, 
+                                               "xmax" = 35.787,
+                                               "ymin" = 29.478, 
+                                               "ymax" = 31.775)), "WGS84")), 32636)),
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
@@ -318,8 +304,8 @@ list(
   tar_target(detection_distance_flight, 2000),
   tar_target(detection_distance_stationary, 1000),
   ## 1. Get carcasses and restrict to south
-  tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_new)), # XXX I'm not sure we want to crop these so tightly. Let's rethink this. If we do mapview(all_carcasses)+mapview(all_carcasses_cropped, col.regions = "red"), we see that this cuts off some of the carcasses in the south quite arbitrarily. Will need to change this. We do want to crop it to the south generally and avoid anything super far away, but the bounding box needs to change.
-  tar_target(all_bouts_cropped, sf::st_crop(all_bouts_assigned, bbox_south_new)),
+  tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), # XXX I'm not sure we want to crop these so tightly. Let's rethink this. If we do mapview(all_carcasses)+mapview(all_carcasses_cropped, col.regions = "red"), we see that this cuts off some of the carcasses in the south quite arbitrarily. Will need to change this. We do want to crop it to the south generally and avoid anything super far away, but the bounding box needs to change.
+  tar_target(all_bouts_cropped, sf::st_crop(all_bouts_assigned, bbox_south_big)),
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
   ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
@@ -329,7 +315,7 @@ list(
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
   tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
-  tar_target(gps_combined, get_gps_combined(gps_2023, gps_2024, bbox_south)),
+  tar_target(gps_combined, get_gps_combined(gps_2023, gps_2024, bbox_south_big)),
   ## 4a. Convert gps data to Israel time 
   ## XXX fixme
   ## 4b. Make gps_all

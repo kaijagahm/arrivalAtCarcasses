@@ -6,9 +6,9 @@ library(ggplot2)
 library(viridis)
 
 tar_load(gps_all_wild) 
-length(gps_all_wild) # down to 16 carcasses with southern bounding box filter and most restrictive slope criteria (no feeding bouts with slope > 5% considered).
+length(gps_all_wild) # down to 17 carcasses with southern bounding box filter and most restrictive slope criteria (no feeding bouts with slope > 5% considered).
 tar_load(gps_all_inpa) # allowing 3 days before, for direct comparison with wild.
-length(gps_all_inpa) #57 carcasses
+length(gps_all_inpa) #58 carcasses
 tar_load(detection_distance_flight)
 tar_load(detection_distance_stationary)
 tar_load(wild_carcasses_5)
@@ -88,7 +88,7 @@ wild_test_box <- sf::st_set_crs(sf::st_bbox(c("xmin" = 34.44266,
                                               "ymin" = 30.89326,
                                               "xmax" = 34.94688,
                                               "ymax" = 31.17904)), "WGS84")
-wild_subset <- st_crop(st_transform(wild_carcasses, "WGS84"), wild_test_box) %>% st_transform(32636)
+wild_subset <- st_crop(st_transform(wild_carcasses_5, "WGS84"), wild_test_box) %>% st_transform(32636)
 
 all_wild_subset <- all_wild %>% filter(carcID %in% wild_subset$carcID)
 
@@ -131,7 +131,7 @@ for(i in 1:length(cids_wild_subset)){
   plots_wild[[i]] <- plt
 }
 
-# At least these all look quite similar! And they potentially have very different dynamics than the feeding station carcasses.
+plots_wild[[6]] # FIXED!!! these look great
 
 
 forplot <- all %>%
@@ -164,7 +164,7 @@ forplot %>%
   theme_classic()+
   facet_wrap(~year)+
   theme(legend.position = "none")+
-  labs(title = "Wild carcasses", y = "Number of vultures", x = "Hours since carcass placement")
+  labs(title = "Wild carcasses", y = "Number of vultures", x = "Hours since carcass placement") # only 1 in 2024 because we're focusing on a single geographical subset that we know to be wild
 
 stats <- all %>%
   filter(type == "inpa" | (type == "wild" & carcID %in% cids_wild_subset)) %>%
@@ -198,3 +198,5 @@ stats %>%
   labs(y = "Individuals within sight in first 24 hours",
        x = "Carcass type")+
   theme(text = element_text(size = 14))
+
+# seeing some real differences between INPA and wild carcasses

@@ -1502,8 +1502,8 @@ remove_bouts_on_cliffs <- function(bouts, cliffs){
 }
 
 # DEM ---------------------------------------------------------------------
-get_slopes <- function(filenames, bbox_south_new, neighbors = 8, feeding_bouts_stationary){
-  bbox_south_vect <- vect(st_transform(st_as_sfc(bbox_south_new), "WGS84"))
+get_slopes <- function(filenames, bbox_south_big, neighbors = 8, feeding_bouts_stationary){
+  bbox_south_vect <- terra::vect(st_transform(bbox_south_big, "WGS84"))
   demlist <- vector(mode = "list", length = length(filenames))
   for(i in 1:length(demlist)){
     demlist[[i]] <- terra::rast(filenames[i])
