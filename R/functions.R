@@ -512,9 +512,9 @@ get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
 
 combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts){
   # Get bouts assigned to an INPA carcass
-  inpa <- carcass_bouts_dedup %>% mutate(carcType = "inpa")
+  inpa <- carcass_bouts_dedup %>% mutate(carcType = "inpa") %>% mutate(across(c(individual_id, tag_id), as.numeric))
   # Get bouts assigned to a wild carcass
-  wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild")
+  wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild") %>% mutate(across(c(individual_id, tag_id), as.numeric))
   # Get bouts not assigned to either
   neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID)) %>% mutate(across(c(individual_id, tag_id), as.numeric))
   out <- bind_rows(inpa, wild, neither) %>%
@@ -1499,4 +1499,30 @@ remove_bouts_on_cliffs <- function(bouts, cliffs){
   tokeep <- which(lgl == 0)
   keep <- bouts[tokeep,]
   return(keep)
+}
+
+# DEM ---------------------------------------------------------------------
+get_slopes <- function(filenames, bbox_south_new, neighbors = 8, feeding_bouts_stationary){
+  bbox_south_vect <- vect(st_transform(st_as_sfc(bbox_south_new), "WGS84"))
+  demlist <- vector(mode = "list", length = length(filenames))
+  for(i in 1:length(demlist)){
+    demlist[[i]] <- terra::rast(filenames[i])
+  } 
+  cropped_list <- map(demlist, function(r) {
+    tryCatch({
+      crop(r, bbox_south_vect)
+    }, error = function(e) {
+      message("Error cropping raster: ", e$message)
+      return(NULL) # Return NULL if an error occurs
+    })
+  })
+  filtered_list <- cropped_list[!sapply(cropped_list, is.null)]
+  merged_raster <- Reduce(f = merge, x =filtered_list)
+  terrain <- terra::terrain(merged_raster, v = "slope", unit = "degrees", neighbors = neighbors)
+  terrain_proj <- terra::project(terrain, "epsg:32636")
+  
+  feeding_bouts_vect <- terra::vect(feeding_bouts_stationary)
+  slopes <- terra::extract(terrain_proj, feeding_bouts_vect)
+  feeding_bouts_stationary_withslopes <- mutate(feeding_bouts_stationary, slope = slopes$slope)
+  return(feeding_bouts_stationary_withslopes)
 }
