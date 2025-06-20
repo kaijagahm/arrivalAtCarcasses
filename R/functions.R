@@ -525,8 +525,8 @@ combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, fee
 get_feeding_bouts <- function(file ="data/created/feeding_bouts.RDS"){
   fb <- readRDS(here(file)) 
   out <- fb %>%
-    mutate(boutID = paste(year, device_id, bout_id, sep = "_")) %>%
-    select(boutID,
+    dplyr::mutate(boutID = paste(year, device_id, bout_id, sep = "_")) %>%
+    dplyr::select(boutID,
            "individualID" = device_id,
            "prob" = .pred_Eating,
            start, end, dateOnly, year, location_lat, location_long) %>%
@@ -700,7 +700,7 @@ get_ilvs <- function(distances, www){
   yrs <- map_dbl(distances, ~.x$year[1])
   ilvs <- map2(distances, yrs, ~{
     tojoin <- www %>%
-      select(local_identifier, "age_group" = paste0("age_group_", .y))
+      dplyr::select(local_identifier, "age_group" = paste0("age_group_", .y))
     out <- left_join(.x, tojoin, by = "local_identifier")
     to_rename <- names(out)[grepl("roost_", names(out))]
     new_names <- paste0("roost_night", 0:(length(to_rename)-1))
@@ -709,11 +709,11 @@ get_ilvs <- function(distances, www){
   return(ilvs)
 }
 
-remove_points_before <- function(gps_all, inpa_carcs, days_after){
+remove_points_before <- function(gps_all, inpa_carcs, days_after, hours_before = 0){
   gps <- map2(gps_all, inpa_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>%
-      filter(timestamp >= lubridate::ymd_hms(dttm) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
+      filter(timestamp >= lubridate::ymd_hms(dttm)-hours(hours_before) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
   })
   return(gps)
 }
@@ -985,7 +985,7 @@ fix_nets <- function(nets, indivs){
     }else{
       net_updated <- net
     }
-    net_updated_2 <- net_updated %>% select(-ID1)
+    net_updated_2 <- net_updated %>% dplyr::select(-ID1)
     updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
@@ -1180,7 +1180,7 @@ get_ilvs_lists <- function(ilvs_nbda, days_vec_nbda){
   for(i in 1:length(ilvs_lists)){
     ilvs <- ilvs_nbda[[i]]
     nights_vec <- days_vec_nbda[[i]]-1
-    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
+    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% dplyr::select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
     ilvs_lists[[i]] <- ilvs_this_carcass
   }
   return(ilvs_lists)

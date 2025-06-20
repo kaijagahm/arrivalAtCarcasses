@@ -200,3 +200,33 @@ stats %>%
   theme(text = element_text(size = 14))
 
 # seeing some real differences between INPA and wild carcasses
+
+# Thinking about NBDA
+# We're going to need to determine a good starting point for the diffusions. For that matter, we might want to look at the same starting point for the INPA carcasses.
+
+# Here are three cases of wild carcasses. The dashed line tends to fall in the middle, time-wise, of the feeding bouts. What if we added other dashed lines several hours before?
+plots_wild[[1]] + geom_vline(aes(xintercept = -1), alpha = 0.5) + geom_vline(aes(xintercept = -5), alpha = 0.5)
+plots_wild[[2]] + geom_vline(aes(xintercept = -1), alpha = 0.5) + geom_vline(aes(xintercept = -5), alpha = 0.5)
+plots_wild[[6]] + geom_vline(aes(xintercept = -1), alpha = 0.5) + geom_vline(aes(xintercept = -5), alpha = 0.5)
+
+# in some cases, backing up 1 hour works. In other cases, it's stil in the middle of the distribution of vultures. Backing up 5 hours seems to work in all three of these cases.
+
+# Let's see a few examples of inpa carcasses
+set.seed(3)
+sample(1:length(plots_inpa), 3)
+plots_inpa[[5]]
+plots_inpa[[12]]
+plots_inpa[[39]]
+# these are all very different. Sometimes they have a totally different pattern. However, I don't see that backing up 5 hours would necessarily ruin things here either.
+
+# Anyway, we're going to have to make tough decisions in terms of how to compare the two situations. But for now, I just want to test out NBDA on the wild carcasses using the co-roost network. So I actually will just be considering the roost network on the night before.
+
+# Worth considering what to do if there are peaks at the site before the carcass is detected. Sometimes, such as in this one, they're just flying over regularly:
+plots_wild[[3]]
+plots_wild[[4]] # or this one, where someone landed the previous day but there weren't enough individuals to have critical mass for it to be considered a carcass. This makes me think we should back up at least 24 hours.
+plots_wild[[5]] # this is at the beginning of the season--makes me want to back up the GPS data a bit
+plots_wild[[7]] # another repeat-flyover situation
+plots_wild[[8]]
+plots_wild[[9]] # another beginning-of-season thing I think, in 2024
+
+# For the purposes of just the wild ones alone, let's back up 24 hours. Which means I need to add 24 hours onto the beginning of the gps data
