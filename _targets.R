@@ -11,8 +11,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra")#,
-  #controller = crew_controller_local(workers = 4)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
+  controller = crew_controller_local(workers = 4)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -365,8 +365,8 @@ list(
   
   # NBDA (wild carcasses) ---------------------------------------------------
   ## Define carcasses to run NBDA on. XXX Note: because wild carcIDs are assigned after the carcasses are defined from feeding bouts, which requires choosing a slope cutoff, these numbers are correct only for the 5 degree cutoff. Will need to change if we change the cutoff.
-  tar_target(wild_carcs_for_nbda, c(1, 2, 5, 9, 16, 18, 22, 23, 57)),
-  tar_target(wild_carcs_for_nbda_which, match(wild_carcs_for_nbda, map_dbl(wild_carcs, "carcID"))),
+  #tar_target(wild_carcs_for_nbda, c(1, 2, 5, 9, 16, 18, 22, 23, 57)),
+  #tar_target(wild_carcs_for_nbda_which, match(wild_carcs_for_nbda, map_dbl(wild_carcs, "carcID"))),
   tar_target(gps_wild, remove_points_before(gps_all_wild, wild_carcs, days_after, hours_before = 24)), # XXX will need to edit this when we have more data in the original gps data. Currently, some carcs will be missing points from more than a few hours before.
   tar_target(see_carcass_wild, get_see_carcass(gps_wild, wild_carcs, detection_distance_flight, detection_distance_stationary)),
   tar_target(firsts_see_wild, get_firsts_see(see_carcass_wild, wild_carcs)),
@@ -374,11 +374,25 @@ list(
   tar_target(oa_see_indivs_sorted_wild, purrr::map(oa_see_wild, sort)),
   # XXX skipping the flight networks for now. Just going to do the roost networks
   # Everything from here on for the wild carcasses will be subsetted by wild_carcs_for_nbda
-  tar_target(roosts_dates_see_wild, get_roost_dates(roosts_wild, wild_carcs_for_nbda_which)),
+  tar_target(roosts_dates_see_wild, get_roost_dates(roosts_wild, 1:length(wild_carcs))),
   tar_target(roosts_bin_see_wild, get_roosts_bin(roosts_dates_see_wild, roost_thresh)),
   tar_target(roosts_bin_fixed_see_wild, fix_nets_list(roosts_bin_see_wild, oa_see_indivs_sorted_wild)),
-  tar_target(carcs_nbda_wild, wild_carcs[wild_carcs_for_nbda_which]), # XXX I think there are things messed up in here with only using a subset of carcasses. Consider doing it on all of them and then just not paying attention to the results for any except the desired ones.
-
+  tar_target(years_wild, get_years(wild_carcs, oa_see_wild)),
+  tar_target(carcIDs_nbda_wild, map_chr(wild_carcs, ~as.character(.x$carcID[1]))),
+  ## Need to convert the oas into numeric indices instead of a character vector
+  tar_target(oas_nbda_numbers_wild, map2(oa_see_wild, oa_see_indivs_sorted_wild, ~match(.x, .y))),
+  tar_target(dates_nbda_wild, map2(wild_carcs, firsts_see_wild, ~mutate(data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(firsts_with_dates_wild, map2(firsts_see_wild, dates_nbda_wild, ~left_join(.x, .y))),
+  tar_target(days_vec_nbda_wild, map(firsts_with_dates_wild, "day")),
+  tar_target(roost_mats_expanded_wild, expand_roost_mats(roosts_bin_fixed_see_wild, days_vec_nbda_wild, days_vec_nbda_wild)),
+  tar_target(n_indivs_wild, map_dbl(roosts_bin_fixed_see_wild, ~nrow(.x[[1]]))),
+  tar_target(n_timeperiods_wild, map_dbl(roost_mats_expanded_wild, length)),
+  tar_target(N.RD_wild, get_dynamic_nets(n_indivs_wild, n_timeperiods_wild, roost_mats_expanded_wild)),
+  tar_target(assMatrixIndices_wild, map(oas_nbda_numbers_wild, ~1:length(.x))),
+  tar_target(nbdaData_list_dynamic_roost_wild, get_nbdaData_list_flex(cids = carcIDs_nbda_wild, oas = oas_nbda_numbers_wild, amis = assMatrixIndices_wild, nets1 = N.RD_wild, is_dynamic = T)),
+  tar_target(Mods_N.RD_So_wild, mod_trycatch(nbdaData_list_dynamic_roost_wild, type = "social", iterations = 1000)),
+  tar_target(Mods_N.RD_Aso_wild, mod_trycatch(nbdaData_list_dynamic_roost_wild, type = "asocial", iterations = 1000)),
+  tar_target(sums_RD_wild, get_summaries(Mods_N.RD_So_wild, carcIDs_nbda_wild, "dynamic", "roost")),
   
 
   
@@ -399,7 +413,7 @@ list(
   ## Here we decide to use the all-day flight networks for this. Will have to re-write the arguments to these targets if we decide to use different flight networks instead.
   ## Need to convert the oas into numeric indices instead of a character vector
   tar_target(oas_nbda_numbers, map2(oa_see, oa_see_indivs_sorted, ~match(.x, .y))),
-  tar_target(dates_nbda, map2(carcs_nbda, firsts_nbda, ~mutate(data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(dates_nbda, map2(carcs_nbda, firsts_nbda, ~mutate(data.frame(dateOnly = seq.Date(from = .x$date, to = max(.y$dateOnly))), day = 1:n()))),
   tar_target(firsts_with_dates, map2(firsts_nbda, dates_nbda, ~left_join(.x, .y))),
   tar_target(days_vec_nbda, map(firsts_with_dates, "day")),
   tar_target(roost_mats_expanded, expand_roost_mats(roosts_bin_fixed_see, fl_allday_bin_fixed_see, days_vec_nbda)),

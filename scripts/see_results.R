@@ -3,6 +3,7 @@
 library(tidyverse)
 library(targets)
 library(here)
+library(mapview)
 
 tar_load(summaries)
 tar_load(summaries_ilvs)
@@ -109,3 +110,20 @@ s2i %>%
   scale_x_continuous(limits = c(-4, 4))+
   theme_classic() +
   ggtitle("Two networks; asocial ILVs")
+
+# Wild carcasses ----------------------------------------------------------
+tar_load(sums_RD_wild)
+tar_load(wild_carcasses_5)
+mapview(wild_carcasses_5)
+# The carcasses we're going to focus on now are 1, 2, 5, 9, 16, 18, 22, 23, 57, based on looking at the map because we have reason to believe that these are real.
+
+sums_RD_wild %>% filter(carcID %in% c(1, 2, 5, 9, 16, 18, 22, 23, 57)) %>%
+  ggplot(aes(x = carcID, y = outputPar))+
+  geom_point()+
+  theme_minimal()+
+  geom_segment(aes(y = outputPar - se, yend = outputPar + se))
+
+# none of these show any social effect (well, one of them had a teeny tiny effect, but the SE overlaps 0). The largest social effect was 0.05, and that was for carcass 47, which wasn't one of our focal carcasses (not sure where it is).
+
+# How many individuals were involved in each of these diffusions?
+tar_load(n_indivs_wild) # this is a good number of individuals!! None of these seem to be suffering from a too-small sample of individuals. 

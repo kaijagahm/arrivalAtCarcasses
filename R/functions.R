@@ -662,6 +662,7 @@ get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_f
 }
 
 get_distances <- function(roosts, inpa_carcs){
+  inpa_carcs <- map(inpa_carcs, ~.x %>% mutate(year = lubridate::year(date)))
   distances <- map2(roosts, inpa_carcs, ~{
     if(!is.null(.x)){
       dist <- .x %>%
