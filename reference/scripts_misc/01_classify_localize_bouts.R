@@ -272,6 +272,7 @@ targets::tar_load(loginObject)
 minmax_dates <- readRDS(here("data/created/minmax_dates.RDS"))
 
 # Matching to GPS data (Gideon code, merged with Kaija code) --------------------------------------
+ornitela_data_2022 <- vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[5]], dateTimeEndUTC = minmax_dates[[6]])
 # ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject,
 #                                           removeDup = T, dfConvert = T,
 #                                           quiet = T,

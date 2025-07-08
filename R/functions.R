@@ -462,11 +462,14 @@ split_data_fun_forloop <- function(data){
 
 get_focal <- function(carcasses, times){
   focal <- carcasses %>% 
-    filter(datetime >= times[1],
-           datetime <= times[2]) %>%
+    filter(datetime >= times[[1]],
+           datetime <= times[[2]]) %>%
     bind_rows(carcasses %>%
-                filter(datetime >= times[3],
-                       datetime <= times[4])) %>%
+                filter(datetime >= times[[3]],
+                       datetime <= times[[4]])) %>%
+    bind_rows(carcasses %>%
+                filter(datetime >= times[[5]],
+                       datetime <= times[[6]])) %>%
     filter(!cage) %>% # remove carcasses placed in cages 
     dplyr::select(-c("color", "commentsKaija", "investigateKaija", "questionForGideon", "reassign_to", "todo", "interpretation", "flag"))
   return(focal) 
@@ -616,8 +619,9 @@ dg <- function(x){
 
 
 # prepare_data ------------------------------------------------------------
-get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
-  gps_combined <- bind_rows(gps_2023, gps_2024) %>%
+get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox_south){
+  gps_combined <- bind_rows(gps_2022, gps_2023) %>%
+    bind_rows(gps_2024) %>%
     st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
     bind_cols(st_coordinates(.)) %>%
     rename("location_long" = X,
@@ -1526,4 +1530,274 @@ get_slopes <- function(filenames, bbox_south_big, neighbors = 8, feeding_bouts_s
   slopes <- terra::extract(terrain_proj, feeding_bouts_vect)
   feeding_bouts_stationary_withslopes <- mutate(feeding_bouts_stationary, slope = slopes$slope)
   return(feeding_bouts_stationary_withslopes)
+}
+
+
+# Raster functions --------------------------------------------------------
+points_to_raster <- function(
+    carcasses_sf,            # sf POINT object
+    bbox,                    # bounding box (numeric or object convertible to sf bbox)
+    resolution = 10000       # grid cell size in meters (default 10km)
+) {
+  # Ensure carcasses are in a projected CRS (assume UTM if not set)
+  if (is.na(st_crs(carcasses_sf))) {
+    stop("Input 'carcasses_sf' must have a defined CRS.")
+  }
+  if (st_is_longlat(carcasses_sf)) {
+    stop("Please project 'carcasses_sf' to a projected CRS (e.g., UTM).")
+  }
+  
+  # Convert bbox to sf polygon if needed
+  if (is.numeric(bbox) && length(bbox) == 4) {
+    bbox_mat <- matrix(c(bbox[1], bbox[2], bbox[3], bbox[4]), ncol = 2, byrow = TRUE)
+    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]), crs = st_crs(carcasses_sf)))
+  } else if (inherits(bbox, "sf") || inherits(bbox, "sfc") || inherits(bbox, "SpatVector")) {
+    bbox_poly <- st_as_sfc(st_bbox(bbox))
+    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
+  } else {
+    stop("Invalid 'bbox' format. Provide a numeric vector of length 4 or an sf/sfc/SpatVector object.")
+  }
+  
+  # Create a regular grid over the bounding box
+  grid <- st_make_grid(bbox_poly, cellsize = resolution, square = TRUE)
+  grid_sf <- st_sf(grid_id = 1:length(grid), geometry = grid)
+  
+  # Spatial join: assign carcasses to grid cells
+  joined <- st_join(carcasses_sf, grid_sf, join = st_within)
+  
+  # Count carcasses per grid cell
+  counts <- joined |>
+    group_by(grid_id) |>
+    summarise(carcass_count = n(), .groups = "drop")
+  
+  # Merge counts back to full grid, fill NAs with 0
+  grid_with_counts <- left_join(grid_sf, st_drop_geometry(counts), by = "grid_id") |>
+    mutate(carcass_count = ifelse(is.na(carcass_count), 0, carcass_count))
+  
+  # Convert to SpatVector
+  grid_vect <- vect(grid_with_counts)
+  
+  # Create raster template
+  r_template <- rast(grid_vect, resolution = resolution)
+  
+  # Rasterize
+  r <- rasterize(grid_vect, r_template, field = "carcass_count", fun = NULL, background = 0)
+  
+  return(r)
+}
+dist_to_carcasses <- function(
+    carcasses_sf,
+    bbox,
+    resolution = 1000,
+    start_date = NULL,
+    end_date = NULL,
+    active_days = 3,         # used only if weight_col=NULL
+    weight_col = NULL,       # NULL = unweighted, else name of weight col
+    decay_rate = 0,          # ignored if weight_col=NULL
+    min_weight = 0,          # ignored if weight_col=NULL
+    distance_power = 1,
+    visibility_radius = Inf  # Inf means no limit
+) {
+  # Validate inputs
+  if (!"date" %in% names(carcasses_sf)) stop("Missing 'date' column.")
+  if (!inherits(carcasses_sf$date, "Date")) {
+    carcasses_sf$date <- as.Date(carcasses_sf$date)
+  }
+  if (st_is_longlat(carcasses_sf)) stop("Please project 'carcasses_sf' to a projected CRS.")
+  
+  if (!is.null(weight_col) && !(weight_col %in% names(carcasses_sf))) {
+    stop(paste("Missing weight column:", weight_col))
+  }
+  
+  # Convert start/end dates
+  if (!is.null(start_date)) start_date <- as.Date(start_date)
+  if (!is.null(end_date)) end_date <- as.Date(end_date)
+  all_dates <- sort(unique(carcasses_sf$date))
+  if (is.null(start_date)) start_date <- min(all_dates)
+  if (is.null(end_date)) end_date <- max(all_dates)
+  date_seq <- seq(start_date, end_date, by = "day")
+  
+  # Build bbox polygon
+  if (is.numeric(bbox) && length(bbox) == 4) {
+    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]),
+                                   crs = st_crs(carcasses_sf)))
+  } else {
+    bbox_poly <- st_as_sfc(st_bbox(bbox))
+    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
+  }
+  
+  # Create grid and centroids
+  grid <- st_make_grid(bbox_poly, cellsize = resolution)
+  grid_sf <- st_sf(grid_id = seq_along(grid), geometry = grid)
+  suppressWarnings({
+    centroids <- st_centroid(grid_sf)
+  })
+  grid_vect <- vect(grid_sf)
+  r_template <- rast(grid_vect, resolution = resolution)
+  
+  # If weighted, fix missing weights
+  if (!is.null(weight_col)) {
+    if (anyNA(carcasses_sf[[weight_col]])) {
+      mean_weight <- mean(carcasses_sf[[weight_col]], na.rm = TRUE)
+      carcasses_sf[[weight_col]][is.na(carcasses_sf[[weight_col]])] <- mean_weight
+    }
+  }
+  
+  dist_stack <- rast()
+  empty_days <- c()
+  
+  for (current_date in date_seq) {
+    current_date <- as.Date(current_date)
+    
+    if (is.null(weight_col)) {
+      # Unweighted version: select active carcasses within active_days window
+      if (is.null(active_days)) stop("active_days must be set if weight_col=NULL")
+      active_window_start <- current_date - (active_days - 1)
+      active_carcasses <- carcasses_sf %>%
+        filter(date >= active_window_start & date <= current_date)
+      
+      if (nrow(active_carcasses) == 0) {
+        # Assign max diagonal distance
+        bbox_coords <- st_bbox(bbox_poly)
+        bbox_diagonal <- sqrt((bbox_coords["xmax"] - bbox_coords["xmin"])^2 +
+                                (bbox_coords["ymax"] - bbox_coords["ymin"])^2)
+        r <- setValues(r_template, bbox_diagonal)
+      } else {
+        dist_matrix <- st_distance(centroids, active_carcasses)
+        dist_matrix_mat <- as.numeric(dist_matrix)
+        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
+        
+        if (is.finite(visibility_radius)) {
+          # Mask distances beyond visibility radius
+          dist_matrix_mat[dist_matrix_mat > visibility_radius] <- NA
+          mean_distances <- apply(dist_matrix_mat, 1, function(x) {
+            if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+          })
+          # Replace NAs by max at the end
+        } else {
+          mean_distances <- apply(dist_matrix_mat, 1, mean)
+        }
+        
+        grid_sf$mean_dist <- mean_distances
+        grid_vect <- vect(grid_sf)
+        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = mean)
+      }
+    } else {
+      # Weighted version
+      decay_df <- carcasses_sf %>%
+        mutate(days_elapsed = as.numeric(current_date - .data[["date"]])) %>%
+        filter(!is.na(.data[[weight_col]]), days_elapsed >= 0) %>%
+        mutate(
+          decayed_weight = .data[[weight_col]] * exp(-decay_rate * days_elapsed),
+          active = decayed_weight >= min_weight
+        ) %>%
+        filter(active)
+      
+      if (nrow(decay_df) == 0) {
+        r <- setValues(r_template, NA)
+        empty_days <- c(empty_days, current_date)
+      } else {
+        dist_matrix <- st_distance(centroids, decay_df)
+        dist_matrix_mat <- as.numeric(dist_matrix)
+        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
+        
+        weight_matrix <- matrix(rep(decay_df$decayed_weight, each = nrow(centroids)),
+                                nrow = nrow(centroids))
+        
+        if (is.finite(visibility_radius)) {
+          in_range <- dist_matrix_mat <= visibility_radius
+          weight_matrix[!in_range] <- 0
+          dist_matrix_mat[!in_range] <- NA
+        }
+        
+        weighted_dists <- (dist_matrix_mat ^ distance_power) * weight_matrix
+        sum_weights <- rowSums(weight_matrix, na.rm = TRUE)
+        
+        weighted_mean_dist <- rowSums(weighted_dists, na.rm = TRUE) / sum_weights
+        weighted_mean_dist[sum_weights == 0] <- NA
+        
+        grid_sf$mean_dist <- weighted_mean_dist
+        grid_vect <- vect(grid_sf)
+        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = NULL)
+      }
+    }
+    
+    names(r) <- format(current_date, "%Y-%m-%d")
+    dist_stack <- c(dist_stack, r)
+  }
+  
+  # Replace NA pixels with global max distance across all layers
+  if (nlyr(dist_stack) == 0) stop("No layers were created.")
+  
+  global_max <- max(global(dist_stack, fun = "max", na.rm = TRUE)[[1]], na.rm = TRUE)
+  dist_stack[is.na(dist_stack)] <- global_max
+  
+  # Attach metadata
+  attr(dist_stack, "empty_days") <- empty_days
+  attr(dist_stack, "weight_col") <- weight_col
+  attr(dist_stack, "visibility_radius") <- visibility_radius
+  
+  return(dist_stack)
+}
+
+get_pngs <- function(rasterstack){
+  dates <- names(rasterstack)
+  
+  # Compute global min and max for color scale
+  global_min <- min(values(rasterstack), na.rm = TRUE)
+  global_max <- max(values(rasterstack), na.rm = TRUE)
+  
+  # Temporary list to store frame file paths
+  png_files <- character(nlyr(rasterstack))
+  
+  # Loop through each raster layer
+  for (i in seq_len(nlyr(rasterstack))) {
+    r <- rasterstack[[i]]
+    date_label <- dates[i]
+    
+    # Convert raster to data frame for ggplot
+    r_df <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
+    colnames(r_df) <- c("x", "y", "value")
+    
+    # Create ggplot
+    p <- ggplot(r_df) +
+      geom_raster(aes(x = x, y = y, fill = value)) +
+      coord_equal() +
+      scale_fill_viridis_c(
+        name = "Avg. Distance (m)",
+        limits = c(global_min, global_max),
+        na.value = "grey90",
+        direction = -1
+      ) +
+      labs(
+        title = paste("Date:", date_label),
+        x = NULL,
+        y = NULL
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+        legend.position = "right"
+      )
+    
+    # Save to PNG
+    png_file <- tempfile(fileext = ".png")
+    ggsave(png_file, plot = p, width = 6, height = 6, dpi = 150)
+    png_files[i] <- png_file
+  }
+  return(png_files)
+}
+
+get_cell_vals_long <- function(stack){
+  cell_coords <- map(1:(dim(stack)[1]*dim(stack)[2]), ~xyFromCell(stack, .x))
+  pts <- map(cell_coords, ~vect(matrix(.x, ncol = 2), type = "points", crs = crs(stack)))
+  ts <- map(pts, ~terra::extract(stack, .x))
+  values <-  map(ts, ~as_tibble(as.numeric(.x[1, -1])))
+  cell_values_long <- data.table::rbindlist(values, idcol = "cell")
+  coords <- data.table::rbindlist(map(cell_coords, as_tibble), idcol = "cell")
+  cell_values_long <- left_join(cell_values_long, coords, by = "cell") %>%
+    group_by(cell) %>%
+    mutate(date = lubridate::ymd(names(stack))) %>%
+    ungroup()
+  return(cell_values_long)
 }
