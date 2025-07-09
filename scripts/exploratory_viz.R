@@ -267,4 +267,65 @@ vulture_day_means %>%
   ggplot(aes(x = dateOnly, y = mn, group = local_identifier))+
   geom_line(aes(y = region_mean), col = "blue")+
   geom_line(alpha = 0.1)+
-  theme_minimal() # trivial result--vultures stay much closer to carcasses than the average pixel. In order to really quantify what's going on, we would need to do habitat selection analyses.
+  theme_minimal() # trivial result--vultures stay much closer to carcasses than the average pixel. In order to really quantify what's going on, we would need to do habitat selection analyses. This also of course doesn't take into account that you can be really close to one carcass and really far from another.
+
+# Now get the carcass weights over time
+test <- all_carcasses %>% filter(date >= start & date <= end) %>%
+  select(carcID, date, X, Y, carcType, carcassWeight) %>%
+  mutate(carcassWeight = case_when(is.na(carcassWeight) ~ mean(carcassWeight, na.rm = T), .default = carcassWeight)) %>%
+  mutate(date = lubridate::date(date))
+dates <- seq.Date(start, end)
+carcs <- sort(unique(test$carcID))
+dec <- 1.5
+fill_in_exp <- function(prev, new, decay = dec) {
+  if_else(!is.na(new), new, prev * exp(-1*decay))
+}
+df <- expand_grid("date" = dates, "carcID" = carcs) %>%
+  left_join(test, by = c("date", "carcID")) %>%
+  arrange(carcID, date) %>% # fill downward and add exponential decline here
+  group_by(carcID) %>%
+  fill(c("X", "Y", carcType), .direction = "downup") %>%
+  mutate(carcassWeight = accumulate(carcassWeight, fill_in_exp)) %>%
+  mutate(carcassWeight = case_when(carcassWeight < 10 ~ NA, .default = carcassWeight))
+
+# Carcass decay over time
+df %>%
+  ggplot(aes(x = date, y = carcassWeight, group = carcID, col = carcType))+
+  geom_line()+
+  theme_minimal()+
+  labs(y = "Carcass weight (kg)",
+       x = "Date",
+       col = "Carcass type",
+       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of INPA carcasses)"))+
+  theme(legend.position = "bottom")+
+  scale_color_viridis_d()
+
+# Now, amount of meat on the landscape at a time
+meat_on_landscape <- df %>%
+  group_by(date) %>%
+  summarize(all = sum(carcassWeight, na.rm = T),
+            `wild (est)` = sum(carcassWeight[carcType == "wild"], na.rm = T),
+            inpa = sum(carcassWeight[carcType == "inpa"], na.rm = T)) %>%
+  pivot_longer(cols = c("all", "wild (est)", "inpa"), names_to = "type", values_to = "kg")
+meat_on_landscape %>%
+  ggplot(aes(x = date, y = kg, col = type))+
+  geom_line(linewidth = 1.5, alpha = 0.7)+
+  theme_minimal()+
+  labs(y = "Meat on landscape (kg)",
+       x = "Date",
+       col = "Type of carcass",
+       title = "Carcass weight, south, Mar-Apr 2023")+
+  scale_color_manual(values = c("black", "firebrick1", "skyblue"))
+
+meat_on_landscape %>%
+  filter(type != "all") %>%
+  ggplot(aes(x = date, y = kg, fill = type))+
+  geom_area()+
+  theme_minimal()+
+  labs(y = "Meat on landscape (kg)",
+       x = "Date",
+       col = "Type of carcass",
+       title = "Carcass weight, south, Mar-Apr 2023",
+       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of INPA carcasses)"))+
+  scale_fill_manual(values = c("firebrick1", "skyblue"))
+

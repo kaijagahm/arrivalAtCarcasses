@@ -1801,3 +1801,4 @@ get_cell_vals_long <- function(stack){
     ungroup()
   return(cell_values_long)
 }
+
