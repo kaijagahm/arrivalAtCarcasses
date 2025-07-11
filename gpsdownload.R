@@ -11,9 +11,9 @@ ornitela_data_2022 <- vultureUtils::downloadVultures(loginObject = loginObject, 
 ornitela_data_2023 <- vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[3]], dateTimeEndUTC = minmax_dates[[4]])
 ornitela_data_2024 <- vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[5]], dateTimeEndUTC = minmax_dates[[6]])
 
-gps_2022 <- dplyr::select(ornitela_data_2022, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-gps_2023 <- dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
-gps_2024 <- dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier)
+gps_2022 <- dplyr::select(ornitela_data_2022, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)
+gps_2023 <- dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)
+gps_2024 <- dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)
 
 rm(ornitela_data_2022)
 rm(ornitela_data_2023)

@@ -12,7 +12,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
-  controller = crew_controller_local(workers = 2)
+  controller = crew_controller_local(workers = 6)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 

@@ -13,6 +13,7 @@ library(tidyverse)
 library(targets)
 library(here)
 source(here("R/functions.R"))
+library(plotly)
 
 # Load carcass data
 tar_load(all_carcasses)
@@ -137,10 +138,10 @@ decay_df %>%
 
 # Now with weighted distances to carcasses, assuming decay rate of -2
 test_wt <- dist_to_carcasses(all_carcasses, bbox_south_big, resolution = 1000,
-                          start_date = startDate, end_date = endDate, 
-                          weight_col = "carcassWeight",
-                          visibility_radius = 10000, decay_rate = 2, 
-                          distance_power = 2, min_weight = 10)
+                             start_date = startDate, end_date = endDate, 
+                             weight_col = "carcassWeight",
+                             visibility_radius = 10000, decay_rate = 2, 
+                             distance_power = 2, min_weight = 10)
 
 png_files <- get_pngs(test_wt)
 imgs <- image_read(png_files)
@@ -181,7 +182,7 @@ colnames(df)[3:4] <- c("mean", "variance")
 # Mean legend plot (grayscale to red)
 mean_plot <- ggplot(df) +
   geom_tile(aes(x = x, y = y, fill = mean)) +
-  scale_fill_viridis(direction = -1) +
+  scale_fill_viridis_c(direction = -1) +
   coord_equal() +
   labs(title = "Mean weighted distance (normalized)") +
   theme_minimal()
@@ -190,7 +191,7 @@ mean_plot
 # Variance legend plot (grayscale to blue)
 var_plot <- ggplot(df) +
   geom_tile(aes(x = x, y = y, fill = variance)) +
-  scale_fill_viridis() +
+  scale_fill_viridis_c() +
   coord_equal() +
   labs(title = "Variance in weighted distance (normalized)") +
   theme_minimal()
@@ -198,10 +199,10 @@ var_plot
 
 ## Let's look at these patterns over a longer timescale--all of 2023
 test_wt_year <- dist_to_carcasses(all_carcasses, bbox_south_big, resolution = 5000,
-                             start_date = "2023-01-01", end_date = "2023-12-31", 
-                             weight_col = "carcassWeight",
-                             visibility_radius = 10000, decay_rate = 2, 
-                             distance_power = 2, min_weight = 10)
+                                  start_date = "2023-01-01", end_date = "2023-12-31", 
+                                  weight_col = "carcassWeight",
+                                  visibility_radius = 10000, decay_rate = 2, 
+                                  distance_power = 2, min_weight = 10)
 
 png_files <- get_pngs(test_wt_year)
 imgs <- image_read(png_files)
@@ -307,15 +308,6 @@ meat_on_landscape <- df %>%
             `wild (est)` = sum(carcassWeight[carcType == "wild"], na.rm = T),
             inpa = sum(carcassWeight[carcType == "inpa"], na.rm = T)) %>%
   pivot_longer(cols = c("all", "wild (est)", "inpa"), names_to = "type", values_to = "kg")
-meat_on_landscape %>%
-  ggplot(aes(x = date, y = kg, col = type))+
-  geom_line(linewidth = 1.5, alpha = 0.7)+
-  theme_minimal()+
-  labs(y = "Meat on landscape (kg)",
-       x = "Date",
-       col = "Type of carcass",
-       title = "Carcass weight, south, Mar-Apr 2023")+
-  scale_color_manual(values = c("black", "firebrick1", "skyblue"))
 
 meat_on_landscape %>%
   filter(type != "all") %>%
@@ -329,3 +321,187 @@ meat_on_landscape %>%
        caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of INPA carcasses)"))+
   scale_fill_manual(values = c("firebrick1", "skyblue"))
 
+# Altitudes as vultures descend to the carcass
+
+# Let's look at the trajectories of vultures that approach one known carcass
+tar_load(gps_all_inpa)
+tar_load(inpa_carcs)
+tar_load(roostPolygons, store = "~/Desktop/projects/MvmtSoc/_targets/")
+rp <- sf::st_read(roostPolygons) %>% sf::st_transform(32636)
+rp_cropped <- st_crop(rp, bbox_south_big)
+focal <- gps_all_inpa[[36]] %>% filter(time_since_carcass > -24 & time_since_carcass < 48)
+focal %>% count(local_identifier) %>% arrange(desc(n)) # let's pick E54w, which has a lot of points
+set.seed(5)
+indiv <- sample(unique(focal$local_identifier), 1)
+focal_indiv <- focal %>% filter(local_identifier == indiv) %>% sf::st_as_sf(crs = "32636")
+carc <- inpa_carcs[[36]]
+
+focal_line <- focal_indiv %>%
+  arrange(time_since_carcass) %>%
+  summarise(do_union = FALSE) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  mutate(geometry = st_cast(geometry, "LINESTRING")) %>%
+  st_as_sf()
+
+ggplot() +
+  geom_sf(data = focal_line, color = "black", alpha = 0.2) +
+  geom_sf(data = focal_indiv, aes(col = height_above_msl), alpha = 0.7) +
+  geom_sf(data = rp_cropped) +
+  geom_sf(data = carc, col = "red") +
+  scale_color_viridis_c()+
+  theme_minimal()
+
+mapview(focal_line)+mapview(focal_indiv, zcol = "height_above_msl")+mapview(rp_cropped, col.regions = "gray")+mapview(carc, col.regions = "red")
+
+focal_indiv %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass, col = height_above_msl))+
+  geom_point(alpha = 0.7)+
+  geom_line()+
+  theme_minimal()+
+  scale_color_viridis_c()+
+  labs(y = "Distance to carcass", x = "Time since carcass (hours)", col = "Height (m)", title = indiv)
+
+fig <- plot_ly(focal_indiv, x = ~location_long, y = ~location_lat, z = ~height_above_msl, type = 'scatter3d', mode = 'lines',
+               opacity = 1, line = list(width = 6)) 
+
+fig # can make this better but at least it's possible to make a 3d plot.
+
+# The reason I wanted to see things in 3D in the first place was to determine whether we can identify when an individual is approaching a carcass, sort of like cassidy's turning points.
+# let's get each instance of landing near a carcass and then walk the GPS back 10 hours and look at the track.
+# each instance of landing near a carcass--need to go to the code with the histograms and get the data for all the INPA carcasses. bind into one df, group by individual, sort by time, identify the first instance of being on the ground nearby, and then grab the previous 10 hours.
+tar_load(gps_all_inpa)
+tar_load(gps_spd)
+tar_load(detection_distance_flight)
+tar_load(detection_distance_stationary)
+ddf <- detection_distance_flight
+dds <- detection_distance_stationary
+stn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% 
+  mutate(type = "inpa") %>%
+  mutate(hour_bin = floor_date(timestamp, unit = "hours"),
+         hour_bin_rel = round(time_since_carcass),
+         in_sight = case_when(ground_speed >= 5 & dist_to_carcass <= ddf ~ T,
+                              ground_speed < 5 & dist_to_carcass <= dds ~ T,
+                              .default = F),
+         status = case_when(ground_speed >= 5 & dist_to_carcass <= ddf ~ "flight, in sight (<2km)",
+                            ground_speed >= 5 & dist_to_carcass > ddf ~ "flight, >2km",
+                            ground_speed < 5 & dist_to_carcass <= dds & dist_to_carcass > 200 ~ "stationary, in sight (1km-200m)",
+                            ground_speed <= 5 & dist_to_carcass <= 200 ~ "stationary, <200m",
+                            ground_speed <= 5 & dist_to_carcass > dds ~ "stationary, >1km", .default = NA),
+         status = factor(status, levels = c("stationary, <200m", "stationary, in sight (1km-200m)", "flight, in sight (<2km)", "flight, >2km", "stationary, >1km")),
+         hour = round(time_since_carcass)) %>%
+  select(-c("tag_local_identifier", "tag_id", "hour_bin", "hour_bin_rel", "in_sight"))
+
+stn <- stn %>%
+  filter(time_since_carcass > -1) %>% # must be later than 1 hour before carcass placement
+  arrange(carcID, local_identifier, timestamp) %>%
+  group_by(carcID, local_identifier) %>%
+  mutate(cumul_groundpoints = cumsum(status == "stationary, <200m")) %>%
+  ungroup() %>%
+  group_by(carcID, local_identifier) %>%
+  mutate(firstlanding = case_when(cumul_groundpoints == 1 & lag(cumul_groundpoints == 0) ~ TRUE, .default = FALSE),
+         has_first_landing = case_when(sum(firstlanding) > 0 ~ T, .default = F)) %>% # does this individual ever land at the carcass?
+  mutate(dist_diff = dist_to_carcass - lag(dist_to_carcass))
+
+
+first_landings <- stn %>%filter(cumul_groundpoints == 0 | firstlanding == TRUE) %>% # remove all points except for the landing itself and the points prior
+  filter(has_first_landing) %>% # restrict to individuals that land at the carcass at some point
+  ungroup()
+
+first_landings_mycarc <- first_landings %>% filter(carcID == 4436953)
+set.seed(3)
+indivs <- sample(unique(first_landings_mycarc$local_identifier), 6)
+
+first_landings_mycarc %>%
+  filter(local_identifier %in% indivs) %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass/1000, 
+             col = height_above_msl, shape = firstlanding, group = local_identifier))+
+  geom_line()+
+  geom_point()+
+  scale_shape_manual(values = c(19, 1))+
+  facet_wrap(~local_identifier, scales = "free_x")+
+  scale_color_viridis_c()+
+  theme_minimal()+ # all of these have fairly clear declines as the individual approaches, and sometimes those declines continue over many km.
+  labs(y = "Dist to carcass (km)",
+       x = "Time since carcass (hours)")
+
+# The approach to the carcass is the last run of negative values for each individual. can we define the slopes as positive or negative and use that to identify the approach?
+first_landings_mycarc <- first_landings_mycarc %>%
+  group_by(carcID, local_identifier) %>%
+  mutate(dist_diff = dist_to_carcass - lag(dist_to_carcass),# apply this to everything
+         neg = dist_diff < 0, 
+         run = data.table::rleid(neg)) 
+
+approaches <- first_landings_mycarc %>%
+  group_by(carcID, local_identifier) %>%
+  slice(unique(sort(c(
+    which(run == max(run)),
+    which(run == max(run)) - 1
+  )))) # hopefully this should include the last point before the approach, all points in the approach, and the final landing point.
+
+approaches %>%
+  filter(local_identifier %in% indivs) %>%
+  ggplot(aes(x = time_since_carcass, y = dist_to_carcass/1000, 
+             col = height_above_msl, shape = firstlanding, group = local_identifier))+
+  geom_line()+
+  geom_point()+
+  scale_shape_manual(values = c(19, 1))+
+  facet_wrap(~local_identifier, scales = "free_x")+
+  scale_color_viridis_c()+
+  theme_minimal()+ # all of these have fairly clear declines as the individual approaches, and sometimes those declines continue over many km.
+  labs(y = "Dist to carcass (km)",
+       x = "Time since carcass (hours)") # awesome! we're seeing the distance to the carcass decrease over time as the vulture approaches.
+
+# My brain keeps thinking that I'm seeing altitude declines over time. Let's do that instead
+approaches %>%
+  filter(local_identifier %in% indivs) %>%
+  ggplot(aes(x = time_since_carcass, y = height_above_msl, shape = firstlanding, group = local_identifier))+
+  geom_line()+
+  geom_point()+
+  scale_shape_manual(values = c(19, 1))+
+  facet_wrap(~local_identifier, scales = "free_x")+
+  scale_color_viridis_c()+
+  theme_minimal()+ 
+  labs(y = "Height above MSL (m)",
+       x = "Time since carcass (hours)") # this shows the flight profiles of the vultures over time as they approach the carcass.
+
+# Colored by distance to carcass
+approaches %>%
+  filter(local_identifier %in% indivs) %>%
+  ggplot(aes(x = time_since_carcass, y = height_above_msl, shape = firstlanding, 
+             col = dist_to_carcass/1000, group = local_identifier))+
+  geom_line()+
+  geom_point()+
+  scale_shape_manual(values = c(19, 1))+
+  facet_wrap(~local_identifier, scales = "free_x")+
+  scale_color_viridis_c(name = "Dist to carcass (km)")+
+  theme_minimal()+ 
+  labs(y = "Height above MSL (m)",
+       x = "Time since carcass (hours)")+ # this doesn't tell us new information, just shows that the distance to the carcass decreases over time as they make their approach (circular reasoning). But it does start to hint at how far away vultures are when they start to make their approach to the carcass!
+  theme(legend.position = "bottom")
+
+# I'd like to visualize these individuals in space
+fig <- plot_ly(approaches, x = ~location_long, y = ~location_lat, z = ~height_above_msl, color = ~local_identifier, type = 'scatter3d', mode = 'lines',
+               opacity = 1, line = list(width = 6))  # this is a hot mess, but even here I can see that I have some paired flight trajectories!
+
+fig
+
+approaches %>% ggplot(aes(x = timestamp, y = dist_to_carcass, col = local_identifier))+
+  geom_line()+
+  theme_minimal()+
+  theme(legend.position = "none") # approaches over time. We can start to see upward slopes within each day, indicating that the vultures seem to be approaching from farther away as the day goes on. Let's see if that's borne out when we analyze it explicitly.
+
+# Okay what about looking at the max distance of each approach
+breaks <- c(-24, 0, 24, 48, 72)
+approaches_stats <- approaches %>%
+  mutate(day = cut(as.numeric(hour), breaks)) %>%
+  group_by(carcID, local_identifier, day) %>%
+  summarize(max_dist = max(dist_to_carcass),
+         approach_start = min(time_since_carcass))
+approaches_stats %>%
+  ggplot(aes(x = approach_start, y = max_dist/1000, col = day))+
+  geom_smooth(method = "lm")+
+  geom_point(pch = 1, size = 2)+
+  theme_minimal()+
+  labs(y = "Start distance of approach (km)",
+       x = "Start time of approach (hours since carcass)")+
+  scale_color_viridis_d(name = "Hours since carcass") # for this carcass, vultures are beginning their approaches from farther away as the day goes on--this would support either local enhancement or chains of vultures.

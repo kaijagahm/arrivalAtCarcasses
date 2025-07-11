@@ -52,7 +52,7 @@ all_carcasses_cropped %>%
         legend.position = "bottom")
 
 # Let's create a test set of wild carcasses that we know are actually wild based on looking at the map
-stn <- pustn <- pustn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% mutate(type = "inpa")
+stn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% mutate(type = "inpa")
 wild <- purrr::list_rbind(gps_all_wild) %>% sf::st_drop_geometry() %>% mutate(type = "wild")
 
 all <- bind_rows(stn, wild) %>%
