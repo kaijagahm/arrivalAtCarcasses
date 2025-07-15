@@ -688,15 +688,19 @@ get_distances <- function(roosts, inpa_carcs){
 get_www <- function(ww){
   www <- ww %>%
     dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
-    mutate(age_2023 = 2023-birth_year,
+    mutate(age_2022 = 2022-birth_year,
+           age_2023 = 2023-birth_year,
            age_2024 = 2024-birth_year,
+           age_group_2022 = case_when(age_2022 > 5 ~ "02_adult",
+                                      age_2022 <= 5 ~ "01_juv_sub",
+                                      .default = NA),
            age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
                                       age_2023 <= 5 ~ "01_juv_sub",
                                       .default = NA),
            age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
                                       age_2024 <= 5 ~ "01_juv_sub",
                                       .default = NA)) %>%
-    dplyr::select("local_identifier" = "Movebank_id", age_group_2023, age_group_2024) %>%
+    dplyr::select("local_identifier" = "Movebank_id", age_group_2022, age_group_2023, age_group_2024) %>%
     distinct()
   return(www)
 }

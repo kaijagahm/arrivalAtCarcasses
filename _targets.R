@@ -450,7 +450,7 @@ list(
   tar_target(carcIDs_nbda_wild, map_chr(wild_carcs, ~as.character(.x$carcID[1]))),
   ## Need to convert the oas into numeric indices instead of a character vector
   tar_target(oas_nbda_numbers_wild, map2(oa_see_wild, oa_see_indivs_sorted_wild, ~match(.x, .y))),
-  tar_target(dates_nbda_wild, map2(wild_carcs, firsts_see_wild, ~mutate(data.frame(dateOnly = seq.Date(from = .x$dateOnly, to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(dates_nbda_wild, map2(wild_carcs, firsts_see_wild, ~mutate(data.frame(dateOnly = seq.Date(from = as.Date(.x$date), to = max(.y$dateOnly), by = "day")), day = 1:n()))),
   tar_target(firsts_with_dates_wild, map2(firsts_see_wild, dates_nbda_wild, ~left_join(.x, .y))),
   tar_target(days_vec_nbda_wild, map(firsts_with_dates_wild, "day")),
   tar_target(roost_mats_expanded_wild, expand_roost_mats(roosts_bin_fixed_see_wild, days_vec_nbda_wild, days_vec_nbda_wild)),
