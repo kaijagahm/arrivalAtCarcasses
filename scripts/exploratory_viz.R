@@ -24,9 +24,7 @@ carcasses_audited <- carcasses_audited %>%
   mutate(carcType = "inpa")
 # get all carcasses for the three hf windows, including both wild and inpa
 all_carcasses <- all_carcasses %>%
-  select(carcID, date, dateOnly, long, lat, geometry, X, Y, carcType, nBouts, nIndivs, carcassWeight) %>%
-  mutate(date = case_when(is.na(date) & !is.na(dateOnly) ~ lubridate::ymd(dateOnly), .default = date)) %>%
-  select(-dateOnly)
+  select(carcID, date, long, lat, geometry, X, Y, carcType, nBouts, nIndivs, carcassWeight)
 # add on all the carcasses from the other times besides the hf windows
 all_carcasses <- bind_rows(all_carcasses %>% mutate(source = "ac"), carcasses_audited %>% mutate(source = "ca")) 
 # deduplicate, defaulting to all_carcasses
@@ -38,11 +36,11 @@ tar_load(bbox_south_big)
 all_carcasses <- st_crop(all_carcasses, bbox_south_big)
 
 all_carcasses %>% 
-  mutate(year = lubridate::year(date), dateOnly = lubridate::date(date)) %>%
-  group_by(year, dateOnly, carcType) %>%
-  filter(year >= 2020) %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(year, date, carcType) %>%
+  filter(year >= 2022) %>%
   summarize(n = n()) %>%
-  ggplot(aes(x = dateOnly, y = n, fill = carcType))+
+  ggplot(aes(x = date, y = n, fill = carcType))+
   geom_col()+
   facet_wrap(~year, scales = "free_x", nrow = 1)+
   theme_classic()
@@ -231,7 +229,7 @@ cell_values_long_2023 %>%
        subtitle = "Southern region",
        y = "Weighted distance to active carcasses (km)",
        x = "Date",
-       caption = "Carcass weights decline exponentially, rate = 1; Distance power = 2 (inverse square)\nBlack line = region-wide mean")
+       caption = "Carcass weights decline exponentially, rate = -2; Distance power = 2 (inverse square)\nBlack line = region-wide mean")
 
 # How far do vultures tend to be from the carcass, compared with the average of pixels? (habitat selection question)
 # I don't have full data pulled for any of the years, so let's focus on the high-frequency period in 2023
@@ -265,10 +263,14 @@ vulture_day_means <- out %>%
 
 # How far are the vultures
 vulture_day_means %>%
-  ggplot(aes(x = dateOnly, y = mn, group = local_identifier))+
-  geom_line(aes(y = region_mean), col = "blue")+
+  ggplot(aes(x = dateOnly, y = sqrt(mn)/1000, group = local_identifier))+
+  geom_line(aes(y = sqrt(region_mean)/1000), col = "blue")+
   geom_line(alpha = 0.1)+
-  theme_minimal() # trivial result--vultures stay much closer to carcasses than the average pixel. In order to really quantify what's going on, we would need to do habitat selection analyses. This also of course doesn't take into account that you can be really close to one carcass and really far from another.
+  theme_minimal()+ # trivial result--vultures stay much closer to carcasses than the average pixel. In order to really quantify what's going on, we would need to do habitat selection analyses. This also of course doesn't take into account that you can be really close to one carcass and really far from another.
+  labs(y = "Mean distance (km)",
+       x = "Date (2023)",
+       title = "Mean distance of vultures from carcasses over time",
+       subtitle = "Blue line = average of pixels in region; black lines = vultures")
 
 # Now get the carcass weights over time
 test <- all_carcasses %>% filter(date >= start & date <= end) %>%
@@ -349,7 +351,10 @@ ggplot() +
   geom_sf(data = rp_cropped) +
   geom_sf(data = carc, col = "red") +
   scale_color_viridis_c()+
-  theme_minimal()
+  theme_minimal()+
+  labs(title = "Track of T90b",
+       subtitle = "-24hr through 48h",
+       color = "Altitude (m)")
 
 mapview(focal_line)+mapview(focal_indiv, zcol = "height_above_msl")+mapview(rp_cropped, col.regions = "gray")+mapview(carc, col.regions = "red")
 
@@ -452,17 +457,6 @@ approaches %>%
        x = "Time since carcass (hours)") # awesome! we're seeing the distance to the carcass decrease over time as the vulture approaches.
 
 # My brain keeps thinking that I'm seeing altitude declines over time. Let's do that instead
-approaches %>%
-  filter(local_identifier %in% indivs) %>%
-  ggplot(aes(x = time_since_carcass, y = height_above_msl, shape = firstlanding, group = local_identifier))+
-  geom_line()+
-  geom_point()+
-  scale_shape_manual(values = c(19, 1))+
-  facet_wrap(~local_identifier, scales = "free_x")+
-  scale_color_viridis_c()+
-  theme_minimal()+ 
-  labs(y = "Height above MSL (m)",
-       x = "Time since carcass (hours)") # this shows the flight profiles of the vultures over time as they approach the carcass.
 
 # Colored by distance to carcass
 approaches %>%
@@ -485,10 +479,12 @@ fig <- plot_ly(approaches, x = ~location_long, y = ~location_lat, z = ~height_ab
 
 fig
 
-approaches %>% ggplot(aes(x = timestamp, y = dist_to_carcass, col = local_identifier))+
+approaches %>% ggplot(aes(x = time_since_carcass, y = dist_to_carcass/1000, col = local_identifier))+
   geom_line()+
-  theme_minimal()+
-  theme(legend.position = "none") # approaches over time. We can start to see upward slopes within each day, indicating that the vultures seem to be approaching from farther away as the day goes on. Let's see if that's borne out when we analyze it explicitly.
+  theme_classic()+
+  theme(legend.position = "none")+
+  labs(y = "Distance to carcass (km)",
+       x = "Hours since carcass")# approaches over time. We can start to see upward slopes within each day, indicating that the vultures seem to be approaching from farther away as the day goes on. Let's see if that's borne out when we analyze it explicitly.
 
 # Okay what about looking at the max distance of each approach
 breaks <- c(-24, 0, 24, 48, 72)
@@ -505,3 +501,40 @@ approaches_stats %>%
   labs(y = "Start distance of approach (km)",
        x = "Start time of approach (hours since carcass)")+
   scale_color_viridis_d(name = "Hours since carcass") # for this carcass, vultures are beginning their approaches from farther away as the day goes on--this would support either local enhancement or chains of vultures.
+
+# X-Y coordinates of approaches
+head(approaches)
+approaches <- approaches %>%
+  ungroup() %>%
+  st_as_sf() %>%
+  bind_cols(st_coordinates(.))
+
+approaches %>%
+  arrange(local_identifier, time_since_carcass) %>%
+  filter(local_identifier %in% indivs) %>%
+  ggplot()+
+  geom_path(aes(X, Y, col = height_above_msl, group = local_identifier))+
+  geom_point(aes(X, Y, col = height_above_msl, group = local_identifier))+
+  scale_color_viridis_c()+
+  geom_point(data = carc, aes(X, Y), color = "red")+
+  theme_minimal()+
+  coord_equal()+
+  labs(y = "UTM Northing",
+       x = "UTM Easting",
+       color = "Altitude (m)")
+
+approaches %>%
+  mutate(day = cut(as.numeric(hour), breaks)) %>%
+  arrange(local_identifier, time_since_carcass) %>%
+  #filter(local_identifier %in% indivs) %>%
+  ggplot()+
+  geom_path(aes(X, Y, col = ground_speed, group = local_identifier))+
+  geom_point(aes(X, Y, col = ground_speed, group = local_identifier))+
+  scale_color_viridis_c()+
+  geom_point(data = carc, aes(X, Y), color = "red")+
+  theme_minimal()+
+  coord_equal()+
+  labs(y = "UTM Northing",
+       x = "UTM Easting",
+       color = "Ground speed (m/s)")+
+  facet_wrap(~day)

@@ -256,7 +256,7 @@ list(
   # tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
   # tar_target(focal_gps_2024, readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))),
   
-  ## Feeding bouts (2023 and 2024 high-frequency periods only)
+  ## Feeding bouts (high-frequency periods only)
   tar_target(feeding_bouts_prob_thresh, 0.75),
   tar_target(feeding_bouts_2022, map(full_2022, ~getfeeding(.x, feeding_bouts_prob_thresh))),
   tar_target(feeding_bouts_2023, map(full_2023, ~getfeeding(.x, feeding_bouts_prob_thresh))),
@@ -347,15 +347,15 @@ list(
                mutate(carcType = "wild")),
   tar_target(wild_carcasses_5, get_wild_carcasses(wild_carcass_bouts_df_5) %>%
                mutate(carcType = "wild")),
-  tar_target(wild_carcass_bouts_again, assign_time_dist(wild_carcass_bouts_df_5, wild_carcasses_5)),
-  tar_target(carcass_bouts_dedup, group_by(carcass_bouts_df_5, boutID) %>%
+  tar_target(wild_carcass_bouts_again, assign_time_dist(wild_carcass_bouts_df_10, wild_carcasses_10)),
+  tar_target(carcass_bouts_dedup, group_by(carcass_bouts_df_10, boutID) %>%
                arrange(boutID, time_since_carcass) %>%
                slice(1) %>%
                ungroup()),  # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
   tar_target(all_bouts_assigned, combine_all_bouts(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts)),
   ## Combine carcasses
-  tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bouts_df_5)),
-  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa"), wild_carcasses_5)),
+  tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bouts_df_10)),
+  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses_10 %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
   
   tar_target(bbox_south_big, sf::st_transform(st_as_sfc(st_set_crs(st_bbox(c("xmin" = 34.205, 
                                                "xmax" = 35.787,

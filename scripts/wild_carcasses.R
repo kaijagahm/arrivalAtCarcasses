@@ -6,35 +6,29 @@ library(ggplot2)
 library(viridis)
 
 tar_load(gps_all_wild) 
-length(gps_all_wild) # down to 17 carcasses with southern bounding box filter and most restrictive slope criteria (no feeding bouts with slope > 5% considered).
+length(gps_all_wild) # down to 17 carcasses with southern bounding box filter and medium slope criteria (no feeding bouts with slope > 10% considered).
 tar_load(gps_all_inpa) # allowing 3 days before, for direct comparison with wild.
-length(gps_all_inpa) #58 carcasses
+length(gps_all_inpa) #81 carcasses
 tar_load(detection_distance_flight)
 tar_load(detection_distance_stationary)
-tar_load(wild_carcasses_5)
-mapview(wild_carcasses_5) # looks somewhat reasonable?--ah, no, there are still a bunch on cliffs.
+tar_load(wild_carcasses_10) # 33 carcasses
+mapview(wild_carcasses_10, zcol = "year") # looks somewhat reasonable?--ah, no, there are still a bunch on cliffs.
 tar_load(all_carcasses_cropped)
 
 ## Timeline
 all_carcasses_cropped %>%
   mutate(year = lubridate::year(datetime)) %>%
-  filter(year == 2023) %>%
-  ggplot(aes(x = X, y = Y, col = datetime, shape = carcType), alpha = 0.75)+
+  #filter(year == 2023) %>%
+  ggplot(aes(x = X, y = Y, col = factor(year), shape = carcType), alpha = 0.75)+
   geom_point(size =4)+
   theme_minimal()+
-  scale_color_viridis()+
+  scale_color_viridis_d()+
   scale_shape_manual(values = c(19, 1))+
-  ggtitle("Carcass locations, 2023")
-
-all_carcasses_cropped %>%
-  mutate(year = lubridate::year(datetime)) %>%
-  filter(year == 2024) %>%
-  ggplot(aes(x = X, y = Y, col = datetime, shape = carcType), alpha = 0.75)+
-  geom_point(size =4)+
-  theme_minimal()+
-  scale_color_viridis()+
-  scale_shape_manual(values = c(19, 1))+
-  ggtitle("Carcass locations, 2024")
+  labs(title = "Carcass locations",
+       subtitle = "2022-2024 high-frequency periods",
+       y = "UTM Northing",
+       x = "UTM Easting",
+       color = "Year")
 
 all_carcasses_cropped %>%
   mutate(year = lubridate::year(datetime),
@@ -49,7 +43,8 @@ all_carcasses_cropped %>%
   labs(y = "Carcass count",
        x = "Date")+
   theme(text = element_text(size = 14),
-        legend.position = "bottom")
+        legend.position = "bottom",
+        panel.grid = element_blank())
 
 # Let's create a test set of wild carcasses that we know are actually wild based on looking at the map
 stn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% mutate(type = "inpa")
@@ -230,3 +225,4 @@ plots_wild[[8]]
 plots_wild[[9]] # another beginning-of-season thing I think, in 2024
 
 # For the purposes of just the wild ones alone, let's back up 24 hours. Which means I need to add 24 hours onto the beginning of the gps data
+
