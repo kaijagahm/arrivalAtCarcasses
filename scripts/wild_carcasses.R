@@ -83,7 +83,7 @@ wild_test_box <- sf::st_set_crs(sf::st_bbox(c("xmin" = 34.44266,
                                               "ymin" = 30.89326,
                                               "xmax" = 34.94688,
                                               "ymax" = 31.17904)), "WGS84")
-wild_subset <- st_crop(st_transform(wild_carcasses_5, "WGS84"), wild_test_box) %>% st_transform(32636)
+wild_subset <- st_crop(st_transform(wild_carcasses_10, "WGS84"), wild_test_box) %>% st_transform(32636)
 
 all_wild_subset <- all_wild %>% filter(carcID %in% wild_subset$carcID)
 
@@ -97,8 +97,8 @@ for(i in 1:length(cids_inpa)){
     filter(carcID == cids_inpa[[i]])
   lab <- df$info[1]
   plt <- df %>% group_by(carcID, hour, status) %>%
-    summarize(n = length(unique(local_identifier))) %>%
-    ggplot(aes(x = hour, fill = status, y = n))+
+    summarize(n = length(unique(local_identifier)), .groups = "drop") %>%
+    ggplot(aes(x = as.numeric(hour), fill = status, y = n))+
     geom_vline(aes(xintercept = 0), linetype = 2, alpha = 0.5)+
     geom_col(position = position_stack(reverse = TRUE))+
     labs(y = "# vultures", x = "Hours since carcass", subtitle = lab)+
@@ -115,8 +115,8 @@ for(i in 1:length(cids_wild_subset)){
     filter(carcID == cids_wild_subset[[i]])
   lab <- df$info[1]
   plt <- df %>% group_by(carcID, hour, status) %>%
-    summarize(n = length(unique(local_identifier))) %>%
-    ggplot(aes(x = hour, fill = status, y = n))+
+    summarize(n = length(unique(local_identifier)), .groups = "drop") %>%
+    ggplot(aes(x = as.numeric(hour), fill = status, y = n))+
     geom_vline(aes(xintercept = 0), linetype = 2, alpha = 0.5)+
     geom_col(position = position_stack(reverse = TRUE))+
     labs(y = "# vultures", x = "Hours since carcass", subtitle = lab)+

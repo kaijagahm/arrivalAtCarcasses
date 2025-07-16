@@ -11,8 +11,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
-  controller = crew_controller_local(workers = 6)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra")#,
+  #controller = crew_controller_local(workers = 6)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -366,8 +366,6 @@ list(
   tar_target(days_after, 3),
   tar_target(days_before, 1),
   tar_target(days_before_wild, 3),
-  tar_target(seed_distance_flight, 2000),
-  tar_target(seed_distance_stationary, 1000),
   tar_target(seed_time_before, lubridate::minutes(30)),
   tar_target(detection_distance_flight, 2000),
   tar_target(detection_distance_stationary, 1000),
@@ -394,7 +392,9 @@ list(
   tar_target(roosts, get_roosts(gps_all)), 
   tar_target(roosts_wild, get_roosts(gps_all_wild)),
   ## 6. Get seeds
-  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary)),
+  tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
+  tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
+  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
   tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
   ## 7. Get distances from roosts to carcasses
   tar_target(distances, get_distances(roosts, inpa_carcs)),
@@ -412,18 +412,16 @@ list(
   # Get first sighting of each vulture to the carcass
   tar_target(firsts_see, get_firsts_see(see_carcass, inpa_carcs)),
   # Everything after this will be subsetted by has_visits or has_sightings; won't be calculated otherwise.
-  ## 15. Get GPS subsets for flight (four different intervals)
+  ## 15. Get GPS subsets for flight
   tar_target(gps_flight_allday_see, get_flight_allday(gps, has_enough_sightings)),
   tar_target(gps_flight_cumulative_see, get_gps_flight(gps, has_enough_sightings, see_times)),
   ## 16. Get roost nets
   tar_target(roosts_dates_see, get_roost_dates(roosts, has_enough_sightings)),
   tar_target(roost_thresh, 500),
   tar_target(roosts_bin_see, get_roosts_bin(roosts_dates_see, roost_thresh)),
-  #tar_target(roosts_wt_see, get_roosts_weighted(roosts_dates_see)),
   ## 17. Get flight nets (whole days)
   tar_target(fl_allday_bin_see, get_fl_bin_list(gps_flight_allday_see, detection_distance_flight)),
   tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, detection_distance_flight)),
-  #tar_target(fl_cumulative_wt_see, get_fl_wt_list(gps_flight_cumulative_see, detection_distance_flight)),
   # Fix networks to make sure they include all indivs
   tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
   tar_target(fl_cumulative_bin_fixed_see, fix_nets_list(fl_cumulative_bin_see, oa_see_indivs_sorted)),
@@ -434,23 +432,22 @@ list(
   
   # NBDA (wild carcasses) ---------------------------------------------------
   ## Define carcasses to run NBDA on. XXX Note: because wild carcIDs are assigned after the carcasses are defined from feeding bouts, which requires choosing a slope cutoff, these numbers are correct only for the 5 degree cutoff. Will need to change if we change the cutoff.
-  #tar_target(wild_carcs_for_nbda, c(1, 2, 5, 9, 16, 18, 22, 23, 57)),
-  #tar_target(wild_carcs_for_nbda_which, match(wild_carcs_for_nbda, map_dbl(wild_carcs, "carcID"))),
-  tar_target(gps_wild, remove_points_before(gps_all_wild, wild_carcs, days_after, hours_before = 24)), # XXX will need to edit this when we have more data in the original gps data. Currently, some carcs will be missing points from more than a few hours before.
-  tar_target(see_carcass_wild, get_see_carcass(gps_wild, wild_carcs, detection_distance_flight, detection_distance_stationary)),
-  tar_target(firsts_see_wild, get_firsts_see(see_carcass_wild, wild_carcs)),
+  tar_target(wild_carcs_for_nbda, c(65, 53)),
+  tar_target(wild_carcs_for_nbda_which, match(wild_carcs_for_nbda, map_dbl(wild_carcs, "carcID"))),
+  tar_target(gps_wild, remove_points_before(gps_all_wild[wild_carcs_for_nbda_which], wild_carcs[wild_carcs_for_nbda_which], days_after, hours_before = 24)), # XXX will need to edit this when we have more data in the original gps data. Currently, some carcs will be missing points from more than a few hours before.
+  tar_target(see_carcass_wild, get_see_carcass(gps_wild, wild_carcs[wild_carcs_for_nbda_which], detection_distance_flight, detection_distance_stationary)),
+  tar_target(firsts_see_wild, get_firsts_see(see_carcass_wild, wild_carcs[wild_carcs_for_nbda_which])),
   tar_target(oa_see_wild, purrr::map(firsts_see_wild, "local_identifier")),
   tar_target(oa_see_indivs_sorted_wild, purrr::map(oa_see_wild, sort)),
   # XXX skipping the flight networks for now. Just going to do the roost networks
-  # Everything from here on for the wild carcasses will be subsetted by wild_carcs_for_nbda
-  tar_target(roosts_dates_see_wild, get_roost_dates(roosts_wild, 1:length(wild_carcs))),
+  tar_target(roosts_dates_see_wild, get_roost_dates(roosts_wild[wild_carcs_for_nbda_which], 1:length(wild_carcs[wild_carcs_for_nbda_which]))),
   tar_target(roosts_bin_see_wild, get_roosts_bin(roosts_dates_see_wild, roost_thresh)),
   tar_target(roosts_bin_fixed_see_wild, fix_nets_list(roosts_bin_see_wild, oa_see_indivs_sorted_wild)),
-  tar_target(years_wild, get_years(wild_carcs, oa_see_wild)),
-  tar_target(carcIDs_nbda_wild, map_chr(wild_carcs, ~as.character(.x$carcID[1]))),
+  tar_target(years_wild, get_years(wild_carcs[wild_carcs_for_nbda_which], oa_see_wild)),
+  tar_target(carcIDs_nbda_wild, map_chr(wild_carcs[wild_carcs_for_nbda_which], ~as.character(.x$carcID[1]))),
   ## Need to convert the oas into numeric indices instead of a character vector
   tar_target(oas_nbda_numbers_wild, map2(oa_see_wild, oa_see_indivs_sorted_wild, ~match(.x, .y))),
-  tar_target(dates_nbda_wild, map2(wild_carcs, firsts_see_wild, ~mutate(data.frame(dateOnly = seq.Date(from = as.Date(.x$date), to = max(.y$dateOnly), by = "day")), day = 1:n()))),
+  tar_target(dates_nbda_wild, map2(wild_carcs[wild_carcs_for_nbda_which], firsts_see_wild, ~mutate(data.frame(dateOnly = seq.Date(from = as.Date(.x$date), to = max(.y$dateOnly), by = "day")), day = 1:n()))),
   tar_target(firsts_with_dates_wild, map2(firsts_see_wild, dates_nbda_wild, ~left_join(.x, .y))),
   tar_target(days_vec_nbda_wild, map(firsts_with_dates_wild, "day")),
   tar_target(roost_mats_expanded_wild, expand_roost_mats(roosts_bin_fixed_see_wild, days_vec_nbda_wild, days_vec_nbda_wild)),
@@ -471,6 +468,7 @@ list(
   # NBDA (INPA carcasses) ---------------------------------------------------
   tar_target(has_enough_sightings, get_has_enough_sightings(firsts_see, min_sightings)),
   tar_target(carcs_nbda, inpa_carcs[has_enough_sightings]),
+  tar_target(carcIDs_nbda, map_chr(carcs_nbda, ~as.character(.x$carcID[1]))),
   tar_target(oa_see, purrr::map(firsts_see[has_enough_sightings], "local_identifier")),
   tar_target(oa_see_indivs_sorted, purrr::map(oa_see, sort)),
   tar_target(seeds_see, seed_indivs[has_enough_sightings]),
@@ -478,7 +476,7 @@ list(
   tar_target(see_times, purrr::map(firsts_see[has_enough_sightings], "timestamp")),
   tar_target(firsts_nbda, firsts_see[has_enough_sightings]),
   tar_target(years, get_years(carcs_nbda, oa_see)),
-  tar_target(carcIDs_nbda, map_chr(carcs_nbda, ~as.character(.x$carcID[1]))),
+
   ## Here we decide to use the all-day flight networks for this. Will have to re-write the arguments to these targets if we decide to use different flight networks instead.
   ## Need to convert the oas into numeric indices instead of a character vector
   tar_target(oas_nbda_numbers, map2(oa_see, oa_see_indivs_sorted, ~match(.x, .y))),
@@ -551,15 +549,4 @@ list(
     tar_target(Mods_2nets_So, mod_trycatch(nbdaData_list_2nets, type = "social", iterations = 1000)),
     tar_target(summary_2nets_ilvs, get_summaries(Mods_2nets_So_ilvs, carcIDs_nbda, "dynamic", "both")),
     tar_target(summary_2nets, get_summaries(Mods_2nets_So, carcIDs_nbda, "dynamic", "both"))#,
-  #
-  #   # Model averaging ---------------------------------------------------------
-  #   # tar_target(constraintsVectMatrix, get_constraintsVectMatrix()),
-  #   # tar_target(modelset_list, get_modelset(nbdaData_list_2nets_ilvs, constraintsVectMatrix)),
-  #   # tar_target(networksSupport_list, map(modelset_list, networksSupport)),
-  #   # tar_target(maes_list, get_maes(modelset_list)),
-  #   # tar_target(lowerLimitsByModel_net1, get_lowerlimits(modelset_list, net = 1, conf_level = 0.95)),
-  #   # tar_target(lowerLimitsByModel_net2, get_lowerlimits(modelset_list, net = 2, conf_level = 0.95)),
-  #   # tar_target(lowerLimits_propST_MA_net1, map_dbl(lowerLimitsByModel_net1, ~sum(.x$propST*.x$adjAkWeight, na.rm = T))),
-  #   # tar_target(lowerLimits_propST_MA_net2, map_dbl(lowerLimitsByModel_net2, ~sum(.x$propST*.x$adjAkWeight, na.rm = T)))
-
 )
