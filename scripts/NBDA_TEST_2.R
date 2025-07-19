@@ -358,5 +358,6 @@ stats %>%
   coord_flip() # niiice
 
 # test removing seeds [TO DO!]
+# bring code for carcass arrival plots from wild_carcasses.R into here [TO DO!]
 # get more gps data for use w any carcass [DONE--JUST NEED TO FINISH PIPELINE AND LINK TO THIS SCRIPT]
 # turn days into hours for more precise targeting [DONE]
