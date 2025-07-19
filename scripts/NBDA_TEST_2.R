@@ -20,8 +20,8 @@ prepare_nbda_data <- function(gps,
                               ddf,
                               dds,
                               gps_spd,
-                              n_days_gps_dynamic = c(3),
-                              n_days_gps_static = list(),
+                              n_hours_gps_dynamic = list(),
+                              n_hours_gps_static = list(),
                               remove_seeds = FALSE,
                               seed_time_before = NULL,
                               sighting_time_max_hours = 72) {
@@ -62,100 +62,87 @@ prepare_nbda_data <- function(gps,
     slice(1) %>%
     ungroup() %>%
     arrange(time_since_carcass)
+  
   n_found <- length(unique(first_sightings$local_identifier))
   n_gps <- length(unique(gps$local_identifier))
-  prop_found <- n_found/n_gps
+  prop_found <- n_found / n_gps
   
   if (remove_seeds) {
     first_sightings <- first_sightings %>%
       filter(!(local_identifier %in% seeds))
-  } else {
-    first_sightings <- first_sightings
   }
   
-  # Alphabetical order of all individuals
   all_indivs_sorted <- sort(unique(gps$local_identifier))
-
-  # Temporal order of arrivals
+  
   oa_indivs <- first_sightings %>%
     arrange(time_since_carcass, timestamp) %>%
     pull(local_identifier) %>%
     as.character()
   
   oa_nums <- match(oa_indivs, all_indivs_sorted)
-  if(length(oa_nums) != length(oa_indivs)){stop("Length of oa vecs does not match")}
-  if(length(oa_nums) == length(unique(gps$local_identifier)) & prop_found != 1){stop("All individuals are included in oa_nums, but not all indivs found the carcass. Something's wrong!")}
-  
-  # association matrix indices--which association matrix to use for which arrival (in the case of dynamic networks)
-  ami <- if (remove_seeds) {
-    which(!(first_sightings_all$local_identifier %in% seeds))[match(oa_indivs, first_sightings_all$local_identifier)]
-  } else {
-    seq_along(oa_nums) # since we're going to expand our gps subsets/dynamic network slices, this can just be a vector of integers.
+  if (length(oa_nums) != length(oa_indivs)) {
+    stop("Length of oa vecs does not match")
+  }
+  if (length(oa_nums) == length(unique(gps$local_identifier)) && prop_found != 1) {
+    stop("All individuals are included in oa_nums, but not all indivs found the carcass. Something's wrong!")
   }
   
-  # Helper to get calendar date
-  get_date <- function(dt) as.Date(dt)
-  gps_dates_available <- unique(get_date(gps$timestamp))
+  ami <- seq_along(oa_nums)
   
   # Infer carcass placement timestamp from first row
   first_row <- gps[1, ]
-  carcass_placement_time <- first_row$timestamp - first_row$time_since_carcass
+  carcass_placement_time <- first_row$timestamp - dhours(as.numeric(first_row$time_since_carcass))
   carcass_placement_date <- as.Date(carcass_placement_time)
   
-  # Cumulative GPS: all data from midnight until that individual's first sighting of the carcass
   gps_data_cumulative <- map(first_sightings$timestamp, function(ts) {
-    day_start <- as.POSIXct(paste0(get_date(ts), " 00:00:00"), tz = tz(ts))
+    day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts))
     gps %>% filter(timestamp >= day_start, timestamp <= ts)
   })
   
-  # same-day GPS: all data from the same calendar day
-  gps_data_sameday <- map(get_date(first_sightings$timestamp), function(date_val) {
-    gps %>% filter(get_date(timestamp) == date_val)
+  gps_data_sameday <- map(as.Date(first_sightings$timestamp), function(date_val) {
+    gps %>% filter(as.Date(timestamp) == date_val)
   })
   
-  # Dynamic day-prior GPS segments per individual
-  gps_data_ndays_prior_list <- list()
-  for (n in n_days_gps_dynamic) {
-    var_name <- paste0("gps_data_ndays_prior_", formatC(n, width = 2, flag = "0"))
-    
-    gps_data_list <- map(get_date(first_sightings$timestamp), function(date_val) {
-      start_date <- date_val - n
-      date_seq <- seq.Date(start_date, date_val - 1, by = "day")
-      if (all(date_seq %in% gps_dates_available)) {
-        gps %>% filter(get_date(timestamp) %in% date_seq)
-      } else {
-        NULL
-      }
-    })
-    
-    gps_data_ndays_prior_list[[var_name]] <- gps_data_list
-  }
-  
-  # Static carcass-date-based segments (shared across individuals)
-  gps_data_static_ndays_list <- list()
-  for (range in n_days_gps_static) {
+  # Dynamic hour-range GPS segments per individual
+  gps_data_dynamic_hour_ranges <- list()
+  for (range in n_hours_gps_dynamic) {
     if (length(range) != 2 || range[1] > range[2]) {
-      stop("Each element of n_days_gps_static must be a length-2 integer vector where the first number <= second.")
+      stop("Each element of n_hours_gps_dynamic must be a length-2 numeric vector where the first number <= second.")
     }
-    
     start_offset <- range[1]
     end_offset <- range[2]
-    start_date <- carcass_placement_date + start_offset
-    end_date <- carcass_placement_date + end_offset
-    date_seq <- seq.Date(start_date, end_date, by = "day")
+    start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
+    end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
+    var_name <- sprintf("gps_data_dynamic_hours_%s_%s", start_label, end_label)
     
-    var_name <- sprintf("gps_data_static_days_%+03d_%+03d", start_offset, end_offset)
+    gps_data_list <- map(first_sightings$timestamp, function(ts) {
+      start_time <- ts + dhours(as.numeric(start_offset))
+      end_time <- ts + dhours(as.numeric(end_offset))
+      gps %>% filter(timestamp >= start_time, timestamp <= end_time)
+    })
     
-    gps_data <- if (all(date_seq %in% gps_dates_available)) {
-      gps %>% filter(get_date(timestamp) %in% date_seq)
-    } else {
-      NULL
-    }
-    
-    gps_data_static_ndays_list[[var_name]] <- gps_data
+    gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
-  # Final combined output
+  # Static hour-range GPS segments (shared across individuals)
+  gps_data_static_hour_ranges <- list()
+  for (range in n_hours_gps_static) {
+    if (length(range) != 2 || range[1] > range[2]) {
+      stop("Each element of n_hours_gps_static must be a length-2 numeric vector where the first number <= second.")
+    }
+    start_offset <- range[1]
+    end_offset <- range[2]
+    start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
+    end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
+    var_name <- sprintf("gps_data_static_hours_%s_%s", start_label, end_label)
+    
+    start_time <- carcass_placement_time + dhours(as.numeric(start_offset))
+    end_time <- carcass_placement_time + dhours(as.numeric(end_offset))
+    gps_data <- gps %>% filter(timestamp >= start_time, timestamp <= end_time)
+    
+    gps_data_static_hour_ranges[[var_name]] <- gps_data
+  }
+  
   base_list <- list(
     n_found = n_found,
     n_gps = n_gps,
@@ -171,9 +158,10 @@ prepare_nbda_data <- function(gps,
     gps_data_sameday = gps_data_sameday
   )
   
-  final_list <- c(base_list, gps_data_ndays_prior_list, gps_data_static_ndays_list)
+  final_list <- c(base_list, gps_data_dynamic_hour_ranges, gps_data_static_hour_ranges)
   return(final_list)
 }
+
 
 make_assMatrix <- function(input) {
   # Case 1: Single data frame (static)
@@ -245,8 +233,18 @@ seed_time_before <- 30 #mins
 tar_load(detection_distance_flight)
 tar_load(detection_distance_stationary)
 tar_load(gps_spd)
-test <- prepare_nbda_data(gps = gps_30days, remove_seeds = FALSE, seed_time_before = NULL, ddf = detection_distance_flight, dds = detection_distance_stationary, gps_spd = gps_spd, n_days_gps_dynamic = c(1, 3), n_days_gps_static = list(c(-30, -1), c(-7, -1)))
 
+test <- prepare_nbda_data(gps = gps_30days, 
+                          remove_seeds = FALSE, 
+                          seed_time_before = NULL, 
+                          ddf = detection_distance_flight, 
+                          dds = detection_distance_stationary, 
+                          gps_spd = gps_spd, 
+                          n_hours_gps_dynamic = list(c(-24, 0),
+                                                     c(-72, 0)),
+                          n_hours_gps_static = list(c(-720, -24), 
+                                                    c(-168, -24)),
+                          sighting_time_max_hours = 72)
 # Networks
 ## Dynamic
 ### flight, day by day
@@ -256,20 +254,20 @@ fl_wt_sameday <- fix_nets(map(test$gps_data_sameday, ~get_fl_weighted(.x, dist =
 fl_bin_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
 fl_wt_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
 ### flight, since 3 days prior
-fl_bin_3daysprior <- fix_nets(map(test$gps_data_ndays_prior_03, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_3daysprior <- fix_nets(map(test$gps_data_ndays_prior_03, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-
+fl_bin_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_wt_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
 ### flight, since 1 day prior
-fl_bin_1daysprior <- fix_nets(map(test$gps_data_ndays_prior_01, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_1daysprior <- fix_nets(map(test$gps_data_ndays_prior_01, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_bin_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_wt_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+
 
 ## Static
 ### flight, -30 through -1 days
-fl_bin_n30n01 <- fix_nets(list(get_fl_bin(test$`gps_data_static_days_-30_-01`, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_n30n01 <- fix_nets(list(get_fl_weighted(test$`gps_data_static_days_-30_-01`, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_bin_n720n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_wt_n720n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
 ### flight, -7 through -1 days
-fl_bin_n07n01 <- fix_nets(list(get_fl_bin(test$`gps_data_static_days_-07_-01`, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_n07n01 <- fix_nets(list(get_fl_weighted(test$`gps_data_static_days_-07_-01`, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_bin_n168n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+fl_wt_n168n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday <- nbdaData(label = test$carcID, 
@@ -281,7 +279,7 @@ data_sameday_wt <- nbdaData(label = test$carcID,
 mod_sameday <- oadaFit(data_sameday, type = "social")
 mod_sameday_wt <- oadaFit(data_sameday_wt, type = "social")
 
-## Dynamic flight networks, cumulative same day up til time of first sighting
+## Dynamic flight networks, cumulative
 data_cumul <- nbdaData(label = test$carcID, 
          assMatrix = make_assMatrix(fl_bin_cumulative_sameday), 
          orderAcq = test$oa_nums)
@@ -291,7 +289,7 @@ data_cumul_wt <- nbdaData(label = test$carcID,
 mod_cumul <- oadaFit(data_cumul, type = "social")
 mod_cumul_wt <- oadaFit(data_cumul_wt, type = "social")
 
-## Dynamic flight networks, 3 days prior to day on which the individual found the carcass (but not including the finding day)
+## Dynamic flight networks, -72 hours through sighting
 data_3daysprior <- nbdaData(label = test$carcID, 
                           assMatrix = make_assMatrix(fl_bin_3daysprior), 
                           orderAcq = test$oa_nums)
@@ -301,37 +299,49 @@ data_3daysprior_wt <- nbdaData(label = test$carcID,
 mod_3daysprior <- oadaFit(data_3daysprior, type = "social")
 mod_3daysprior_wt <- oadaFit(data_3daysprior_wt, type = "social")
 
-## Static flight networks, days -30 through -1
-data_n30n01 <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(fl_bin_n30n01), 
+## Dynamic flight networks, -24 hours through sighting
+data_1daysprior <- nbdaData(label = test$carcID, 
+                            assMatrix = make_assMatrix(fl_bin_1daysprior), 
                             orderAcq = test$oa_nums)
-data_n30n01_wt <- nbdaData(label = test$carcID, 
-                        assMatrix = make_assMatrix(fl_wt_n30n01), 
-                        orderAcq = test$oa_nums)
-mod_n30n01 <- oadaFit(data_n30n01, type = "social")
-mod_n30n01_wt <- oadaFit(data_n30n01_wt, type = "social")
+data_1daysprior_wt <- nbdaData(label = test$carcID, 
+                               assMatrix = make_assMatrix(fl_wt_1daysprior), 
+                               orderAcq = test$oa_nums)
+mod_1daysprior <- oadaFit(data_1daysprior, type = "social")
+mod_1daysprior_wt <- oadaFit(data_1daysprior_wt, type = "social")
 
-## Static flight networks, days -7 through -1
-data_n07n01 <- nbdaData(label = test$carcID, 
-                        assMatrix = make_assMatrix(fl_bin_n07n01), 
+## Static flight networks, -720 hours (30 days prior) through -24 hours (1 day prior)
+data_n720n024 <- nbdaData(label = test$carcID, 
+                            assMatrix = make_assMatrix(fl_bin_n720n024), 
+                            orderAcq = test$oa_nums)
+data_n720n024_wt <- nbdaData(label = test$carcID, 
+                        assMatrix = make_assMatrix(fl_wt_n720n024), 
                         orderAcq = test$oa_nums)
-data_n07n01_wt <- nbdaData(label = test$carcID, 
-                        assMatrix = make_assMatrix(fl_wt_n07n01), 
-                        orderAcq = test$oa_nums)
-mod_n07n01 <- oadaFit(data_n07n01, type = "social")
-mod_n07n01_wt <- oadaFit(data_n07n01_wt, type = "social")
+mod_n720n024 <- oadaFit(data_n720n024, type = "social")
+mod_n720n024_wt <- oadaFit(data_n720n024_wt, type = "social")
+
+## Static flight networks, -168 hours (7 days prior) through -24 hours (1 day prior)
+data_n168n024 <- nbdaData(label = test$carcID, 
+                          assMatrix = make_assMatrix(fl_bin_n168n024), 
+                          orderAcq = test$oa_nums)
+data_n168n024_wt <- nbdaData(label = test$carcID, 
+                             assMatrix = make_assMatrix(fl_wt_n168n024), 
+                             orderAcq = test$oa_nums)
+mod_n168n024 <- oadaFit(data_n168n024, type = "social")
+mod_n168n024_wt <- oadaFit(data_n168n024_wt, type = "social")
 
 mods_list <- list("dynamic_sameday_bin" = mod_sameday, 
                   "dynamic_cumulative_bin" = mod_cumul, 
                   "dynamic_3days_bin" = mod_3daysprior, 
-                  "static_3001_bin" = mod_n30n01, 
-                  "static_0701_bin" = mod_n07n01,
+                  "dynamic_1days_bin" = mod_1daysprior,
+                  "static_n720_n024_bin" = mod_n720n024, 
+                  "static_n168_n024_bin" = mod_n168n024,
                   "dynamic_sameday_wt" = mod_sameday_wt, 
                   "dynamic_cumulative_wt" = mod_cumul_wt, 
                   "dynamic_3days_wt" = mod_3daysprior_wt, 
-                  "static_3001_wt" = mod_n30n01_wt, 
-                  "static_0701_wt" = mod_n07n01_wt)
-stats <- purrr::list_rbind(map(mods_list, getmodstats)) # XXX need to modify getmodstats to include the names here
+                  "dynamic_1days_wt" = mod_1daysprior_wt,
+                  "static_n720_n024_wt" = mod_n720n024_wt, 
+                  "static_n168_n024_wt" = mod_n168n024_wt)
+stats <- purrr::list_rbind(map(mods_list, getmodstats))
 stats$mod <- names(mods_list)
 stats <- stats %>%
   mutate(net_type = factor(str_extract(mod, "static|dynamic"), levels = c("static", "dynamic")),
@@ -345,8 +355,8 @@ stats %>%
   theme_classic()+
   geom_hline(aes(yintercept = 0), linetype = 2)+
   labs(y = "S", x = "Model", color = "Network type")+
-  coord_flip()
+  coord_flip() # niiice
 
-# test removing seeds
-# get more gps data for use w any carcass
-# turn days into hours for more precise targeting
+# test removing seeds [TO DO!]
+# get more gps data for use w any carcass [DONE--JUST NEED TO FINISH PIPELINE AND LINK TO THIS SCRIPT]
+# turn days into hours for more precise targeting [DONE]

@@ -12,14 +12,14 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra")#,
-  #controller = crew_controller_local(workers = 6)
+  #controller = crew_controller_local(workers = 3)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
 
 list(
-  # tar_target(pw, "data/movebankCredentials/pw.Rda", format = "file"),
-  # tar_target(loginObject, get_loginObject(pw)),
+  tar_target(pw, "data/movebankCredentials/pw.Rda", format = "file"),
+  tar_target(loginObject, get_loginObject(pw)),
   # tar_target(ww_file, "data/raw/whoswho_vultures_20230920_new.xlsx", format = "file"),
   ## ACC data files for classifying the bouts
   tar_target(data_files_2022, list.files(here("data/ACC/2022_hf_period/raw/"), full.names = T, pattern = ".csv")),
@@ -31,11 +31,11 @@ list(
   tar_target(acc_2022_flipped, flip_devices(unobs_raw_acc_2022)),
   tar_target(acc_2023_flipped, flip_devices(unobs_raw_acc_2023)),
   tar_target(acc_2024_flipped, flip_devices(unobs_raw_acc_2024)),
-  tar_target(mindate_22, lubridate::ymd_hms(min(acc_2022_flipped$UTC_datetime))),
+  tar_target(mindate_22, lubridate::ymd_hms(min(acc_2022_flipped$UTC_datetime) - lubridate::days(30))),
   tar_target(maxdate_22, lubridate::ymd_hms(max(acc_2022_flipped$UTC_datetime)) + lubridate::days(5)),
-  tar_target(mindate_23, lubridate::ymd_hms(min(acc_2023_flipped$UTC_datetime))),
+  tar_target(mindate_23, lubridate::ymd_hms(min(acc_2023_flipped$UTC_datetime) - lubridate::days(30))),
   tar_target(maxdate_23, lubridate::ymd_hms(max(acc_2023_flipped$UTC_datetime)) + lubridate::days(5)),
-  tar_target(mindate_24, lubridate::ymd_hms(min(acc_2024_flipped$UTC_datetime))),
+  tar_target(mindate_24, lubridate::ymd_hms(min(acc_2024_flipped$UTC_datetime)-lubridate::days(30))),
   tar_target(maxdate_24, lubridate::ymd_hms(max(acc_2024_flipped$UTC_datetime)) + lubridate::days(5)),
   tar_target(minmax_dates, list(mindate_22, maxdate_22, mindate_23, maxdate_23, mindate_24, maxdate_24)),
   
@@ -367,8 +367,8 @@ list(
   tar_target(days_before, 1),
   tar_target(days_before_wild, 3),
   tar_target(seed_time_before, lubridate::minutes(30)),
-  tar_target(detection_distance_flight, 2000),
-  tar_target(detection_distance_stationary, 1000),
+  tar_target(ddf, 2000),
+  tar_target(dds, 1000),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), # XXX I'm not sure we want to crop these so tightly. Let's rethink this. If we do mapview(all_carcasses)+mapview(all_carcasses_cropped, col.regions = "red"), we see that this cuts off some of the carcasses in the south quite arbitrarily. Will need to change this. We do want to crop it to the south generally and avoid anything super far away, but the bounding box needs to change.
   tar_target(all_bouts_cropped, sf::st_crop(all_bouts_assigned, bbox_south_big)),
@@ -379,9 +379,18 @@ list(
   tar_target(inpa_carcs, group_split(group_by(inpa, carcID))),
   tar_target(wild, filter(all_carcasses_cropped, carcType == "wild")),
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
-  tar_target(gps_2022, data.table::fread("data/ACC/2022_hf_period/created/gps_2022.csv")),
-  tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
-  tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
+  
+  tar_target(ornitela_data_2022, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[1]], dateTimeEndUTC = minmax_dates[[2]])),
+  tar_target(ornitela_data_2023, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[3]], dateTimeEndUTC = minmax_dates[[4]])),
+  tar_target(ornitela_data_2024, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_dates[[5]], dateTimeEndUTC = minmax_dates[[6]])),
+  
+  tar_target(gps_2022, dplyr::select(ornitela_data_2022, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
+  tar_target(gps_2023, dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
+  tar_target(gps_2024, dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
+  
+  # tar_target(gps_2022, data.table::fread("data/ACC/2022_hf_period/created/gps_2022.csv")),
+  # tar_target(gps_2023, data.table::fread("data/ACC/2023_hf_period/created/gps_2023.csv")),
+  # tar_target(gps_2024, data.table::fread("data/ACC/2024_hf_period/created/gps_2024.csv")),
   tar_target(gps_combined, get_gps_combined(gps_2022, gps_2023, gps_2024, bbox_south_big)),
   ## 4a. Convert gps data to Israel time 
   ## XXX fixme
@@ -392,9 +401,9 @@ list(
   tar_target(roosts, get_roosts(gps_all)), 
   tar_target(roosts_wild, get_roosts(gps_all_wild)),
   ## 6. Get seeds
-  tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
-  tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
-  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, detection_distance_flight, detection_distance_stationary)),
+  tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, ddf, dds)),
+  tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, ddf, dds)),
+  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, ddf, dds)),
   tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
   ## 7. Get distances from roosts to carcasses
   tar_target(distances, get_distances(roosts, inpa_carcs)),
@@ -407,7 +416,7 @@ list(
   ## 11. Make gps (i.e. remove points before the carcass)
   tar_target(gps, remove_points_before(gps_all, inpa_carcs, days_after, hours_before = 0)),
   ## 12. Get sightings of the carcass
-  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, detection_distance_flight, detection_distance_stationary)),
+  tar_target(see_carcass, get_see_carcass(gps, inpa_carcs, ddf, dds)),
   ## 13. Get firsts
   # Get first sighting of each vulture to the carcass
   tar_target(firsts_see, get_firsts_see(see_carcass, inpa_carcs)),
@@ -420,8 +429,8 @@ list(
   tar_target(roost_thresh, 500),
   tar_target(roosts_bin_see, get_roosts_bin(roosts_dates_see, roost_thresh)),
   ## 17. Get flight nets (whole days)
-  tar_target(fl_allday_bin_see, get_fl_bin_list(gps_flight_allday_see, detection_distance_flight)),
-  tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, detection_distance_flight)),
+  tar_target(fl_allday_bin_see, get_fl_bin_list(gps_flight_allday_see, ddf)),
+  tar_target(fl_cumulative_bin_see, get_fl_bin_list(gps_flight_cumulative_see, ddf)),
   # Fix networks to make sure they include all indivs
   tar_target(fl_allday_bin_fixed_see, fix_nets_list(fl_allday_bin_see, oa_see_indivs_sorted)),
   tar_target(fl_cumulative_bin_fixed_see, fix_nets_list(fl_cumulative_bin_see, oa_see_indivs_sorted)),
@@ -435,7 +444,7 @@ list(
   tar_target(wild_carcs_for_nbda, c(65, 53)),
   tar_target(wild_carcs_for_nbda_which, match(wild_carcs_for_nbda, map_dbl(wild_carcs, "carcID"))),
   tar_target(gps_wild, remove_points_before(gps_all_wild[wild_carcs_for_nbda_which], wild_carcs[wild_carcs_for_nbda_which], days_after, hours_before = 24)), # XXX will need to edit this when we have more data in the original gps data. Currently, some carcs will be missing points from more than a few hours before.
-  tar_target(see_carcass_wild, get_see_carcass(gps_wild, wild_carcs[wild_carcs_for_nbda_which], detection_distance_flight, detection_distance_stationary)),
+  tar_target(see_carcass_wild, get_see_carcass(gps_wild, wild_carcs[wild_carcs_for_nbda_which], ddf, dds)),
   tar_target(firsts_see_wild, get_firsts_see(see_carcass_wild, wild_carcs[wild_carcs_for_nbda_which])),
   tar_target(oa_see_wild, purrr::map(firsts_see_wild, "local_identifier")),
   tar_target(oa_see_indivs_sorted_wild, purrr::map(oa_see_wild, sort)),
