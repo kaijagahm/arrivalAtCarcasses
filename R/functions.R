@@ -984,7 +984,7 @@ fix_nets <- function(nets, indivs){
     missing <- indivs[!(indivs %in% names(net))]
     if(length(missing) > 0){
       toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
-      if(!any(net == "blank")){
+      if(!any(net == "blank", na.rm = T)){
         net_updated <- as.data.frame(bind_rows(net, toadd %>% mutate(ID1 = as.character(ID1))))
       }else{
         net_updated <- as.data.frame(toadd)
