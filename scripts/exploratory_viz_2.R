@@ -284,23 +284,25 @@ approach_points_mycarc %>%
   ggplot(aes(x = time_since_carcass, y = dist_to_carcass/1000, col = first_approach, group = interaction(local_identifier, approach_id)))+
   geom_line()+
   theme_classic()+
-  theme(legend.position = "none")+
+  #theme(legend.position = "none")+
   labs(y = "Distance to carcass (km)",
        x = "Hours since carcass",
        title = "All approaches to the carcass",
-       subtitle = "Colored by individual",
-       caption = mycarc)
+       subtitle = "Colored by first/later approach",
+       caption = mycarc,
+       color = "First approach")
 
 approach_points_mycarc2 %>% 
   ggplot(aes(x = time_since_carcass, y = dist_to_carcass/1000, col = first_approach, group = interaction(local_identifier, approach_id)))+
   geom_line()+
   theme_classic()+
-  theme(legend.position = "none")+
+  #theme(legend.position = "none")+
   labs(y = "Distance to carcass (km)",
        x = "Hours since carcass",
        title = "All approaches to the carcass",
-       subtitle = "Colored by individual",
-       caption = mycarc2)
+       subtitle = "Colored by first/later approach",
+       caption = mycarc2,
+       color = "First approach")
 
 # Okay what about looking at the max distance of each approach
 breaks <- c(-24, 0, 24, 48, 72, 96)
@@ -309,6 +311,8 @@ approaches_stats <- approach_points_mycarc %>%
   mutate(day = cut(as.numeric(hour), breaks)) %>%
   group_by(carcID, local_identifier, day, first_approach) %>%
   summarize(max_dist_km = max(dist_to_carcass/1000),
+            time_start = min(timestamp),
+            time_arrive = max(timestamp),
             approach_start = min(time_since_carcass))
 
 approaches_stats2 <- approach_points_mycarc2 %>%
@@ -316,6 +320,8 @@ approaches_stats2 <- approach_points_mycarc2 %>%
   mutate(day = cut(as.numeric(hour), breaks)) %>%
   group_by(carcID, local_identifier, day, first_approach) %>%
   summarize(max_dist_km = max(dist_to_carcass/1000),
+            time_start = min(timestamp),
+            time_arrive = max(timestamp),
             approach_start = min(time_since_carcass))
 
 approaches_stats %>%
@@ -365,6 +371,79 @@ approaches_stats2 %>%
        title = "Approach distances",
        subtitle = "First 72 hours",
        caption = mycarc2)
+
+# Start distance of vultures vs. cumulative number of vultures that have arrived that day (as opposed to raw time)
+approaches_stats <- approaches_stats %>%
+  ungroup() %>%
+  arrange(time_arrive) %>%
+  mutate(n_already_arrived = (1:n())-1)%>% 
+  group_by(day) %>%
+  mutate(n_already_arrived_day = (1:n())-1)
+
+approaches_stats2 <- approaches_stats2 %>%
+  ungroup() %>%
+  arrange(time_arrive) %>%
+  mutate(n_already_arrived = (1:n())-1) %>% 
+  group_by(day) %>%
+  mutate(n_already_arrived_day = (1:n())-1)
+
+approaches_stats %>%
+  ggplot(aes(x = n_already_arrived_day, y = max_dist_km))+
+  geom_point(pch = 1)+
+  theme_minimal()+
+  geom_smooth(method = "lm", alpha = 0.2)+
+  labs(y = "Start distance of approach (km)",
+       x = "# vultures arrived that day",
+       caption = mycarc)+
+  facet_wrap(~day)
+
+approaches_stats2 %>%
+  ggplot(aes(x = n_already_arrived_day, y = max_dist_km))+
+  geom_point(pch = 1)+
+  theme_minimal()+
+  geom_smooth(method = "lm", alpha = 0.2)+
+  labs(y = "Start distance of approach (km)",
+       x = "# vultures arrived that day",
+       caption = mycarc2)+
+  facet_wrap(~day)
+
+approaches_stats %>%
+  ggplot(aes(x = n_already_arrived_day, y = max_dist_km, col = first_approach))+
+  geom_point(pch = 1)+
+  theme_minimal()+
+  geom_smooth(method = "lm", alpha = 0.2)+
+  labs(color = "First approach",
+       y = "Start distance of approach (km)",
+       x = "# vultures arrived that day",
+       caption = mycarc)+
+  facet_wrap(~day)
+
+approaches_stats2 %>%
+  ggplot(aes(x = n_arrived_day, y = max_dist_km, col = first_approach))+
+  geom_point(pch = 1)+
+  theme_minimal()+
+  geom_smooth(method = "lm", alpha = 0.2)+
+  labs(color = "Hours since carcass",
+       y = "Start distance of approach (km)",
+       x = "# vultures arrived that day",
+       caption = mycarc2)+
+  facet_wrap(~day) # XXX fix this--it isn't perfect because we need to match starts and ends better
+
+approaches_stats %>%
+  ggplot(aes(x = time_arrive, y = n_already_arrived_day))+geom_point()+
+  theme_minimal()+
+  labs(title = "Arrivals over 72 hours",
+       caption = mycarc,
+       x = "Arrival time",
+       y = "Vultures arrived that day")
+
+approaches_stats2 %>%
+  ggplot(aes(x = time_arrive, y = n_already_arrived_day))+geom_point()+
+  theme_minimal()+
+  labs(title = "Arrivals over 72 hours",
+       caption = mycarc2,
+       x = "Arrival time",
+       y = "Vultures arrived that day")
 
 # X-Y coordinates of first_approaches
 approach_points_mycarc <- approach_points_mycarc %>%
