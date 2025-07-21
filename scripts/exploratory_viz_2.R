@@ -2,6 +2,14 @@
 # Altitudes as vultures descend to the carcass
 library(sf)
 library(tidyverse)
+library(here)
+
+plots_inpa <- readRDS(here("data/plots_inpa.RDS"))
+plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
+names(plots_inpa)
+length(plots_inpa) # all 81 carcasses
+names(plots_wild_valid) 
+length(plots_wild_valid) # only 14 wild carcasses that we are considering to be valid at this point.
 
 # Let's look at the trajectories of vultures that approach one known carcass
 tar_load(gps_all_inpa)
