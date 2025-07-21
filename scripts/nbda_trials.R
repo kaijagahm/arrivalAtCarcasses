@@ -1,4 +1,5 @@
 # NBDA, all the different permutations
+# 7/20--this is soon to be obsolete
 library(tidyverse)
 library(NBDA)
 library(here)

@@ -11,6 +11,8 @@ tar_load(gps_all_inpa)
 dbf <- 30
 tar_load(days_after)
 
+hist(gps_combined$dateOnly, breaks = "weeks") # we have GPS data spanning the hf periods
+
 # Get histograms, for reference later
 plots_inpa <- readRDS(here("data/plots_inpa.RDS"))
 plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
@@ -241,7 +243,7 @@ length(wild_carcs_valid)
 
 # Do NBDA with INPA carcass -----------------------------------------------
 # Select an INPA carcass
-id <- 4467134
+id <- 4892923
 which_id <- which(unlist(map(inpa_carcs, "carcID")) == id)
 plots_inpa[[which_id]]
 
@@ -251,8 +253,6 @@ length(unique(gps_30days$dateOnly)) # gps_combined now has 30 days tacked onto t
 min(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date - days(dbf)
 max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after) # because the get_gps_all function adds 1 day to allow for calculating roost positions. So this should in fact be different.
 max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after+1) # one day more
-
-gps_30days_wild <- get_gps_all(wild_carcs_valid)
 
 seed_time_before <- 30 #mins
 tar_load(detection_distance_flight)
@@ -373,13 +373,21 @@ stats <- stats %>%
          wt = str_detect(mod, "wt"))
 
 stats %>%
+  mutate(sig = case_when(outputPar-se > 0 ~ T, .default = F)) %>%
   filter(mod != "static_3001") %>%
   ggplot(aes(x = mod, col = net_type))+
-  geom_segment(aes(y = outputPar-se, yend = outputPar + se))+
-  geom_point(aes(y = outputPar))+
+  geom_segment(aes(y = outputPar-se, yend = outputPar + se, linetype = sig), linewidth = 0.5)+
+  geom_point(aes(y = outputPar, shape = sig), size = 3)+
   theme_classic()+
+ # theme(legend.position = "none")+
+  scale_linetype_manual(values = c(2, 1))+
+  scale_shape_manual(values = c(1, 19))+
   geom_hline(aes(yintercept = 0), linetype = 2)+
-  labs(y = "S", x = "Model", color = "Network type")+
+  labs(y = "S (social transmission strength)",
+       x = "Model", color = "Network type",
+       shape = "Evidence for\nsocial\ntransmission",
+       linetype = "Evidence for\nsocial\ntransmission",
+       caption = id)+
   coord_flip() # niiice
 
 
@@ -463,7 +471,7 @@ data_3daysprior_wt_wild <- nbdaData(label = test_wild$carcID,
                                assMatrix = make_assMatrix(fl_wt_3daysprior_wild), 
                                orderAcq = test_wild$oa_nums)
 mod_3daysprior_wild <- oadaFit(data_3daysprior_wild, type = "social")
-mod_3daysprior_wt_wild <- oadaFit(data_3daysprior_wt_wild, type = "social")
+#mod_3daysprior_wt_wild <- oadaFit(data_3daysprior_wt_wild, type = "social")
 
 ## Dynamic flight networks, -24 hours through sighting
 data_1daysprior_wild <- nbdaData(label = test_wild$carcID, 
@@ -493,7 +501,7 @@ data_n168n024_wt_wild <- nbdaData(label = test_wild$carcID,
                              assMatrix = make_assMatrix(fl_wt_n168n024_wild), 
                              orderAcq = test_wild$oa_nums)
 mod_n168n024_wild <- oadaFit(data_n168n024_wild, type = "social")
-mod_n168n024_wt_wild <- oadaFit(data_n168n024_wt_wild, type = "social")
+#mod_n168n024_wt_wild <- oadaFit(data_n168n024_wt_wild, type = "social")
 
 mods_list_wild <- list("dynamic_sameday_bin" = mod_sameday_wild, 
                   "dynamic_cumulative_bin" = mod_cumul_wild, 
@@ -503,10 +511,11 @@ mods_list_wild <- list("dynamic_sameday_bin" = mod_sameday_wild,
                   "static_n168_n024_bin" = mod_n168n024_wild,
                   "dynamic_sameday_wt" = mod_sameday_wt_wild,
                   "dynamic_cumulative_wt" = mod_cumul_wt_wild,
-                  "dynamic_3days_wt" = mod_3daysprior_wt_wild,
+                  #"dynamic_3days_wt" = mod_3daysprior_wt_wild,
                   "dynamic_1days_wt" = mod_1daysprior_wt_wild,
-                  "static_n720_n024_wt" = mod_n720n024_wt_wild,
-                  "static_n168_n024_wt" = mod_n168n024_wt_wild)
+                  "static_n720_n024_wt" = mod_n720n024_wt_wild#,
+                  #"static_n168_n024_wt" = mod_n168n024_wt_wild
+)
 stats_wild <- purrr::list_rbind(map(mods_list_wild, getmodstats))
 stats_wild$mod <- names(mods_list_wild)
 stats_wild <- stats_wild %>%
@@ -514,16 +523,23 @@ stats_wild <- stats_wild %>%
          wt = str_detect(mod, "wt"))
 
 stats_wild %>%
-  filter(mod != "static_3001") %>%
+  mutate(sig = case_when(outputPar-se > 0 ~ T, .default = F)) %>%
   ggplot(aes(x = mod, col = net_type))+
-  geom_segment(aes(y = outputPar-se, yend = outputPar + se))+
-  geom_point(aes(y = outputPar))+
+  geom_segment(aes(y = outputPar-se, yend = outputPar + se, linetype = sig), linewidth = 0.5)+
+  geom_point(aes(y = outputPar, shape = sig), size = 3)+
   theme_classic()+
+  # theme(legend.position = "none")+
+  scale_linetype_manual(values = c(2, 1))+
+  scale_shape_manual(values = c(1, 19))+
   geom_hline(aes(yintercept = 0), linetype = 2)+
-  labs(y = "S", x = "Model", color = "Network type")+
-  coord_flip() # niiice
-
-# test_wild removing seeds [TO DO!]
+  labs(y = "S (social transmission strength)",
+       x = "Model", color = "Network type",
+       shape = "Evidence for\nsocial\ntransmission",
+       linetype = "Evidence for\nsocial\ntransmission",
+       caption = id)+
+  coord_flip()
+# test removing seeds [TO DO!]
+# add a wild carcass [DONE]
 # bring code for carcass arrival plots from wild_carcasses.R into here [TO DO!]
-# get more gps data for use w any carcass [DONE--JUST NEED TO FINISH PIPELINE AND LINK TO THIS SCRIPT]
+# get more gps data for use w any carcass [DONE]
 # turn days into hours for more precise targeting [DONE]
