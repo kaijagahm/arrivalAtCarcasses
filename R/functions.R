@@ -115,6 +115,76 @@ get_hires_tags <- function(with_age_sex, tag_sns){
   return(hires_tags)
 }
 
+get_acc_data <- function(data_files){
+  out <- purrr::list_rbind(purrr::map(data_files, ~as.data.frame(data.table::fread(.x, select = c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time", "datatype", "device_id", "acc_x", "acc_y", "acc_z"))))) %>% filter(!is.na(datatype))
+  return(out)
+}
+
+flip_devices <- function(unobs_raw_acc){
+  toflip_y <- unobs_raw_acc %>%
+    group_by(device_id) %>%
+    summarize(mny = mean(acc_y)) %>%
+    filter(mny < 0) %>%
+    pull(device_id)
+  if(length(toflip_y) >0){
+    out <- unobs_raw_acc %>%
+      mutate(acc_y = case_when(device_id %in% toflip_y ~ -1*acc_y,
+                               .default = acc_y))
+  }else{
+    out <- unobs_raw_acc
+  }
+  return(out)
+}
+
+calibrate_devices <- function(splitup, calibration_data){
+  prepared <- map(splitup, ~prepare_dataset(.x, calibration = calibration_data))
+  return(prepared)
+}
+
+get_bouts <- function(single_device){
+  out <- single_device[,c("bout_id", "device_id", "start_int")] %>%
+    group_by(device_id, bout_id) %>%
+    summarize(start = min(start_int),
+              end = max(start_int),
+              .groups = "drop")
+  return(out)
+}
+
+# get_preds <- function(single_device, mod){
+#   if(nrow(single_device) > 0){
+#     single_device <- as.data.frame(single_device)
+#     single_device$start_int <- as.character(single_device$start_int)
+#     single_device$bout_id <- as.integefr(single_device$bout_id)
+#     single_device$device_id <- as.integer(single_device$device_id)
+#     out <- predict(mod, single_device)
+#   }else{
+#     out <- NULL
+#   }
+#   return(out)
+# } # XXX this doesn't work for some reason
+
+get_preds_from_scores <- function(scores){
+  if(!is.null(scores)){
+    out <- apply(scores, 1, which.max)
+    out_vals <- names(scores)[out]
+    preds <- str_remove(out_vals, ".pred_")
+    return(tibble(".pred_class" = preds))
+  }else{
+    return(NULL)
+  }
+}
+
+get_scores <- function(single_device, mod){
+  if(nrow(single_device) > 0){
+    single_device <- as.data.frame(single_device)
+    single_device$start_int <- as.character(single_device$start_int)
+    out <- predict(mod, single_device, type = "prob")
+  }else{
+    out <- NULL
+  }  
+  return(out)
+}
+
 ################################### Bout classification functions
 
 mean_amplitude <- function(x) {
@@ -192,12 +262,12 @@ get_stat_feats <- function(x){
               sd_x = sd(acc_x),
               sd_y = sd(acc_y),
               sd_z = sd(acc_z),
-              skewness_x = skewness(acc_x),
-              skewness_y = skewness(acc_y),
-              skewness_z = skewness(acc_z),
-              kurtosis_x = kurtosis(acc_x),
-              kurtosis_y = kurtosis(acc_y),
-              kurtosis_z = kurtosis(acc_z),
+              skewness_x = moments::skewness(acc_x),
+              skewness_y = moments::skewness(acc_y),
+              skewness_z = moments::skewness(acc_z),
+              kurtosis_x = moments::kurtosis(acc_x),
+              kurtosis_y = moments::kurtosis(acc_y),
+              kurtosis_z = moments::kurtosis(acc_z),
               max_x = max(acc_x),
               max_y = max(acc_y),
               max_z = max(acc_z),
@@ -277,6 +347,7 @@ prepare_dataset <- function(x, calibration){
   full <- prepare_full_dataset(x, stat_feats = stat_feats)
   cat("Removing bad bouts\n")
   full <- remove_bad_bouts(full)
+  # deduplicate--kg addition 6/2/25
   rm(x)
   rm(stat_feats)
   return(full)
@@ -301,55 +372,77 @@ prepare_parallel <- function(x, cal){
 
 get_bouts_predictions <- function(prepared, predictions, 
                                   scores, bouts){
-  prepared %>%
-    dplyr::ungroup() %>%
-    dplyr::select(bout_id, device_id) %>%
-    dplyr::bind_cols(predictions) %>%
-    dplyr::bind_cols(scores) %>%
-    dplyr::rename("pred" = ".pred_class") %>%
-    dplyr::left_join(bouts, by = c("device_id", "bout_id"))
+  if(nrow(prepared) > 0){
+    out <- prepared %>%
+      dplyr::ungroup() %>%
+      dplyr::select(bout_id, device_id) %>%
+      dplyr::bind_cols(predictions) %>%
+      dplyr::bind_cols(scores) %>%
+      dplyr::rename("pred" = ".pred_class") %>%
+      dplyr::left_join(bouts, by = c("device_id", "bout_id")) %>%
+      distinct()
+  }else{
+    out <- NULL
+  }
+  return(out)
 }
 
-# get_matches <- function(df, foc){
-#   with_middles <- df %>%
-#     mutate(start = lubridate::ymd_hms(start),
-#            end = lubridate::ymd_hms(end),
-#            middle = start + difftime(end, start)/2) %>%
-#     group_by(bout_id) %>%
-#     group_split()
-#   
-#   within_5min <- map(with_middles, ~{
-#     foc[(.x$start[1] - minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),] 
-#   }, .progress = T)
-#   
-#   within_5min_speed <- map(within_5min, ~.x[.x$ground_speed <= 4,])
-#   
-#   within_11min_speed <- map(with_middles, ~{
-#     foc[(.x$start[1] - minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(11)) & foc$ground_speed < 4,] 
-#   }, .progress = T)
-#   
-#   keep <- purrr::pmap(list(within_5min, within_5min_speed, within_11min_speed, with_middles), ~{
-#     if(nrow(..2) > 0){
-#       match <- ..2
-#     }else if(nrow(..3) > 0){
-#       match <- ..3
-#     }else if(nrow(..1) > 0){
-#       match <- ..1
-#     }else{
-#       match <- foc[0,]
-#     }
-#     if(nrow(match) > 1){
-#       match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),]
-#     }
-#     if(nrow(match) > 0){
-#       match$bout_id <- ..4$bout_id[1]
-#       return(match)
-#     }else{
-#       return(NULL)
-#     }
-#   })
-#   keep_df <- purrr::list_rbind(keep)
-#   return(keep_df)
+get_matches <- function(df, foc, spd){
+  if(!is.null(df)){
+    with_middles <- df %>%
+      dplyr::mutate(start = lubridate::ymd_hms(start),
+                    end = lubridate::ymd_hms(end),
+                    middle = start + difftime(end, start)/2) %>%
+      dplyr::group_by(bout_id) %>%
+      dplyr::group_split()
+    
+    within_5min <- purrr::map(with_middles, ~{
+      foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
+    }, .progress = T)
+    
+    within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
+    
+    within_11min_speed <- purrr::map(with_middles, ~{
+      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
+    }, .progress = T)
+    
+    keep <- purrr::pmap(list(within_5min, within_5min_speed, 
+                             within_11min_speed, 
+                             with_middles
+    ), ~{
+      if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
+        match <- ..2
+      }
+      # else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
+      #   match <- ..3
+      # }
+      else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
+        match <- ..1
+      }else{
+        match <- foc[0,] # if none of those is true, return a 0-row data frame
+      }
+      if(nrow(match) > 1){
+        match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
+      }
+      if(nrow(match) > 0){ # for all bouts where we got any gps match at all...
+        match$bout_id <- ..4$bout_id[1] # assign the bout id of the current bout to the match as well
+        return(match)
+      }else{
+        match <- as.data.frame(foc[0,])
+        match$bout_id <- numeric(0)
+        return(match)
+      }
+    })
+  }else{
+    keep <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- list(keep[0,])
+  }
+  keep_df <- purrr::list_rbind(keep)
+  return(keep_df)
+}
+# 
+# get_matches <- function(pred, indiv, gps_spd) {
+#   paste("Matched", pred, indiv, gps_spd)
 # }
 
 assign_fs <- function(data, fs){
@@ -369,11 +462,14 @@ split_data_fun_forloop <- function(data){
 
 get_focal <- function(carcasses, times){
   focal <- carcasses %>% 
-    filter(datetime >= times[1],
-           datetime <= times[2]) %>%
+    filter(datetime >= times[[1]],
+           datetime <= times[[2]]) %>%
     bind_rows(carcasses %>%
-                filter(datetime >= times[3],
-                       datetime <= times[4])) %>%
+                filter(datetime >= times[[3]],
+                       datetime <= times[[4]])) %>%
+    bind_rows(carcasses %>%
+                filter(datetime >= times[[5]],
+                       datetime <= times[[6]])) %>%
     filter(!cage) %>% # remove carcasses placed in cages 
     dplyr::select(-c("color", "commentsKaija", "investigateKaija", "questionForGideon", "reassign_to", "todo", "interpretation", "flag"))
   return(focal) 
@@ -389,7 +485,7 @@ get_focal2 <- function(carcasses, times){
   return(focal)
 }
 
-get_carcass_bouts <- function(bouts, carcasses, dist, hours_before, hours_after){
+get_carcass_bouts <- function(bouts, carcasses, dist, hours_after){
   carcass_bouts <- map(1:nrow(carcasses), ~{
     carcass <- carcasses[.x,]
     id <- carcasses$carcID[.x]
@@ -400,14 +496,46 @@ get_carcass_bouts <- function(bouts, carcasses, dist, hours_before, hours_after)
     keep_distance <- bouts %>%
       filter(dist_to_carcass <= dist)
     keep_time <- keep_distance %>%
-      filter(start >= (carcass$datetime - hours(hours_before)), 
-             end <= (carcass$datetime + hours(hours_after))) %>% 
+      filter(end <= (carcass$datetime + hours(hours_after))) %>% 
       mutate(time_since_carcass = difftime(start, carcass$datetime, units = "hours"))
     return(keep_time)
   })
   return(carcass_bouts)
 }
 
+get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
+  stats <- carcass_bouts_df %>%
+    dplyr::select(carcID, boutID, individual_id) %>%
+    dplyr::group_by(carcID) %>% 
+    dplyr::summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individual_id))) %>%
+    dplyr::ungroup()
+  out <- dplyr::left_join(carcasses_focal, stats, by = "carcID")
+  return(out)
+}
+
+combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts){
+  # Get bouts assigned to an INPA carcass
+  inpa <- carcass_bouts_dedup %>% mutate(carcType = "inpa") %>% mutate(across(c(individual_id, tag_id), as.numeric))
+  # Get bouts assigned to a wild carcass
+  wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild") %>% mutate(across(c(individual_id, tag_id), as.numeric))
+  # Get bouts not assigned to either
+  neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID)) %>% mutate(across(c(individual_id, tag_id), as.numeric))
+  out <- bind_rows(inpa, wild, neither) %>%
+    sf::st_as_sf(crs = 32636)
+  return(out)
+}
+
+get_feeding_bouts <- function(file ="data/created/feeding_bouts.RDS"){
+  fb <- readRDS(here(file)) 
+  out <- fb %>%
+    dplyr::mutate(boutID = paste(year, device_id, bout_id, sep = "_")) %>%
+    dplyr::select(boutID,
+           "individualID" = device_id,
+           "prob" = .pred_Eating,
+           start, end, dateOnly, year, location_lat, location_long) %>%
+    bind_cols(sf::st_coordinates(.))
+  return(out)
+}
 
 # Clustering --------------------------------------------------------------
 cluster_carcasses <- function(carcasses, dist){
@@ -425,32 +553,32 @@ cluster_carcasses <- function(carcasses, dist){
   return(cluster_centroids)
 }
 
-get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 100, minBouts = 3, stations, stationDist = 750){
-  # Remove any that are within a certain distance of a known station
-  stations_buffered <- st_buffer(stations, stationDist) %>%
-    st_union()
-  tokeep <- map_dbl(st_intersects(remaining_bouts, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
-  remaining_bouts <- remaining_bouts[tokeep,]
+get_wild_carcass_bouts <- function(non_carcass_bouts, time, dist, minBouts, stations, stationDist, minIndivs){
+  # Remove any that are too close to a known station
+  stations_buffered <- st_buffer(stations, stationDist)
+  ncb <- sf::st_as_sf(non_carcass_bouts, crs = 32636) %>% bind_cols(st_coordinates(.))
+  tokeep <- map_dbl(st_intersects(ncb, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
+  non_carcass_bouts <- non_carcass_bouts[tokeep,]
   
   # Format appropriately for spatsoc
-  remaining_bouts$timestamp <- as.POSIXct(remaining_bouts$start)
-  remaining_bouts <- data.table::data.table(remaining_bouts)
+  ncb$timestamp <- as.POSIXct(ncb$start, tz = "UTC")
+  ncb <- data.table::data.table(ncb)
   
-  spatsoc::group_times(remaining_bouts, 
+  spatsoc::group_times(ncb, 
                        datetime = 'timestamp', 
                        threshold = time)
-  spatsoc::group_pts(remaining_bouts, threshold = dist, 
+  spatsoc::group_pts(ncb, threshold = dist, 
                      id ='boutID', coords = c('X', 'Y'), 
                      timegroup = 'timegroup')
   
-  # Restrict to groups that have at least 3 bouts and at least 2 individuals
-  remaining_bouts <- remaining_bouts %>%
+  # Restrict to groups that have at least 3 bouts and at least 3 individuals
+  ncb <- ncb %>%
     group_by(group) %>%
     filter(n() >= minBouts,
-           length(unique(individualID)) > 1)
+           length(unique(individual_id)) > minIndivs)
   
   # convert back to sf object for mapping
-  wild_carcass_bouts_df <- as.data.frame(remaining_bouts) %>%
+  wild_carcass_bouts_df <- as.data.frame(ncb) %>%
     rename("carcID" = group) %>%
     sf::st_as_sf(crs = 32636)
   
@@ -460,14 +588,19 @@ get_wild_carcass_bouts <- function(remaining_bouts, time = '24 hours', dist = 10
 get_wild_carcasses <- function(wild_carcass_bouts_df){
   # Get carcasses
   wild_carcasses <- wild_carcass_bouts_df %>%
+    mutate(year = lubridate::year(dateOnly)) %>%
     group_by(year, carcID) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = dateOnly[1],
               nBouts = n(),
-              nIndivs = length(unique(individualID))) %>%
-    sf::st_centroid() %>%
+              nIndivs = length(unique(individual_id)),
+              mintime = min(start),
+              maxtime = max(end)) %>%
+    sf::st_centroid() %>% # take spatial centroid to define the position of the "carcass"
     ungroup() %>%
-    bind_cols(sf::st_coordinates(.)) 
+    bind_cols(sf::st_coordinates(.)) %>%
+    mutate(datetime = mintime,
+           datetime = lubridate::ymd_hms(datetime)) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
 # "Limitations of threshold
@@ -486,8 +619,9 @@ dg <- function(x){
 
 
 # prepare_data ------------------------------------------------------------
-get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
-  gps_combined <- bind_rows(gps_2023, gps_2024) %>%
+get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox_south){
+  gps_combined <- bind_rows(gps_2022, gps_2023) %>%
+    bind_rows(gps_2024) %>%
     st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
     bind_cols(st_coordinates(.)) %>%
     rename("location_long" = X,
@@ -498,14 +632,14 @@ get_gps_combined <- function(gps_2023, gps_2024, bbox_south){
   return(gps_combined)
 }
 
-get_gps_all <- function(inpa_carcs, gps_combined, days_after){
-  gps_all <- vector(mode = "list", length = length(inpa_carcs))
-  for(i in 1:length(inpa_carcs)){
-    ic <- inpa_carcs[[i]]
+get_gps_all <- function(carcs, gps_combined, days_after, days_before){
+  gps_all <- vector(mode = "list", length = length(carcs))
+  for(i in 1:length(carcs)){
+    ic <- carcs[[i]]
     cid <- ic$carcID[1]
     carcass_datetime <- ic$datetime[1]
     out <- gps_combined %>%
-      filter(timestamp >= (carcass_datetime-days(1)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
+      filter(timestamp >= (carcass_datetime-days(days_before)) & timestamp <= (carcass_datetime + days(days_after+1))) %>%
       mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
@@ -532,6 +666,7 @@ get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_f
 }
 
 get_distances <- function(roosts, inpa_carcs){
+  inpa_carcs <- map(inpa_carcs, ~.x %>% mutate(year = lubridate::year(date)))
   distances <- map2(roosts, inpa_carcs, ~{
     if(!is.null(.x)){
       dist <- .x %>%
@@ -553,24 +688,28 @@ get_distances <- function(roosts, inpa_carcs){
 get_www <- function(ww){
   www <- ww %>%
     dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
-    mutate(age_2023 = 2023-birth_year,
+    mutate(age_2022 = 2022-birth_year,
+           age_2023 = 2023-birth_year,
            age_2024 = 2024-birth_year,
+           age_group_2022 = case_when(age_2022 > 5 ~ "02_adult",
+                                      age_2022 <= 5 ~ "01_juv_sub",
+                                      .default = NA),
            age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
                                       age_2023 <= 5 ~ "01_juv_sub",
                                       .default = NA),
            age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
                                       age_2024 <= 5 ~ "01_juv_sub",
                                       .default = NA)) %>%
-    dplyr::select("local_identifier" = "Movebank_id", age_group_2023, age_group_2024) %>%
+    dplyr::select("local_identifier" = "Movebank_id", age_group_2022, age_group_2023, age_group_2024) %>%
     distinct()
   return(www)
 }
 
-get_ilvs <- function(distances, www){
+xget_ilvs <- function(distances, www){
   yrs <- map_dbl(distances, ~.x$year[1])
   ilvs <- map2(distances, yrs, ~{
     tojoin <- www %>%
-      select(local_identifier, "age_group" = paste0("age_group_", .y))
+      dplyr::select(local_identifier, "age_group" = paste0("age_group_", .y))
     out <- left_join(.x, tojoin, by = "local_identifier")
     to_rename <- names(out)[grepl("roost_", names(out))]
     new_names <- paste0("roost_night", 0:(length(to_rename)-1))
@@ -579,11 +718,11 @@ get_ilvs <- function(distances, www){
   return(ilvs)
 }
 
-remove_points_before <- function(gps_all, inpa_carcs, days_after){
+remove_points_before <- function(gps_all, inpa_carcs, days_after, hours_before = 0){
   gps <- map2(gps_all, inpa_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>%
-      filter(timestamp >= lubridate::ymd_hms(dttm) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
+      filter(timestamp >= lubridate::ymd_hms(dttm)-hours(hours_before) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
   })
   return(gps)
 }
@@ -845,8 +984,8 @@ fix_nets <- function(nets, indivs){
     missing <- indivs[!(indivs %in% names(net))]
     if(length(missing) > 0){
       toadd <- data.frame(ID1 = missing, ID2 = missing, value = 0) %>% pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "value", values_fill = 0)
-      if(!any(net == "blank")){
-        net_updated <- as.data.frame(bind_rows(net, toadd))
+      if(!any(net == "blank", na.rm = T)){
+        net_updated <- as.data.frame(bind_rows(net, toadd %>% mutate(ID1 = as.character(ID1))))
       }else{
         net_updated <- as.data.frame(toadd)
       }
@@ -855,7 +994,7 @@ fix_nets <- function(nets, indivs){
     }else{
       net_updated <- net
     }
-    net_updated_2 <- net_updated %>% select(-ID1)
+    net_updated_2 <- net_updated %>% dplyr::select(-ID1)
     updated[[nt]] <- net_updated_2[indivs, indivs]
   }
   return(updated)
@@ -1050,7 +1189,7 @@ get_ilvs_lists <- function(ilvs_nbda, days_vec_nbda){
   for(i in 1:length(ilvs_lists)){
     ilvs <- ilvs_nbda[[i]]
     nights_vec <- days_vec_nbda[[i]]-1
-    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
+    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% dplyr::select(local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
     ilvs_lists[[i]] <- ilvs_this_carcass
   }
   return(ilvs_lists)
@@ -1213,3 +1352,457 @@ get_nbdaData_list_flex <- function(cids, oas, amis,
   
   return(outlist)
 }
+
+get_closest_station <- function(all_bouts_assigned, stations){
+  bouts_split <- sf::st_as_sf(all_bouts_assigned, coords = c("X", "Y"), crs = 32636, remove = F) %>%
+    group_by(boutID) %>%
+    group_split()
+  stn_min_dists_bouts <- map_dbl(bouts_split, ~min(st_distance(.x, stations)))
+  closest_stn_bouts <- purrr::list_rbind(map(bouts_split, ~stations[which.min(st_distance(.x, stations)),]))
+  return(closest_stn_bouts)
+}
+
+assign_time_dist <- function(wild_carcass_bouts_df, wild_carcasses){
+  wc <- wild_carcasses %>% dplyr::select(carcID, datetime, X, Y)
+  ids <- unique(wild_carcass_bouts_df$carcID)
+  lst <- vector(mode = "list", length = length(ids))
+  for(i in 1:length(lst)){
+    c <- wc[wc$carcID == ids[i],]
+    b <- wild_carcass_bouts_df %>% dplyr::filter(carcID == ids[i])
+    dists <- as.numeric(st_distance(b, c))
+    b$dist_to_carcass <- dists
+    times <- difftime(b$timestamp, c$datetime, units = "hours")
+    b$time_since_carcass <- times
+    lst[[i]] <- b
+  }
+  df <- purrr::list_rbind(lst)
+  return(df)
+}
+
+get_merged <- function(bouts_predictions){
+  merged <- purrr::list_rbind(bouts_predictions)
+  merged$sensor <- "ACC"
+  merged <- merged %>%
+    dplyr::rename("tag_local_identifier" = device_id,
+                  "timestamp" = start) %>%
+    dplyr::mutate(timestamp = case_when(nchar(timestamp) == 10 ~ paste0(timestamp, " 00:00:00"),
+                                        .default = timestamp)) %>%
+    dplyr::mutate(timestamp = lubridate::ymd_hms(timestamp))
+  return(merged)
+}
+
+get_full <- function(gps, merged){
+  full <- bind_rows(gps, mutate(merged, timestamp = lubridate::ymd_hms(timestamp)))
+  full <- full %>%
+    group_by(tag_local_identifier) %>%
+    arrange(timestamp) %>%
+    mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+    ungroup()
+  return(full)
+}
+
+prepare_gps_crossref <- function(full){
+  full <- full %>%
+    group_by(tag_local_identifier) %>%
+    arrange(timestamp) %>%
+    mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
+    ungroup()
+  return(full)
+}
+
+# attach_gps <- function(x, a = gps_bef, b = gps_aft, spd = gps_spd){
+#   out <- x %>% 
+#     group_by(tag_local_identifier) %>%
+#     arrange(timestamp) %>%
+#     rename("llo" = location_long, "lla" = location_lat, "td" = time_diff) %>%
+#     mutate(
+#       llo2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(llo),
+#                        is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(llo),
+#                        is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(llo),
+#                        is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(llo),
+#                        .default = llo),
+#       lla2 = case_when(is.na(lla) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(lla),
+#                        is.na(lla) & td < a & lead(ground_speed <= spd) ~ lead(lla),
+#                        is.na(lla) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(lla),
+#                        is.na(lla) & td < b & lead(ground_speed <= spd) ~ lead(lla),
+#                        .default =lla),
+#       gs2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(ground_speed),
+#                       is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(ground_speed),
+#                       is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(ground_speed),
+#                       is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(ground_speed),
+#                       .default = ground_speed)
+#     )%>% 
+#     # try another method of assigning still-unassigned acc bouts
+#     mutate(
+#       llo3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(llo),
+#                        is.na(llo2) & td < a ~ lead(llo), 
+#                        .default = llo2),
+#       lla3 = case_when(is.na(lla2) & lag(td) <= a ~ lag(lla2),
+#                        is.na(lla2) & td < a ~ lead(lla), 
+#                        .default = lla2),
+#       gs3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(ground_speed),
+#                       is.na(llo2) & td < a ~ lead(ground_speed), 
+#                       .default =  gs2)
+#     ) %>%
+#     ungroup()
+#   return(out)
+# }
+# 
+# keep_highest_gps_pair <- function(attached){
+#   out <- attached %>%
+#     dplyr::filter(sensor == "ACC") %>%
+#     dplyr::mutate(location_long = dplyr::case_when(!is.na(llo2) ~ llo2,
+#                                                    is.na(llo2) & !is.na(llo3) ~ llo3,
+#                                                    .default = location_long),
+#                   location_lat = dplyr::case_when(!is.na(lla2) ~ lla2,
+#                                                   is.na(lla2) & !is.na(lla3) ~ lla3,
+#                                                   .default = location_lat),
+#                   ground_speed = dplyr::case_when(!is.na(gs2) ~ gs2,
+#                                                   is.na(gs2) & !is.na(gs3) ~ gs3,
+#                                                   .default = ground_speed)) %>%
+#     dplyr::select(-c("llo2", "lla2", "gs2", "llo3", "lla3", "gs3"))
+#   return(out)
+# }
+
+getfeeding <- function(x, thresh){
+  if(!is.null(x)){
+    out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > thresh)
+  }else{
+    out <- NULL
+  }
+  return(out)
+}
+
+get_gps_forbouts_indivs <- function(device_ids, gps){
+  out <- map(device_ids, ~{
+    if(length(.x) > 0){
+      filter(gps, tag_local_identifier == .x)
+    }else{NULL}})
+  return(out)
+}
+
+buffer_cliffs <- function(cliffs, buffer_m, crs_to_transform = 32636){
+  transf <- sf::st_transform(cliffs, crs_to_transform)
+  out_polys <- st_buffer(transf, buffer_m)
+  out_multipoly <- st_union(out_polys)
+  return(out_multipoly)
+}
+
+join_gps_bouts <- function(bp, wg){
+  if(!is.null(bp) & !is.null(wg)){
+    first_gps <- as.data.frame(wg) %>% group_by(tag_local_identifier, bout_id) %>%
+      arrange(timestamp) %>%
+      slice(1) %>%
+      ungroup()
+    out <- left_join(bp, first_gps, by = c("device_id" = "tag_local_identifier", "bout_id"))
+  }else{
+    out <- data.frame(bout_id = NA, device_id = NA, pred = NA, .pred_Eating = NA, .pred_Flapping = NA, .pred_Ground = NA, .pred_Lying = NA, .pred_Soaring = NA, .pred_Standing = NA, start = NA, end = NA, local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, height_above_msl = NA)
+    out <- out[0,]
+  }
+  return(out)
+}
+
+remove_bouts_on_cliffs <- function(bouts, cliffs){
+  intersections <- st_intersects(bouts, cliffs)
+  lgl <- map_dbl(intersections, length)
+  tokeep <- which(lgl == 0)
+  keep <- bouts[tokeep,]
+  return(keep)
+}
+
+# DEM ---------------------------------------------------------------------
+get_slopes <- function(filenames, bbox_south_big, neighbors = 8, feeding_bouts_stationary){
+  bbox_south_vect <- terra::vect(st_transform(bbox_south_big, "WGS84"))
+  demlist <- vector(mode = "list", length = length(filenames))
+  for(i in 1:length(demlist)){
+    demlist[[i]] <- terra::rast(filenames[i])
+  } 
+  cropped_list <- map(demlist, function(r) {
+    tryCatch({
+      crop(r, bbox_south_vect)
+    }, error = function(e) {
+      message("Error cropping raster: ", e$message)
+      return(NULL) # Return NULL if an error occurs
+    })
+  })
+  filtered_list <- cropped_list[!sapply(cropped_list, is.null)]
+  merged_raster <- Reduce(f = merge, x =filtered_list)
+  terrain <- terra::terrain(merged_raster, v = "slope", unit = "degrees", neighbors = neighbors)
+  terrain_proj <- terra::project(terrain, "epsg:32636")
+  
+  feeding_bouts_vect <- terra::vect(feeding_bouts_stationary)
+  slopes <- terra::extract(terrain_proj, feeding_bouts_vect)
+  feeding_bouts_stationary_withslopes <- mutate(feeding_bouts_stationary, slope = slopes$slope)
+  return(feeding_bouts_stationary_withslopes)
+}
+
+
+# Raster functions --------------------------------------------------------
+points_to_raster <- function(
+    carcasses_sf,            # sf POINT object
+    bbox,                    # bounding box (numeric or object convertible to sf bbox)
+    resolution = 10000       # grid cell size in meters (default 10km)
+) {
+  # Ensure carcasses are in a projected CRS (assume UTM if not set)
+  if (is.na(st_crs(carcasses_sf))) {
+    stop("Input 'carcasses_sf' must have a defined CRS.")
+  }
+  if (st_is_longlat(carcasses_sf)) {
+    stop("Please project 'carcasses_sf' to a projected CRS (e.g., UTM).")
+  }
+  
+  # Convert bbox to sf polygon if needed
+  if (is.numeric(bbox) && length(bbox) == 4) {
+    bbox_mat <- matrix(c(bbox[1], bbox[2], bbox[3], bbox[4]), ncol = 2, byrow = TRUE)
+    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]), crs = st_crs(carcasses_sf)))
+  } else if (inherits(bbox, "sf") || inherits(bbox, "sfc") || inherits(bbox, "SpatVector")) {
+    bbox_poly <- st_as_sfc(st_bbox(bbox))
+    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
+  } else {
+    stop("Invalid 'bbox' format. Provide a numeric vector of length 4 or an sf/sfc/SpatVector object.")
+  }
+  
+  # Create a regular grid over the bounding box
+  grid <- st_make_grid(bbox_poly, cellsize = resolution, square = TRUE)
+  grid_sf <- st_sf(grid_id = 1:length(grid), geometry = grid)
+  
+  # Spatial join: assign carcasses to grid cells
+  joined <- st_join(carcasses_sf, grid_sf, join = st_within)
+  
+  # Count carcasses per grid cell
+  counts <- joined |>
+    group_by(grid_id) |>
+    summarise(carcass_count = n(), .groups = "drop")
+  
+  # Merge counts back to full grid, fill NAs with 0
+  grid_with_counts <- left_join(grid_sf, st_drop_geometry(counts), by = "grid_id") |>
+    mutate(carcass_count = ifelse(is.na(carcass_count), 0, carcass_count))
+  
+  # Convert to SpatVector
+  grid_vect <- vect(grid_with_counts)
+  
+  # Create raster template
+  r_template <- rast(grid_vect, resolution = resolution)
+  
+  # Rasterize
+  r <- rasterize(grid_vect, r_template, field = "carcass_count", fun = NULL, background = 0)
+  
+  return(r)
+}
+dist_to_carcasses <- function(
+    carcasses_sf,
+    bbox,
+    resolution = 1000,
+    start_date = NULL,
+    end_date = NULL,
+    active_days = 3,         # used only if weight_col=NULL
+    weight_col = NULL,       # NULL = unweighted, else name of weight col
+    decay_rate = 0,          # ignored if weight_col=NULL
+    min_weight = 0,          # ignored if weight_col=NULL
+    distance_power = 1,
+    visibility_radius = Inf  # Inf means no limit
+) {
+  # Validate inputs
+  if (!"date" %in% names(carcasses_sf)) stop("Missing 'date' column.")
+  if (!inherits(carcasses_sf$date, "Date")) {
+    carcasses_sf$date <- as.Date(carcasses_sf$date)
+  }
+  if (st_is_longlat(carcasses_sf)) stop("Please project 'carcasses_sf' to a projected CRS.")
+  
+  if (!is.null(weight_col) && !(weight_col %in% names(carcasses_sf))) {
+    stop(paste("Missing weight column:", weight_col))
+  }
+  
+  # Convert start/end dates
+  if (!is.null(start_date)) start_date <- as.Date(start_date)
+  if (!is.null(end_date)) end_date <- as.Date(end_date)
+  all_dates <- sort(unique(carcasses_sf$date))
+  if (is.null(start_date)) start_date <- min(all_dates)
+  if (is.null(end_date)) end_date <- max(all_dates)
+  date_seq <- seq(start_date, end_date, by = "day")
+  
+  # Build bbox polygon
+  if (is.numeric(bbox) && length(bbox) == 4) {
+    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]),
+                                   crs = st_crs(carcasses_sf)))
+  } else {
+    bbox_poly <- st_as_sfc(st_bbox(bbox))
+    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
+  }
+  
+  # Create grid and centroids
+  grid <- st_make_grid(bbox_poly, cellsize = resolution)
+  grid_sf <- st_sf(grid_id = seq_along(grid), geometry = grid)
+  suppressWarnings({
+    centroids <- st_centroid(grid_sf)
+  })
+  grid_vect <- vect(grid_sf)
+  r_template <- rast(grid_vect, resolution = resolution)
+  
+  # If weighted, fix missing weights
+  if (!is.null(weight_col)) {
+    if (anyNA(carcasses_sf[[weight_col]])) {
+      mean_weight <- mean(carcasses_sf[[weight_col]], na.rm = TRUE)
+      carcasses_sf[[weight_col]][is.na(carcasses_sf[[weight_col]])] <- mean_weight
+    }
+  }
+  
+  dist_stack <- rast()
+  empty_days <- c()
+  
+  for (current_date in date_seq) {
+    current_date <- as.Date(current_date)
+    
+    if (is.null(weight_col)) {
+      # Unweighted version: select active carcasses within active_days window
+      if (is.null(active_days)) stop("active_days must be set if weight_col=NULL")
+      active_window_start <- current_date - (active_days - 1)
+      active_carcasses <- carcasses_sf %>%
+        filter(date >= active_window_start & date <= current_date)
+      
+      if (nrow(active_carcasses) == 0) {
+        # Assign max diagonal distance
+        bbox_coords <- st_bbox(bbox_poly)
+        bbox_diagonal <- sqrt((bbox_coords["xmax"] - bbox_coords["xmin"])^2 +
+                                (bbox_coords["ymax"] - bbox_coords["ymin"])^2)
+        r <- setValues(r_template, bbox_diagonal)
+      } else {
+        dist_matrix <- st_distance(centroids, active_carcasses)
+        dist_matrix_mat <- as.numeric(dist_matrix)
+        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
+        
+        if (is.finite(visibility_radius)) {
+          # Mask distances beyond visibility radius
+          dist_matrix_mat[dist_matrix_mat > visibility_radius] <- NA
+          mean_distances <- apply(dist_matrix_mat, 1, function(x) {
+            if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+          })
+          # Replace NAs by max at the end
+        } else {
+          mean_distances <- apply(dist_matrix_mat, 1, mean)
+        }
+        
+        grid_sf$mean_dist <- mean_distances
+        grid_vect <- vect(grid_sf)
+        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = mean)
+      }
+    } else {
+      # Weighted version
+      decay_df <- carcasses_sf %>%
+        mutate(days_elapsed = as.numeric(current_date - .data[["date"]])) %>%
+        filter(!is.na(.data[[weight_col]]), days_elapsed >= 0) %>%
+        mutate(
+          decayed_weight = .data[[weight_col]] * exp(-decay_rate * days_elapsed),
+          active = decayed_weight >= min_weight
+        ) %>%
+        filter(active)
+      
+      if (nrow(decay_df) == 0) {
+        r <- setValues(r_template, NA)
+        empty_days <- c(empty_days, current_date)
+      } else {
+        dist_matrix <- st_distance(centroids, decay_df)
+        dist_matrix_mat <- as.numeric(dist_matrix)
+        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
+        
+        weight_matrix <- matrix(rep(decay_df$decayed_weight, each = nrow(centroids)),
+                                nrow = nrow(centroids))
+        
+        if (is.finite(visibility_radius)) {
+          in_range <- dist_matrix_mat <= visibility_radius
+          weight_matrix[!in_range] <- 0
+          dist_matrix_mat[!in_range] <- NA
+        }
+        
+        weighted_dists <- (dist_matrix_mat ^ distance_power) * weight_matrix
+        sum_weights <- rowSums(weight_matrix, na.rm = TRUE)
+        
+        weighted_mean_dist <- rowSums(weighted_dists, na.rm = TRUE) / sum_weights
+        weighted_mean_dist[sum_weights == 0] <- NA
+        
+        grid_sf$mean_dist <- weighted_mean_dist
+        grid_vect <- vect(grid_sf)
+        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = NULL)
+      }
+    }
+    
+    names(r) <- format(current_date, "%Y-%m-%d")
+    dist_stack <- c(dist_stack, r)
+  }
+  
+  # Replace NA pixels with global max distance across all layers
+  if (nlyr(dist_stack) == 0) stop("No layers were created.")
+  
+  global_max <- max(global(dist_stack, fun = "max", na.rm = TRUE)[[1]], na.rm = TRUE)
+  dist_stack[is.na(dist_stack)] <- global_max
+  
+  # Attach metadata
+  attr(dist_stack, "empty_days") <- empty_days
+  attr(dist_stack, "weight_col") <- weight_col
+  attr(dist_stack, "visibility_radius") <- visibility_radius
+  
+  return(dist_stack)
+}
+
+get_pngs <- function(rasterstack){
+  dates <- names(rasterstack)
+  
+  # Compute global min and max for color scale
+  global_min <- min(values(rasterstack), na.rm = TRUE)
+  global_max <- max(values(rasterstack), na.rm = TRUE)
+  
+  # Temporary list to store frame file paths
+  png_files <- character(nlyr(rasterstack))
+  
+  # Loop through each raster layer
+  for (i in seq_len(nlyr(rasterstack))) {
+    r <- rasterstack[[i]]
+    date_label <- dates[i]
+    
+    # Convert raster to data frame for ggplot
+    r_df <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
+    colnames(r_df) <- c("x", "y", "value")
+    
+    # Create ggplot
+    p <- ggplot(r_df) +
+      geom_raster(aes(x = x, y = y, fill = value)) +
+      coord_equal() +
+      scale_fill_viridis_c(
+        name = "Avg. Distance (m)",
+        limits = c(global_min, global_max),
+        na.value = "grey90",
+        direction = -1
+      ) +
+      labs(
+        title = paste("Date:", date_label),
+        x = NULL,
+        y = NULL
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+        legend.position = "right"
+      )
+    
+    # Save to PNG
+    png_file <- tempfile(fileext = ".png")
+    ggsave(png_file, plot = p, width = 6, height = 6, dpi = 150)
+    png_files[i] <- png_file
+  }
+  return(png_files)
+}
+
+get_cell_vals_long <- function(stack){
+  cell_coords <- map(1:(dim(stack)[1]*dim(stack)[2]), ~xyFromCell(stack, .x))
+  pts <- map(cell_coords, ~vect(matrix(.x, ncol = 2), type = "points", crs = crs(stack)))
+  ts <- map(pts, ~terra::extract(stack, .x))
+  values <-  map(ts, ~as_tibble(as.numeric(.x[1, -1])))
+  cell_values_long <- data.table::rbindlist(values, idcol = "cell")
+  coords <- data.table::rbindlist(map(cell_coords, as_tibble), idcol = "cell")
+  cell_values_long <- left_join(cell_values_long, coords, by = "cell") %>%
+    group_by(cell) %>%
+    mutate(date = lubridate::ymd(names(stack))) %>%
+    ungroup()
+  return(cell_values_long)
+}
+
