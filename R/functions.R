@@ -136,12 +136,12 @@ flip_devices <- function(unobs_raw_acc){
   return(out)
 }
 
-calibrate_devices <- function(splitup, calibration_data){
+caldev <- function(splitup, calibration_data){
   prepared <- map(splitup, ~prepare_dataset(.x, calibration = calibration_data))
   return(prepared)
 }
 
-get_bouts <- function(single_device){
+get_bo <- function(single_device){
   out <- single_device[,c("bout_id", "device_id", "start_int")] %>%
     group_by(device_id, bout_id) %>%
     summarize(start = min(start_int),
@@ -163,7 +163,7 @@ get_bouts <- function(single_device){
 #   return(out)
 # } # XXX this doesn't work for some reason
 
-get_preds_from_scores <- function(scores){
+gpfs <- function(scores){
   if(!is.null(scores)){
     out <- apply(scores, 1, which.max)
     out_vals <- names(scores)[out]
@@ -174,7 +174,7 @@ get_preds_from_scores <- function(scores){
   }
 }
 
-get_scores <- function(single_device, mod){
+get_sc <- function(single_device, mod){
   if(nrow(single_device) > 0){
     single_device <- as.data.frame(single_device)
     single_device$start_int <- as.character(single_device$start_int)
@@ -370,7 +370,7 @@ prepare_parallel <- function(x, cal){
   return(out)
 }
 
-get_bouts_predictions <- function(prepared, predictions, 
+gbp <- function(prepared, predictions, 
                                   scores, bouts){
   if(nrow(prepared) > 0){
     out <- prepared %>%
