@@ -349,15 +349,19 @@ list(
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
   # download data to match high frequency period, plus buffer
-  tar_target(ornitela_data_2022, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_buff[[1]], dateTimeEndUTC = minmax_buff[[2]])),
-  tar_target(ornitela_data_2023, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_buff[[3]], dateTimeEndUTC = minmax_buff[[4]])),
-  tar_target(ornitela_data_2024, vultureUtils::downloadVultures(loginObject = loginObject, removeDup = T, dfConvert = T, quiet = T, dateTimeStartUTC = minmax_buff[[5]], dateTimeEndUTC = minmax_buff[[6]])),
+  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022.RDS"))),
+  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023.RDS"))),
+  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024.RDS"))),
+  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022.RDS"))),
+  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023.RDS"))),
+  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024.RDS"))),
   
-  tar_target(gps_2022, dplyr::select(ornitela_data_2022, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
-  tar_target(gps_2023, dplyr::select(ornitela_data_2023, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
-  tar_target(gps_2024, dplyr::select(ornitela_data_2024, local_identifier, tag_id, timestamp, dateOnly, ground_speed, location_lat, location_long, individual_id, tag_local_identifier, height_above_msl)),
+  tar_target(gps_2022, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2022), as.data.frame(inpa_data_2022)), crs = "WGS84")),
+  tar_target(gps_2023, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2023), as.data.frame(inpa_data_2023)), crs = "WGS84")),
+  tar_target(gps_2024, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2024), as.data.frame(inpa_data_2024)), crs = "WGS84")),
   
   tar_target(gps_combined, get_gps_combined(gps_2022, gps_2023, gps_2024, bbox_south_big)),
+  # XXX START HERE
   ## 4a. Convert gps data to Israel time 
   ## XXX fixme
   ## 4b. Make gps_all

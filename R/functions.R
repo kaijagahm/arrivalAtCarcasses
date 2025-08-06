@@ -619,16 +619,14 @@ dg <- function(x){
 
 
 # prepare_data ------------------------------------------------------------
-get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox_south){
+get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){
   gps_combined <- bind_rows(gps_2022, gps_2023) %>%
     bind_rows(gps_2024) %>%
-    st_as_sf(coords = c("location_long", "location_lat"), crs = "WGS84") %>%
-    bind_cols(st_coordinates(.)) %>%
+    bind_cols(sf::st_coordinates(.)) %>%
     rename("location_long" = X,
            "location_lat" = Y) %>%
-    mutate(dateOnly = lubridate::ymd(dateOnly)) %>%
     st_transform(32636) %>%
-    st_crop(bbox_south)
+    st_crop(bbox)
   return(gps_combined)
 }
 
