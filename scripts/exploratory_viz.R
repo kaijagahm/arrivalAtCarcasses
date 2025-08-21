@@ -17,11 +17,11 @@ source(here("R/functions.R"))
 # Load carcass data
 tar_load(all_carcasses)
 tar_load(carcasses_audited)
-# get all INPA carcasses
+# get all stn carcasses
 carcasses_audited <- carcasses_audited %>%
   select(carcID, date, long, lat, geometry, X, Y, carcassWeight) %>%
-  mutate(carcType = "inpa")
-# get all carcasses for the three hf windows, including both wild and inpa
+  mutate(carcType = "stn")
+# get all carcasses for the three hf windows, including both wild and stn
 all_carcasses <- all_carcasses %>%
   select(carcID, date, long, lat, geometry, X, Y, carcType, nBouts, nIndivs, carcassWeight)
 # add on all the carcasses from the other times besides the hf windows
@@ -298,7 +298,7 @@ df %>%
   labs(y = "Carcass weight (kg)",
        x = "Date",
        col = "Carcass type",
-       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of INPA carcasses)"))+
+       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of stn carcasses)"))+
   theme(legend.position = "bottom")+
   scale_color_viridis_d()
 
@@ -307,8 +307,8 @@ meat_on_landscape <- df %>%
   group_by(date) %>%
   summarize(all = sum(carcassWeight, na.rm = T),
             `wild (est)` = sum(carcassWeight[carcType == "wild"], na.rm = T),
-            inpa = sum(carcassWeight[carcType == "inpa"], na.rm = T)) %>%
-  pivot_longer(cols = c("all", "wild (est)", "inpa"), names_to = "type", values_to = "kg")
+            stn = sum(carcassWeight[carcType == "stn"], na.rm = T)) %>%
+  pivot_longer(cols = c("all", "wild (est)", "stn"), names_to = "type", values_to = "kg")
 
 meat_on_landscape %>%
   filter(type != "all") %>%
@@ -319,5 +319,5 @@ meat_on_landscape %>%
        x = "Date",
        col = "Type of carcass",
        title = "Carcass weight, south, Mar-Apr 2023",
-       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of INPA carcasses)"))+
+       caption = paste0("Exponential decay parameter = -", dec, "\n", "(Wild carcasses set to mean weight of stn carcasses)"))+
   scale_fill_manual(values = c("firebrick1", "skyblue"))

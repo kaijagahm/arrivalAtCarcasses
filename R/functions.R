@@ -514,13 +514,13 @@ get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
 }
 
 combine_all_bouts <- function(carcass_bouts_dedup, wild_carcass_bouts_again, feeding_bouts){
-  # Get bouts assigned to an INPA carcass
-  inpa <- carcass_bouts_dedup %>% mutate(carcType = "inpa") %>% mutate(across(c(individual_id, tag_id), as.numeric))
+  # Get bouts assigned to a stn carcass
+  stn <- carcass_bouts_dedup %>% mutate(carcType = "stn") %>% mutate(across(c(individual_id, tag_id), as.numeric))
   # Get bouts assigned to a wild carcass
   wild <- wild_carcass_bouts_again %>% mutate(carcType = "wild") %>% mutate(across(c(individual_id, tag_id), as.numeric))
   # Get bouts not assigned to either
-  neither <- feeding_bouts %>% filter(!(boutID %in% inpa$boutID) & !(boutID %in% wild$boutID)) %>% mutate(across(c(individual_id, tag_id), as.numeric))
-  out <- bind_rows(inpa, wild, neither) %>%
+  neither <- feeding_bouts %>% filter(!(boutID %in% stn$boutID) & !(boutID %in% wild$boutID)) %>% mutate(across(c(individual_id, tag_id), as.numeric))
+  out <- bind_rows(stn, wild, neither) %>%
     sf::st_as_sf(crs = 32636)
   return(out)
 }
@@ -655,8 +655,8 @@ get_roosts <- function(gps_all, col){
   return(r)
 }
 
-get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
-  seeds_gps <- map2(gps_all, inpa_carcs, ~{
+get_seeds_gps <- function(gps_all, stn_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
+  seeds_gps <- map2(gps_all, stn_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
       filter((ground_speed >= 5 & dist_to_carcass < seed_distance_flight) | (ground_speed < 5 & dist_to_carcass < seed_distance_stationary))
@@ -664,9 +664,9 @@ get_seeds_gps <- function(gps_all, inpa_carcs, seed_time_before, seed_distance_f
   return(seeds_gps)
 }
 
-get_distances <- function(roosts, inpa_carcs){
-  inpa_carcs <- map(inpa_carcs, ~.x %>% mutate(year = lubridate::year(date)))
-  distances <- map2(roosts, inpa_carcs, ~{
+get_distances <- function(roosts, stn_carcs){
+  stn_carcs <- map(stn_carcs, ~.x %>% mutate(year = lubridate::year(date)))
+  distances <- map2(roosts, stn_carcs, ~{
     if(!is.null(.x)){
       dist <- .x %>%
         sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
@@ -717,8 +717,8 @@ xget_ilvs <- function(distances, www){
   return(ilvs)
 }
 
-remove_points_before <- function(gps_all, inpa_carcs, days_after, hours_before = 0){
-  gps <- map2(gps_all, inpa_carcs, ~{
+remove_points_before <- function(gps_all, stn_carcs, days_after, hours_before = 0){
+  gps <- map2(gps_all, stn_carcs, ~{
     dttm <- .y$datetime[1]
     .x %>%
       filter(timestamp >= lubridate::ymd_hms(dttm)-hours(hours_before) & timestamp <= (lubridate::ymd_hms(dttm) + days(days_after)))
@@ -726,22 +726,22 @@ remove_points_before <- function(gps_all, inpa_carcs, days_after, hours_before =
   return(gps)
 }
 
-get_at_carcass <- function(gps, inpa_carcs, arrival_distance){
-  at_carcass <- map2(gps, inpa_carcs, ~.x %>%
+get_at_carcass <- function(gps, stn_carcs, arrival_distance){
+  at_carcass <- map2(gps, stn_carcs, ~.x %>%
                        mutate(carcID = .y$carcID) %>%
                        filter(dist_to_carcass < arrival_distance & ground_speed < 5))
   return(at_carcass)
 }
 
-get_see_carcass <- function(gps, inpa_carcs, detection_distance_flight, detection_distance_stationary){
-  see_carcass <- map2(gps, inpa_carcs, ~.x %>%
+get_see_carcass <- function(gps, stn_carcs, detection_distance_flight, detection_distance_stationary){
+  see_carcass <- map2(gps, stn_carcs, ~.x %>%
                         mutate(carcID = .y$carcID) %>%
                         filter((ground_speed < 5 & dist_to_carcass < detection_distance_stationary) | (ground_speed >= 5 & dist_to_carcass < detection_distance_flight)))
   return(see_carcass)
 }
 
-get_firsts <- function(at_carcass, inpa_carcs){
-  firsts <- map2(at_carcass, inpa_carcs, ~{
+get_firsts <- function(at_carcass, stn_carcs){
+  firsts <- map2(at_carcass, stn_carcs, ~{
     if(nrow(.x) > 1){
       out <- .x %>%
         filter(timestamp >= .y$datetime) %>%
@@ -765,8 +765,8 @@ get_firsts <- function(at_carcass, inpa_carcs){
   return(firsts)
 }
 
-get_firsts_see <- function(see_carcass, inpa_carcs){
-  firsts_see <- map2(see_carcass, inpa_carcs, ~{
+get_firsts_see <- function(see_carcass, stn_carcs){
+  firsts_see <- map2(see_carcass, stn_carcs, ~{
     if(nrow(.x) > 1){
       out <- .x %>%
         filter(timestamp >= .y$datetime) %>%

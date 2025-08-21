@@ -285,7 +285,7 @@ list(
   ### Only spatial, not time-restricted.
   tar_target(stations, readRDS(here("data/created/stations.RDS"))),
   
-  ## INPA carcasses
+  ## Station carcasses
   ### Created in 00_carcass_data_translation.R
   tar_target(carcasses_audited, readRDS(here("data/created/carcasses_audited.RDS"))),
   
@@ -322,7 +322,7 @@ list(
                ungroup()), # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
   ## Combine carcasses
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bo_df)),
-  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
+  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "stn", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
   
   tar_target(bbox_south_big, sf::st_transform(
     st_as_sfc(st_set_crs(st_bbox(c("xmin" = 34.205, "xmax" = 35.787,
@@ -340,9 +340,9 @@ list(
   tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), 
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
-  ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
-  tar_target(inpa, filter(all_carcasses_cropped, carcType == "inpa")),
-  tar_target(inpa_carcs, group_split(group_by(inpa, carcID))),
+  ## 2. Separate stn and wild (the rest of the instructions here are just for stn)
+  tar_target(stn, filter(all_carcasses_cropped, carcType == "stn")),
+  tar_target(stn_carcs, group_split(group_by(stn, carcID))),
   tar_target(wild, filter(all_carcasses_cropped, carcType == "wild")),
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
@@ -366,18 +366,18 @@ list(
   ## 4a. Convert gps data to Israel time 
   # XXX decided not to do this yet--because then I'd have to convert everything else and it would be a whole thing.
   ## 4b. Make gps_all
-  tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after, days_before)),
-  tar_target(gps_all_inpa, get_gps_all(inpa_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
+  tar_target(gps_all, get_gps_all(stn_carcs, gps_combined, days_after, days_before)),
+  tar_target(gps_all_stn, get_gps_all(stn_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
   tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
   tar_target(roosts, get_roosts(gps_all, col = "tag_local_identifier")), 
   tar_target(roosts_wild, get_roosts(gps_all_wild, col = "tag_local_identifier"))#,
   # ## 6. Get seeds
-  # tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, ddf, dds)),
+  # tar_target(seeds_stn, get_seeds_gps(gps_all_stn, stn_carcs, seed_time_before, ddf, dds)),
   # tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, ddf, dds)),
-  # tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, ddf, dds)),
+  # tar_target(seeds_gps, get_seeds_gps(gps_all, stn_carcs, seed_time_before, ddf, dds)),
   # tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
   # ## 7. Get distances from roosts to carcasses
-  # tar_target(distances, get_distances(roosts, inpa_carcs)),
+  # tar_target(distances, get_distances(roosts, stn_carcs)),
   # ## 8. Load who's who
   # tar_target(ww, read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"), col_select = 1:40)),
   # ## 9. Get age_group ILV

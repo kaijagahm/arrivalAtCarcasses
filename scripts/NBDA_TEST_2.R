@@ -1,24 +1,23 @@
-# Example of running NBDA on one INPA and one wild carcass
+# Example of running NBDA on one stn and one wild carcass
 
 # Load libraries and data -------------------------------------------------
 source(here("R/functions.R"))
 library(dplyr)
 library(lubridate)
 library(NBDA)
-tar_load(inpa_carcs)
+tar_load(stn_carcs)
 tar_load(wild_carcs)
 tar_load(gps_combined)
-tar_load(gps_all_inpa)
 dbf <- 30
 tar_load(days_after)
 
 hist(lubridate::date(gps_combined$timestamp), breaks = "weeks") # we have GPS data spanning the hf periods
 
 # Get histograms, for reference later
-plots_inpa <- readRDS(here("data/plots_inpa.RDS"))
+plots_stn <- readRDS(here("data/plots_stn.RDS"))
 plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
-names(plots_inpa)
-length(plots_inpa) # all 81 carcasses
+names(plots_stn)
+length(plots_stn) # all 81 carcasses
 names(plots_wild_valid) 
 length(plots_wild_valid) # only 14 wild carcasses that we are considering to be valid at this point.
 
@@ -242,18 +241,18 @@ wild_carcs_valid <- wild_carcs[map_lgl(wild_carcs, ~.x$carcID %in% names(plots_w
 length(wild_carcs_valid)
 
 
-# Do NBDA with INPA carcass -----------------------------------------------
-# Select an INPA carcass
+# Do NBDA with stn carcass -----------------------------------------------
+# Select a stn carcass
 id <- 4892923
-which_id <- which(unlist(map(inpa_carcs, "carcID")) == id)
-plots_inpa[names(plots_inpa) == id][[1]]
+which_id <- which(unlist(map(stn_carcs, "carcID")) == id)
+plots_stn[names(plots_stn) == id][[1]]
 
 # Get gps data
-gps_30days <- get_gps_all(inpa_carcs[which_id], gps_combined, days_after, dbf)[[1]]
+gps_30days <- get_gps_all(stn_carcs[which_id], gps_combined, days_after, dbf)[[1]]
 length(unique(gps_30days$dateOnly)) # gps_combined now has 30 days tacked onto the beginning of each of the three month-long hf periods, so i should be able to use the `dbf` 30 days value without worrying about having enough data. Here we're pulling the unique GPS subset for each carcass.
-min(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date - days(dbf)
-max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after) # because the get_gps_all function adds 1 day to allow for calculating roost positions. So this should in fact be different.
-max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after+1) # one day more
+min(gps_30days$dateOnly) == stn_carcs[[which_id]]$date - days(dbf)
+max(gps_30days$dateOnly) == stn_carcs[[which_id]]$date + days(days_after) # because the get_gps_all function adds 1 day to allow for calculating roost positions. So this should in fact be different.
+max(gps_30days$dateOnly) == stn_carcs[[which_id]]$date + days(days_after+1) # one day more
 
 seed_time_before <- 30 #mins
 tar_load(detection_distance_flight)
@@ -296,7 +295,7 @@ save(test, file = here("data/test.Rda"))
 # fl_bin_n168n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
 # fl_wt_n168n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
 # 
-# nets_inpa <- list("fl_bin_sameday" = fl_bin_sameday, 
+# nets_stn <- list("fl_bin_sameday" = fl_bin_sameday, 
 #                   "fl_wt_sameday" = fl_wt_sameday,
 #                   "fl_bin_cumulative_sameday" = fl_bin_cumulative_sameday, 
 #                   "fl_wt_cumulative_sameday" = fl_wt_cumulative_sameday, 
@@ -308,65 +307,65 @@ save(test, file = here("data/test.Rda"))
 #                   "fl_wt_n720n024" = fl_wt_n720n024, 
 #                   "fl_bin_n168n024" = fl_bin_n168n024, 
 #                   "fl_wt_n168n024" = fl_wt_n168n024)
-# save(nets_inpa, file = here("data/nets_inpa.Rda"))
-load(here("data/nets_inpa.Rda"))
+# save(nets_stn, file = here("data/nets_stn.Rda"))
+load(here("data/nets_stn.Rda"))
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday <- nbdaData(label = test$carcID, 
-                         assMatrix = make_assMatrix(nets_inpa$fl_bin_sameday), 
+                         assMatrix = make_assMatrix(nets_stn$fl_bin_sameday), 
                          orderAcq = test$oa_nums)
 data_sameday_wt <- nbdaData(label = test$carcID,
-                            assMatrix = make_assMatrix(nets_inpa$fl_wt_sameday),
+                            assMatrix = make_assMatrix(nets_stn$fl_wt_sameday),
                             orderAcq = test$oa_nums)
 mod_sameday <- oadaFit(data_sameday, type = "social")
 mod_sameday_wt <- oadaFit(data_sameday_wt, type = "social")
 
 ## Dynamic flight networks, cumulative
 data_cumul <- nbdaData(label = test$carcID, 
-         assMatrix = make_assMatrix(nets_inpa$fl_bin_cumulative_sameday), 
+         assMatrix = make_assMatrix(nets_stn$fl_bin_cumulative_sameday), 
          orderAcq = test$oa_nums)
 data_cumul_wt <- nbdaData(label = test$carcID, 
-         assMatrix = make_assMatrix(nets_inpa$fl_wt_cumulative_sameday), 
+         assMatrix = make_assMatrix(nets_stn$fl_wt_cumulative_sameday), 
          orderAcq = test$oa_nums)
 mod_cumul <- oadaFit(data_cumul, type = "social")
 mod_cumul_wt <- oadaFit(data_cumul_wt, type = "social")
 
 ## Dynamic flight networks, -72 hours through sighting
 data_3daysprior <- nbdaData(label = test$carcID, 
-                          assMatrix = make_assMatrix(nets_inpa$fl_bin_3daysprior), 
+                          assMatrix = make_assMatrix(nets_stn$fl_bin_3daysprior), 
                           orderAcq = test$oa_nums)
 data_3daysprior_wt <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(nets_inpa$fl_wt_3daysprior), 
+                            assMatrix = make_assMatrix(nets_stn$fl_wt_3daysprior), 
                             orderAcq = test$oa_nums)
 mod_3daysprior <- oadaFit(data_3daysprior, type = "social")
 mod_3daysprior_wt <- oadaFit(data_3daysprior_wt, type = "social")
 
 ## Dynamic flight networks, -24 hours through sighting
 data_1daysprior <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(nets_inpa$fl_bin_1daysprior), 
+                            assMatrix = make_assMatrix(nets_stn$fl_bin_1daysprior), 
                             orderAcq = test$oa_nums)
 data_1daysprior_wt <- nbdaData(label = test$carcID, 
-                               assMatrix = make_assMatrix(nets_inpa$fl_wt_1daysprior), 
+                               assMatrix = make_assMatrix(nets_stn$fl_wt_1daysprior), 
                                orderAcq = test$oa_nums)
 mod_1daysprior <- oadaFit(data_1daysprior, type = "social")
 mod_1daysprior_wt <- oadaFit(data_1daysprior_wt, type = "social")
 
 ## Static flight networks, -720 hours (30 days prior) through -24 hours (1 day prior)
 data_n720n024 <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(nets_inpa$fl_bin_n720n024), 
+                            assMatrix = make_assMatrix(nets_stn$fl_bin_n720n024), 
                             orderAcq = test$oa_nums)
 data_n720n024_wt <- nbdaData(label = test$carcID, 
-                        assMatrix = make_assMatrix(nets_inpa$fl_wt_n720n024), 
+                        assMatrix = make_assMatrix(nets_stn$fl_wt_n720n024), 
                         orderAcq = test$oa_nums)
 mod_n720n024 <- oadaFit(data_n720n024, type = "social")
 mod_n720n024_wt <- oadaFit(data_n720n024_wt, type = "social")
 
 ## Static flight networks, -168 hours (7 days prior) through -24 hours (1 day prior)
 data_n168n024 <- nbdaData(label = test$carcID, 
-                          assMatrix = make_assMatrix(nets_inpa$fl_bin_n168n024), 
+                          assMatrix = make_assMatrix(nets_stn$fl_bin_n168n024), 
                           orderAcq = test$oa_nums)
 data_n168n024_wt <- nbdaData(label = test$carcID, 
-                             assMatrix = make_assMatrix(nets_inpa$fl_wt_n168n024), 
+                             assMatrix = make_assMatrix(nets_stn$fl_wt_n168n024), 
                              orderAcq = test$oa_nums)
 mod_n168n024 <- oadaFit(data_n168n024, type = "social")
 mod_n168n024_wt <- oadaFit(data_n168n024_wt, type = "social")
