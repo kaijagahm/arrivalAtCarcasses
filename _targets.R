@@ -12,10 +12,6 @@ tar_option_set(
 lapply(list.files("R", full.names = TRUE), source) 
 
 list(
-  # MOVEBANK CREDENTIALS
-  tar_target(pw, "data/movebankCredentials/pw.Rda", format = "file"),
-  tar_target(loginObject, get_loginObject(pw)),
-  
   # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
   tar_target(mindate_22, "2022-11-11 00:06:18 UTC"),
   tar_target(mindate_23, "2023-03-15 00:54:49 UTC"),
@@ -280,7 +276,7 @@ list(
   tar_target(slope_thresh, 15),
   tar_target(feeding_bo_noslope, filter(feeding_bo_stationary_withslopes, slope < slope_thresh)),
   
-  ## Feeding stations
+  ## SFS
   ### Created in 00_carcass_data_translation.R
   ### Only spatial, not time-restricted.
   tar_target(stations, readRDS(here("data/created/stations.RDS"))),
@@ -333,9 +329,9 @@ list(
   tar_target(days_after, 3),
   tar_target(days_before, 1),
   tar_target(days_before_wild, 3),
-  tar_target(seed_time_before, lubridate::minutes(30)),
-  tar_target(ddf, 2000),
-  tar_target(dds, 1000),
+  # tar_target(seed_time_before, lubridate::minutes(30)),
+  # tar_target(ddf, 2000),
+  # tar_target(dds, 1000),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), 
   ## 1a. Convert carcasses to Israel time
