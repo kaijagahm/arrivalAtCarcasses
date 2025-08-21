@@ -400,10 +400,10 @@ get_matches <- function(df, foc, spd){
       foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
     }, .progress = T)
     
-    within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
+    within_5min_speed <- purrr::map(within_5min, ~.x[as.numeric(.x$ground_speed) <= spd,])
     
     within_11min_speed <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & foc$ground_speed < spd,]
+      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & as.numeric(foc$ground_speed) < spd,]
     }, .progress = T)
     
     keep <- purrr::pmap(list(within_5min, within_5min_speed, 
@@ -585,13 +585,13 @@ get_wild_carcass_bouts <- function(non_carcass_bouts, time, dist, minBouts, stat
   return(wild_carcass_bouts_df)
 }
 
-get_wild_carcasses <- function(wild_carcass_bouts_df){
+get_wild_carcasses <- function(wild_carcass_bo_df){
   # Get carcasses
-  wild_carcasses <- wild_carcass_bouts_df %>%
-    mutate(year = lubridate::year(dateOnly)) %>%
+  wild_carcasses <- wild_carcass_bo_df %>%
+    mutate(year = lubridate::year(timestamp)) %>%
     group_by(year, carcID) %>%
     summarize(geometry = sf::st_union(geometry),
-              dateOnly = dateOnly[1],
+              dateOnly = lubridate::date(timestamp)[1],
               nBouts = n(),
               nIndivs = length(unique(individual_id)),
               mintime = min(start),
@@ -622,11 +622,12 @@ dg <- function(x){
 get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){
   gps_combined <- bind_rows(gps_2022, gps_2023) %>%
     bind_rows(gps_2024) %>%
-    bind_cols(sf::st_coordinates(.)) %>%
-    rename("location_long" = X,
-           "location_lat" = Y) %>%
+    #bind_cols(sf::st_coordinates(.)) %>%
+    #rename("location_long" = X,
+    #       "location_lat" = Y) %>%
     st_transform(32636) %>%
-    st_crop(bbox)
+    st_crop(bbox) %>%
+    mutate(year = lubridate::year(timestamp))
   return(gps_combined)
 }
 
@@ -646,9 +647,9 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
   return(gps_all)
 }
 
-get_roosts <- function(gps_all){
+get_roosts <- function(gps_all, col){
   r <- map(gps_all, ~{
-    if(nrow(.x) > 0){return(get_roosts_df(.x, id = "local_identifier"))}
+    if(nrow(.x) > 0){return(get_roosts_df(.x, id = col))}
     else{return(NULL)}
   })
   return(r)
@@ -1488,7 +1489,9 @@ buffer_cliffs <- function(cliffs, buffer_m, crs_to_transform = 32636){
 
 join_gps_bouts <- function(bp, wg){
   if(!is.null(bp) & !is.null(wg)){
-    first_gps <- as.data.frame(wg) %>% group_by(tag_local_identifier, bout_id) %>%
+    first_gps <- as.data.frame(wg) %>% 
+      mutate(tag_local_identifier = as.numeric(as.character(tag_local_identifier))) %>%
+      group_by(tag_local_identifier, bout_id) %>%
       arrange(timestamp) %>%
       slice(1) %>%
       ungroup()

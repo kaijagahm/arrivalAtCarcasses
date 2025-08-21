@@ -11,13 +11,9 @@ tar_load(gps_all_inpa) # allowing 3 days before, for direct comparison with wild
 length(gps_all_inpa) #81 carcasses
 tar_load(detection_distance_flight)
 tar_load(detection_distance_stationary)
-tar_load(wild_carcasses_10) # 33 carcasses
-tar_load(wild_carcasses_5)
-tar_load(wild_carcasses_15)
-mapview(wild_carcasses_10, zcol = "year") 
-mapview(wild_carcasses_5, zcol = "year")
-mapview(wild_carcasses_15, zcol = "year") 
-tar_load(all_carcasses_cropped) # slope 10
+tar_load(wild_carcasses)
+mapview(wild_carcasses, zcol = "year") 
+tar_load(all_carcasses_cropped)
 
 ## Timeline
 all_carcasses_cropped %>%
@@ -55,6 +51,7 @@ stn <- purrr::list_rbind(gps_all_inpa) %>% sf::st_drop_geometry() %>% mutate(typ
 wild <- purrr::list_rbind(gps_all_wild) %>% sf::st_drop_geometry() %>% mutate(type = "wild")
 
 all_gps_data <- bind_rows(stn, wild) %>%
+  mutate(ground_speed = as.numeric(ground_speed)) %>%
   mutate(hour_bin = floor_date(timestamp, 
                                unit = "hours"),
                     hour_bin_rel = round(time_since_carcass),
@@ -88,15 +85,15 @@ wild_test_box <- sf::st_set_crs(sf::st_bbox(c("xmin" = 34.44266,
                                               "ymin" = 30.89326,
                                               "xmax" = 34.94688,
                                               "ymax" = 31.17904)), "WGS84")
-mapview(wild_test_box)+mapview(wild_carcasses_10)
-valid_wild_carcasses <- st_crop(st_transform(wild_carcasses_10, "WGS84"), wild_test_box) %>% st_transform(32636)
+mapview(wild_test_box)+mapview(wild_carcasses)
+valid_wild_carcasses <- st_crop(st_transform(wild_carcasses, "WGS84"), wild_test_box) %>% st_transform(32636)
 
 all_wild_valid <- all_gps_data_wild %>% filter(carcID %in% valid_wild_carcasses$carcID)
 
 cids_inpa <- unique(all_gps_data_inpa$carcID)
 length(cids_inpa) # all of them
 cids_wild_valid <- unique(all_wild_valid$carcID)
-length(cids_wild_valid) # 14 wild ones that we know/suspect to be valid
+length(cids_wild_valid) # 16 wild ones that we know/suspect to be valid
 
 plots_inpa <- vector(mode = "list", length = length(cids_inpa))
 for(i in 1:length(cids_inpa)){
@@ -105,7 +102,7 @@ for(i in 1:length(cids_inpa)){
     filter(carcID == cids_inpa[[i]])
   lab <- df$info[1]
   plt <- df %>% group_by(carcID, hour, status) %>%
-    summarize(n = length(unique(local_identifier)), .groups = "drop") %>%
+    summarize(n = length(unique(tag_local_identifier)), .groups = "drop") %>%
     ggplot(aes(x = as.numeric(hour), fill = status, y = n))+
     geom_vline(aes(xintercept = 0), linetype = 2, alpha = 0.5)+
     geom_col(position = position_stack(reverse = TRUE))+
@@ -125,7 +122,7 @@ for(i in 1:length(cids_wild_valid)){
     filter(carcID == cids_wild_valid[[i]])
   lab <- df$info[1]
   plt <- df %>% group_by(carcID, hour, status) %>%
-    summarize(n = length(unique(local_identifier)), .groups = "drop") %>%
+    summarize(n = length(unique(tag_local_identifier)), .groups = "drop") %>%
     ggplot(aes(x = as.numeric(hour), fill = status, y = n))+
     geom_vline(aes(xintercept = 0), linetype = 2, alpha = 0.5)+
     geom_col(position = position_stack(reverse = TRUE))+
@@ -140,38 +137,28 @@ names(plots_wild_valid) <- cids_wild_valid
 write_rds(plots_wild_valid, file = here("data/plots_wild_valid.RDS"))
 
 stats <- all_gps_data %>%
+  arrange(timestamp) %>%
   filter(type == "inpa" | (type == "wild" & carcID %in% cids_wild_valid)) %>%
   filter(time_since_carcass > 0 & time_since_carcass < 24, in_sight) %>%
   mutate(year = lubridate::year(timestamp)) %>%
+  group_by(year, carcID, type, tag_local_identifier) %>%
+  slice(1) %>% # get everyone's first sighting
+  ungroup() %>%
   group_by(year, carcID, type) %>%
-  summarize(in_sight_instances = n(),
-            in_sight_indivs = length(unique(local_identifier))) %>%
+  summarize(indivs_sighting = length(unique(tag_local_identifier))) %>%
   ungroup() 
 
 stats %>%
-  ggplot(aes(x = type, y = in_sight_instances, fill = type, col = type))+
+  ggplot(aes(x = type, y = indivs_sighting, fill = type, col = type))+
   geom_violin(alpha = 0.5)+
   geom_jitter(alpha = 0.75, width = 0.03)+
   facet_wrap(~year)+
   scale_fill_manual(values = c("darkviolet", "gold"))+
   scale_color_manual(values = c("darkviolet", "gold"))+
   theme_minimal()+
-  labs(y = "Sightings in first 24 hours",
+  labs(y = "Vultures sighting carcass in first 24 hours",
        x = "Carcass type",
-       caption = "Including only the 14 wild carcasses in the known/suspected valid bounding box")+
-  theme(text = element_text(size = 14))
-
-stats %>%
-  ggplot(aes(x = type, y = in_sight_indivs, fill = type, col = type))+
-  geom_violin(alpha = 0.5)+
-  geom_jitter(alpha = 0.75, width = 0.03)+
-  facet_wrap(~year)+
-  scale_fill_manual(values = c("darkviolet", "gold"))+
-  scale_color_manual(values = c("darkviolet", "gold"))+
-  theme_minimal()+
-  labs(y = "Individuals within sight in first 24 hours",
-       x = "Carcass type",
-       caption = "Including only the 14 wild carcasses in the known/suspected valid bounding box")+
+       caption = "Including only the 14 wild carcasses in the \nknown/suspected valid bounding box")+
   theme(text = element_text(size = 14))
 
 # Will need to determine a good NBDA starting point for the wild carcasses. Do we want to back up?

@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra")#,
-  #controller = crew_controller_local(workers = 6)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
+  controller = crew_controller_local(workers = 6)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -212,9 +212,9 @@ list(
   tar_target(bo_pr_24_7, pmap(.l = list(cal_24_7, pr_24_7, sc_24_7, bo_24_7), .f = ~gbp(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
   tar_target(bo_pr_24_8, pmap(.l = list(cal_24_8, pr_24_8, sc_24_8, bo_24_8), .f = ~gbp(prepared = ..1, predictions = ..2, scores = ..3, bouts = ..4))),
   
-  tar_target(bo_pr_2022, c(bo_pr_22_1, bo_pr_22_2, bo_pr_22_3, bo_pr_22_4, bo_pr_22_5, bo_pr_22_6, bo_pr_22_7, bo_pr_22_8)),
-  tar_target(bo_pr_2023, c(bo_pr_23_1, bo_pr_23_2, bo_pr_23_3, bo_pr_23_4, bo_pr_23_5, bo_pr_23_6, bo_pr_23_7, bo_pr_23_8)),
-  tar_target(bo_pr_2024, c(bo_pr_24_1, bo_pr_24_2, bo_pr_24_3, bo_pr_24_4, bo_pr_24_5, bo_pr_24_6, bo_pr_24_7, bo_pr_24_8)),
+  tar_target(bo_pr_2022, purrr::discard(c(bo_pr_22_1, bo_pr_22_2, bo_pr_22_3, bo_pr_22_4, bo_pr_22_5, bo_pr_22_6, bo_pr_22_7, bo_pr_22_8), is.null)),
+  tar_target(bo_pr_2023, purrr::discard(c(bo_pr_23_1, bo_pr_23_2, bo_pr_23_3, bo_pr_23_4, bo_pr_23_5, bo_pr_23_6, bo_pr_23_7, bo_pr_23_8), is.null)),
+  tar_target(bo_pr_2024, purrr::discard(c(bo_pr_24_1, bo_pr_24_2, bo_pr_24_3, bo_pr_24_4, bo_pr_24_5, bo_pr_24_6, bo_pr_24_7, bo_pr_24_8), is.null)),
   # Get the individual IDs so we can match them to gps points
   tar_target(device_ids_2022, purrr::map(bo_pr_2022, ~.x$device_id[1])),
   tar_target(device_ids_2023, purrr::map(bo_pr_2023, ~.x$device_id[1])),
@@ -268,11 +268,11 @@ list(
   tar_target(feeding_bo_2024, map(full_2024, ~getfeeding(.x, feeding_bo_prob_thresh))),
   
   ## Bind them together to get all feeding bouts
-  tar_target(feeding_bouts, mutate(bind_rows(data.table::rbindlist(feeding_bo_2022), data.table::rbindlist(feeding_bo_2023), data.table::rbindlist(feeding_bo_2024)), boutID = paste(device_id, bout_id, sep = "_"))),
+  tar_target(feeding_bouts, mutate(bind_rows(data.table::rbindlist(feeding_bo_2022, ignore.attr = T), data.table::rbindlist(feeding_bo_2023, ignore.attr = T), data.table::rbindlist(feeding_bo_2024, ignore.attr = T)), boutID = paste(device_id, bout_id, sep = "_"))),
   tar_target(feeding_bo_spatial, st_transform(sf::st_as_sf(feeding_bouts, coords = c("location_long", "location_lat"), crs = "WGS84"), 32636)),
   
   ## Further restrictions on feeding bouts
-  tar_target(feeding_bo_stationary, dplyr::filter(feeding_bo_spatial, ground_speed <= gps_spd)),
+  tar_target(feeding_bo_stationary, dplyr::filter(feeding_bo_spatial, as.numeric(ground_speed) <= gps_spd)),
   
   ## Using DEM to remove "feeding bouts" that are too much on a slope
   tar_target(filenames, list.files(here("data/raw/DEMs/ASTER/"), pattern = ".tif", full.names = T)),
@@ -320,7 +320,6 @@ list(
                arrange(boutID, time_since_carcass) %>%
                slice(1) %>%
                ungroup()), # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
-  tar_target(all_bo_assigned, combine_all_bouts(carcass_bo_dedup, wild_carcass_bo_again, feeding_bouts)),
   ## Combine carcasses
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bo_df)),
   tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "inpa", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
@@ -339,7 +338,6 @@ list(
   tar_target(dds, 1000),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), 
-  tar_target(all_bo_cropped, sf::st_crop(all_bo_assigned, bbox_south_big)),
   ## 1a. Convert carcasses to Israel time
   ##  XXX FIXME
   ## 2. Separate INPA and wild (the rest of the instructions here are just for INPA)
@@ -356,31 +354,34 @@ list(
   tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023.RDS"))),
   tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024.RDS"))),
   
-  tar_target(gps_2022, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2022), as.data.frame(inpa_data_2022)), crs = "WGS84")),
-  tar_target(gps_2023, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2023), as.data.frame(inpa_data_2023)), crs = "WGS84")),
-  tar_target(gps_2024, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2024), as.data.frame(inpa_data_2024)), crs = "WGS84")),
+  tar_target(gps_2022_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2022), as.data.frame(inpa_data_2022)), crs = "WGS84")),
+  tar_target(gps_2023_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2023), as.data.frame(inpa_data_2023)), crs = "WGS84")),
+  tar_target(gps_2024_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2024), as.data.frame(inpa_data_2024)), crs = "WGS84")),
+  
+  tar_target(gps_2022, dplyr::bind_cols(gps_2022_1, setNames(as.data.frame(sf::st_coordinates(gps_2022_1)), c("location_long", "location_lat")))),
+  tar_target(gps_2023, dplyr::bind_cols(gps_2023_1, setNames(as.data.frame(sf::st_coordinates(gps_2023_1)), c("location_long", "location_lat")))),
+  tar_target(gps_2024, dplyr::bind_cols(gps_2024_1, setNames(as.data.frame(sf::st_coordinates(gps_2024_1)), c("location_long", "location_lat")))),
   
   tar_target(gps_combined, get_gps_combined(gps_2022, gps_2023, gps_2024, bbox_south_big)),
-  # XXX START HERE
   ## 4a. Convert gps data to Israel time 
-  ## XXX fixme
+  # XXX decided not to do this yet--because then I'd have to convert everything else and it would be a whole thing.
   ## 4b. Make gps_all
   tar_target(gps_all, get_gps_all(inpa_carcs, gps_combined, days_after, days_before)),
   tar_target(gps_all_inpa, get_gps_all(inpa_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
   tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
-  tar_target(roosts, get_roosts(gps_all)), 
-  tar_target(roosts_wild, get_roosts(gps_all_wild)),
-  ## 6. Get seeds
-  tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, ddf, dds)),
-  tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, ddf, dds)),
-  tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, ddf, dds)),
-  tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
-  ## 7. Get distances from roosts to carcasses
-  tar_target(distances, get_distances(roosts, inpa_carcs)),
-  ## 8. Load who's who
-  tar_target(ww, read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"), col_select = 1:40)),
-  ## 9. Get age_group ILV
-  tar_target(www, get_www(ww)),
-  ## 10. Combine age_group ILV with distances to get ILVs data frame
-  tar_target(ilvs, get_ilvs(distances, www))
+  tar_target(roosts, get_roosts(gps_all, col = "tag_local_identifier")), 
+  tar_target(roosts_wild, get_roosts(gps_all_wild, col = "tag_local_identifier"))#,
+  # ## 6. Get seeds
+  # tar_target(seeds_inpa, get_seeds_gps(gps_all_inpa, inpa_carcs, seed_time_before, ddf, dds)),
+  # tar_target(seeds_wild, get_seeds_gps(gps_all_wild, wild_carcs, seed_time_before, ddf, dds)),
+  # tar_target(seeds_gps, get_seeds_gps(gps_all, inpa_carcs, seed_time_before, ddf, dds)),
+  # tar_target(seed_indivs, map(seeds_gps, ~sort(unique(sf::st_drop_geometry(.x)$local_identifier)))),
+  # ## 7. Get distances from roosts to carcasses
+  # tar_target(distances, get_distances(roosts, inpa_carcs)),
+  # ## 8. Load who's who
+  # tar_target(ww, read_csv(here("data/raw/whoswho_vultures_20230920_new.csv"), col_select = 1:40)),
+  # ## 9. Get age_group ILV
+  # tar_target(www, get_www(ww)),
+  # ## 10. Combine age_group ILV with distances to get ILVs data frame
+  # tar_target(ilvs, get_ilvs(distances, www))
 )
