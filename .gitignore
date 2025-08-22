@@ -7,3 +7,4 @@ data/
 arrivals_plots.R
 *.gif
 *.html
+rosm.cache/

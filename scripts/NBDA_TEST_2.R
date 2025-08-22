@@ -1,23 +1,23 @@
-# Example of running NBDA on one INPA and one wild carcass
+# Example of running NBDA on one stn and one wild carcass
 
 # Load libraries and data -------------------------------------------------
 source(here("R/functions.R"))
 library(dplyr)
 library(lubridate)
-tar_load(inpa_carcs)
+library(NBDA)
+tar_load(stn_carcs)
 tar_load(wild_carcs)
 tar_load(gps_combined)
-tar_load(gps_all_inpa)
 dbf <- 30
 tar_load(days_after)
 
-hist(gps_combined$dateOnly, breaks = "weeks") # we have GPS data spanning the hf periods
+hist(lubridate::date(gps_combined$timestamp), breaks = "weeks") # we have GPS data spanning the hf periods
 
 # Get histograms, for reference later
-plots_inpa <- readRDS(here("data/plots_inpa.RDS"))
+plots_stn <- readRDS(here("data/plots_stn.RDS"))
 plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
-names(plots_inpa)
-length(plots_inpa) # all 81 carcasses
+names(plots_stn)
+length(plots_stn) # all 81 carcasses
 names(plots_wild_valid) 
 length(plots_wild_valid) # only 14 wild carcasses that we are considering to be valid at this point.
 
@@ -241,18 +241,18 @@ wild_carcs_valid <- wild_carcs[map_lgl(wild_carcs, ~.x$carcID %in% names(plots_w
 length(wild_carcs_valid)
 
 
-# Do NBDA with INPA carcass -----------------------------------------------
-# Select an INPA carcass
+# Do NBDA with stn carcass -----------------------------------------------
+# Select a stn carcass
 id <- 4892923
-which_id <- which(unlist(map(inpa_carcs, "carcID")) == id)
-plots_inpa[[which_id]]
+which_id <- which(unlist(map(stn_carcs, "carcID")) == id)
+plots_stn[names(plots_stn) == id][[1]]
 
 # Get gps data
-gps_30days <- get_gps_all(inpa_carcs[which_id], gps_combined, days_after, dbf)[[1]]
+gps_30days <- get_gps_all(stn_carcs[which_id], gps_combined, days_after, dbf)[[1]]
 length(unique(gps_30days$dateOnly)) # gps_combined now has 30 days tacked onto the beginning of each of the three month-long hf periods, so i should be able to use the `dbf` 30 days value without worrying about having enough data. Here we're pulling the unique GPS subset for each carcass.
-min(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date - days(dbf)
-max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after) # because the get_gps_all function adds 1 day to allow for calculating roost positions. So this should in fact be different.
-max(gps_30days$dateOnly) == inpa_carcs[[which_id]]$date + days(days_after+1) # one day more
+min(gps_30days$dateOnly) == stn_carcs[[which_id]]$date - days(dbf)
+max(gps_30days$dateOnly) == stn_carcs[[which_id]]$date + days(days_after) # because the get_gps_all function adds 1 day to allow for calculating roost positions. So this should in fact be different.
+max(gps_30days$dateOnly) == stn_carcs[[which_id]]$date + days(days_after+1) # one day more
 
 seed_time_before <- 30 #mins
 tar_load(detection_distance_flight)
@@ -270,86 +270,102 @@ test <- prepare_nbda_data(gps = gps_30days,
                           n_hours_gps_static = list(c(-720, -24), 
                                                     c(-168, -24)),
                           sighting_time_max_hours = 72)
-# Networks
-## Dynamic
-### flight, day by day
-fl_bin_sameday <- fix_nets(map(test$gps_data_sameday, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_sameday <- fix_nets(map(test$gps_data_sameday, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-### flight, cumulative same day
-fl_bin_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-### flight, since 3 days prior
-fl_bin_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-### flight, since 1 day prior
-fl_bin_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+save(test, file = here("data/test.Rda"))
 
-
-## Static
-### flight, -30 through -1 days
-fl_bin_n720n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_n720n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
-### flight, -7 through -1 days
-fl_bin_n168n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
-fl_wt_n168n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+# # Networks
+# ## Dynamic
+# ### flight, day by day
+# fl_bin_sameday <- fix_nets(map(test$gps_data_sameday, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_sameday <- fix_nets(map(test$gps_data_sameday, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# ### flight, cumulative same day
+# fl_bin_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_cumulative_sameday <- fix_nets(map(test$gps_data_cumulative, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# ### flight, since 3 days prior
+# fl_bin_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_3daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n072_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# ### flight, since 1 day prior
+# fl_bin_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_1daysprior <- fix_nets(map(test$gps_data_dynamic_hours_n024_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test$all_indivs_sorted)
+# 
+# ## Static
+# ### flight, -30 through -1 days
+# fl_bin_n720n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_n720n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+# ### flight, -7 through -1 days
+# fl_bin_n168n024 <- fix_nets(list(get_fl_bin(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+# fl_wt_n168n024 <- fix_nets(list(get_fl_weighted(test$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test$all_indivs_sorted)
+# 
+# nets_stn <- list("fl_bin_sameday" = fl_bin_sameday, 
+#                   "fl_wt_sameday" = fl_wt_sameday,
+#                   "fl_bin_cumulative_sameday" = fl_bin_cumulative_sameday, 
+#                   "fl_wt_cumulative_sameday" = fl_wt_cumulative_sameday, 
+#                   "fl_bin_3daysprior" = fl_bin_3daysprior, 
+#                   "fl_wt_3daysprior" = fl_wt_3daysprior, 
+#                   "fl_bin_1daysprior" = fl_bin_1daysprior, 
+#                   "fl_wt_1daysprior" = fl_wt_1daysprior, 
+#                   "fl_bin_n720n024" = fl_bin_n720n024, 
+#                   "fl_wt_n720n024" = fl_wt_n720n024, 
+#                   "fl_bin_n168n024" = fl_bin_n168n024, 
+#                   "fl_wt_n168n024" = fl_wt_n168n024)
+# save(nets_stn, file = here("data/nets_stn.Rda"))
+load(here("data/nets_stn.Rda"))
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday <- nbdaData(label = test$carcID, 
-                         assMatrix = make_assMatrix(fl_bin_sameday), 
+                         assMatrix = make_assMatrix(nets_stn$fl_bin_sameday), 
                          orderAcq = test$oa_nums)
 data_sameday_wt <- nbdaData(label = test$carcID,
-                            assMatrix = make_assMatrix(fl_wt_sameday),
+                            assMatrix = make_assMatrix(nets_stn$fl_wt_sameday),
                             orderAcq = test$oa_nums)
 mod_sameday <- oadaFit(data_sameday, type = "social")
 mod_sameday_wt <- oadaFit(data_sameday_wt, type = "social")
 
 ## Dynamic flight networks, cumulative
 data_cumul <- nbdaData(label = test$carcID, 
-         assMatrix = make_assMatrix(fl_bin_cumulative_sameday), 
+         assMatrix = make_assMatrix(nets_stn$fl_bin_cumulative_sameday), 
          orderAcq = test$oa_nums)
 data_cumul_wt <- nbdaData(label = test$carcID, 
-         assMatrix = make_assMatrix(fl_wt_cumulative_sameday), 
+         assMatrix = make_assMatrix(nets_stn$fl_wt_cumulative_sameday), 
          orderAcq = test$oa_nums)
 mod_cumul <- oadaFit(data_cumul, type = "social")
 mod_cumul_wt <- oadaFit(data_cumul_wt, type = "social")
 
 ## Dynamic flight networks, -72 hours through sighting
 data_3daysprior <- nbdaData(label = test$carcID, 
-                          assMatrix = make_assMatrix(fl_bin_3daysprior), 
+                          assMatrix = make_assMatrix(nets_stn$fl_bin_3daysprior), 
                           orderAcq = test$oa_nums)
 data_3daysprior_wt <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(fl_wt_3daysprior), 
+                            assMatrix = make_assMatrix(nets_stn$fl_wt_3daysprior), 
                             orderAcq = test$oa_nums)
 mod_3daysprior <- oadaFit(data_3daysprior, type = "social")
 mod_3daysprior_wt <- oadaFit(data_3daysprior_wt, type = "social")
 
 ## Dynamic flight networks, -24 hours through sighting
 data_1daysprior <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(fl_bin_1daysprior), 
+                            assMatrix = make_assMatrix(nets_stn$fl_bin_1daysprior), 
                             orderAcq = test$oa_nums)
 data_1daysprior_wt <- nbdaData(label = test$carcID, 
-                               assMatrix = make_assMatrix(fl_wt_1daysprior), 
+                               assMatrix = make_assMatrix(nets_stn$fl_wt_1daysprior), 
                                orderAcq = test$oa_nums)
 mod_1daysprior <- oadaFit(data_1daysprior, type = "social")
 mod_1daysprior_wt <- oadaFit(data_1daysprior_wt, type = "social")
 
 ## Static flight networks, -720 hours (30 days prior) through -24 hours (1 day prior)
 data_n720n024 <- nbdaData(label = test$carcID, 
-                            assMatrix = make_assMatrix(fl_bin_n720n024), 
+                            assMatrix = make_assMatrix(nets_stn$fl_bin_n720n024), 
                             orderAcq = test$oa_nums)
 data_n720n024_wt <- nbdaData(label = test$carcID, 
-                        assMatrix = make_assMatrix(fl_wt_n720n024), 
+                        assMatrix = make_assMatrix(nets_stn$fl_wt_n720n024), 
                         orderAcq = test$oa_nums)
 mod_n720n024 <- oadaFit(data_n720n024, type = "social")
 mod_n720n024_wt <- oadaFit(data_n720n024_wt, type = "social")
 
 ## Static flight networks, -168 hours (7 days prior) through -24 hours (1 day prior)
 data_n168n024 <- nbdaData(label = test$carcID, 
-                          assMatrix = make_assMatrix(fl_bin_n168n024), 
+                          assMatrix = make_assMatrix(nets_stn$fl_bin_n168n024), 
                           orderAcq = test$oa_nums)
 data_n168n024_wt <- nbdaData(label = test$carcID, 
-                             assMatrix = make_assMatrix(fl_wt_n168n024), 
+                             assMatrix = make_assMatrix(nets_stn$fl_wt_n168n024), 
                              orderAcq = test$oa_nums)
 mod_n168n024 <- oadaFit(data_n168n024, type = "social")
 mod_n168n024_wt <- oadaFit(data_n168n024_wt, type = "social")
@@ -416,89 +432,103 @@ test_wild <- prepare_nbda_data(gps = gps_30days_wild,
                           n_hours_gps_static = list(c(-720, -24), 
                                                     c(-168, -24)),
                           sighting_time_max_hours = 72)
-
+save(test_wild, file = here("data/test_wild.Rda"))
 # XXX Note: we're going to need to back it up an hour, and I haven't thought through how to do that yet. 
 
-# Networks
-## Dynamic
-### flight, day by day
-fl_bin_sameday_wild <- fix_nets(map(test_wild$gps_data_sameday, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_sameday_wild <- fix_nets(map(test_wild$gps_data_sameday, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-### flight, cumulative same day
-fl_bin_cumulative_sameday_wild <- fix_nets(map(test_wild$gps_data_cumulative, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_cumulative_sameday_wild <- fix_nets(map(test_wild$gps_data_cumulative, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-### flight, since 3 days prior
-fl_bin_3daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n072_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_3daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n072_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-### flight, since 1 day prior
-fl_bin_1daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n024_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_1daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n024_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-
-
-## Static
-### flight, -30 through -1 days
-fl_bin_n720n024_wild <- fix_nets(list(get_fl_bin(test_wild$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_n720n024_wild <- fix_nets(list(get_fl_weighted(test_wild$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-### flight, -7 through -1 days
-fl_bin_n168n024_wild <- fix_nets(list(get_fl_bin(test_wild$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
-fl_wt_n168n024_wild <- fix_nets(list(get_fl_weighted(test_wild$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# # Networks
+# ## Dynamic
+# ### flight, day by day
+# fl_bin_sameday_wild <- fix_nets(map(test_wild$gps_data_sameday, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_sameday_wild <- fix_nets(map(test_wild$gps_data_sameday, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# ### flight, cumulative same day
+# fl_bin_cumulative_sameday_wild <- fix_nets(map(test_wild$gps_data_cumulative, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_cumulative_sameday_wild <- fix_nets(map(test_wild$gps_data_cumulative, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# ### flight, since 3 days prior
+# fl_bin_3daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n072_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_3daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n072_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# ### flight, since 1 day prior
+# fl_bin_1daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n024_000, ~get_fl_bin(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_1daysprior_wild <- fix_nets(map(test_wild$gps_data_dynamic_hours_n024_000, ~get_fl_weighted(.x, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# 
+# ## Static
+# ### flight, -30 through -1 days
+# fl_bin_n720n024_wild <- fix_nets(list(get_fl_bin(test_wild$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_n720n024_wild <- fix_nets(list(get_fl_weighted(test_wild$gps_data_static_hours_n720_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# ### flight, -7 through -1 days
+# fl_bin_n168n024_wild <- fix_nets(list(get_fl_bin(test_wild$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# fl_wt_n168n024_wild <- fix_nets(list(get_fl_weighted(test_wild$gps_data_static_hours_n168_n024, dist = detection_distance_flight)), test_wild$all_indivs_sorted)
+# 
+# nets_wild <- list("fl_bin_sameday_wild" = fl_bin_sameday_wild, 
+#                   "fl_wt_sameday_wild" = fl_wt_sameday_wild,
+#                   "fl_bin_cumulative_sameday_wild" = fl_bin_cumulative_sameday_wild, 
+#                   "fl_wt_cumulative_sameday_wild" = fl_wt_cumulative_sameday_wild, 
+#                   "fl_bin_3daysprior_wild" = fl_bin_3daysprior_wild, 
+#                   "fl_wt_3daysprior_wild" = fl_wt_3daysprior_wild, 
+#                   "fl_bin_1daysprior_wild" = fl_bin_1daysprior_wild, 
+#                   "fl_wt_1daysprior_wild" = fl_wt_1daysprior_wild, 
+#                   "fl_bin_n720n024_wild" = fl_bin_n720n024_wild, 
+#                   "fl_wt_n720n024_wild" = fl_wt_n720n024_wild, 
+#                   "fl_bin_n168n024_wild" = fl_bin_n168n024_wild, 
+#                   "fl_wt_n168n024_wild" = fl_wt_n168n024_wild)
+# save(nets_wild, file = here("data/nets_wild.Rda"))
+load(here("data/nets_wild.Rda"))
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday_wild <- nbdaData(label = test_wild$carcID, 
-                         assMatrix = make_assMatrix(fl_bin_sameday_wild), 
+                         assMatrix = make_assMatrix(nets_wild$fl_bin_sameday_wild), 
                          orderAcq = test_wild$oa_nums)
 data_sameday_wt_wild <- nbdaData(label = test_wild$carcID,
-                            assMatrix = make_assMatrix(fl_wt_sameday_wild),
+                            assMatrix = make_assMatrix(nets_wild$fl_wt_sameday_wild),
                             orderAcq = test_wild$oa_nums)
 mod_sameday_wild <- oadaFit(data_sameday_wild, type = "social")
 mod_sameday_wt_wild <- oadaFit(data_sameday_wt_wild, type = "social")
 
 ## Dynamic flight networks, cumulative
 data_cumul_wild <- nbdaData(label = test_wild$carcID, 
-                       assMatrix = make_assMatrix(fl_bin_cumulative_sameday_wild), 
+                       assMatrix = make_assMatrix(nets_wild$fl_bin_cumulative_sameday_wild), 
                        orderAcq = test_wild$oa_nums)
 data_cumul_wt_wild <- nbdaData(label = test_wild$carcID, 
-                          assMatrix = make_assMatrix(fl_wt_cumulative_sameday_wild), 
+                          assMatrix = make_assMatrix(nets_wild$fl_wt_cumulative_sameday_wild), 
                           orderAcq = test_wild$oa_nums)
 mod_cumul_wild <- oadaFit(data_cumul_wild, type = "social")
 mod_cumul_wt_wild <- oadaFit(data_cumul_wt_wild, type = "social")
 
 ## Dynamic flight networks, -72 hours through sighting
 data_3daysprior_wild <- nbdaData(label = test_wild$carcID, 
-                            assMatrix = make_assMatrix(fl_bin_3daysprior_wild), 
+                            assMatrix = make_assMatrix(nets_wild$fl_bin_3daysprior_wild), 
                             orderAcq = test_wild$oa_nums)
 data_3daysprior_wt_wild <- nbdaData(label = test_wild$carcID, 
-                               assMatrix = make_assMatrix(fl_wt_3daysprior_wild), 
+                               assMatrix = make_assMatrix(nets_wild$fl_wt_3daysprior_wild), 
                                orderAcq = test_wild$oa_nums)
 mod_3daysprior_wild <- oadaFit(data_3daysprior_wild, type = "social")
 #mod_3daysprior_wt_wild <- oadaFit(data_3daysprior_wt_wild, type = "social")
 
 ## Dynamic flight networks, -24 hours through sighting
 data_1daysprior_wild <- nbdaData(label = test_wild$carcID, 
-                            assMatrix = make_assMatrix(fl_bin_1daysprior_wild), 
+                            assMatrix = make_assMatrix(nets_wild$fl_bin_1daysprior_wild), 
                             orderAcq = test_wild$oa_nums)
 data_1daysprior_wt_wild <- nbdaData(label = test_wild$carcID, 
-                               assMatrix = make_assMatrix(fl_wt_1daysprior_wild), 
+                               assMatrix = make_assMatrix(nets_wild$fl_wt_1daysprior_wild), 
                                orderAcq = test_wild$oa_nums)
 mod_1daysprior_wild <- oadaFit(data_1daysprior_wild, type = "social")
 mod_1daysprior_wt_wild <- oadaFit(data_1daysprior_wt_wild, type = "social")
 
 ## Static flight networks, -720 hours (30 days prior) through -24 hours (1 day prior)
 data_n720n024_wild <- nbdaData(label = test_wild$carcID, 
-                          assMatrix = make_assMatrix(fl_bin_n720n024_wild), 
+                          assMatrix = make_assMatrix(nets_wild$fl_bin_n720n024_wild), 
                           orderAcq = test_wild$oa_nums)
 data_n720n024_wt_wild <- nbdaData(label = test_wild$carcID, 
-                             assMatrix = make_assMatrix(fl_wt_n720n024_wild), 
+                             assMatrix = make_assMatrix(nets_wild$fl_wt_n720n024_wild), 
                              orderAcq = test_wild$oa_nums)
 mod_n720n024_wild <- oadaFit(data_n720n024_wild, type = "social")
 mod_n720n024_wt_wild <- oadaFit(data_n720n024_wt_wild, type = "social")
 
 ## Static flight networks, -168 hours (7 days prior) through -24 hours (1 day prior)
 data_n168n024_wild <- nbdaData(label = test_wild$carcID, 
-                          assMatrix = make_assMatrix(fl_bin_n168n024_wild), 
+                          assMatrix = make_assMatrix(nets_wild$fl_bin_n168n024_wild), 
                           orderAcq = test_wild$oa_nums)
 data_n168n024_wt_wild <- nbdaData(label = test_wild$carcID, 
-                             assMatrix = make_assMatrix(fl_wt_n168n024_wild), 
+                             assMatrix = make_assMatrix(nets_wild$fl_wt_n168n024_wild), 
                              orderAcq = test_wild$oa_nums)
 mod_n168n024_wild <- oadaFit(data_n168n024_wild, type = "social")
 #mod_n168n024_wt_wild <- oadaFit(data_n168n024_wt_wild, type = "social")
@@ -539,7 +569,3 @@ stats_wild %>%
        caption = id)+
   coord_flip()
 # test removing seeds [TO DO!]
-# add a wild carcass [DONE]
-# bring code for carcass arrival plots from wild_carcasses.R into here [TO DO!]
-# get more gps data for use w any carcass [DONE]
-# turn days into hours for more precise targeting [DONE]
