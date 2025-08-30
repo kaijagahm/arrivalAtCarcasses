@@ -440,6 +440,7 @@ stats_30days_wt|stem|2fba5061578a0a90|0757280e7f53098e|1919c14a34b161e8|-1667942
 stats_30days_bin|stem|d82084056032887c|67be1e26a8f7151d|502e0b60d751f6d2|2007148464||t20329.9486870741s|s2603b|2603|rds|local|vector|||0.797||
 stats_cumul_wt|stem|d0c982cb75b4a727|54684403fe1eac81|2bd1b9ff43f0b5d9|899541084||t20329.948700026s|s2611b|2611|rds|local|vector|||0.437||
 stats_cumul_bin|stem|e6fd6dc66f528c06|9958fe81295bdd93|38d1ccd136fd8c8d|-543075754||t20329.9487014361s|s2717b|2717|rds|local|vector|||0.328||
+stats|stem|4e2df084029f7b94|843e8a04dfbac627|e2af0106abe60524|1215092283||t20329.9492039347s|s7737b|7737|rds|local|vector|||0||
 get_roosts_bin|function|0402396edb7b1af9
 get_wild_carcasses|function|fc52a65da8748a6e
 get_years|function|b64546004099cfdb
@@ -463,7 +464,7 @@ remove_points_before|function|4d77f5b524b3c94d
 join_gps_bouts|function|3efed8ae2273b043
 get_gps_combined|function|39f92448bfe54ca7
 discoveryplot|function|d284b11222d4b585
-.Random.seed|object|e1d858ce25572fff
+.Random.seed|object|c39dc1dfd03923af
 get_full|function|1378cba711b5c2ca
 get_acc_data|function|8f0e5facb667ede3
 mean_amplitude|function|badaf723abe07336
@@ -531,4 +532,11 @@ expand_roost_mats|function|010f90ba651bc930
 get_summaries|function|16ec8545fe3e007d
 prepare_dataset|function|8c0ebe7fe2c9aeae
 caldev|function|c5b4f7878dbcfcbf
-stats|stem|4e2df084029f7b94|843e8a04dfbac627|e2af0106abe60524|1215092283||t20329.9492039347s|s7737b|7737|rds|local|vector|||0||
+n2|stem|a11ddb93183f9d54|3eef39c776b81dca|72986f544ffc71bb|-903966133||t20329.963194561s|s64b|64|rds|local|vector|||0||
+n1|stem|d964aa7ebbc91283|4c38d7bdffb1a795|e974605fe1fad0d0|977178182||t20329.9634496848s|s71b|71|rds|local|vector|||0||
+n3|stem|8e0ec9d915344557|3e90258fc645987a|fd16e2c3d128a619|-169888074||t20329.9638660229s|s78b|78|rds|local|vector|||0||
+n4|stem|671d3060766e0378|d99b8a230eb6ea8b|00cb26cd7d371d0a|-418321255||t20329.9641669059s|s75b|75|rds|local|vector|||0||
+n5|stem|1fc3760336e26822|28f857413de35a60|d1a1a7e20f506c5b|-1526060500||t20329.9643346813s|s69b|69|rds|local|vector|||0||
+n6|stem|3723323986506e60|cb353331354ca890|2fc36bd47c032c06|385852332||t20329.9645301046s|s78b|78|rds|local|vector|||0||
+n7|stem|222702790fb0fa95|f9dc82b24e6988c8|132972710c0baf53|-706164888||t20329.9646929955s|s65b|65|rds|local|vector|||0||
+ns|stem|f2eb6c17960f4af4|b5faa077eb8b7a8b|231a4835fe7cf6f2|1255223337||t20329.9646943366s|s191b|191|rds|local|vector|||0||

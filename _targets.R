@@ -378,7 +378,6 @@ list(
   tar_target(stn_gps_30days_tcv, timeconvert(stn_gps_30days, old_datetime = "timestamp", new_datetime = "timestamp_il")),
   tar_target(wild_gps_30days_tcv, timeconvert(wild_gps_30days, old_datetime = "timestamp", new_datetime = "timestamp_il")),
   tar_target(stmh, 72), # sighting time max hours
-  # testing this on just the first two carcasses for the sake of speed
   tar_target(nd1, nb_shortcut(stn_gps_30days_tcv[1:10], ddf, dds, gps_spd, stmh)),
   tar_target(nd2, nb_shortcut(stn_gps_30days_tcv[11:20], ddf, dds, gps_spd, stmh)),
   tar_target(nd3, nb_shortcut(stn_gps_30days_tcv[21:30], ddf, dds, gps_spd, stmh)),
@@ -641,5 +640,15 @@ list(
   tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_30days_bin, mutate(purrr::list_rbind(map(mods_30days_bin, getmodstats)), type = "30days", binwt = "bin", carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_30days_wt, mutate(purrr::list_rbind(map(mods_30days_wt, getmodstats)), type = "30days", binwt = "wt", carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
-  tar_target(stats, purrr::list_rbind(list(stats_cumul_bin, stats_cumul_wt, stats_30days_bin, stats_30days_wt)))
+  tar_target(stats, purrr::list_rbind(list(stats_cumul_bin, stats_cumul_wt, stats_30days_bin, stats_30days_wt))),
+  
+  ## Number of individuals involved in each diffusion
+  tar_target(n1, purrr::map_dbl(nd1, ~length(.x$oa_nums))),
+  tar_target(n2, purrr::map_dbl(nd2, ~length(.x$oa_nums))),
+  tar_target(n3, purrr::map_dbl(nd3, ~length(.x$oa_nums))),
+  tar_target(n4, purrr::map_dbl(nd4, ~length(.x$oa_nums))),
+  tar_target(n5, purrr::map_dbl(nd5, ~length(.x$oa_nums))),
+  tar_target(n6, purrr::map_dbl(nd6, ~length(.x$oa_nums))),
+  tar_target(n7, purrr::map_dbl(nd7, ~length(.x$oa_nums))),
+  tar_target(ns, c(n1, n2, n3, n4, n5, n6, n7))
 )
