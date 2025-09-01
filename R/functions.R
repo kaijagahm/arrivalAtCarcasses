@@ -1649,14 +1649,14 @@ prepare_nbda_data <- function(gps,
     ungroup() %>%
     arrange(time_since_carcass)
   
+  if(identify_seeds){
+    first_sightings <- first_sightings %>%
+      filter(!(tag_local_identifier %in% seeds))
+  }
+  
   n_found <- length(unique(first_sightings$tag_local_identifier))
   n_gps <- length(unique(gps$tag_local_identifier))
   prop_found <- n_found / n_gps
-  
-  # if (identify_seeds) {
-  #   first_sightings <- first_sightings %>%
-  #     filter(!(tag_local_identifier %in% seeds))
-  # }
   
   all_indivs_sorted <- sort(unique(gps$tag_local_identifier))
   
