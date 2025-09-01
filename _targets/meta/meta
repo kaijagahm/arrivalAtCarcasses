@@ -309,138 +309,231 @@ stmh|stem|b8fbc31535d22b21|da5014d78feb5a8e|2c530c1562a7fbd1|955358120||t20322.8
 fl_wt_cumulative_sameday|stem|error|dbffdddca4093716|2293e20efda1d8a0|562785954||t20322.8258826996s||0|null|local|vector|||110.782|After filtering, the dataset had 0 rows.|i In index: 1. Caused by error in `purrr::map()`: i In index: 38. Caused by error in `[.data.frame`: ! undefined columns selected
 nbda_data|stem|error|6357e067c010c73c|6a1385c86807bf37|268166131||t20322.8367584543s||0|null|local|vector|||10.812||i In index: 7. Caused by error in `prepare_nbda_data()`: ! All individuals are included in oa_nums, but not all indivs found the carcass. Something's wrong!
 nbdadata_shortcut|function|37190b5eb4033f5f
-nd5|stem|960f8624a56a0afd|c28ec0b353313fee|86f48bc5d90a0880|-544448588||t20323.0202356493s|s87345392b|87345392|rds|local|vector|||14.313||
-nd2|stem|c7465480dddf4401|c8b73adead1686a5|86f48bc5d90a0880|1527715208||t20323.0203127601s|s97552278b|97552278|rds|local|vector|||16.078||
-nd6|stem|e78cd77c70b8ffc7|16ce016cddd4eaef|86f48bc5d90a0880|22282946||t20323.0203654162s|s112907036b|112907036|rds|local|vector|||16.563||
-nd1|stem|0184845fa70706ed|ddc36c67a49b86e6|86f48bc5d90a0880|-231740509||t20323.0205146637s|s138568597b|138568597|rds|local|vector|||20.422||
-nd4|stem|96c4a7a3608bcaf9|950e2fa47622e3b6|86f48bc5d90a0880|-514633067||t20323.0208717407s|s189170985b|189170985|rds|local|vector|||30.219||
-nd3|stem|91078814750411d7|5148d03106359ada|86f48bc5d90a0880|-71177921||t20323.0211021804s|s211499189b|211499189|rds|local|vector|||29.875||
-nd7|stem|1cb2bb4b89db3920|6baafeb9a8ab95bb|86f48bc5d90a0880|-1634981471||t20323.0215125535s|s95075106b|95075106|rds|local|vector|||12.218||
 nbdadata_stn|stem|35584a515557b3d3|075ceca97905790b|cb96bd3d2644fc69|-962420238||t20323.0274813033s|s932001997b|932001997|rds|local|vector|||0||
 gps_data_cumulative|stem|3c84f4fab5d5f5d2|8d671008c7b67330|f6bad40ba7ccbef9|-661869723||t20323.0367149253s|s192755378b|192755378|rds|local|vector|||0||
 fl_bin_cumulative_sameday|stem|831151127b335e6d|9f91587553fe2af3|108df473683aaddd|-243034433||t20323.0383513395s|s162717b|162717|rds|local|vector|||3.265||
 fl_bin_n720n024|stem|error|b9a6d5b71fbe4945|73d5a0ad4a8f4915|-1415482391||t20323.050977458s||0|null|local|vector|||0.187|Coercing LHS to a list|i In index: 1. Caused by error in `UseMethod()`: ! no applicable method for 'relocate' applied to an object of class 'list'
-fl_bin_n720n024_1_prelim|stem|6af09fbfbf2880c2|8634baf6c8f3e8fc|f08d031331da42b7|-1523868340||t20328.9345681076s|s35338b|35338|rds|local|vector|||48.203||
-fl_bin_cumulative_sameday_1_prelim|stem|764f80e3c849bfa8|c34d6c66989caf19|f08d031331da42b7|1381792430||t20328.9358935364s|s652422b|652422|rds|local|vector|||93.735|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_bin_n720n024_1|stem|4af57b3acfb515ab|5d439381d1e9006c|dc77a17654c9601f|-1662734679||t20328.9518004202s|s24271b|24271|rds|local|vector|||0.141||
-fl_bin_cumulative_sameday_1|stem|0e14621548e42e99|b7834d5256114294|273fa4f3059adbd0|-1013784034||t20328.95214758s|s391261b|391261|rds|local|vector|||8.859||
-fl_bin_n720n024_2_prelim|stem|091100242a632e7c|a4b89470318c26d6|ed7c5847f1f0d139|-1796931362||t20328.953701221s|s31269b|31269|rds|local|vector|||41.594||
-fl_bin_cumulative_sameday_2_prelim|stem|42eaae4524937637|c1e96d4de4d2a77b|ed7c5847f1f0d139|-1631536187||t20328.9537193402s|s339623b|339623|rds|local|vector|||43.406|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_bin_cumulative_sameday_2|stem|13bd18e03f4fab0c|778ed1721554b4c5|f6dbff6f6413e172|297342515||t20328.9539446508s|s185763b|185763|rds|local|vector|||3.657||
-fl_bin_n720n024_4_prelim|stem|9451b896853d16ff|bbdc9dbfba2c0991|a144bc68c281511f|-1210774720||t20328.9542571815s|s28939b|28939|rds|local|vector|||72.297||
-fl_bin_n720n024_3_prelim|stem|10695f6afbdd6724|89aabd7e6bab3bca|0c2a29839f6635d6|2071366746||t20328.9542797416s|s29414b|29414|rds|local|vector|||70.766||
-fl_bin_cumulative_sameday_4_prelim|stem|519869bc2b0fb79a|11882fb228d29b7f|a144bc68c281511f|-1723957070||t20328.9544275902s|s757903b|757903|rds|local|vector|||86.75||
-fl_bin_n720n024_5_prelim|stem|985a523a8c0a7c57|3df743a74dc90e68|8074f33270182369|-1574753276||t20328.9544710051s|s36674b|36674|rds|local|vector|||32.203||
-fl_bin_cumulative_sameday_3_prelim|stem|7ff94ca9298e93c8|7b58c2f52041d436|0c2a29839f6635d6|911608012||t20328.9546105931s|s789988b|789988|rds|local|vector|||99.172|After filtering, the dataset had 0 rows.|
-fl_bin_cumulative_sameday_5_prelim|stem|afdf8dc7f08df48d|a012b2805c6279ee|8074f33270182369|-1858428470||t20328.9546353872s|s371079b|371079|rds|local|vector|||45.313|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_bin_cumulative_sameday_4|stem|f4a62990fc228dff|34fb93f8a2aaf689|0195f90fc4e8cc74|-979957300||t20328.9548347516s|s427785b|427785|rds|local|vector|||8.219||
-fl_bin_cumulative_sameday_5|stem|1b2754f7040a0ca0|72d21450dae699d0|9cc5bd194f1915fb|-198065707||t20328.9548432883s|s209583b|209583|rds|local|vector|||5.953||
-fl_bin_cumulative_sameday_3|stem|139c066763c82849|52475e1736698d3a|79a2bcb3e5b3dfe1|74726494||t20328.9550701816s|s426942b|426942|rds|local|vector|||7.719||
-fl_bin_n720n024_6_prelim|stem|b51c8c049e4745d8|147d01d858332186|1635a711202d2977|146903472||t20328.9550898658s|s35662b|35662|rds|local|vector|||36.25||
-fl_bin_n720n024_7_prelim|stem|1ca0000f22ae32c2|e3a6fd7c1d7ad02f|5199a6371196d805|1513210536||t20328.9552363829s|s15703b|15703|rds|local|vector|||18.156||
-fl_bin_cumulative_sameday_6_prelim|stem|6df925011aab7225|91bffaf3a699da4c|1635a711202d2977|-1163640966||t20328.9554939714s|s513789b|513789|rds|local|vector|||68.141||
-fl_bin_cumulative_sameday_7_prelim|stem|372547de38dfa878|5af8d4b018964df4|5199a6371196d805|813422386||t20328.9556075505s|s474297b|474297|rds|local|vector|||63.907||
-fl_bin_cumulative_sameday_6|stem|46840884068d13ce|6ef948ebb214d4e2|5f80f8264023e831|488965128||t20328.9557717949s|s293526b|293526|rds|local|vector|||6.422||
-fl_bin_cumulative_sameday_7|stem|60fb6511808f7cae|4d83b4e9faba0028|a5feed9219c38602|-938569305||t20328.95582949s|s258236b|258236|rds|local|vector|||5.031||
-fl_wt_n720n024_1|stem|44809b339c572827|6d18ef7111200382|dfe179bf0465b7ae|-1651372466||t20328.971065913s|s207533b|207533|rds|local|vector|||0.078||
-fl_wt_cumulative_sameday_4|stem|fc60d8c99752d6ec|f3282e6090f1a8e4|34cd5ce26d0badf5|1361548504||t20328.9941655286s|s734947b|734947|rds|local|vector|||7.25||
-fl_wt_cumulative_sameday_6|stem|d44ceb3a77bc9072|8a07640d42b42840|e7bf395c8180f04a|1460701077||t20328.9965282529s|s446464b|446464|rds|local|vector|||5.359||
-fl_wt_cumulative_sameday_7|stem|e8cbc9dfc30228ff|d8ece6d25ab1d148|139b7af46e2da46f|-1225484386||t20328.999199808s|s413769b|413769|rds|local|vector|||4.782||
-fl_wt_n720n024_1_prelim|stem|09eef3acb8d5dbcc|65865480b57a1193|8709a6402fe558c8|-725719974||t20329.8500427396s|s212002b|212002|rds|local|vector|||193.453||
-fl_wt_cumulative_sameday_2_prelim|stem|72fed1eb31f7db96|1f37eaa94b3e9a58|92b71379c5fe115e|-962145062||t20329.8506562069s|s389957b|389957|rds|local|vector|||253.39|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_wt_cumulative_sameday_2|stem|1098bb36b809ef36|437d9aadddde9463|c145ca131ba00937|-231805169||t20329.850887581s|s333262b|333262|rds|local|vector|||3.656||
-fl_wt_cumulative_sameday_5_prelim|stem|c8bdbf2e08baccb3|554990d2a58bbf72|5047a2a76aafb86f|1824330431||t20329.8517530669s|s371711b|371711|rds|local|vector|||288.141|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_wt_cumulative_sameday_5|stem|4cf5dc1e93f80324|fc2660dc659f41e1|15e62754ea188116|-2096481985||t20329.85196814s|s315745b|315745|rds|local|vector|||6.047||
-fl_wt_cumulative_sameday_1_prelim|stem|13e2f4ec50ef88fc|4c1627b4fd33fe59|8709a6402fe558c8|556322165||t20329.8536959958s|s775234b|775234|rds|local|vector|||508.281|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
-fl_wt_cumulative_sameday_1|stem|78ca07ad952005fd|1960abf849998bf6|8b7eb57707da605f|283184190||t20329.8540310395s|s691528b|691528|rds|local|vector|||7.203||
-fl_wt_cumulative_sameday_3_prelim|stem|7c920f4f8643692b|d69b1b80b0f1fe65|728cd87374a621c9|-1554501805||t20329.8548454916s|s918082b|918082|rds|local|vector|||593.672|After filtering, the dataset had 0 rows.|
-fl_wt_cumulative_sameday_6_prelim|stem|7cab3a3d05cf18d4|0dc4b771c241c3ab|9adaaef350f3e152|741573158||t20329.8550046573s|s517022b|517022|rds|local|vector|||391.093||
-fl_wt_cumulative_sameday_3|stem|e2bb7e8ff636afbd|7d44cba7e85f24bd|a4faa1de6d8cd4f1|1350797945||t20329.8553304174s|s726008b|726008|rds|local|vector|||6.516||
-fl_wt_cumulative_sameday_4_prelim|stem|054210b3eb226ed5|5245dd9fbb204bad|d327e5535e84b0d0|-495063221||t20329.8557295523s|s944005b|944005|rds|local|vector|||640.578||
-fl_wt_cumulative_sameday_7_prelim|stem|d45029dee9db811d|af3cabf6e36748e5|e6710bf7a38d8c2c|-698728089||t20329.8558645549s|s488759b|488759|rds|local|vector|||400.015||
-fl_bin_n720n024_2|stem|e13b53d739a020a6|1a23c7a998fecc47|7f06cdb96e83187e|1695015804||t20329.8648501857s|s20378b|20378|rds|local|vector|||0.093||
-fl_bin_n720n024_5|stem|4c4265084a09f5c7|d9867caf8b9d903e|2b9b7b958ef2d63d|66931231||t20329.8648677764s|s25946b|25946|rds|local|vector|||0.375||
-fl_bin_n720n024_7|stem|c9c1daa259ce5d46|336561c501c0907d|6ecceb5726b4b166|-585693966||t20329.8650432156s|s10149b|10149|rds|local|vector|||0.016||
-fl_bin_n720n024_4|stem|41d7bf700f18a02b|86ba7ea7d9118ca8|80e48800de52f5c9|1215897350||t20329.8650591608s|s18178b|18178|rds|local|vector|||0.109||
-fl_bin_n720n024_6|stem|3fa33bc8b392c068|37b6b171df006585|40825e23adb21fa1|358648341||t20329.8650624231s|s24797b|24797|rds|local|vector|||0.171||
-fl_bin_n720n024_3|stem|9c4b0e19f50e5b6d|6d441f5233ee6c98|ce9c31e768a9168d|-1041038204||t20329.8650898469s|s18645b|18645|rds|local|vector|||0.109||
-fl_wt_n720n024_7_prelim|stem|16a49ab84c301802|4da41ce88bba23eb|e6710bf7a38d8c2c|-555892164||t20329.8692407486s|s74831b|74831|rds|local|vector|||57.578||
-fl_wt_n720n024_7|stem|8fdf2f5832049e64|e18f734bc96b0e9e|c0f0243ea3ee2b47|614997427||t20329.8694085814s|s74210b|74210|rds|local|vector|||0.078||
-fl_wt_n720n024_5_prelim|stem|45d6ed74c94e030e|fb5e21feb1998a65|5047a2a76aafb86f|681096647||t20329.8698374937s|s149777b|149777|rds|local|vector|||110.312||
-fl_wt_n720n024_6_prelim|stem|a5c9453829a8b2b4|7397bc211d64916e|9adaaef350f3e152|125725262||t20329.8698740443s|s146947b|146947|rds|local|vector|||108.75||
-fl_wt_n720n024_5|stem|9a9f11258558ae88|07ca01e9269a3540|2520797a8668b047|759948847||t20329.8699948942s|s149025b|149025|rds|local|vector|||0.344||
-fl_wt_n720n024_6|stem|70244b661e3d9d04|8a5a35b9fd0147eb|670fe40599db7271|1076327782||t20329.8700741545s|s146455b|146455|rds|local|vector|||0.187||
-fl_wt_n720n024_2_prelim|stem|131e78936d1f6c37|8f202474acfadec3|92b71379c5fe115e|1952027402||t20329.8707032733s|s176065b|176065|rds|local|vector|||182.641||
-fl_wt_n720n024_2|stem|aa94c30b4e21fd5a|360d08aea97a7dd1|235a65f6046f318e|-289405599||t20329.8708818736s|s173325b|173325|rds|local|vector|||0.078||
-fl_wt_n720n024_3_prelim|stem|bcc592ead52875c4|a74295d57cda0361|728cd87374a621c9|-1477084109||t20329.8781140388s|s196193b|196193|rds|local|vector|||803.531||
-fl_wt_n720n024_3|stem|e8439e41e7b924bc|5911d262ce9821e1|02d7e1abb19a77b3|-1459627308||t20329.8784849106s|s194650b|194650|rds|local|vector|||0.078||
-fl_wt_n720n024_4_prelim|stem|d743a1445e550863|1a0b1d68361205dd|d327e5535e84b0d0|-1470025549||t20329.8812255514s|s200658b|200658|rds|local|vector|||1075.594||
-fl_wt_n720n024_4|stem|1f23bcbf24de31cd|b6036215354ffe4c|bf36b7e209865e56|611494128||t20329.881572247s|s198787b|198787|rds|local|vector|||0.031||
-data_cumul_bin_5|stem|1e28a3f33643b303|d8aced34fe9f70c5|2489d96549fc6ab5|-1396600015||t20329.9027944435s|s138466b|138466|rds|local|vector|||1.672||
-data_cumul_bin_2|stem|c3540bac06670ce1|603ded386790daa7|d811584a40cce325|540523842||t20329.9028184988s|s127668b|127668|rds|local|vector|||1.39||
-data_cumul_bin_6|stem|33aecb8e973e40fb|a7c88b3acdbc5188|1d41264b7d16ac21|-771700473||t20329.9028612589s|s199177b|199177|rds|local|vector|||2.985||
-data_cumul_bin_1|stem|83e9bbf5270f90e6|d2ef695bb181fbd3|ac566eef5a5b6e79|630565138||t20329.902907633s|s274456b|274456|rds|local|vector|||3.61||
-data_cumul_bin_7|stem|921e979bf7e99a0d|888ffe1a9a3b6018|4815a4d7dc17b2da|-1859587492||t20329.9030028843s|s180382b|180382|rds|local|vector|||1.906||
-data_cumul_bin_4|stem|aa8af0feeccd6ae0|2c199eec5c3940f7|d9a0eac0baba5fa6|-533009355||t20329.9030208891s|s315867b|315867|rds|local|vector|||2.125||
-data_cumul_bin_3|stem|8ce7b3a9c42e11b9|bd3ad1686adfbf4f|f152e4603e1a82cf|560495026||t20329.9030832404s|s298724b|298724|rds|local|vector|||4.172||
-data_cumul_wt_5|stem|104f46c8a0a6888b|d3f67737735e4372|766b3cd3e46c5d2b|1599964837||t20329.9046263339s|s235237b|235237|rds|local|vector|||1.531||
-data_cumul_wt_2|stem|fa28dd5b2dc8df0c|80a129273c224d5b|e64b80136ea43dfc|-970343971||t20329.9046568173s|s275380b|275380|rds|local|vector|||1.531||
-data_cumul_wt_6|stem|524a8686660c529d|43878f2df3719dde|e18d7981db2e74ad|-579888266||t20329.9046978175s|s341759b|341759|rds|local|vector|||3.032||
-data_cumul_wt_1|stem|f8869687a7ed247e|f7b501f55fc37ca0|bbcc23a44de4ba9b|-333409491||t20329.9047471915s|s567555b|567555|rds|local|vector|||3.328||
-data_cumul_wt_7|stem|075e58790e77fc71|a4b9cd99823d2b44|9b4069da6ca55906|-1451480960||t20329.9048416659s|s326237b|326237|rds|local|vector|||2.046||
-data_cumul_wt_4|stem|46d12b5f3c35897d|381b59ba4b84c96a|f5235fadcc6ee893|-1371516291||t20329.9048683897s|s609062b|609062|rds|local|vector|||2.375||
-data_cumul_wt_3|stem|e3dcc60d69b8a9a1|53a00e2121b3eb61|6dc363f7601bbc17|1010552441||t20329.9049342318s|s593856b|593856|rds|local|vector|||4.625||
-data_n720n024_bin_5|stem|eaba736956085f92|6cef16fd5f87ea65|65e0024d0b456dd4|-419132234||t20329.9080217322s|s41193b|41193|rds|local|vector|||1.36||
-data_n720n024_bin_7|stem|ab45cd80fbcdeaf8|b3edb980f75b1362|63658794ffa6811a|-1022126075||t20329.9080454166s|s40149b|40149|rds|local|vector|||2.422||
-data_n720n024_bin_2|stem|470c8fd13a0df072|ba5ae2fce952c5a3|0d1d00c7606c318c|-144968829||t20329.9080482136s|s34889b|34889|rds|local|vector|||2.36||
-data_n720n024_bin_6|stem|7980bdc29926ae9a|4efcc9411f13c053|2f5e01c1f69a3dd1|-32049243||t20329.9080824635s|s59932b|59932|rds|local|vector|||1.703||
-data_n720n024_bin_1|stem|ad84d29e7f5eb395|fab898ceac478a3c|bdbc682039187b81|1509728179||t20329.9081242398s|s68416b|68416|rds|local|vector|||2.031||
-data_n720n024_bin_4|stem|b7f5c00266e699a1|fd576cb4fd770290|46838e781b12a1f2|1971912538||t20329.9082521576s|s56189b|56189|rds|local|vector|||1.875||
-data_n720n024_bin_3|stem|906c55698abf8123|4e7d8a8de22df26e|a165d7ee22380745|-70209534||t20329.9083059291s|s66720b|66720|rds|local|vector|||3.812||
-data_n720n024_wt_5|stem|4552d3f2026f766b|4f9512de5c304524|d298bddc2471ef36|2138798156||t20329.9157140703s|s142810b|142810|rds|local|vector|||1.703||
-data_n720n024_wt_7|stem|36b4f0a40cd36096|2d53a957aa1815fc|42a5e129f857d800|1417938201||t20329.9157270805s|s123042b|123042|rds|local|vector|||2.422||
-data_n720n024_wt_2|stem|478fdab0b7751686|e29eeddaa82ab92c|7789966c867df8e0|-193415314||t20329.9157300764s|s153097b|153097|rds|local|vector|||2.391||
-data_n720n024_wt_6|stem|e65143d05e1f311f|412a9ae6ef25642d|bfe547ddc7cd824b|-1390528921||t20329.9157545898s|s206636b|206636|rds|local|vector|||1.718||
-data_n720n024_wt_1|stem|6a3b242693a069d0|74125c4d8bcce023|e1092c666808a957|-1164157735||t20329.9158134346s|s215031b|215031|rds|local|vector|||2.203||
-data_n720n024_wt_4|stem|d38c988de42dd064|63534a8e8f6355d0|f6a7a67f86217560|-1462806802||t20329.9159192189s|s339579b|339579|rds|local|vector|||1.875||
-data_n720n024_wt_3|stem|76e75082a230ff63|05b0537150a935a3|5c04667b297530c4|1228151600||t20329.9159951159s|s400988b|400988|rds|local|vector|||3.703||
-mods_cumul_wt_2|stem|6424ba8d2fb4e271|a45da7cc78d79f4e|25c3c281a8b3af80|-570471713||t20329.9334293556s|s277723b|277723|rds|local|vector|||1.328||
-mods_cumul_wt_3|stem|71f389a3c47ef349|5fefa585bef2c29c|13a5e6f680c44f74|-1795394868||t20329.9334336315s|s507373b|507373|rds|local|vector|||1.141|NA/NaN function evaluation. NA/NaN function evaluation|
-mods_cumul_wt_4|stem|d01890f65f598e8f|394db50c0c82e9c7|7bebe48e8cda74ea|2045196537||t20329.9334406424s|s611737b|611737|rds|local|vector|||1.969||
-mods_cumul_wt_1|stem|ef96f9d2852a6d38|6e439b9bc0575d28|5f73d8bdf1cf6bda|1501327738||t20329.9334411508s|s570134b|570134|rds|local|vector|||1.859||
-mods_cumul_wt_5|stem|20b3ea5cc5b044a2|196ed8ab52dc02b1|fec540b897d98acb|-1942343991||t20329.9334420371s|s237184b|237184|rds|local|vector|||1.515||
-mods_cumul_wt_6|stem|c0ede700fa6338a4|f6f0000f1f7610ee|7421f923e8b4cc32|-1077248098||t20329.9334622292s|s344681b|344681|rds|local|vector|||0.969||
-mods_n720n024_wt_1|stem|d1ea91460b9d8e25|fddc5f13134e66d5|1c6752f476a817b5|-793603731||t20329.93471136s|s50b|50|rds|local|vector|||0.406|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
-mods_n720n024_wt_2|stem|c88e67a21c6ea478|4646600b98ad1f39|4b3267a87cbb22b7|1232129831||t20329.9347158134s|s51052b|51052|rds|local|vector|||0.64|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
-mods_cumul_bin_2|stem|3325187726bf1479|a4663ca1364bacef|7053c7f080918fb0|-978448069||t20329.9347252185s|s129995b|129995|rds|local|vector|||1.235||
-mods_cumul_bin_1|stem|399af12553c43d05|d5ba7327cc24728c|9eb9c83c05bf2e80|-1844946084||t20329.9347390687s|s277541b|277541|rds|local|vector|||1.75||
-mods_n720n024_bin_2|stem|c983098277e173e9|d2cb44c657675cd5|f2d23aac78df6118|-543583708||t20329.9347412783s|s36944b|36944|rds|local|vector|||2.766||
-mods_n720n024_wt_3|stem|d8ac61c07371db07|d197459379d5422b|0bc5098f57357a44|1112900464||t20329.9347523821s|s404278b|404278|rds|local|vector|||3.5||
-mods_cumul_bin_3|stem|3928587a5d61bf4d|c5d833c60dd000d4|7eb2d5c12dd79d90|719800399||t20329.9347531325s|s302934b|302934|rds|local|vector|||1.203||
-mods_n720n024_wt_4|stem|ec1cc2efd73554aa|d025508c247396cb|afb39096c83e4817|-212689042||t20329.934774315s|s342141b|342141|rds|local|vector|||3.031||
-mods_n720n024_bin_3|stem|56a079c78e9d724a|afdb27d38332c2ba|c377073ab574c755|-91023897||t20329.9347753191s|s70116b|70116|rds|local|vector|||4.281||
-mods_n720n024_wt_5|stem|e3cc48e22f08f49a|1ec4daa809a58d8b|d43236f62a422305|-1160844137||t20329.9347783268s|s121012b|121012|rds|local|vector|||1.109|NA/NaN function evaluation|
-mods_cumul_bin_4|stem|22c3b3ed25d686a1|c33e5e0eb4830734|b3301658da830a4f|-1998891594||t20329.9347848922s|s319126b|319126|rds|local|vector|||2.265||
-mods_cumul_bin_5|stem|06ce365e287aff33|6c2c958f330ea88b|14b6ca266ebd4d2b|-381037690||t20329.9347852203s|s140463b|140463|rds|local|vector|||1.422||
-mods_n720n024_bin_1|stem|c42639a04fbd5969|28ed103f023d471b|3e83ad2ef2ec3ef2|-1698267597||t20329.9347881808s|s71216b|71216|rds|local|vector|||7.203||
-mods_n720n024_wt_6|stem|6c92122b0c2478aa|0bac6adf7938d650|7b041e173e123fb5|1151883898||t20329.9348086239s|s114902b|114902|rds|local|vector|||1.703|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
-mods_n720n024_bin_4|stem|06d1e25468a4c152|6fa26ddf520e3824|60342ae491845dec|-582468734||t20329.9348092124s|s58954b|58954|rds|local|vector|||4.844||
-mods_n720n024_bin_5|stem|f4925b204cf72ddc|bd4b7c382c88ffa9|8592da393d67d988|586159693||t20329.9348115449s|s42988b|42988|rds|local|vector|||1.968||
-mods_cumul_bin_6|stem|999661ccd3ebb5f7|3393ba97f9938414|73c8a0d1ab9daeff|-453796286||t20329.9348158869s|s202280b|202280|rds|local|vector|||1.875||
-mods_n720n024_bin_7|stem|23e078d46c8874d3|05d26c58c2e48d2f|1d9c4860c38bf374|-954536465||t20329.9348211149s|s41891b|41891|rds|local|vector|||1.5||
-mods_n720n024_wt_7|stem|cbda762a61df6181|ee124829480d3886|eefc53cdcaa7f844|-1849116083||t20329.9348247494s|s42783b|42783|rds|local|vector|||0.328|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
-mods_cumul_bin_7|stem|be03c553b936294b|2acb8a5d2f01bcfc|44ef1288a10f5fbc|37807762||t20329.9348338322s|s182333b|182333|rds|local|vector|||1.407||
-mods_n720n024_bin_6|stem|de8b8f24ad8fc1ff|586c8fe63a0acd8b|9f0cf6a264ace48d|1689520137||t20329.9348384207s|s62695b|62695|rds|local|vector|||3.438||
-mods_cumul_wt_7|stem|be10b08a92e26fc7|06b25b6ab2c59994|2c70b24957fe506e|1125066177||t20329.9384515066s|s327928b|327928|rds|local|vector|||1.547||
-mods_30days_bin|stem|b943505cb81c78fd|bdd81ec87375839a|df40da6f8a367243|1438598853||t20329.9420125629s|s381543b|381543|rds|local|vector|||0||
-mods_30days_wt|stem|25f11aaf28b66801|a08a58c97906c146|f083ae5d400d7d3d|18154731||t20329.9420131172s|s1073630b|1073630|rds|local|vector|||0||
-mods_cumul_bin|stem|4b3dfd3c73d9f5f7|8197c688c7d8b54c|0a586a78aa436c23|-901142125||t20329.94204548s|s1551761b|1551761|rds|local|vector|||0.015||
-mods_cumul_wt|stem|c90d9124f408079e|9f8eee27aa5a0ef1|49c66a0aef396f49|-383361730||t20329.9420463207s|s2877979b|2877979|rds|local|vector|||0||
-stats_30days_wt|stem|2fba5061578a0a90|0757280e7f53098e|1919c14a34b161e8|-1667942530||t20329.948673504s|s1771b|1771|rds|local|vector|||0.265||
-stats_30days_bin|stem|d82084056032887c|67be1e26a8f7151d|502e0b60d751f6d2|2007148464||t20329.9486870741s|s2603b|2603|rds|local|vector|||0.797||
-stats_cumul_wt|stem|d0c982cb75b4a727|54684403fe1eac81|2bd1b9ff43f0b5d9|899541084||t20329.948700026s|s2611b|2611|rds|local|vector|||0.437||
-stats_cumul_bin|stem|e6fd6dc66f528c06|9958fe81295bdd93|38d1ccd136fd8c8d|-543075754||t20329.9487014361s|s2717b|2717|rds|local|vector|||0.328||
-stats|stem|4e2df084029f7b94|843e8a04dfbac627|e2af0106abe60524|1215092283||t20329.9492039347s|s7737b|7737|rds|local|vector|||0||
+ns|stem|f2eb6c17960f4af4|b5faa077eb8b7a8b|231a4835fe7cf6f2|1255223337||t20329.9646943366s|s191b|191|rds|local|vector|||0||
+seed_time_before_mins|stem|01622f88653cc540|cb6fc157afbd8dca|2c530c1562a7fbd1|1032236104||t20330.0179981384s|s51b|51|rds|local|vector|||11.937||
+fl_bin_cumulative_sameday_2_prelim|stem|42eaae4524937637|c1e96d4de4d2a77b|612883ad12f60fa3|-1631536187||t20330.0218334223s|s339623b|339623|rds|local|vector|||46.407|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_bin_cumulative_sameday_2|stem|13bd18e03f4fab0c|778ed1721554b4c5|29e17f5a79422002|297342515||t20330.0220283447s|s185763b|185763|rds|local|vector|||3.469||
+fl_bin_cumulative_sameday_1_prelim|stem|764f80e3c849bfa8|c34d6c66989caf19|afa4c78dc825aee7|1381792430||t20330.0226618974s|s652422b|652422|rds|local|vector|||107.625|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_bin_cumulative_sameday_5_prelim|stem|afdf8dc7f08df48d|a012b2805c6279ee|51b372bc1f32747d|-1858428470||t20330.0229144772s|s371079b|371079|rds|local|vector|||48.485|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_bin_cumulative_sameday_1|stem|0e14621548e42e99|b7834d5256114294|12f6f3b61575d8e4|-1013784034||t20330.0229805152s|s391261b|391261|rds|local|vector|||8.547||
+fl_wt_n720n024_5_prelim|stem|45d6ed74c94e030e|fb5e21feb1998a65|dca1b44c09a8559f|681096647||t20330.0231013568s|s149777b|149777|rds|local|vector|||180.813||
+fl_bin_cumulative_sameday_5|stem|1b2754f7040a0ca0|72d21450dae699d0|10eeff2068babc8f|-198065707||t20330.0231106615s|s209583b|209583|rds|local|vector|||4.75||
+fl_wt_n720n024_5|stem|9a9f11258558ae88|07ca01e9269a3540|2274243cb941792b|759948847||t20330.0232466634s|s149025b|149025|rds|local|vector|||0.344||
+fl_wt_n720n024_6_prelim|stem|a5c9453829a8b2b4|7397bc211d64916e|6534775533732c4b|125725262||t20330.0232561159s|s146947b|146947|rds|local|vector|||168.422||
+fl_wt_n720n024_6|stem|70244b661e3d9d04|8a5a35b9fd0147eb|49f7792220abce4c|1076327782||t20330.0234553128s|s146455b|146455|rds|local|vector|||0.235||
+n5|stem|1fc3760336e26822|28f857413de35a60|bdac34ecf6f4b72d|-1526060500||t20330.0235561283s|s69b|69|rds|local|vector|||0.016||
+fl_bin_n720n024_5_prelim|stem|985a523a8c0a7c57|3df743a74dc90e68|51b372bc1f32747d|-1574753276||t20330.0238443211s|s36674b|36674|rds|local|vector|||38.203||
+fl_bin_n720n024_7_prelim|stem|1ca0000f22ae32c2|e3a6fd7c1d7ad02f|9f4b85bc102d8c9e|1513210536||t20330.023905826s|s15703b|15703|rds|local|vector|||17.531||
+fl_bin_n720n024_5|stem|4c4265084a09f5c7|d9867caf8b9d903e|2b754886a4d21b55|66931231||t20330.0239892031s|s25946b|25946|rds|local|vector|||0.265||
+fl_bin_n720n024_7|stem|c9c1daa259ce5d46|336561c501c0907d|39058ba9087b2158|-585693966||t20330.0240522138s|s10149b|10149|rds|local|vector|||0.015||
+n7|stem|222702790fb0fa95|f9dc82b24e6988c8|c7c8d536d8551403|-706164888||t20330.0242903721s|s65b|65|rds|local|vector|||0||
+n2|stem|a11ddb93183f9d54|3eef39c776b81dca|8a800d4e001e03b2|-903966133||t20330.0244664902s|s64b|64|rds|local|vector|||0||
+fl_bin_cumulative_sameday_7_prelim|stem|372547de38dfa878|5af8d4b018964df4|9f4b85bc102d8c9e|813422386||t20330.024574554s|s474297b|474297|rds|local|vector|||66.875||
+fl_bin_cumulative_sameday_7|stem|60fb6511808f7cae|4d83b4e9faba0028|cf6b5f569f8c588d|-938569305||t20330.0248077251s|s258236b|258236|rds|local|vector|||5.297||
+fl_bin_n720n024_2_prelim|stem|091100242a632e7c|a4b89470318c26d6|612883ad12f60fa3|-1796931362||t20330.0251844097s|s31269b|31269|rds|local|vector|||48.687||
+fl_wt_n720n024_7_prelim|stem|16a49ab84c301802|4da41ce88bba23eb|8124933b687961a7|-555892164||t20330.0252526798s|s74831b|74831|rds|local|vector|||72.937||
+fl_bin_n720n024_2|stem|e13b53d739a020a6|1a23c7a998fecc47|6a0d4cccbf2b61a4|1695015804||t20330.0253464206s|s20378b|20378|rds|local|vector|||0.032||
+fl_wt_n720n024_7|stem|8fdf2f5832049e64|e18f734bc96b0e9e|07657a0b52992ad2|614997427||t20330.0254016789s|s74210b|74210|rds|local|vector|||0.015||
+fl_wt_cumulative_sameday_7_prelim|stem|d45029dee9db811d|af3cabf6e36748e5|8124933b687961a7|-698728089||t20330.0259723563s|s488759b|488759|rds|local|vector|||423.75||
+fl_wt_cumulative_sameday_7|stem|e8cbc9dfc30228ff|d8ece6d25ab1d148|53b59d986f004b59|-1225484386||t20330.0261897905s|s413769b|413769|rds|local|vector|||5.032||
+fl_bin_cumulative_sameday_6_prelim|stem|6df925011aab7225|91bffaf3a699da4c|d5d04b8882c833e8|-1163640966||t20330.0266666652s|s513789b|513789|rds|local|vector|||71.844||
+fl_wt_cumulative_sameday_5_prelim|stem|c8bdbf2e08baccb3|554990d2a58bbf72|dca1b44c09a8559f|1824330431||t20330.0267525132s|s371711b|371711|rds|local|vector|||288.812|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_bin_cumulative_sameday_6|stem|46840884068d13ce|6ef948ebb214d4e2|66b1055bd4f2cdda|488965128||t20330.0269312295s|s293526b|293526|rds|local|vector|||6.328||
+fl_wt_cumulative_sameday_5|stem|4cf5dc1e93f80324|fc2660dc659f41e1|0a06fdb36aff4f94|-2096481985||t20330.0269439581s|s315745b|315745|rds|local|vector|||4||
+n6|stem|3723323986506e60|cb353331354ca890|640b99c15c5e7cdd|385852332||t20330.0273308946s|s78b|78|rds|local|vector|||0||
+fl_bin_n720n024_6_prelim|stem|b51c8c049e4745d8|147d01d858332186|d5d04b8882c833e8|146903472||t20330.0276236277s|s35662b|35662|rds|local|vector|||30.609||
+fl_bin_n720n024_6|stem|3fa33bc8b392c068|37b6b171df006585|a6938f97550b528e|358648341||t20330.0278625152s|s24797b|24797|rds|local|vector|||0.125||
+n1|stem|d964aa7ebbc91283|4c38d7bdffb1a795|9e70137f3ce90d9a|977178182||t20330.0282762884s|s71b|71|rds|local|vector|||0||
+fl_wt_n720n024_2_prelim|stem|131e78936d1f6c37|8f202474acfadec3|2b38c39eca871d2f|1952027402||t20330.0283786573s|s176065b|176065|rds|local|vector|||278.563||
+fl_wt_n720n024_2|stem|aa94c30b4e21fd5a|360d08aea97a7dd1|1e27a4a9d7a2d184|-289405599||t20330.0285366046s|s173325b|173325|rds|local|vector|||0.031||
+fl_wt_cumulative_sameday_2_prelim|stem|72fed1eb31f7db96|1f37eaa94b3e9a58|2b38c39eca871d2f|-962145062||t20330.0286014552s|s389957b|389957|rds|local|vector|||251.625|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_wt_cumulative_sameday_2|stem|1098bb36b809ef36|437d9aadddde9463|3941bb2a053119b9|-231805169||t20330.0287976792s|s333262b|333262|rds|local|vector|||3.453||
+fl_bin_n720n024_1_prelim|stem|6af09fbfbf2880c2|8634baf6c8f3e8fc|afa4c78dc825aee7|-1523868340||t20330.0290914641s|s35338b|35338|rds|local|vector|||50.937||
+fl_bin_n720n024_1|stem|4af57b3acfb515ab|5d439381d1e9006c|59d460c48fee2fea|-1662734679||t20330.0293086125s|s24271b|24271|rds|local|vector|||0.031||
+fl_bin_cumulative_sameday_4_prelim|stem|519869bc2b0fb79a|11882fb228d29b7f|7210fbb3db288826|-1723957070||t20330.0304146075s|s757903b|757903|rds|local|vector|||94.594||
+fl_bin_n720n024_4_prelim|stem|9451b896853d16ff|bbdc9dbfba2c0991|7210fbb3db288826|-1210774720||t20330.0307285949s|s28939b|28939|rds|local|vector|||68.562||
+fl_bin_cumulative_sameday_4|stem|f4a62990fc228dff|34fb93f8a2aaf689|dbf682590bb71578|-979957300||t20330.0308549607s|s427785b|427785|rds|local|vector|||8.218||
+fl_wt_cumulative_sameday_6_prelim|stem|7cab3a3d05cf18d4|0dc4b771c241c3ab|6534775533732c4b|741573158||t20330.0310364848s|s517022b|517022|rds|local|vector|||388.235||
+fl_bin_n720n024_4|stem|41d7bf700f18a02b|86ba7ea7d9118ca8|94c40be563ce438a|1215897350||t20330.0310446919s|s18178b|18178|rds|local|vector|||0.031||
+fl_wt_cumulative_sameday_6|stem|d44ceb3a77bc9072|8a07640d42b42840|99fa92f2950f712f|1460701077||t20330.0312823493s|s446464b|446464|rds|local|vector|||5.89||
+fl_wt_n720n024_1_prelim|stem|09eef3acb8d5dbcc|65865480b57a1193|5fddee1d987714c1|-725719974||t20330.0314342671s|s212002b|212002|rds|local|vector|||336.672||
+fl_wt_n720n024_1|stem|44809b339c572827|6d18ef7111200382|5983ddee3935f12b|-1651372466||t20330.0316555285s|s207533b|207533|rds|local|vector|||0.031||
+n4|stem|671d3060766e0378|d99b8a230eb6ea8b|bfc92f41651dd3a0|-418321255||t20330.0319332214s|s75b|75|rds|local|vector|||0.016||
+fl_wt_n720n024_3_prelim|stem|bcc592ead52875c4|a74295d57cda0361|46b87ba71b6eff28|-1477084109||t20330.0319749156s|s196193b|196193|rds|local|vector|||861.766||
+fl_wt_n720n024_3|stem|e8439e41e7b924bc|5911d262ce9821e1|0716e5d9e82d098e|-1459627308||t20330.0322983984s|s194650b|194650|rds|local|vector|||0.078||
+fl_bin_n720n024_3_prelim|stem|10695f6afbdd6724|89aabd7e6bab3bca|0d60419c93286f7c|2071366746||t20330.0326454282s|s29414b|29414|rds|local|vector|||67.266||
+n3|stem|8e0ec9d915344557|3e90258fc645987a|4e319e2a2059e52a|-169888074||t20330.0330041852s|s78b|78|rds|local|vector|||0.015||
+fl_bin_n720n024_3|stem|9c4b0e19f50e5b6d|6d441f5233ee6c98|b63ccf34eb32b734|-1041038204||t20330.0330169761s|s18645b|18645|rds|local|vector|||0.031||
+fl_bin_cumulative_sameday_3_prelim|stem|7ff94ca9298e93c8|7b58c2f52041d436|0d60419c93286f7c|911608012||t20330.0333961531s|s789988b|789988|rds|local|vector|||96.703|After filtering, the dataset had 0 rows.|
+fl_bin_cumulative_sameday_3|stem|139c066763c82849|52475e1736698d3a|80863490a97f02e5|74726494||t20330.0339676233s|s426942b|426942|rds|local|vector|||9.266||
+fl_wt_cumulative_sameday_1_prelim|stem|13e2f4ec50ef88fc|4c1627b4fd33fe59|5fddee1d987714c1|556322165||t20330.0348554334s|s775234b|775234|rds|local|vector|||510.984|After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.. After filtering, the dataset had 0 rows.|
+fl_wt_n720n024_4_prelim|stem|d743a1445e550863|1a0b1d68361205dd|a1b0257cdc980b5a|-1470025549||t20330.0349767338s|s200658b|200658|rds|local|vector|||1119.391||
+fl_wt_cumulative_sameday_1|stem|78ca07ad952005fd|1960abf849998bf6|c095828127d2958f|283184190||t20330.035193342s|s691528b|691528|rds|local|vector|||10.36||
+fl_wt_n720n024_4|stem|1f23bcbf24de31cd|b6036215354ffe4c|533bf583ef17452c|611494128||t20330.0353244314s|s198787b|198787|rds|local|vector|||0.031||
+fl_wt_cumulative_sameday_4_prelim|stem|054210b3eb226ed5|5245dd9fbb204bad|a1b0257cdc980b5a|-495063221||t20330.0389343867s|s944005b|944005|rds|local|vector|||639.297||
+fl_wt_cumulative_sameday_3_prelim|stem|7c920f4f8643692b|d69b1b80b0f1fe65|46b87ba71b6eff28|-1554501805||t20330.039313139s|s918082b|918082|rds|local|vector|||603.313|After filtering, the dataset had 0 rows.|
+fl_wt_cumulative_sameday_4|stem|fc60d8c99752d6ec|f3282e6090f1a8e4|3481d1d302fd6a9b|1361548504||t20330.0393657832s|s734947b|734947|rds|local|vector|||6.953||
+fl_wt_cumulative_sameday_3|stem|e2bb7e8ff636afbd|7d44cba7e85f24bd|306f50a3786eb8c7|1350797945||t20330.0397741867s|s726008b|726008|rds|local|vector|||6.375||
+data_cumul_bin_5|stem|fc7fb561ba14696d|9cea94dc2dc47822|e97312146ba9eeca|-1396600015||t20332.7717391217s|s138466b|138466|rds|local|vector|||1.64||
+data_cumul_bin_7|stem|fe6e0493cb565f91|8fff508a0bee395c|e5f253528297585d|-1859587492||t20332.7717606442s|s179302b|179302|rds|local|vector|||2.687||
+data_cumul_bin_2|stem|42b6271e437ae8c6|19eda6d0467b8eb8|2d82771959380e7c|540523842||t20332.7717701472s|s126736b|126736|rds|local|vector|||1.406||
+mods_cumul_bin_5|stem|4592079008e08ce8|6c2c958f330ea88b|ed332a3533e8d9d9|-381037690||t20332.7717724925s|s25079b|25079|rds|local|vector|||1.656|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_cumul_bin_7|stem|a1b5d9d2b658a07b|2acb8a5d2f01bcfc|ddd188f1cd8a84cf|37807762||t20332.7717825879s|s4665b|4665|rds|local|vector|||0.688|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_cumul_bin_2|stem|e2b866b6471ca832|a4663ca1364bacef|384e213dcdb5ed0e|-978448069||t20332.7717898888s|s44400b|44400|rds|local|vector|||0.391|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_bin_6|stem|e0213724de6cbaab|562f6a75a52e508e|fb35e1e90e188649|-771700473||t20332.7718125581s|s198951b|198951|rds|local|vector|||3.125||
+mods_cumul_bin_6|stem|b782fcc9053a9234|3393ba97f9938414|33bacfd5b40924e8|-453796286||t20332.7718307523s|s81519b|81519|rds|local|vector|||0.453|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_bin_1|stem|bdf74a3d5ef27cf9|3fd9598b43938f3a|06b029f133fcc42f|630565138||t20332.7718728813s|s272607b|272607|rds|local|vector|||3.969||
+mods_cumul_bin_1|stem|6d464edd588d18c6|d5ba7327cc24728c|8c33bf4ecee8b0f5|-1844946084||t20332.7718991913s|s39886b|39886|rds|local|vector|||0.844|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_bin_4|stem|189a392d6542c6c9|d0f7c6e1930ebcfb|b87f51bf10287c27|-533009355||t20332.7719764016s|s315881b|315881|rds|local|vector|||2.406||
+mods_cumul_bin_4|stem|c925aef84f923d81|c33e5e0eb4830734|6dae5158ecbb8645|-1998891594||t20332.7719989012s|s46289b|46289|rds|local|vector|||0.625|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_bin_3|stem|0f18faf44b7a787d|3d7735a597260055|ffc0d8a85148bd61|560495026||t20332.7720548279s|s297925b|297925|rds|local|vector|||4.703||
+mods_cumul_bin_3|stem|28715ff7d87f9e9e|c5d833c60dd000d4|1e809978b931c9bf|719800399||t20332.7720752285s|s81749b|81749|rds|local|vector|||0.422|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_bin_2|stem|c0c946af240f22cf|f2dc13b5bfb6689a|8df2ee26361f188d|-144968829||t20332.7750424661s|s33231b|33231|rds|local|vector|||2.375||
+data_n720n024_wt_2|stem|d31c15184e9dc667|58c641483f75896e|0a38a7baa8586ea8|-193415314||t20332.7750432578s|s152616b|152616|rds|local|vector|||2.391||
+data_cumul_wt_2|stem|42b71ebfc8d35893|f40b4fda7970f36c|0c9f57b6b81f9f5c|-970343971||t20332.7750477254s|s273363b|273363|rds|local|vector|||1.375||
+mods_n720n024_bin_2|stem|51103d2dfedb3479|d2cb44c657675cd5|0b44103cc38a47e1|-543583708||t20332.7750657049s|s11853b|11853|rds|local|vector|||0.828|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_wt_2|stem|d9e1b499602ed10f|4646600b98ad1f39|4c6b9354b013d86a|1232129831||t20332.7750657974s|s51060b|51060|rds|local|vector|||0.735|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_cumul_wt_2|stem|a88f4e4435b8ff4d|a45da7cc78d79f4e|c9a268128f64dc5a|-570471713||t20332.7750682613s|s95183b|95183|rds|local|vector|||0.391|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_wt_1|stem|4a8b9a970a2bf037|1ac995b9bec19bc7|5521a27e0e884631|-1164157735||t20332.7751201364s|s214253b|214253|rds|local|vector|||2.046||
+data_n720n024_bin_1|stem|4286c01c36fcbe87|38710d90bbe45d63|d2f553cb5ef0ba0d|1509728179||t20332.7751252731s|s65641b|65641|rds|local|vector|||1.985||
+mods_n720n024_wt_1|stem|d1ea91460b9d8e25|fddc5f13134e66d5|5b7cb937ef1a3385|-793603731||t20332.7751378968s|s50b|50|rds|local|vector|||0.375|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_wt_1|stem|1aadc11cc3fbd216|d9a9ae041630ccda|47b575842626880a|-333409491||t20332.7751425562s|s563687b|563687|rds|local|vector|||3.578||
+mods_cumul_wt_1|stem|de999720b2d16b3e|6e439b9bc0575d28|68333ac4379e7aae|1501327738||t20332.775166694s|s67759b|67759|rds|local|vector|||0.782|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_bin_1|stem|c323b8755386f6ca|28ed103f023d471b|83623712367cbc80|-1698267597||t20332.7751843842s|s20091b|20091|rds|local|vector|||4|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_wt_3|stem|9bd935054426318e|8ba4e096078b3537|3802789c66d90d74|1228151600||t20332.7752964382s|s388191b|388191|rds|local|vector|||3.687||
+data_n720n024_wt_5|stem|d6cf75210a34e707|6ddf0c83a38f594f|b59a11d7b694a1d5|2138798156||t20332.7753341574s|s140630b|140630|rds|local|vector|||0.672||
+mods_n720n024_wt_3|stem|4e17b804c16ddf44|d197459379d5422b|5160fac512629ab6|1112900464||t20332.7753370285s|s134276b|134276|rds|local|vector|||2.344|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_wt_5|stem|78065f8487b2f624|1ec4daa809a58d8b|5847576d2b98ae65|-1160844137||t20332.7753495975s|s47577b|47577|rds|local|vector|||0.171|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_wt_4|stem|a0cc9091bb09e2a7|5e6aa0190c894f79|07f9d8349ca381dd|-1462806802||t20332.775460886s|s337319b|337319|rds|local|vector|||1.172||
+data_n720n024_bin_5|stem|4cf752d56af19867|0e9daf7ce4b43515|4c1dd4b6501d4ac6|-419132234||t20332.7754985307s|s40773b|40773|rds|local|vector|||0.609||
+data_cumul_wt_5|stem|1349d266855944ca|d09bc3a0453555be|cada91d4a4f0dc1f|1599964837||t20332.7755037458s|s235204b|235204|rds|local|vector|||0.766||
+mods_n720n024_wt_4|stem|bbb728a398cce0ac|d025508c247396cb|7a96f48c40d9a602|-212689042||t20332.7755061573s|s93753b|93753|rds|local|vector|||1.11|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_bin_3|stem|05daacc019fe6164|b6728fb420c31381|ec82deac1452250f|-70209534||t20332.775517276s|s66065b|66065|rds|local|vector|||3.266||
+mods_cumul_wt_5|stem|d031998239e8511a|196ed8ab52dc02b1|3a6dc1b037c63eb1|-1942343991||t20332.7755196514s|s45935b|45935|rds|local|vector|||0.234|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_wt_3|stem|dafa793aa5909c0f|28a90b4675333f9e|89f7d91f2874f1a5|1010552441||t20332.775520678s|s592377b|592377|rds|local|vector|||1.782||
+mods_n720n024_bin_5|stem|50b9af2ab8885a34|bd4b7c382c88ffa9|a58a01fc059d3597|586159693||t20332.7755214459s|s11076b|11076|rds|local|vector|||0.86|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_bin_4|stem|f9627ef86a201718|fe377ccfa8934ada|d3fb7d6bfc57ee86|1971912538||t20332.7755243022s|s56105b|56105|rds|local|vector|||1.219||
+mods_cumul_wt_3|stem|9bef83d19ecf8b66|5fefa585bef2c29c|503bc447d7edf9c2|-1795394868||t20332.7755400482s|s167052b|167052|rds|local|vector|||0.359|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_wt_4|stem|169c469cbda4ab8d|d949c27c508d9f08|d14534e236f0224d|-1371516291||t20332.7755506319s|s609081b|609081|rds|local|vector|||1.547||
+mods_n720n024_bin_3|stem|9e521032362f5ada|afdb27d38332c2ba|2064b76cf445d3b7|-91023897||t20332.775551787s|s20364b|20364|rds|local|vector|||1.687|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_bin_4|stem|31fe507ecebd641b|6fa26ddf520e3824|3ba30ad386d1a180|-582468734||t20332.7755810743s|s13615b|13615|rds|local|vector|||3.765|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_cumul_wt_4|stem|281137867bfd4612|394db50c0c82e9c7|5ece69397aad3364|2045196537||t20332.7755976031s|s81702b|81702|rds|local|vector|||0.391|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_wt_6|stem|9bb2aa1db89f702a|fde525fd2cfe485b|76c6de698627512c|-1390528921||t20332.7756961798s|s200189b|200189|rds|local|vector|||1.047||
+mods_n720n024_wt_6|stem|d1ea91460b9d8e25|0bac6adf7938d650|31b50bbeb61420fc|1151883898||t20332.7757090126s|s50b|50|rds|local|vector|||0.078|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_wt_7|stem|e8f217451e223e27|794774ddd348d139|b6a57207d8e88ec3|-1451480960||t20332.7757177202s|s324288b|324288|rds|local|vector|||0.922||
+mods_cumul_wt_7|stem|579bc26b02f88a49|06b25b6ab2c59994|774f66a767c4e19c|1125066177||t20332.7757360293s|s5954b|5954|rds|local|vector|||0.235|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_n720n024_bin_6|stem|625e75d2405d89f6|a573fcb07e9f6eed|ed70a3c4e7e5fdd8|-32049243||t20332.7757395263s|s59392b|59392|rds|local|vector|||0.953||
+data_n720n024_wt_7|stem|9d9a38677fe09776|2f72ca279b38a073|67d56dfcbf7b9433|1417938201||t20332.7757402509s|s116138b|116138|rds|local|vector|||0.781||
+data_cumul_wt_6|stem|0c04df54b1f0797e|8319c243dcc5a0fe|ddf0a7f4883e5c65|-579888266||t20332.7757408896s|s340857b|340857|rds|local|vector|||3.172||
+data_n720n024_bin_7|stem|c2b14d5e61ad415e|0a28fc5030d51082|d712c886f1ba1cdb|-1022126075||t20332.7757433955s|s38320b|38320|rds|local|vector|||0.718||
+mods_n720n024_wt_7|stem|0fb5f3d5001220f7|ee124829480d3886|40deac2b30b2a487|-1849116083||t20332.7757538651s|s50b|50|rds|local|vector|||0.079|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_bin_7|stem|5052e803d5a5b7ac|05d26c58c2e48d2f|5310ab4eb6375105|-954536465||t20332.7757602654s|s3855b|3855|rds|local|vector|||0.296|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_cumul_wt_6|stem|1992207c60c41148|f6f0000f1f7610ee|29d689cdeb6c4622|-1077248098||t20332.7757617086s|s129583b|129583|rds|local|vector|||0.563|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+mods_n720n024_bin_6|stem|3dedafc4095050dc|586c8fe63a0acd8b|37ca651bea5c13ed|1689520137||t20332.775772929s|s32534b|32534|rds|local|vector|||1.719|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+stb_mins|stem|01622f88653cc540|cb6fc157afbd8dca|2c530c1562a7fbd1|1002414198||t20332.7957411905s|s51b|51|rds|local|vector|||11.969||
+nd2|stem|82093bf6cf47285a|25b7d9f7df0e0cf9|85bc35185ec3ce98|1527715208||t20332.797421409s|s97550753b|97550753|rds|local|vector|||12.313||
+nd7|stem|b5a9af6be6564bce|5951292347241bdf|85bc35185ec3ce98|-1634981471||t20332.7974419955s|s95075304b|95075304|rds|local|vector|||12.406||
+nd5|stem|a879834bd4a58828|ca74cfb32d340579|85bc35185ec3ce98|-544448588||t20332.7974672881s|s87345808b|87345808|rds|local|vector|||11.594||
+nd1|stem|6bae2ad4f96248eb|466a5ed1ce360454|85bc35185ec3ce98|-231740509||t20332.7974798436s|s138568565b|138568565|rds|local|vector|||20.563||
+nd6|stem|7feb60c65494d43c|2f20180cdc0aaf20|85bc35185ec3ce98|22282946||t20332.7975657833s|s112906378b|112906378|rds|local|vector|||16.5||
+data_cumul_bin_2_noseeds|stem|c3540bac06670ce1|603ded386790daa7|2d82771959380e7c|-1326973221||t20332.7976406982s|s127668b|127668|rds|local|vector|||1.25||
+data_cumul_wt_5_noseeds|stem|104f46c8a0a6888b|d3f67737735e4372|cada91d4a4f0dc1f|901191628||t20332.7976433429s|s235237b|235237|rds|local|vector|||2.219||
+data_cumul_wt_7_noseeds|stem|075e58790e77fc71|a4b9cd99823d2b44|b6a57207d8e88ec3|-1699143541||t20332.7976843757s|s326237b|326237|rds|local|vector|||7||
+data_n720n024_wt_1_noseeds|stem|6a3b242693a069d0|74125c4d8bcce023|5521a27e0e884631|1144504465||t20332.7977718569s|s215031b|215031|rds|local|vector|||1.922||
+data_n720n024_wt_2_noseeds|stem|478fdab0b7751686|e29eeddaa82ab92c|0a38a7baa8586ea8|1276757951||t20332.7978005536s|s153097b|153097|rds|local|vector|||0.547||
+data_cumul_wt_6_noseeds|stem|524a8686660c529d|43878f2df3719dde|ddf0a7f4883e5c65|-1679975810||t20332.7978110777s|s341759b|341759|rds|local|vector|||1.704||
+data_n720n024_bin_2_noseeds|stem|470c8fd13a0df072|ba5ae2fce952c5a3|8df2ee26361f188d|1915285444||t20332.797849868s|s34889b|34889|rds|local|vector|||0.593||
+data_cumul_wt_2_noseeds|stem|fa28dd5b2dc8df0c|80a129273c224d5b|0c9f57b6b81f9f5c|78265291||t20332.7978555978s|s275380b|275380|rds|local|vector|||0.812||
+data_n720n024_bin_7_noseeds|stem|ab45cd80fbcdeaf8|b3edb980f75b1362|d712c886f1ba1cdb|1746321014||t20332.7979256647s|s40149b|40149|rds|local|vector|||0.672||
+data_n720n024_wt_7_noseeds|stem|36b4f0a40cd36096|2d53a957aa1815fc|67d56dfcbf7b9433|-6761640||t20332.79795338s|s123042b|123042|rds|local|vector|||0.797||
+data_cumul_bin_7_noseeds|stem|921e979bf7e99a0d|888ffe1a9a3b6018|e5f253528297585d|868487154||t20332.797969686s|s180382b|180382|rds|local|vector|||0.954||
+data_n720n024_bin_5_noseeds|stem|eaba736956085f92|6cef16fd5f87ea65|4c1dd4b6501d4ac6|1149157860||t20332.7979998435s|s41193b|41193|rds|local|vector|||0.672||
+data_cumul_bin_5_noseeds|stem|1e28a3f33643b303|d8aced34fe9f70c5|e97312146ba9eeca|1417231780||t20332.7980128702s|s138466b|138466|rds|local|vector|||0.922||
+data_n720n024_wt_5_noseeds|stem|4552d3f2026f766b|4f9512de5c304524|b59a11d7b694a1d5|-1687051128||t20332.7980745015s|s142810b|142810|rds|local|vector|||0.938||
+nd4|stem|9fbc25f80745418a|c9efbe977a6a787a|85bc35185ec3ce98|-514633067||t20332.7980882244s|s189170758b|189170758|rds|local|vector|||29.75||
+nd3|stem|4f707123e72cccfc|29f17dfe020c8ff2|85bc35185ec3ce98|-71177921||t20332.7981740674s|s211499292b|211499292|rds|local|vector|||25.422||
+data_n720n024_bin_1_noseeds|stem|ad84d29e7f5eb395|fab898ceac478a3c|d2f553cb5ef0ba0d|-810915059||t20332.7982055357s|s68416b|68416|rds|local|vector|||1.391||
+data_cumul_bin_1_noseeds|stem|83e9bbf5270f90e6|d2ef695bb181fbd3|06b029f133fcc42f|-436227030||t20332.7982089544s|s274456b|274456|rds|local|vector|||1.406||
+data_n720n024_bin_6_noseeds|stem|7980bdc29926ae9a|4efcc9411f13c053|ed70a3c4e7e5fdd8|-1885350976||t20332.7982340771s|s59932b|59932|rds|local|vector|||2.734||
+data_cumul_wt_1_noseeds|stem|f8869687a7ed247e|f7b501f55fc37ca0|47b575842626880a|-1682753425||t20332.7982430308s|s567555b|567555|rds|local|vector|||1.609||
+data_cumul_bin_6_noseeds|stem|33aecb8e973e40fb|a7c88b3acdbc5188|fb35e1e90e188649|1105642006||t20332.7982798546s|s199177b|199177|rds|local|vector|||1.047||
+data_n720n024_wt_6_noseeds|stem|e65143d05e1f311f|412a9ae6ef25642d|76c6de698627512c|-149160932||t20332.7984082738s|s206636b|206636|rds|local|vector|||0.969||
+data_n720n024_bin_4_noseeds|stem|b7f5c00266e699a1|fd576cb4fd770290|d3fb7d6bfc57ee86|-1563218360||t20332.7984945345s|s56189b|56189|rds|local|vector|||1.703||
+data_cumul_wt_4_noseeds|stem|46d12b5f3c35897d|381b59ba4b84c96a|d14534e236f0224d|244620070||t20332.7985210393s|s609062b|609062|rds|local|vector|||1.219||
+data_cumul_bin_4_noseeds|stem|aa8af0feeccd6ae0|2c199eec5c3940f7|b87f51bf10287c27|851551812||t20332.7985413785s|s315867b|315867|rds|local|vector|||1.235||
+data_n720n024_wt_4_noseeds|stem|d38c988de42dd064|63534a8e8f6355d0|07f9d8349ca381dd|-1231228806||t20332.7985619982s|s339579b|339579|rds|local|vector|||1||
+mods_cumul_bin|stem|d8acbe665f6dcbf6|d900da3d5c5654bc|95d949a1abd0ebf5|-901142125||t20332.7986387287s|s320792b|320792|rds|local|vector|||2.953|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+data_cumul_wt_3_noseeds|stem|e3dcc60d69b8a9a1|53a00e2121b3eb61|89f7d91f2874f1a5|157391322||t20332.7986630505s|s593856b|593856|rds|local|vector|||3.953||
+data_n720n024_bin_3_noseeds|stem|906c55698abf8123|4e7d8a8de22df26e|ec82deac1452250f|1167312482||t20332.7986847547s|s66720b|66720|rds|local|vector|||1.86||
+data_cumul_bin_3_noseeds|stem|8ce7b3a9c42e11b9|bd3ad1686adfbf4f|ffc0d8a85148bd61|601362655||t20332.7987960223s|s298724b|298724|rds|local|vector|||4.735||
+data_n720n024_wt_3_noseeds|stem|76e75082a230ff63|05b0537150a935a3|3802789c66d90d74|763375147||t20332.7988717981s|s400988b|400988|rds|local|vector|||2.375||
+mods_wtn720n024_wt_noseeds|stem|error|75cf9e1e57409ed8|2c530c1562a7fbd1|1429300375||t20332.8029155252s||0|null|local|vector|||12.75||object 'data_wtn720n024_wt_1_noseeds' not found
+mods_wtn720n024_wt|stem|error|e3d172b84103e213|2c530c1562a7fbd1|1724135467||t20332.8029170184s||0|null|local|vector|||12.266||object 'data_wtn720n024_wt_1' not found
+mods_wtn720n024_bin|stem|error|841c087ea026b72e|2c530c1562a7fbd1|-1141624694||t20332.8029197706s||0|null|local|vector|||12.329||object 'data_wtn720n024_bin_1' not found
+mods_wtn720n024_bin_noseeds|stem|error|506967185437770f|2c530c1562a7fbd1|-661934513||t20332.8029208508s||0|null|local|vector|||12.344||object 'data_wtn720n024_bin_1_noseeds' not found
+stats_cumul_bin|stem|2534862fb538be88|093a003f381ccf10|b28c9f0dc0b59d81|-543075754||t20332.802939173s|s1487b|1487|rds|local|vector|||0.171||
+mods_cumul_wt|stem|8f9590d706184946|76602d013a54d1fc|9f29f8bdfdaf9abe|-383361730||t20332.8029884379s|s590924b|590924|rds|local|vector|||2.844|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+fl_bin_30days_2_prelim|stem|091100242a632e7c|a4b89470318c26d6|612883ad12f60fa3|-424506811||t20332.8061962771s|s31269b|31269|rds|local|vector|||42.953||
+fl_bin_30days_1_prelim|stem|6af09fbfbf2880c2|8634baf6c8f3e8fc|afa4c78dc825aee7|-607267597||t20332.8063254265s|s35338b|35338|rds|local|vector|||47.093||
+fl_bin_30days_2|stem|e13b53d739a020a6|7b275fb8db84ba4f|ee5d9bdcc66c7355|-1690643972||t20332.806372862s|s20378b|20378|rds|local|vector|||0.094||
+data_30days_bin_2|stem|c0c946af240f22cf|54c949e94fc251ae|4c6ba71e7d1b9193|2093223650||t20332.806561457s|s33231b|33231|rds|local|vector|||1.016||
+fl_bin_30days_1|stem|4af57b3acfb515ab|79878d78d1010428|4c249790446c2ca5|-31325506||t20332.8065667723s|s24271b|24271|rds|local|vector|||0.078||
+fl_bin_30days_4_prelim|stem|9451b896853d16ff|bbdc9dbfba2c0991|7210fbb3db288826|1554810873||t20332.8067433359s|s28939b|28939|rds|local|vector|||73.328||
+fl_bin_30days_3_prelim|stem|10695f6afbdd6724|89aabd7e6bab3bca|0d60419c93286f7c|-1101944886||t20332.8067555745s|s29414b|29414|rds|local|vector|||71.187||
+data_30days_bin_1_noseeds|stem|ad84d29e7f5eb395|38671cbbd7267079|55a5fad4f7163945|50898599||t20332.8068308585s|s68416b|68416|rds|local|vector|||1.781||
+fl_bin_30days_4|stem|41d7bf700f18a02b|0a4b9f8436a22ea7|bebfb5015ed0b0e2|1600615046||t20332.8070686183s|s18178b|18178|rds|local|vector|||0.094||
+fl_bin_30days_3|stem|9c4b0e19f50e5b6d|c3d257f49bd3160d|3de299d3b9c564e2|1672374494||t20332.807127131s|s18645b|18645|rds|local|vector|||0.11||
+fl_bin_30days_5_prelim|stem|985a523a8c0a7c57|3df743a74dc90e68|51b372bc1f32747d|913277362||t20332.8073775162s|s36674b|36674|rds|local|vector|||32.86||
+data_30days_bin_4|stem|f9627ef86a201718|2ee7268919375284|76590716629d2413|-1906808223||t20332.8074195383s|s56105b|56105|rds|local|vector|||1.64||
+data_30days_bin_3_noseeds|stem|906c55698abf8123|276e29adafed029e|41aecbc57d303f5b|1473823988||t20332.8075159907s|s66720b|66720|rds|local|vector|||1.875||
+fl_bin_30days_5|stem|4c4265084a09f5c7|8e5cfe2bae71cdd4|68317d2950349020|1592299900||t20332.807516134s|s25946b|25946|rds|local|vector|||0.25||
+fl_wt_30days_2_prelim|stem|131e78936d1f6c37|8f202474acfadec3|2b38c39eca871d2f|-369430315||t20332.807762223s|s176065b|176065|rds|local|vector|||178.375||
+fl_wt_30days_2|stem|aa94c30b4e21fd5a|99a008a33bc0144d|e0f6fc5634c26a5b|-222343303||t20332.8079383198s|s173325b|173325|rds|local|vector|||0.094||
+fl_wt_30days_1_prelim|stem|09eef3acb8d5dbcc|65865480b57a1193|5fddee1d987714c1|-1914874717||t20332.8079935866s|s212002b|212002|rds|local|vector|||190.953||
+fl_bin_30days_6_prelim|stem|b51c8c049e4745d8|147d01d858332186|d5d04b8882c833e8|-1648704304||t20332.8080841675s|s35662b|35662|rds|local|vector|||33.921||
+data_30days_wt_2|stem|d31c15184e9dc667|fd337ce9b714f1ee|35bfb240bf2ccc20|805939067||t20332.80812763s|s152616b|152616|rds|local|vector|||1.031||
+fl_wt_30days_1|stem|44809b339c572827|f6814e5d50c6185c|4e70e1a9255edb1e|1789105149||t20332.808236637s|s207533b|207533|rds|local|vector|||0.093||
+fl_bin_30days_6|stem|3fa33bc8b392c068|5a4ef8a461cf9efc|f2c2abcea9d319fd|40972238||t20332.8082907338s|s24797b|24797|rds|local|vector|||0.125||
+data_30days_bin_6|stem|625e75d2405d89f6|b0c16fd287588bc1|254d9d13f96104c2|1717456504||t20332.8085073202s|s59392b|59392|rds|local|vector|||1.203||
+data_30days_wt_1_noseeds|stem|6a3b242693a069d0|2dbe5ab371b148a3|913e258b28af62c5|-825514459||t20332.8085077101s|s215031b|215031|rds|local|vector|||2.218||
+mods_cumul_bin_noseeds|stem|4b3dfd3c73d9f5f7|13d5e05a2972e3cc|3cfac9d37f2964d1|-1588684909||t20332.8086350671s|s1551761b|1551761|rds|local|vector|||7.875||
+stats_cumul_bin_noseeds|stem|9836c66129638de4|508192e674208c9c|c2e45402cfb7cf47|1640906156||t20332.8086579283s|s2732b|2732|rds|local|vector|||0.344||
+mods_cumul_wt_noseeds|stem|c90d9124f408079e|ff80265798591fa1|591d55f7a4fa73b3|1285007657||t20332.8087794683s|s2877979b|2877979|rds|local|vector|||6.985|NA/NaN function evaluation. NA/NaN function evaluation|
+stats_cumul_wt_noseeds|stem|6a5f78809f43eb6d|39ac965034cc6519|3bb778e2a197163e|-554291103||t20332.8088012545s|s2627b|2627|rds|local|vector|||0.297||
+stats_cumul_wt|stem|8f8f849de4321106|74247a1e4188cfbb|1766728e434045b9|899541084||t20332.8088163314s|s1466b|1466|rds|local|vector|||0.11||
+fl_bin_30days_7_prelim|stem|1ca0000f22ae32c2|e3a6fd7c1d7ad02f|9f4b85bc102d8c9e|-1881217507||t20332.8088869793s|s15703b|15703|rds|local|vector|||17.828||
+fl_wt_30days_7_prelim|stem|16a49ab84c301802|4da41ce88bba23eb|8124933b687961a7|124735227||t20332.8089933383s|s74831b|74831|rds|local|vector|||59.703||
+data_30days_bin_2_noseeds|stem|470c8fd13a0df072|ba47336a133dff95|4c6ba71e7d1b9193|-1247968514||t20332.8089986919s|s34889b|34889|rds|local|vector|||0.562||
+fl_bin_30days_7|stem|c9c1daa259ce5d46|947b2166a15ef816|986bb33ff4cc0578|-560529309||t20332.8090370965s|s10149b|10149|rds|local|vector|||0.016||
+fl_wt_30days_7|stem|8fdf2f5832049e64|9d3dfa6fe3082e71|0b2dcf0604b4ef08|1792617461||t20332.809164588s|s74210b|74210|rds|local|vector|||0.016||
+data_30days_bin_7_noseeds|stem|ab45cd80fbcdeaf8|b53b44cec7c23718|3b31ae43281fba53|200558414||t20332.809202551s|s40149b|40149|rds|local|vector|||0.64||
+data_30days_bin_1|stem|4286c01c36fcbe87|cffbe51143de977c|55a5fad4f7163945|333695459||t20332.8092533859s|s65641b|65641|rds|local|vector|||1.078||
+data_30days_wt_7_noseeds|stem|36b4f0a40cd36096|89b33bc27b20a9c9|fa2bbf601fce2058|810473184||t20332.8093383889s|s123042b|123042|rds|local|vector|||0.703||
+fl_wt_30days_5_prelim|stem|45d6ed74c94e030e|fb5e21feb1998a65|dca1b44c09a8559f|2105259748||t20332.8093771732s|s149777b|149777|rds|local|vector|||157.188||
+data_30days_bin_5_noseeds|stem|eaba736956085f92|a09256ddb2e146bd|59bde9221b85f04f|647499741||t20332.8095069774s|s41193b|41193|rds|local|vector|||0.593||
+fl_wt_30days_5|stem|9a9f11258558ae88|fcf20ba491880c06|376bf3d9bba5331d|-803623915||t20332.8095231839s|s149025b|149025|rds|local|vector|||0.282||
+fl_wt_30days_6_prelim|stem|a5c9453829a8b2b4|7397bc211d64916e|6534775533732c4b|2076209538||t20332.8095290683s|s146947b|146947|rds|local|vector|||154.954||
+data_30days_bin_4_noseeds|stem|b7f5c00266e699a1|5b160e85c273e5cd|76590716629d2413|677341353||t20332.8095589497s|s56189b|56189|rds|local|vector|||1.032||
+data_30days_bin_3|stem|05daacc019fe6164|46fac988e2b07183|41aecbc57d303f5b|-1345506728||t20332.8096556134s|s66065b|66065|rds|local|vector|||3.688||
+data_30days_bin_5|stem|4cf752d56af19867|3f615cef3158d8e0|59bde9221b85f04f|-909753511||t20332.8096763296s|s40773b|40773|rds|local|vector|||2.719||
+data_30days_wt_5|stem|d6cf75210a34e707|805e496bfa4120a2|864fa50c52917532|-1468667310||t20332.8097052536s|s140630b|140630|rds|local|vector|||3.547||
+fl_wt_30days_6|stem|70244b661e3d9d04|dcd6962ab92584ac|21034fa2a1574b2b|654780950||t20332.8097108907s|s146455b|146455|rds|local|vector|||0.156||
+data_30days_wt_2_noseeds|stem|478fdab0b7751686|e954e0ee95c1f0ae|35bfb240bf2ccc20|-686284152||t20332.8097611192s|s153097b|153097|rds|local|vector|||0.546||
+data_30days_bin_7|stem|c2b14d5e61ad415e|c62e749139547053|3b31ae43281fba53|-1488442134||t20332.8098588444s|s38320b|38320|rds|local|vector|||0.688||
+data_30days_bin_6_noseeds|stem|7980bdc29926ae9a|3ee38a4e90eb8ff7|254d9d13f96104c2|-270521290||t20332.8098826819s|s59932b|59932|rds|local|vector|||0.843||
+data_30days_wt_6|stem|9bb2aa1db89f702a|0a8ab2be1e668638|663703b0c54298c3|807322185||t20332.809909903s|s200189b|200189|rds|local|vector|||0.875||
+data_30days_wt_1|stem|4a8b9a970a2bf037|814738b7f66936e1|913e258b28af62c5|1658214371||t20332.8099162454s|s214253b|214253|rds|local|vector|||1.25||
+data_30days_wt_7|stem|9d9a38677fe09776|6dae215b81ba81a6|fa2bbf601fce2058|1556165109||t20332.8099444484s|s116138b|116138|rds|local|vector|||0.64||
+mods_30days_bin|stem|cc52893c8fc9aa7b|c1675137b338ff84|3c935f98686f5c16|1438598853||t20332.809976661s|s110387b|110387|rds|local|vector|||8.75|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+stats_30days_bin|stem|d8827a49f9a33be6|3c544f666a18eabe|85d23c83a1a354a3|2007148464||t20332.809990888s|s1554b|1554|rds|local|vector|||0.141||
+data_30days_wt_5_noseeds|stem|4552d3f2026f766b|22d117380ad804af|864fa50c52917532|429627296||t20332.8101250321s|s142810b|142810|rds|local|vector|||6.594||
+data_30days_wt_6_noseeds|stem|e65143d05e1f311f|7611725f33239266|663703b0c54298c3|238953124||t20332.8101327912s|s206636b|206636|rds|local|vector|||0.859||
+mods_30days_bin_noseeds|stem|b943505cb81c78fd|574071f224c1df82|02fe5a321ec08083|1101586549||t20332.8101663994s|s381543b|381543|rds|local|vector|||22.844||
+stats_30days_bin_noseeds|stem|84dc7547fb2db007|3a41b1ec4121f157|859f5b365b97054b|2075054750||t20332.8101853359s|s2618b|2618|rds|local|vector|||0.359||
 get_roosts_bin|function|0402396edb7b1af9
 get_wild_carcasses|function|fc52a65da8748a6e
 get_years|function|b64546004099cfdb
@@ -450,7 +543,7 @@ get_fl_bin|function|148265374fa37991
 get_gps_forbouts_indivs|function|1215c0967c5a3074
 get_nets|function|2a15a734c6f4639c
 get_roosts|function|442a643d9436f3be
-prepare_nbda_data|function|1002a1e7cef201d6
+prepare_nbda_data|function|bd5341902b05259e
 get_firsts_see|function|a20366eef3253517
 get_fl_weighted|function|6d088149d0261a5f
 get_bout_stats|function|0baf151022fdef20
@@ -464,7 +557,7 @@ remove_points_before|function|4d77f5b524b3c94d
 join_gps_bouts|function|3efed8ae2273b043
 get_gps_combined|function|39f92448bfe54ca7
 discoveryplot|function|d284b11222d4b585
-.Random.seed|object|c39dc1dfd03923af
+.Random.seed|object|545e740be250eea4
 get_full|function|1378cba711b5c2ca
 get_acc_data|function|8f0e5facb667ede3
 mean_amplitude|function|badaf723abe07336
@@ -524,7 +617,7 @@ get_slopes|function|37e2bcd296de77b4
 get_cell_vals_long|function|c5c2330ce3e535c4
 get_fl_bin_list|function|0fd6da8fe28668ad
 get_nets_list|function|a72aef324f9acc31
-nb_shortcut|function|37190b5eb4033f5f
+nb_shortcut|function|74c5c8bc9856805d
 get_fl_wt_list|function|841fee828b40988d
 fix_nets_list|function|d827dc677963423a
 get_stat_feats|function|3cca77600c07ddc5
@@ -532,11 +625,16 @@ expand_roost_mats|function|010f90ba651bc930
 get_summaries|function|16ec8545fe3e007d
 prepare_dataset|function|8c0ebe7fe2c9aeae
 caldev|function|c5b4f7878dbcfcbf
-n2|stem|a11ddb93183f9d54|3eef39c776b81dca|72986f544ffc71bb|-903966133||t20329.963194561s|s64b|64|rds|local|vector|||0||
-n1|stem|d964aa7ebbc91283|4c38d7bdffb1a795|e974605fe1fad0d0|977178182||t20329.9634496848s|s71b|71|rds|local|vector|||0||
-n3|stem|8e0ec9d915344557|3e90258fc645987a|fd16e2c3d128a619|-169888074||t20329.9638660229s|s78b|78|rds|local|vector|||0||
-n4|stem|671d3060766e0378|d99b8a230eb6ea8b|00cb26cd7d371d0a|-418321255||t20329.9641669059s|s75b|75|rds|local|vector|||0||
-n5|stem|1fc3760336e26822|28f857413de35a60|d1a1a7e20f506c5b|-1526060500||t20329.9643346813s|s69b|69|rds|local|vector|||0||
-n6|stem|3723323986506e60|cb353331354ca890|2fc36bd47c032c06|385852332||t20329.9645301046s|s78b|78|rds|local|vector|||0||
-n7|stem|222702790fb0fa95|f9dc82b24e6988c8|132972710c0baf53|-706164888||t20329.9646929955s|s65b|65|rds|local|vector|||0||
-ns|stem|f2eb6c17960f4af4|b5faa077eb8b7a8b|231a4835fe7cf6f2|1255223337||t20329.9646943366s|s191b|191|rds|local|vector|||0||
+fl_wt_30days_3_prelim|stem|bcc592ead52875c4|a74295d57cda0361|46b87ba71b6eff28|-484403117||t20332.8245618236s|s196193b|196193|rds|local|vector|||799.718||
+fl_wt_30days_3|stem|e8439e41e7b924bc|4a41fe44cef6c896|b901720ceef9feac|2029980478||t20332.8249360056s|s194650b|194650|rds|local|vector|||0.078||
+data_30days_wt_3|stem|9bd935054426318e|0bea0fd43bc9b740|e29e1026ebc18479|1725570567||t20332.8253400119s|s388191b|388191|rds|local|vector|||1.765||
+data_30days_wt_3_noseeds|stem|76e75082a230ff63|4960f5a2f25c7b24|e29e1026ebc18479|-505659853||t20332.8256036206s|s400988b|400988|rds|local|vector|||3.703||
+fl_wt_30days_4_prelim|stem|d743a1445e550863|1a0b1d68361205dd|a1b0257cdc980b5a|1768448844||t20332.8280926373s|s200658b|200658|rds|local|vector|||1107.719||
+fl_wt_30days_4|stem|1f23bcbf24de31cd|18fc495546f34a32|6265edf1d162fcb0|680585842||t20332.8284328766s|s198787b|198787|rds|local|vector|||0.031||
+data_30days_wt_4|stem|a0cc9091bb09e2a7|29556bc7bf6ef57b|db2f562622e51c29|502178261||t20332.8287556428s|s337319b|337319|rds|local|vector|||2.531||
+data_30days_wt_4_noseeds|stem|d38c988de42dd064|e42dd844b2cf0c5f|db2f562622e51c29|1707535586||t20332.8287869076s|s339579b|339579|rds|local|vector|||1.891||
+mods_30days_wt|stem|10801117e990ac52|0a31e3e21a422344|acba811b8046ad24|18154731||t20332.8288738767s|s326116b|326116|rds|local|vector|||8.734|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+stats_30days_wt|stem|1fc8bdee90841052|a9251fe0bffb78de|659707c8cb994ffe|-1667942530||t20332.8288879504s|s1107b|1107|rds|local|vector|||0.109||
+mods_30days_wt_noseeds|stem|25f11aaf28b66801|4d1f9efc4c581db4|0acfb602465ad6e6|1470840158||t20332.8289127586s|s1073630b|1073630|rds|local|vector|||9.188|NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation. NA/NaN function evaluation|
+stats_30days_wt_noseeds|stem|d73d91f8c13fad01|29b3154424e8d810|e06616a9d662d361|433636743||t20332.8289300277s|s1791b|1791|rds|local|vector|||0.219||
+stats|stem|3cf0fb3c51069f83|2215e398d9e407fc|a0635825363944fd|1215092283||t20332.8289452663s|s9306b|9306|rds|local|vector|||0||
