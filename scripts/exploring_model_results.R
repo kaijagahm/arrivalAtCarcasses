@@ -50,14 +50,19 @@ test %>%
   ggplot(aes(x = n, y = outputPar, col = interaction(type, binwt)))+
   geom_point()+
   theme_minimal()+
-  geom_smooth(method = "lm") # there appears to be a slight, but not significant, effect of n on outputPar for the cumulative networks. I suspect that if we get rid of the high outlier (one carcass, where the outputPar was above 40), that we will not see any effect anymore.
+  facet_wrap(~seeds)+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  geom_smooth(method = "lm") # seems to be a negative relationship between the number of individuals and the output parameter.
+# Note that we "can't compare the results" from with/without seeds since they are fitted to different orders of arrival. I'm not sure what that means exactly... like does this mean we can't pairwise compare the output parameters, or we can't compare the percent social transmission estimates, or we can't do regressions, or what? Will need to go back and re-read the Hasenjager paper.
 
 test %>%
   filter(outputPar < 40, sig) %>%
   ggplot(aes(x = n, y = outputPar, col = interaction(type, binwt)))+
   geom_point()+
   theme_minimal()+
-  geom_smooth(method = "lm") # huh, there is still a hint of the effect. Not sure it's significant.
+  facet_wrap(~seeds)+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  geom_smooth(method = "lm") # still a negative effect after removing the high ones
 
 # Exploring two particular carcasses --------------------------------------
 plots_stn <- readRDS(here("data/plots_stn.RDS"))
@@ -98,16 +103,24 @@ sum(!(nd1[[2]]$oa_indivs %in% nd1[[2]]$seed_indivs)) #... leaving 31 individuals
 
 # Models with/without seeds -----------------------------------------------------------
 test %>%
-  filter(carcID %in% mycarcs) %>%
-  ggplot(aes(x = carcID, color = interaction(type, binwt)))+
+  filter(!is.na(outputPar), carcID %in% mycarcs) %>%
+  mutate(lower = case_when(!sig ~ NA, .default = lower),
+         upper = case_when(!sig ~ NA, .default = upper)) %>%
+  filter(outputPar < 50) %>%
+  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+  geom_segment(aes(y = lower, yend = upper))+
+  geom_point(aes(pch = sig))+
+  scale_shape_manual(values = c(1, 19))+
+  #scale_linetype_manual(values = c(2, 1))+
   theme_classic()+
-  geom_point(aes(y = outputPar))+
-  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))
-# so the other ones don't seem to be missing just because they were non-significant--the model outputs seem to have been NA in the first place. Why is this? There are many errors that could have produced a null result, so let's look at what they are.
-
-# Gonna dig into both of these, but especially the second one, since it should have had 31 individuals left, which should be plenty to do the diffusion.
-# Started digging into this and it looks fine and lined up. But then I went back to the tutorial and realized I'm supposed to remove those individuals from the order of acquisition!
-
+  coord_flip()+
+  facet_wrap(~seeds, scales = "free_y")+
+  theme(legend.position = "bottom")+
+  scale_color_manual(values = c("skyblue", "dodgerblue4")) # interesting! so for carcass 1, the result is approx the same. For carcass 2, we detect social transmission when we consider the seeds, but we don't detect it otherwise.
+# Is this exactly the kind of comparison that I'm not supposed to be doing??
 
 # XXX also to look into--I'm not sure the ns lined up correctly. 9 indivs sounds wrong.
+
+# Okay, time to run the same thing for the wild carcasses.
 
