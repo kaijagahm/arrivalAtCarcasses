@@ -6,11 +6,11 @@ library(ggplot2)
 library(viridis)
 
 tar_load(gps_all_wild) 
-length(gps_all_wild) # down to 33 carcasses with southern bounding box filter and medium slope criteria (no feeding bouts with slope > 10% considered).
+length(gps_all_wild) # down to 33 carcasses with southern bounding box filter and medium slope criteria (no feeding bouts with slope > 15% considered).
 tar_load(gps_all_stn) # allowing 3 days before, for direct comparison with wild.
 length(gps_all_stn) #81 carcasses
-tar_load(detection_distance_flight)
-tar_load(detection_distance_stationary)
+tar_load(ddf)
+tar_load(dds)
 tar_load(wild_carcasses)
 mapview(wild_carcasses, zcol = "year") 
 tar_load(all_carcasses_cropped)
@@ -55,14 +55,14 @@ all_gps_data <- bind_rows(stn, wild) %>%
   mutate(hour_bin = floor_date(timestamp, 
                                unit = "hours"),
                     hour_bin_rel = round(time_since_carcass),
-         in_sight = case_when(ground_speed >= 5 & dist_to_carcass <= detection_distance_flight ~ T,
-                              ground_speed < 5 & dist_to_carcass <= detection_distance_stationary ~ T,
+         in_sight = case_when(ground_speed >= 5 & dist_to_carcass <= ddf ~ T,
+                              ground_speed < 5 & dist_to_carcass <= dds ~ T,
                               .default = F),
-         status = case_when(ground_speed >= 5 & dist_to_carcass <= detection_distance_flight ~ "flight, in sight (<2km)",
-                            ground_speed >= 5 & dist_to_carcass > detection_distance_flight ~ "flight, >2km",
-                            ground_speed < 5 & dist_to_carcass <= detection_distance_stationary & dist_to_carcass > 200 ~ "stationary, in sight (1km-200m)",
+         status = case_when(ground_speed >= 5 & dist_to_carcass <= ddf ~ "flight, in sight (<2km)",
+                            ground_speed >= 5 & dist_to_carcass > ddf ~ "flight, >2km",
+                            ground_speed < 5 & dist_to_carcass <= dds & dist_to_carcass > 200 ~ "stationary, in sight (1km-200m)",
                             ground_speed <= 5 & dist_to_carcass <= 200 ~ "stationary, <200m",
-                            ground_speed <= 5 & dist_to_carcass > detection_distance_stationary ~ "stationary, >1km", .default = NA),
+                            ground_speed <= 5 & dist_to_carcass > dds ~ "stationary, >1km", .default = NA),
          status = factor(status, levels = c("stationary, <200m", "stationary, in sight (1km-200m)", "flight, in sight (<2km)", "flight, >2km", "stationary, >1km")),
          hour = round(time_since_carcass))
 
@@ -114,6 +114,7 @@ for(i in 1:length(cids_stn)){
 }
 names(plots_stn) <- cids_stn
 write_rds(plots_stn, file = here("data/plots_stn.RDS"))
+plots_stn <- readRDS(here("data/plots_stn.RDS"))
 
 plots_wild_valid <- vector(mode = "list", length = length(cids_wild_valid))
 for(i in 1:length(cids_wild_valid)){
@@ -135,6 +136,7 @@ for(i in 1:length(cids_wild_valid)){
 
 names(plots_wild_valid) <- cids_wild_valid
 write_rds(plots_wild_valid, file = here("data/plots_wild_valid.RDS"))
+plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
 
 stats <- all_gps_data %>%
   arrange(timestamp) %>%

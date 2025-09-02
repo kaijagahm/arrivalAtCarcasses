@@ -14,7 +14,7 @@ test <- stats %>%
   mutate(year = lubridate::year(date))
 
 dim(test)
-nrow(test) == 4*nrow(stn)
+nrow(test) == 8*nrow(stn)
 
 test %>%
   filter(!is.na(outputPar)) %>%
@@ -29,7 +29,7 @@ test %>%
   #scale_linetype_manual(values = c(2, 1))+
   theme_classic()+
   coord_flip()+
-  facet_wrap(~year, scales = "free_y", nrow = 3)+
+  facet_grid(rows = vars(year), cols = vars(seeds), scales = "free_y")+
   scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4")) # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
 
 # What about the relationship to the number of individuals in the diffusion?
@@ -50,15 +50,77 @@ test %>%
   ggplot(aes(x = n, y = outputPar, col = interaction(type, binwt)))+
   geom_point()+
   theme_minimal()+
-  geom_smooth(method = "lm") # there appears to be a slight, but not significant, effect of n on outputPar for the cumulative networks. I suspect that if we get rid of the high outlier (one carcass, where the outputPar was above 40), that we will not see any effect anymore.
+  facet_wrap(~seeds)+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  geom_smooth(method = "lm") # seems to be a negative relationship between the number of individuals and the output parameter.
+# Note that we "can't compare the results" from with/without seeds since they are fitted to different orders of arrival. I'm not sure what that means exactly... like does this mean we can't pairwise compare the output parameters, or we can't compare the percent social transmission estimates, or we can't do regressions, or what? Will need to go back and re-read the Hasenjager paper.
 
 test %>%
   filter(outputPar < 40, sig) %>%
   ggplot(aes(x = n, y = outputPar, col = interaction(type, binwt)))+
   geom_point()+
   theme_minimal()+
-  geom_smooth(method = "lm") # huh, there is still a hint of the effect. Not sure it's significant.
+  facet_wrap(~seeds)+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  geom_smooth(method = "lm") # still a negative effect after removing the high ones
 
-# It's worth asking what explains these very high values of social transmission, and why they seem more common, generally, for the weighted network rather than the unweighted network.
+# Exploring two particular carcasses --------------------------------------
+plots_stn <- readRDS(here("data/plots_stn.RDS"))
+plots_stn[[1]] #carcID 4202095 # seem to be many vultures nearby for e.g. 2 hours before. Expect many seeds.
+# 2022-11-14 12:46:56
+plots_stn[[2]] #carcID 4203377 # seem to be very few vultures nearby. Expect few seeds.
+# 2022-11-15 11:01:40
 
-# But in order to be sure, we need to work on our seeded demonstrators first!
+# these two carcasses are only a day apart.
+
+tar_load(nd1) # should be the first and second of these
+tar_load(stn_carcs_tcv)
+map_dbl(nstn_carcs_tcvmap_dbl(nd1[1:2], "carcID")) # sure enough!
+
+# Carcass intro -----------------------------------------------------------
+mycarcs <- map_dbl(nd1[1:2], "carcID")
+## Carcass 1--Hever
+mapview(stn_carcs_tcv[[1]])
+str(nd1[[1]], 1) # 94 total; 44 found (46.8% of the tracked population). 31% of the population were seeds. 
+mean(nd1[[1]]$oa_indivs %in% nd1[[1]]$seed_indivs) # 68.2% of the individuals that found the carc were seeds...
+sum(!(nd1[[1]]$oa_indivs %in% nd1[[1]]$seed_indivs)) #... leaving only 14 individuals that found the carcass without having been near it in the 30 minutes before it was placed.
+mapview()
+# check that the seeds are correct
+nd1[[1]]$seed_indivs
+nd1[[1]]$all_indivs_sorted
+as.logical(nd1[[1]]$seeds_vec)
+seed_indivs_derived <- as.character(nd1[[1]]$all_indivs_sorted[as.logical(nd1[[1]]$seeds_vec)])
+class(nd1[[1]]$seed_indivs)
+class(seed_indivs_derived)
+all(seed_indivs_derived %in% nd1[[1]]$seed_indivs)
+all(nd1[[1]]$seed_indivs %in% seed_indivs_derived) # okay yeah, they match, so I did this correctly
+
+## Carcass 2--Daroch
+mapview(stn_carcs_tcv[[2]])
+str(nd1[[2]], 1) # 94 total; 36 found (38.3% of the tracked population). 31% of the population were seeds. 
+mean(nd1[[2]]$oa_indivs %in% nd1[[2]]$seed_indivs) # 13.8% of the individuals that found the carc were seeds...
+sum(!(nd1[[2]]$oa_indivs %in% nd1[[2]]$seed_indivs)) #... leaving 31 individuals that found the carcass without having been near it in the 30 minutes before it was placed. That seems like a very reasonable number of individuals! So I'm not sure why this didn't work well with the seeds.
+
+# Models with/without seeds -----------------------------------------------------------
+test %>%
+  filter(!is.na(outputPar), carcID %in% mycarcs) %>%
+  mutate(lower = case_when(!sig ~ NA, .default = lower),
+         upper = case_when(!sig ~ NA, .default = upper)) %>%
+  filter(outputPar < 50) %>%
+  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+  geom_segment(aes(y = lower, yend = upper))+
+  geom_point(aes(pch = sig))+
+  scale_shape_manual(values = c(1, 19))+
+  #scale_linetype_manual(values = c(2, 1))+
+  theme_classic()+
+  coord_flip()+
+  facet_wrap(~seeds, scales = "free_y")+
+  theme(legend.position = "bottom")+
+  scale_color_manual(values = c("skyblue", "dodgerblue4")) # interesting! so for carcass 1, the result is approx the same. For carcass 2, we detect social transmission when we consider the seeds, but we don't detect it otherwise.
+# Is this exactly the kind of comparison that I'm not supposed to be doing??
+
+# XXX also to look into--I'm not sure the ns lined up correctly. 9 indivs sounds wrong.
+
+# Okay, time to run the same thing for the wild carcasses.
+

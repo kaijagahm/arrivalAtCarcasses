@@ -1600,31 +1600,31 @@ get_cell_vals_long <- function(stack){
 }
 
 # Functions for preparing NBDA data ---------------------------------------
+# How to handle seeds:
+# From the NBDA documentation: "demons: an optional binary numeric vector specifying which individuals are trained demonstrators or had otherwise already acquired the target behaviour prior to the start of the diffusion. Length should match the number of rows of assMatrix. e.g. c(0,0,1,0,0,0,1) specifies that individuals 3 and 7 are trained demonstrators."
+# So we need to identify the seeds and then match them up to the order of the individuals in the matrix.
 prepare_nbda_data <- function(gps,
                               ddf,
                               dds,
                               gps_spd,
                               n_hours_gps_dynamic = list(),
                               n_hours_gps_static = list(),
-                              remove_seeds = FALSE,
+                              identify_seeds = FALSE,
                               seed_time_before = NULL,
                               sighting_time_max_hours = 72) {
-  library(dplyr)
-  library(purrr)
-  library(lubridate)
   
   gps$ground_speed <- as.numeric(gps$ground_speed)
   
   carc_id <- unique(gps$carcID)
   if (length(carc_id) != 1) stop("gps$carcID must have exactly one unique value.")
   
-  if (remove_seeds && is.null(seed_time_before)) {
-    stop("seed_time_before must be provided when remove_seeds = TRUE.")
+  if (identify_seeds && is.null(seed_time_before)) {
+    stop("seed_time_before must be provided when identify_seeds = TRUE.")
   }
   
   # Identify seed individuals if needed
   seeds <- character(0)
-  if (remove_seeds) {
+  if (identify_seeds) {
     time_window <- seed_time_before / 60
     seeds <- gps %>%
       filter(time_since_carcass >= -time_window,
@@ -1649,14 +1649,14 @@ prepare_nbda_data <- function(gps,
     ungroup() %>%
     arrange(time_since_carcass)
   
-  n_found <- length(unique(first_sightings$tag_local_identifier))
-  n_gps <- length(unique(gps$tag_local_identifier))
-  prop_found <- n_found / n_gps
-  
-  if (remove_seeds) {
+  if(identify_seeds){
     first_sightings <- first_sightings %>%
       filter(!(tag_local_identifier %in% seeds))
   }
+  
+  n_found <- length(unique(first_sightings$tag_local_identifier))
+  n_gps <- length(unique(gps$tag_local_identifier))
+  prop_found <- n_found / n_gps
   
   all_indivs_sorted <- sort(unique(gps$tag_local_identifier))
   
@@ -1729,6 +1729,12 @@ prepare_nbda_data <- function(gps,
     gps_data_static_hour_ranges[[var_name]] <- gps_data
   }
   
+  if(identify_seeds){
+    seeds_vec = as.numeric(all_indivs_sorted %in% seeds)
+  }else{
+    seeds_vec <- NULL
+  }
+  
   base_list <- list(
     n_found = n_found,
     n_gps = n_gps,
@@ -1741,7 +1747,8 @@ prepare_nbda_data <- function(gps,
     oa_nums = oa_nums,
     ami = ami,
     gps_data_cumulative = gps_data_cumulative,
-    gps_data_sameday = gps_data_sameday
+    gps_data_sameday = gps_data_sameday,
+    seeds_vec = seeds_vec
   )
   
   final_list <- c(base_list, gps_data_dynamic_hour_ranges, gps_data_static_hour_ranges)
@@ -1824,11 +1831,11 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb){
   out <- purrr::map(list, ~{
     prepare_nbda_data(gps = .x,
-                      remove_seeds = FALSE,
-                      seed_time_before = NULL,
+                      identify_seeds = TRUE,
+                      seed_time_before = stb,
                       ddf = ddf, dds = dds,
                       gps_spd = gps_spd,
                       n_hours_gps_static = list(c(-720, -24)),
