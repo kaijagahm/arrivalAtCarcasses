@@ -2,22 +2,29 @@ library(tidyverse)
 library(targets)
 
 tar_load(stats)
+tar_load(stats_wild)
 tar_load(stn)
+tar_load(wild)
 tar_load(ns)
+tar_load(ns_wild)
+
+stats <- stats %>% mutate(stn_wild = "stn")
+stats_wild <- stats_wild %>% mutate(stn_wild = "wild")
 
 ns <- data.frame(n = ns, carcID = stn$carcID)
+ns_wild <- data.frame(n = ns_wild, carcID = wild$carcID)
 
-test <- stats %>% 
+stats <- left_join(stats, ns) %>% left_join(stn)
+stats_wild <- left_join(stats_wild, ns_wild) %>% left_join(wild)
+
+stats_all <- bind_rows(stats, stats_wild)
+
+test <- stats_all %>% 
   mutate(lower = outputPar - se, upper = outputPar + se, sig = ifelse(lower > 0 & !is.na(lower), T, F)) %>%
-  left_join(ns) %>%
-  left_join(stn) %>%
   mutate(year = lubridate::year(date))
 
-dim(test)
-nrow(test) == 8*nrow(stn)
-
 test %>%
-  filter(!is.na(outputPar)) %>%
+  filter(!is.na(outputPar), stn_wild == "stn") %>%
   mutate(lower = case_when(!sig ~ NA, .default = lower),
          upper = case_when(!sig ~ NA, .default = upper)) %>%
   filter(outputPar < 50) %>%
@@ -30,19 +37,55 @@ test %>%
   theme_classic()+
   coord_flip()+
   facet_grid(rows = vars(year), cols = vars(seeds), scales = "free_y")+
-  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4")) # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  labs(title = "SFS carcasses") # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
+
+test %>%
+  filter(!is.na(outputPar), stn_wild == "wild") %>%
+  mutate(lower = case_when(!sig ~ NA, .default = lower),
+         upper = case_when(!sig ~ NA, .default = upper)) %>%
+  filter(outputPar < 30) %>%
+  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+  geom_segment(aes(y = lower, yend = upper))+
+  geom_point(aes(pch = sig))+
+  scale_shape_manual(values = c(1, 19))+
+  #scale_linetype_manual(values = c(2, 1))+
+  theme_classic()+
+  coord_flip()+
+  facet_grid(rows = vars(year), cols = vars(seeds), scales = "free_y")+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  labs(title = "Wild carcasses") # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
 
 # What about the relationship to the number of individuals in the diffusion?
 # Does number of individuals predict significant social transmission?
 test %>%
+  filter(!seeds) %>%
   mutate(sig_num = ifelse(sig, 1, 0)) %>%
-  ggplot(aes(x = n, y = sig_num, color = interaction(type, binwt))) +
+  ggplot(aes(x = n, y = sig_num, color = interaction(type, binwt), 
+             linetype = stn_wild)) +
   geom_point(position = position_jitter(height = 0.02), alpha = 0.2, size = 2) + 
   stat_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE)+
   theme_minimal()+
   facet_grid(rows = vars(binwt), cols = vars(type))+
   scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
-  theme(legend.position = "bottom") # There doesn't seem to be a relationship between the number of individuals in the diffusion and the likelihood of detecting a significant effect, for any of the network types.
+  theme(legend.position = "bottom") + 
+  labs(title = "No seeds")# For the station carcasses, there seems to be no relationship between number of individuals involved in the diffusion and likelihood of detecting social transmission. But for the wild carcasses, more individuals in the diffusion significantly predicts us detecting social transmission.
+# Now of course, the direction of causality could be the other way around. Maybe having social transmission causes more individuals to arrive; that would be totally plausible. Still supports a different mechanism.
+# Framing for intro--conservation--it has been claimed that carcasses at smaller, less frequently provisioned stations will be more likely to mimic natural conditions.
+
+test %>%
+  filter(seeds) %>%
+  mutate(sig_num = ifelse(sig, 1, 0)) %>%
+  ggplot(aes(x = n, y = sig_num, color = interaction(type, binwt), 
+             linetype = stn_wild)) +
+  geom_point(position = position_jitter(height = 0.02), alpha = 0.2, size = 2) + 
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE)+
+  theme_minimal()+
+  facet_grid(rows = vars(binwt), cols = vars(type))+
+  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  theme(legend.position = "bottom") + 
+  labs(title = "Seeds") # similar results once we account for seeds
   
 # Now, is there a relationship between the number of individuals and the strength of social effect, for the ones where an effect was detected?
 test %>%
@@ -123,4 +166,9 @@ test %>%
 # XXX also to look into--I'm not sure the ns lined up correctly. 9 indivs sounds wrong.
 
 # Okay, time to run the same thing for the wild carcasses.
+
+# Why are so many station carcasses invalid for NBDA? --------
+## Hypothesis: because after removing the seeds, they don't have enough individuals
+
+
 

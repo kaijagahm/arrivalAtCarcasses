@@ -1831,10 +1831,10 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds){
   out <- purrr::map(list, ~{
     prepare_nbda_data(gps = .x,
-                      identify_seeds = TRUE,
+                      identify_seeds = seeds,
                       seed_time_before = stb,
                       ddf = ddf, dds = dds,
                       gps_spd = gps_spd,
