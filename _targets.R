@@ -618,19 +618,19 @@ list(
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
   
   ### Prepare data for NBDA--Cumulative (wild)--Binary--seeds
-  tar_target(data_cumul_bin_wild_1, purrr::map2(nd1_wild, fl_bin_cumulative_sameday_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  tar_target(data_cumul_bin_1_wild, purrr::map2(nd1_wild, fl_bin_cumulative_sameday_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y), 
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_bin_wild_2, purrr::map2(nd2_wild, fl_bin_cumulative_sameday_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  tar_target(data_cumul_bin_2_wild, purrr::map2(nd2_wild, fl_bin_cumulative_sameday_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y), 
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_bin_wild_3, purrr::map2(nd3_wild, fl_bin_cumulative_sameday_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  tar_target(data_cumul_bin_3_wild, purrr::map2(nd3_wild, fl_bin_cumulative_sameday_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y), 
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_bin_wild_4, purrr::map2(nd4_wild, fl_bin_cumulative_sameday_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  tar_target(data_cumul_bin_4_wild, purrr::map2(nd4_wild, fl_bin_cumulative_sameday_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y), 
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_bin_wild_5, purrr::map2(nd5_wild, fl_bin_cumulative_sameday_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  tar_target(data_cumul_bin_5_wild, purrr::map2(nd5_wild, fl_bin_cumulative_sameday_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y), 
              orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
   
@@ -915,39 +915,77 @@ list(
              orderAcq = .x$oa_nums)}else{NULL}})),
   
   ## NBDA models
-  ### Cumulative, binary
+  ### Cumulative, binary (stn)
   tar_target(mods_cumul_bin, purrr::map(c(data_cumul_bin_1, data_cumul_bin_2, data_cumul_bin_3, data_cumul_bin_4, data_cumul_bin_5, data_cumul_bin_6, data_cumul_bin_7), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  ### Cumulative, binary, no seeds
+  
+  ### Cumulative, binary (wild)
+  tar_target(mods_cumul_bin_wild, purrr::map(c(data_cumul_bin_1_wild, data_cumul_bin_2_wild, data_cumul_bin_3_wild, data_cumul_bin_4_wild, data_cumul_bin_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})), 
+  
+  ### Cumulative, binary, no seeds (stn)
   tar_target(mods_cumul_bin_noseeds, purrr::map(c(data_cumul_bin_1_noseeds, data_cumul_bin_2_noseeds, data_cumul_bin_3_noseeds, data_cumul_bin_4_noseeds, data_cumul_bin_5_noseeds, data_cumul_bin_6_noseeds, data_cumul_bin_7_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
   
-  ### Cumulative, weighted
+  ### Cumulative, binary, no seeds (wild)
+  tar_target(mods_cumul_bin_wild_noseeds, purrr::map(c(data_cumul_bin_1_wild_noseeds, data_cumul_bin_2_wild_noseeds, data_cumul_bin_3_wild_noseeds, data_cumul_bin_4_wild_noseeds, data_cumul_bin_5_wild_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### Cumulative, weighted (stn)
   tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6, data_cumul_wt_7), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  ### Cumulative, weighted, no seeds
+  
+  ### Cumulative, weighted (wild)
+  tar_target(mods_cumul_wt_wild, purrr::map(c(data_cumul_wt_1_wild, data_cumul_wt_2_wild, data_cumul_wt_3_wild, data_cumul_wt_4_wild, data_cumul_wt_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### Cumulative, weighted, no seeds (stn)
   tar_target(mods_cumul_wt_noseeds, purrr::map(c(data_cumul_wt_1_noseeds, data_cumul_wt_2_noseeds, data_cumul_wt_3_noseeds, data_cumul_wt_4_noseeds, data_cumul_wt_5_noseeds, data_cumul_wt_6_noseeds, data_cumul_wt_7_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
   
-  ### 30 days, binary
+  ### Cumulative, weighted, no seeds (wild)
+  tar_target(mods_cumul_wt_wild_noseeds, purrr::map(c(data_cumul_wt_1_wild_noseeds, data_cumul_wt_2_wild_noseeds, data_cumul_wt_3_wild_noseeds, data_cumul_wt_4_wild_noseeds, data_cumul_wt_5_wild_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### 30 days, binary (stn)
   tar_target(mods_30days_bin, purrr::map(c(data_30days_bin_1, data_30days_bin_2, data_30days_bin_3, data_30days_bin_4, data_30days_bin_5, data_30days_bin_6, data_30days_bin_7), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  ### 30 days, binary, no seeds
+  
+  ### 30 days, binary (wild)
+  tar_target(mods_30days_bin_wild, purrr::map(c(data_30days_bin_1_wild, data_30days_bin_2_wild, data_30days_bin_3_wild, data_30days_bin_4_wild, data_30days_bin_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### 30 days, binary, no seeds (stn)
   tar_target(mods_30days_bin_noseeds, purrr::map(c(data_30days_bin_1_noseeds, data_30days_bin_2_noseeds, data_30days_bin_3_noseeds, data_30days_bin_4_noseeds, data_30days_bin_5_noseeds, data_30days_bin_6_noseeds, data_30days_bin_7_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
   
-  ### 30 days, weighted
+  ### 30 days, binary, no seeds (wild) # XXX START HERE ADDING WILD
+  tar_target(mods_30days_bin_wild_noseeds, purrr::map(c(data_30days_bin_1_wild_noseeds, data_30days_bin_2_wild_noseeds, data_30days_bin_3_wild_noseeds, data_30days_bin_4_wild_noseeds, data_30days_bin_5_wild_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### 30 days, weighted (stn)
   tar_target(mods_30days_wt, purrr::map(c(data_30days_wt_1, data_30days_wt_2, data_30days_wt_3, data_30days_wt_4, data_30days_wt_5, data_30days_wt_6, data_30days_wt_7), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  ### 30 days, weighted, no seeds
+  
+  ### 30 days, weighted (wild)
+  tar_target(mods_30days_wt_wild, purrr::map(c(data_30days_wt_1_wild, data_30days_wt_2_wild, data_30days_wt_3_wild, data_30days_wt_4_wild, data_30days_wt_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### 30 days, weighted, no seeds (stn)
   tar_target(mods_30days_wt_noseeds, purrr::map(c(data_30days_wt_1_noseeds, data_30days_wt_2_noseeds, data_30days_wt_3_noseeds, data_30days_wt_4_noseeds, data_30days_wt_5_noseeds, data_30days_wt_6_noseeds, data_30days_wt_7_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  
+  ### 30 days, weighted, no seeds (wild)
+  tar_target(mods_30days_wt_wild_noseeds, purrr::map(c(data_30days_wt_1_wild_noseeds, data_30days_wt_2_wild_noseeds, data_30days_wt_3_wild_noseeds, data_30days_wt_4_wild_noseeds, data_30days_wt_5_wild_noseeds), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
   
   tar_target(stats_cumul_bin, mutate(purrr::list_rbind(map(mods_cumul_bin, getmodstats)), type = "cumul", binwt = "bin", seeds = T, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_cumul_bin_noseeds, mutate(purrr::list_rbind(map(mods_cumul_bin_noseeds, getmodstats)), type = "cumul", binwt = "bin", seeds = F, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
-  
   tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_cumul_wt_noseeds, mutate(purrr::list_rbind(map(mods_cumul_wt_noseeds, getmodstats)), type = "cumul", binwt = "wt", seeds = F, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   
+  tar_target(stats_cumul_bin_wild, mutate(purrr::list_rbind(map(mods_cumul_bin_wild, getmodstats)), type = "cumul", binwt = "bin", seeds = T, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_cumul_bin_wild_noseeds, mutate(purrr::list_rbind(map(mods_cumul_bin_wild_noseeds, getmodstats)), type = "cumul", binwt = "bin", seeds = F, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_cumul_wt_wild, mutate(purrr::list_rbind(map(mods_cumul_wt_wild, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_cumul_wt_wild_noseeds, mutate(purrr::list_rbind(map(mods_cumul_wt_wild_noseeds, getmodstats)), type = "cumul", binwt = "wt", seeds = F, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  
   tar_target(stats_30days_bin, mutate(purrr::list_rbind(map(mods_30days_bin, getmodstats)), type = "30days", binwt = "bin", seeds = T, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_30days_bin_noseeds, mutate(purrr::list_rbind(map(mods_30days_bin_noseeds, getmodstats)), type = "30days", binwt = "bin", seeds = F, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
-  
   tar_target(stats_30days_wt, mutate(purrr::list_rbind(map(mods_30days_wt, getmodstats)), type = "30days", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   tar_target(stats_30days_wt_noseeds, mutate(purrr::list_rbind(map(mods_30days_wt_noseeds, getmodstats)), type = "30days", binwt = "wt", seeds = F, carcID = purrr::map_dbl(stn_carcs_tcv, "carcID"))),
   
+  tar_target(stats_30days_bin_wild, mutate(purrr::list_rbind(map(mods_30days_bin_wild, getmodstats)), type = "30days", binwt = "bin", seeds = T, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_30days_bin_wild_noseeds, mutate(purrr::list_rbind(map(mods_30days_bin_wild_noseeds, getmodstats)), type = "30days", binwt = "bin", seeds = F, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_30days_wt_wild, mutate(purrr::list_rbind(map(mods_30days_wt_wild, getmodstats)), type = "30days", binwt = "wt", seeds = T, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  tar_target(stats_30days_wt_wild_noseeds, mutate(purrr::list_rbind(map(mods_30days_wt_wild_noseeds, getmodstats)), type = "30days", binwt = "wt", seeds = F, carcID = purrr::map_dbl(wild_carcs_tcv, "carcID"))),
+  
   tar_target(stats, purrr::list_rbind(list(stats_cumul_bin, stats_cumul_bin_noseeds, stats_cumul_wt, stats_cumul_wt_noseeds, stats_30days_bin, stats_30days_bin_noseeds, stats_30days_wt, stats_30days_wt_noseeds))),
+  
+  tar_target(stats_wild, purrr::list_rbind(list(stats_cumul_bin_wild, stats_cumul_bin_wild_noseeds, stats_cumul_wt_wild, stats_cumul_wt_wild_noseeds, stats_30days_bin_wild, stats_30days_bin_wild_noseeds, stats_30days_wt_wild, stats_30days_wt_wild_noseeds))),
   
   ## Number of individuals involved in each diffusion
   tar_target(n1, purrr::map_dbl(nd1, ~length(.x$oa_nums))),
@@ -957,5 +995,12 @@ list(
   tar_target(n5, purrr::map_dbl(nd5, ~length(.x$oa_nums))),
   tar_target(n6, purrr::map_dbl(nd6, ~length(.x$oa_nums))),
   tar_target(n7, purrr::map_dbl(nd7, ~length(.x$oa_nums))),
-  tar_target(ns, c(n1, n2, n3, n4, n5, n6, n7))
+  tar_target(ns, c(n1, n2, n3, n4, n5, n6, n7)),
+  
+  tar_target(n1_wild, purrr::map_dbl(nd1_wild, ~length(.x$oa_nums))),
+  tar_target(n2_wild, purrr::map_dbl(nd2_wild, ~length(.x$oa_nums))),
+  tar_target(n3_wild, purrr::map_dbl(nd3_wild, ~length(.x$oa_nums))),
+  tar_target(n4_wild, purrr::map_dbl(nd4_wild, ~length(.x$oa_nums))),
+  tar_target(n5_wild, purrr::map_dbl(nd5_wild, ~length(.x$oa_nums))),
+  tar_target(ns_wild, c(n1_wild, n2_wild, n3_wild, n4_wild, n5_wild)) # when I load this, I immediately notice that most of the wild models ran, while many more of the station models didn't run. I wonder why.
 )
