@@ -220,20 +220,33 @@ canfix <- audited %>%
   filter(!flagGideon | is.na(flagGideon))
 
 # new map for gideon:
-# mapview(stations, label = "stationName", color = "black", col.regions = "black") + 
-#   mapview(canfix, label = "stationName", color = "gray", col.regions = "gray")+
-#   mapview(needhelp %>% filter(color == "yellow"), label = "stationName", color = "yellow", col.regions = "yellow", legend = F)+
-#   mapview(needhelp %>% filter(color == "pink"), label = "stationName", color = "pink", col.regions = "pink", legend = F)+
-#   mapview(needhelp %>% filter(color == "white"), label = "stationName", color = "white", col.regions = "white", legend = F)+
-#   mapview(needhelp %>% filter(color == "green"), label = "stationName", color = "green", col.regions = "green", legend = F)+
-#   mapview(needhelp %>% filter(color == "blue"), label = "stationName", color = "blue", col.regions = "blue", legend = F)+
-#   mapview(needhelp %>% filter(color == "red"), label = "stationName", color = "red", col.regions = "red", legend = F)+
-#   mapview(needhelp %>% filter(color == "tan"), label = "stationName", color = "tan", col.regions = "tan", legend = F)+
-#   mapview(needhelp %>% filter(color == "purple"), label = "stationName", color = "purple", col.regions = "purple", legend = F)+
-#   mapview(needhelp %>% filter(color == "darkred"), label = "stationName", color = "darkred", col.regions = "darkred", legend = F)+
-#   mapview(needhelp %>% filter(color == "darkorange"), label = "stationName", color = "darkorange4", col.regions = "darkorange4", legend = F)+
-#   mapview(needhelp %>% filter(color == "orange"), label = "stationName", color = "orange", col.regions = "orange", legend = F)+
-#   mapview(needhelp %>% filter(color == "darkgreen"), label = "stationName", color = "darkgreen", col.regions = "darkgreen", legend = F)
+y <- needhelp %>% filter(color == "yellow")
+p <- needhelp %>% filter(color == "pink")
+w <- needhelp %>% filter(color == "white")
+g <- needhelp %>% filter(color == "green")
+b <- needhelp %>% filter(color == "blue")
+r <- needhelp %>% filter(color == "red")
+t <- needhelp %>% filter(color == "tan")
+pp <- needhelp %>% filter(color == "purple")
+dr <- needhelp %>% filter(color == "darkred")
+do <- needhelp %>% filter(color == "darkorange")
+o <- needhelp %>% filter(color == "orange")
+dg <- needhelp %>% filter(color == "darkgreen")
+
+mapview(stations, label = "stationName", color = "black", col.regions = "black") +
+  mapview(canfix, label = "stationName", color = "gray", col.regions = "gray")+
+  mapview(y, label = "stationName", color = "yellow", col.regions = "yellow", legend = F)+
+  mapview(p, label = "stationName", color = "pink", col.regions = "pink", legend = F)+
+  mapview(w, label = "stationName", color = "white", col.regions = "white", legend = F)+
+  mapview(g, label = "stationName", color = "green", col.regions = "green", legend = F)+
+  mapview(b, label = "stationName", color = "blue", col.regions = "blue", legend = F)+
+  mapview(r, label = "stationName", color = "red", col.regions = "red", legend = F)+
+  mapview(t, label = "stationName", color = "tan", col.regions = "tan", legend = F)+
+  mapview(pp, label = "stationName", color = "purple", col.regions = "purple", legend = F)+
+  mapview(dr, label = "stationName", color = "darkred", col.regions = "darkred", legend = F)+
+  mapview(do, label = "stationName", color = "darkorange4", col.regions = "darkorange4", legend = F)+
+  mapview(o, label = "stationName", color = "orange", col.regions = "orange", legend = F)+
+  mapview(dg, label = "stationName", color = "darkgreen", col.regions = "darkgreen", legend = F)
 # XXX on 2024-10-18, sent this map to Gideon along with the carcassAudit spreadsheet so he can help me figure out how to fix the confusing points.
 
 # 2. We're going to need to keep track of which coordinates have been edited. Let's create a column for that.

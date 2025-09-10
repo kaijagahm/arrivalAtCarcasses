@@ -31,7 +31,7 @@ stats_all <- bind_rows(stats, stats_wild) %>%
   mutate(year = lubridate::year(date))
 
 stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "stn") %>%
+  filter(!is.na(outputPar), stn_wild == "stn", binwt == "wt") %>%
   mutate(lower = case_when(!sig ~ NA, .default = lower),
          upper = case_when(!sig ~ NA, .default = upper)) %>%
   filter(outputPar < 50) %>%
@@ -44,11 +44,11 @@ stats_all %>%
   theme_classic()+
   coord_flip()+
   facet_grid(rows = vars(year), cols = vars(seeds), scales = "free_y")+
-  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
   labs(title = "SFS carcasses") # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
 
 stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "wild") %>%
+  filter(!is.na(outputPar), stn_wild == "wild", binwt == "wt", seeds == T) %>%
   mutate(lower = case_when(!sig ~ NA, .default = lower),
          upper = case_when(!sig ~ NA, .default = upper)) %>%
   filter(outputPar < 30) %>%
@@ -61,7 +61,7 @@ stats_all %>%
   theme_classic()+
   coord_flip()+
   facet_grid(rows = vars(year), cols = vars(seeds), scales = "free_y")+
-  scale_color_manual(values = c("firebrick1", "skyblue", "firebrick4", "dodgerblue4"))+
+  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
   labs(title = "Wild carcasses") # not actually missing data for 2022, it's just that the estimates/SEs are all really high so they don't show up.
 
 # What about the relationship to the number of individuals in the diffusion?
