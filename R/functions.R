@@ -685,9 +685,10 @@ get_fl_weighted <- function(dat, dist){
       out <- out %>%
         mutate(across(c("ID1", "ID2"), as.character)) %>%
         bind_rows(self_edges) %>%
-        mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
+        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network
         arrange(ID1, ID2) %>%
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
+        mutate(across(everything(), ~replace_na(.x, 0))) %>%
         dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
         as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
       row.names(out) <- out$ID1 # doing this because it makes indexing easier later
@@ -1831,10 +1832,10 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds){
   out <- purrr::map(list, ~{
     prepare_nbda_data(gps = .x,
-                      identify_seeds = TRUE,
+                      identify_seeds = seeds,
                       seed_time_before = stb,
                       ddf = ddf, dds = dds,
                       gps_spd = gps_spd,
