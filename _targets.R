@@ -13,12 +13,12 @@ lapply(list.files("R", full.names = TRUE), source)
 
 list(
   # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
-  tar_target(mindate_22, "2022-11-11 00:06:18 UTC"),
-  tar_target(mindate_23, "2023-03-15 00:54:49 UTC"),
-  tar_target(mindate_24, "2024-04-01 00:04:28 UTC"),
-  tar_target(maxdate_22, "2022-12-11 11:59:00 UTC"),
-  tar_target(maxdate_23, "2023-04-15 11:58:52 UTC"),
-  tar_target(maxdate_24, "2024-05-06 20:38:17 UTC"),
+  tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
+  tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
+  tar_target(mindate_24, "2024-04-01 00:00:00 UTC"),
+  tar_target(maxdate_22, "2022-12-11 00:00:00 UTC"),
+  tar_target(maxdate_23, "2023-04-15 00:00:00 UTC"),
+  tar_target(maxdate_24, "2024-05-06 00:00:00 UTC"),
   tar_target(minmax_dates, list(mindate_22, maxdate_22, mindate_23, maxdate_23, mindate_24, maxdate_24)),
   tar_target(minmax_buff, list(
     lubridate::ymd_hms(mindate_22) - lubridate::days(31),
@@ -253,10 +253,6 @@ list(
   tar_target(full_2023, map2(bo_pr_2023, with_gps_2023, ~join_gps_bouts(.x, .y))),
   tar_target(full_2024, map2(bo_pr_2024, with_gps_2024, ~join_gps_bouts(.x, .y))),
   
-  # ## GPS data for the focal periods (in case we need it later)
-  # tar_target(focal_gps_2023, readRDS(here("data/ACC/2023_hf_period/created/focal_gps_2023.RDS"))),
-  # tar_target(focal_gps_2024, readRDS(here("data/ACC/2024_hf_period/created/focal_gps_2024.RDS"))),
-  
   ## Feeding bouts (high-frequency periods only)
   tar_target(feeding_bo_prob_thresh, 0.75),
   tar_target(feeding_bo_2022, map(full_2022, ~getfeeding(.x, feeding_bo_prob_thresh))),
@@ -344,12 +340,12 @@ list(
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
   # download data to match high frequency period, plus buffer
-  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022.RDS"))),
-  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023.RDS"))),
-  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024.RDS"))),
-  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022.RDS"))),
-  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023.RDS"))),
-  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024.RDS"))),
+  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022_version2025-09-17.RDS"))),
+  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023_version2025-09-17.RDS"))),
+  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024_version2025-09-17.RDS"))),
+  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022_version2025-09-17.RDS"))),
+  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023_version2025-09-17.RDS"))),
+  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024_version2025-09-17.RDS"))),
   
   tar_target(gps_2022_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2022), as.data.frame(inpa_data_2022)), crs = "WGS84")),
   tar_target(gps_2023_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2023), as.data.frame(inpa_data_2023)), crs = "WGS84")),
