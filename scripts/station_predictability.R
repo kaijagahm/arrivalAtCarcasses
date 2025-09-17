@@ -56,7 +56,8 @@ stn %>%
   geom_boxplot(outlier.size = 0.2)+
   coord_flip()+
   labs(x = "SFS",
-       y = "Interval (days)")+
+       y = "Interval between carcasses (days)",
+       caption = "For stations with at least 4 carcasses")+
   theme_minimal()
 
 # Grab 6 month chunks of carcass dates for each station, starting every 1 month after the beginning of the carcass data.
@@ -137,15 +138,20 @@ predi %>%
 predi %>%
   filter(end < lubridate::date("2024-01-01")) %>% # because things seem to get weird over here--probably need to exclude the north for starters
   ggplot(aes(x = var_int))+
-  geom_density(aes(group = factor(end)), linewidth = 0.1)+
-  theme_minimal() # okay, this is super duper right-skewed
+  geom_density(aes(group = factor(end), color = end), linewidth = 0.1, alpha = 0.2)+
+  theme_minimal()+ # okay, this is super duper right-skewed
+  labs(x = "Variance in carcass interval",
+       color = "6-month window")+
+  scale_color_viridis_c()
 
 # What happens if we log-transform the variances?
 predi %>%
   filter(end < lubridate::date("2024-01-01")) %>% 
-  ggplot(aes(x = log(var_int)))+
+  ggplot(aes(x = log(var_int), color = end))+
   geom_density(aes(group = factor(end)), linewidth = 0.1)+
-  theme_minimal() # this is so beautiful that it basically has me convinced that this is how we should divide the carcasses up.
+  theme_minimal()+ # this is so beautiful that it basically has me convinced that this is how we should divide the stations up.
+  labs(x = "Variance in carcass interval (log-transformed)")+
+  scale_color_viridis_c()
 
 # But now of course we're going to have a question about the relationship between number of carcasses and variance, and I expect them to be highly correlated:
 predi %>%
