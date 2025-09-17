@@ -1,0 +1,348 @@
+---
+title: "Carcass Audit"
+author: "Kaija Gahm"
+format:
+  html:
+    embed-resources: true
+editor: source
+---
+
+```{r echo = FALSE, message = F}
+library(tidyverse)
+library(sf)
+library(here)
+library(mapview)
+library(RColorBrewer)
+library(readxl)
+```
+
+First, I load in the carcass data. This is data from 2018-01-03 through 2024-09-16. I started with some basic cleaning steps: - Rename the columns: shorter and no spaces - Remove any duplicate carcass IDs caused by joining two datasets - Add a properly formatted `datetime` column - Add a column `cage` that takes TRUE or FALSE depending on whether the stationName included the word "cage" - Transform the data to a spatial object and project it to [EPSG 32636](https://epsg.io/32636) (UTM projection for the area around Israel).
+
+```{r echo = FALSE}
+carcasses_inpa <- readRDS(here("data/created/carcasses_inpa.RDS"))
+custom_colors <- hcl.colors(n = length(levels(carcasses_inpa$stationName)), palette = "Spectral", rev = TRUE)
+```
+
+Here are some types of problems that I discovered when looking at the carcasses on a map:
+
+| Problem | Proposed solution | Example(s) | Notes/questions |
+|---------------------|----------------|--------------|----------------------|
+| Some GPS points have been thrown into the sea, presumably due to GPS jamming. | Update carcass GPS coordinates to match the feeding station coordinates | 4976659, 4987105 |  |
+| Some carcass coordinates don't match their stationName–they are located very far from the feeding station--e.g. on roads, in towns, etc. | Update carcass GPS coordinates to match the feeding station coordinates | 4927271, 4942740 |  |
+| Carcasses assigned the wrong stationName–located right next to other carcasses with a different stationName | Change stationName to match the nearby carcasses. | 4906144 (assigned to North Golan, but located next to a lot of Kachal carcasses) | It is also possible that the GPS coordinates, not the stationName, is incorrect. Which is more likely? |
+| Carcasses located on roads/towns–in addition to wrong GPS coordinates, would the time also be incorrect? | I don't know how to fix this and have not tried to. | 4961228 |  |
+
+```{r echo = FALSE}
+stations <- readRDS(here("data/created/stations.RDS"))
+
+stations %>%
+  st_drop_geometry() %>%
+  arrange(stationName) %>%
+  select(stationName, long, lat)
+```
+
+```{r echo = FALSE}
+mapview(stations)
+```
+
+::: {.callout-important}
+## Question 1
+
+Do any of these feeding stations look duplicated, misnamed, or incorrectly placed?
+:::
+
+Comparing the station data against the carcass data, we have some spelling differences that look like they should be easy to fix.
+
+```{r echo = F}
+cat("Station names (from station data)")
+cat("\n")
+sort(unique(stations$stationName))
+cat("\n")
+cat("Station names (from carcass data)")
+cat("\n")
+sort(unique(as.character(carcasses_inpa$stationName)))
+```
+
+I fixed the names so they would be the same between the two datasets.
+
+```{r}
+ci_fixed <- carcasses_inpa #initializing a new version of the carcass data, to be the fixed dataset
+# Fixing spelling and capitalization
+ci_fixed <- ci_fixed %>%
+  mutate(stationName = case_when(stationName == "Antennas" ~ "Antenas",
+                                 stationName == "Hai-bar feeding station" ~ "Hai_Bar_Carmel",
+                                 stationName == "south camus" ~ "Camus_south",
+                                 stationName %in% c("Mount Gazem", "Mt Gezem") ~ "Gezem_mount",
+                                 stationName == "Galchan" ~ "Golhan",
+                                 stationName == "smooth mountain (halak)" ~ "Hahalak_mount",
+                                 stationName == "Hatzra Drilling" ~ "Hatzera_drill",
+                                 stationName == "Hispia meddow" ~ "Hispiya_meadow",
+                                 stationName == "kaolin" ~ "Kaolin",
+                                 stationName == "Lashvia 450" ~ "Lashabia_450",
+                                 stationName == "north golan" ~ "North_Golan",
+                                 stationName == "small crater observation" ~ "Small_crater_view",
+                                 stationName == "Mt Zaror" ~ "Tzaror_mount",
+                                 stationName == "Zaror cage" ~ "Tzaror_trap",
+                                 stationName == "Gorni hill" ~ "Gorni_hill",
+                                 stationName == "Nahal Nakrot" ~ "Nekarot_valley",
+                                 stationName == "north cliff - Hava stream" ~ "Hava_cliff",
+                                 stationName == "observation ben-Yair" ~ "Ben_Yair_view",
+                                 stationName == "other" ~ "Other",
+                                 .default = stationName))
+#sort(unique(ci_fixed$stationName))
+```
+
+Of note: after these name fixes, there are still some values of `stationName` in the carcass data that don't appear in the station data:
+
+```{r echo = F}
+sort(unique(ci_fixed$stationName)[!(unique(ci_fixed$stationName) %in% stations$stationName)])
+```
+
+Next, I clicked through the carcasses one by one on the map and made notes about the problems I saw. I recorded my notes manually in an Excel sheet called "carcassAudit.xlsx". For some, the fix was obvious (e.g. carcass located on a road very near a feeding station, or carcass erroneously placed in the sea). For others, the fix was more challenging. The yellow highlighted rows in the Excel sheet are carcasses that I flagged to ask for Gideon's help with.
+
+```{r echo = F}
+carcassAudit <- read_excel(here("data/raw/carcassAudit.xlsx")) %>%
+  mutate(carcID = as.numeric(carcID),
+         flag = as.logical(flag),
+         flagGideon = as.logical(flagGideon))
+
+audited <- ci_fixed %>%
+  left_join(carcassAudit)
+
+needhelp <- audited %>%
+  filter(flagGideon == T)
+nrow(needhelp) # 37
+
+canfix <- audited %>%
+  filter(!flagGideon | is.na(flagGideon))
+```
+
+I made an interactive map for Gideon. The colors on the map correspond to the colors in column K of the Excel sheet. I wanted to be able to ask for help with specific carcasses more easily.
+
+The map is too big to embed in this document, but I'll attach it separately.
+
+```{r echo = F}
+y <- needhelp %>% filter(color == "yellow")
+p <- needhelp %>% filter(color == "pink")
+w <- needhelp %>% filter(color == "white")
+g <- needhelp %>% filter(color == "green")
+b <- needhelp %>% filter(color == "blue")
+r <- needhelp %>% filter(color == "red")
+t <- needhelp %>% filter(color == "tan")
+pp <- needhelp %>% filter(color == "purple")
+dr <- needhelp %>% filter(color == "darkred")
+do <- needhelp %>% filter(color == "darkorange")
+o <- needhelp %>% filter(color == "orange")
+dg <- needhelp %>% filter(color == "darkgreen")
+
+# mapview(stations, label = "stationName", color = "black", col.regions = "black") +
+#   mapview(canfix, label = "stationName", color = "gray", col.regions = "gray")+
+#   mapview(y, label = "stationName", color = "yellow", col.regions = "yellow", legend = F)+
+#   mapview(p, label = "stationName", color = "pink", col.regions = "pink", legend = F)+
+#   mapview(w, label = "stationName", color = "white", col.regions = "white", legend = F)+
+#   mapview(g, label = "stationName", color = "green", col.regions = "green", legend = F)+
+#   mapview(b, label = "stationName", color = "blue", col.regions = "blue", legend = F)+
+#   mapview(r, label = "stationName", color = "red", col.regions = "red", legend = F)+
+#   mapview(t, label = "stationName", color = "tan", col.regions = "tan", legend = F)+
+#   mapview(pp, label = "stationName", color = "purple", col.regions = "purple", legend = F)+
+#   mapview(dr, label = "stationName", color = "darkred", col.regions = "darkred", legend = F)+
+#   mapview(do, label = "stationName", color = "darkorange4", col.regions = "darkorange4", legend = F)+
+#   mapview(o, label = "stationName", color = "orange", col.regions = "orange", legend = F)+
+#   mapview(dg, label = "stationName", color = "darkgreen", col.regions = "darkgreen", legend = F)
+```
+
+I sent this map to Gideon, along with the "carcassAudit.xlsx" spreadsheet, on 2024-10-18.
+
+Meanwhile, I reassigned a whole bunch of carcasses with incorrect coordinates to the correct feeding stations.
+
+```{r echo = F}
+# 2. We're going to need to keep track of which coordinates have been edited. Let's create a column for that.
+audited$edited_coords <- NA
+audited$explanation <- NA
+audited <- sf::st_drop_geometry(audited)
+
+# 3. Reassign points to the correct feeding stations and mark as reassigned
+## Grab the ones that need to be reassigned
+toreassign <- audited %>%
+  filter(todo == "reassign" & !is.na(carcID))
+#dim(toreassign) # 102 carcasses need to be reassigned!! That's a lot.
+
+## Get station coords to use for reassignment--we can match by station name
+reassign_coords <- stations %>%
+  sf::st_drop_geometry() %>%
+  dplyr::select(stationName, lat, long) %>%
+  rename("lat_fixed" = lat, "long_fixed" = long)
+
+## Check whether we have station coords to use for reassignment for all of them
+#all(toreassign$reassign_to %in% reassign_coords$stationName) # nope, I do not :(
+toreassign[which(!(toreassign$reassign_to %in% reassign_coords$stationName)),] %>%
+  pull(reassign_to) %>%
+  unique() # these are the ones that we need coordinates for.
+
+# XXX is Gamla the same as "Gamla - cage"?
+# XXX is Carmel - cage the same as "Hai_Bar_Carmel"?
+# XXX Need a coordinate point for Kachal
+# XXX is Hever cage the same as Hever?
+
+## Save the original lat and long coords to new columns for future reference
+audited$long_orig <- audited$long
+audited$lat_orig <- audited$lat
+audited <- audited %>%
+  rename("itmLong_orig" = "itmLong",
+         "itmLat_orig" = "itmLat")
+
+for(i in 1:nrow(audited)){
+  if(audited$todo[i] == "reassign" & !is.na(audited$todo[i])){ # if needs reassignment...
+    if(audited$reassign_to[i] %in% reassign_coords$stationName){ # and if we have the coords...
+      
+      # ...then reassign the lat/long to the station coordinates
+      audited$lat[i] <- reassign_coords$lat_fixed[reassign_coords$stationName == audited$reassign_to[i]]
+      audited$long[i] <- reassign_coords$long_fixed[reassign_coords$stationName == audited$reassign_to[i]]
+      
+      # ...and add the correct station name.
+      audited$stationName[i] <- audited$reassign_to[i]
+      
+      # to keep track, make a note that we edited these coords and add an explanation.
+      audited$edited_coords[i] <- T
+      audited$explanation[i] <- "reassigned to station coords"
+    }
+  }
+}
+
+## turn it back into a spatial object
+audited <- st_as_sf(audited, coords = c("long", "lat"), crs = "WGS84", remove = F) %>% st_transform(32636)
+```
+
+::: {.callout-important}
+## Questions 2-5
+
+Here are some questions that came up while doing that reassignment.
+
+2. Is "Gamla - cage" the same location as "Gamla", or is there a separate location? If so, what are the coordinates for the cage location?
+3. Is "Carmel - cage" the same as "Hai_Bar_Carmel"? (same as previous)
+4. Is "Hever cage" the same as "Hever"? (same as previous)
+5. What are the lat/long coordinates for the Kachal station?
+:::
+
+Next, I decided that carcasses within a 750 meter radius of a feeding station should be assigned to that station (this would take care of some of the carcasses tagged "other") or assigned the wrong feeding station name.
+
+```{r echo = F, warning = F}
+# 5. check IDs in clusters
+## Look at 750m circles around the feeding stations
+stations_buffered <- st_buffer(stations, 750)
+stations_buffered_list <- stations_buffered %>%
+  group_by(stationName) %>%
+  group_split()
+intersections <- map(stations_buffered_list, ~st_intersection(audited, .x) %>%
+                       dplyr::select(carcID, date, time, long, lat, stationName))
+#map_dbl(intersections, nrow) # do the carcasses intersect with the buffer zone of a known feeding station?
+names <- map_chr(stations_buffered_list, ~.x$stationName[1])
+names_intersections <- map(intersections, ~sort(.x$stationName))
+names(names_intersections) <- names
+names(intersections) <- names
+
+# Can take action on assigning the ones to Amiaz, Chail_hills, and Tzvira_plateau. Need help for the others.
+
+# Proceeding with caution, we can use these intersections to guide assignment of carcasses to stations. This is assuming that the stationName was incorrectly chosen, rather than the coordinates being wrong. Let's look at the stations one at a time and make sure the assignment makes sense.
+```
+
+Here are interactive maps showing all of the carcasses within 750m of the focal feeding station (blue), as well as the station point itself (black, but may be hard to find if it's covered by other dots) and all the other carcasses (gray). Zoom way, way in on each blue cluster and click around on the nearby carcasses to see what I'm doing.
+
+For example, you will see that nearly all of the carcasses around Amiaz were originally labeled "Other", so I assigned them to "Amiaz".
+
+**Amiaz:**
+
+```{r echo = F, warning = F}
+## Amiaz
+#mapview(audited, label = "stationName", color = "gray", col.regions = "gray", layer.name = "all carcasses") +
+mapview(stations, label = "stationName", color = "black", col.regions = "black")+
+mapview(intersections$Amiaz, label = "stationName", color = "blue", col.regions = "blue") # everything blue should be reassigned to Amiaz. We have a bunch currently labeled "Other" there. Looks safe to do this--no other station is in the immediate vicinity.
+
+audited$stationName[audited$carcID %in% intersections$Amiaz$carcID] <- "Amiaz"
+```
+
+
+**Chail hills:**
+
+```{r echo = F, warning = F}
+## Chail_hills
+#mapview(audited, label = "stationName", color = "gray", col.regions = "gray", layer.name = "all carcasses") +
+mapview(stations, label = "stationName", color = "black", col.regions = "black")+
+  mapview(intersections$Chail_hills, label = "stationName", color = "blue", col.regions = "blue") # looks okay! Note that the carcass is overlapping the station, so it's hard to see, but there is a black point below it. Can reassign to Chail_hills.
+
+audited$stationName[audited$carcID %in% intersections$Chail_hills$carcID] <- "Chail_hills"
+```
+
+
+**Tzvira plateau:**
+
+```{r echo = F, warning = F}
+## Tzvira_plateau
+# mapview(audited, label = "stationName", color = "gray", col.regions = "gray", layer.name = "all carcasses") +
+mapview(stations, label = "stationName", color = "black", col.regions = "black")+
+  mapview(intersections$Tzvira_plateau, label = "stationName", color = "blue", col.regions = "blue") # safe here too
+
+audited$stationName[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- "Tzvira_plateau"
+```
+
+::: {.callout-important}
+## Question 6
+
+Do you agree that I made the right choice in assigning the nearby carcasses to these three stations?
+:::
+
+More fixes
+
+```{r}
+audited$stationName[audited$carcID == 4906144] <- "Kachal"
+audited$explanation[audited$carcID == 4906144] <- "Reassigned to Kachal bc located among other Kachal points"
+
+audited$stationName[audited$lat > 32.87716 & audited$lat < 32.91495 & audited$long >35.69812 & audited$long <35.77020 & audited$stationName == "cage"] <- "Gamla - cage"
+audited$explanation[audited$lat > 32.87716 & audited$lat < 32.91495 & audited$long >35.69812 & audited$long <35.77020 & audited$stationName == "cage"] <- "Reassigned to Gamla - cage bc located among other Gamla - cage points"
+
+audited$long[audited$carcID == 1929902] <- stations$long[stations$stationName == "Camus_south"]
+audited$lat[audited$carcID == 1929902] <- stations$lat[stations$stationName == "Camus_south"]
+audited$explanation[audited$carcID == 1929902] <- "Reassigned to Camus_south coords bc point seemed to be on road."
+
+audited$long[audited$carcID == 4420641] <- stations$long[stations$stationName == "Tzaror_mount"]
+audited$lat[audited$carcID == 4420641] <- stations$lat[stations$stationName == "Tzaror_mount"]
+audited$explanation[audited$carcID == 4420641] <- "Reassigned to Tzaror_mount coords bc point seemed to be in the city."
+
+audited$stationName[audited$carcID == 1885366] <- "Tzaror_mount"
+audited$explanation[audited$carcID == 1885366] <- "Reassigned to Tzaror_mount bc located among other Tzaror_mount points. Probably a mistake--not intended to be Gezem_mount."
+
+audited <- st_drop_geometry(audited)
+audited <- sf::st_as_sf(audited, coords = c("long", "lat"), crs = "WGS84") %>% sf::st_transform(32636)
+```
+
+
+Let's look at the questions still remaining. I'll go roughly from north to south and then west to east on this map
+
+```{r echo = F, warning = F}
+mapview(audited, zcol = "stationName", col.regions = custom_colors)
+```
+
+::: {.callout-important}
+## Remaining questions
+
+- Turquoise points in the sea: will be reassigned once I know which coordinates to use for "Carmel - cage". See question 3.
+- 4927271 (orange, North Golan). This point is slightly north of all the other North Golan points. Should I change its coordinates to match the others, or is the location correct?
+- Need location for Kachal points a bit away from the others--See question 5
+- Turquoise point called "cage" (5006137) located near Kachal. Where is this supposed to be?
+- Turquoise point called "cage" (4871929) next to Ein Gev
+- Orange point called "Other" near Maale Gamla. Need name/correct coords (4850012)
+- For the various Hai bar Carmel and "Carmel - cage" points, need help validating whether any of these are incorrect or not.
+- Gray point (4988920) near Nir David--has no stationName. Any way to figure out where I should assign it to? Are the coordinates correct?
+- Orange point in Jerusalem (4868888)
+- Orange points near Hever labeled "Other" (4181242 and 4253362)
+- Yellow points in Arad labeled "Hever cage"--this location seems incorrect. (4723154 and 4239726)
+- Dark orange cluster just west of Chail hills. All labeled "Other". Should these have some different name? At least they are consistent!
+- Two different clusters for Golhan. Is this correct?
+- Two different clusters for Ovdat. Is this correct?
+- Orange cluster called "Other" just north of Ein Hatseva
+- Orange point called "Other" just north of Avdat (1762465)
+- Yellowish point in Mitspe Ramon that's labeled Hever cage. Need GPS point to use to reassign it to. (4315893)
+- Orange "Other" cluster way to the south near Elifaz
+
+If not told otherwise, I'll give arbitrary names to these "Other" clusters.
+:::
