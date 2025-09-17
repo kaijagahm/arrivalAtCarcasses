@@ -386,7 +386,8 @@ get_wild_carcasses <- function(wild_carcass_bo_df){
     ungroup() %>%
     bind_cols(sf::st_coordinates(.)) %>%
     mutate(datetime = mintime,
-           datetime = lubridate::ymd_hms(datetime)) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
+           datetime = lubridate::ymd_hms(datetime),
+           datetime_il = lubridate::with_tz(datetime, tzone = "Israel")) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
 # "Limitations of threshold
@@ -410,7 +411,8 @@ get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){
   return(gps_combined)
 }
 
-get_gps_all <- function(carcs, gps_combined, days_after, days_before){
+get_gps_all <- function(carcs, gps_combined, hours_after, days_before){
+  days_after <- hours_after/24
   gps_all <- vector(mode = "list", length = length(carcs))
   for(i in 1:length(carcs)){
     ic <- carcs[[i]]
@@ -685,9 +687,10 @@ get_fl_weighted <- function(dat, dist){
       out <- out %>%
         mutate(across(c("ID1", "ID2"), as.character)) %>%
         bind_rows(self_edges) %>%
-        mutate(sri = case_when(is.nan(sri) ~ 0, .default = sri)) %>% # XXX forcing all NaNs to zero because we don't have a choice--can't have missing values in the network
+        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network
         arrange(ID1, ID2) %>%
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
+        mutate(across(everything(), ~replace_na(.x, 0))) %>%
         dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
         as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
       row.names(out) <- out$ID1 # doing this because it makes indexing easier later
@@ -1658,7 +1661,8 @@ prepare_nbda_data <- function(gps,
   n_gps <- length(unique(gps$tag_local_identifier))
   prop_found <- n_found / n_gps
   
-  all_indivs_sorted <- sort(unique(gps$tag_local_identifier))
+  all_indivs_sorted <- sort(unique(gps$tag_local_identifier)) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric.
+  # START HERE WITH REVIEWING CODE! 2025-09-12
   
   oa_indivs <- first_sightings %>%
     arrange(time_since_carcass, timestamp_il) %>%
@@ -1678,16 +1682,16 @@ prepare_nbda_data <- function(gps,
   # Infer carcass placement timestamp_il from first row
   first_row <- gps[1, ]
   carcass_placement_time <- first_row$timestamp_il - dhours(as.numeric(first_row$time_since_carcass))
-  carcass_placement_date <- as.Date(carcass_placement_time)
+  carcass_placement_date <- as.Date(carcass_placement_time) # NNN it would be simpler and potentially more robust to get the carcass placement times directly from the dataset instead of back-calculating them from here.
   
   gps_data_cumulative <- map(first_sightings$timestamp_il, function(ts) {
     day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts))
     gps %>% filter(timestamp_il >= day_start, timestamp_il <= ts)
   })
   
-  gps_data_sameday <- map(as.Date(first_sightings$timestamp_il), function(date_val) {
-    gps %>% filter(as.Date(timestamp_il) == date_val)
-  })
+  # gps_data_sameday <- map(as.Date(first_sightings$timestamp_il), function(date_val) {
+  #   gps %>% filter(as.Date(timestamp_il) == date_val)
+  # })
   
   # Dynamic hour-range GPS segments per individual
   gps_data_dynamic_hour_ranges <- list()
@@ -1700,13 +1704,13 @@ prepare_nbda_data <- function(gps,
     start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
     end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
     var_name <- sprintf("gps_data_dynamic_hours_%s_%s", start_label, end_label)
-    
+
     gps_data_list <- map(first_sightings$timestamp_il, function(ts) {
-      start_time <- ts + dhours(as.numeric(start_offset))
-      end_time <- ts + dhours(as.numeric(end_offset))
+      start_time <- ts + lubridate::dhours(as.numeric(start_offset))
+      end_time <- ts + lubridate::dhours(as.numeric(end_offset))
       gps %>% filter(timestamp_il >= start_time, timestamp_il <= end_time)
     })
-    
+
     gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
@@ -1730,7 +1734,7 @@ prepare_nbda_data <- function(gps,
   }
   
   if(identify_seeds){
-    seeds_vec = as.numeric(all_indivs_sorted %in% seeds)
+    seeds_vec <- as.numeric(all_indivs_sorted %in% seeds)
   }else{
     seeds_vec <- NULL
   }
@@ -1747,7 +1751,7 @@ prepare_nbda_data <- function(gps,
     oa_nums = oa_nums,
     ami = ami,
     gps_data_cumulative = gps_data_cumulative,
-    gps_data_sameday = gps_data_sameday,
+    #gps_data_sameday = gps_data_sameday,
     seeds_vec = seeds_vec
   )
   
@@ -1831,12 +1835,12 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds){
   out <- purrr::map(list, ~{
     prepare_nbda_data(gps = .x,
-                      identify_seeds = TRUE,
+                      identify_seeds = seeds,
                       seed_time_before = stb,
-                      ddf = ddf, dds = dds,
+                      ddf = ddf, dds = dds, # detection distances
                       gps_spd = gps_spd,
                       n_hours_gps_static = list(c(-720, -24)),
                       sighting_time_max_hours = stmh)

@@ -5,6 +5,7 @@ library(readr)
 library(here)
 tar_load(minmax_buff)
 # don't forget to interactively authenticate!
+# Note on timestamps: Movebank data is stored in UTC (or GPS time, which is just a few leapseconds off from UTC). So for our purposes, we are considering these data to be in UTC.
 
 ornitela_data_2022 <- move2::movebank_download_study(1252551761,
                                           sensor_type_id = "gps",
