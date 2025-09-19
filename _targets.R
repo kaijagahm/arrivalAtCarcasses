@@ -6,7 +6,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
-  controller = crew_controller_local(workers = 5)
+  controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -260,9 +260,9 @@ list(
   tar_target(feeding_bo_2024, map(full_2024, ~getfeeding(.x, feeding_bo_prob_thresh))),
   
   ## Bind them together to get all feeding bouts
-  tar_target(feeding_bouts, mutate(bind_rows(data.table::rbindlist(feeding_bo_2022, ignore.attr = T), data.table::rbindlist(feeding_bo_2023, ignore.attr = T), data.table::rbindlist(feeding_bo_2024, ignore.attr = T)),
+  tar_target(feeding_bouts, mutate(as.data.frame(data.table::rbindlist(c(feeding_bo_2022, feeding_bo_2023, feeding_bo_2024), use.name = T, ignore.attr = T)),
                                    year = lubridate::year(start),
-                                   boutID = paste(device_id, bout_id, year, sep = "_"))),
+                                   boutID = paste(device_id, bout_id, year, sep = "_"))), 
   tar_target(feeding_bo_spatial, st_transform(sf::st_as_sf(feeding_bouts, coords = c("location_long", "location_lat"), crs = "WGS84"), 32636)),
   
   ## Further restrictions on feeding bouts
@@ -331,8 +331,6 @@ list(
   tar_target(days_before_wild, 3),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_cropped, sf::st_crop(all_carcasses, bbox_south_big)), 
-  ## 1a. Convert carcasses to Israel time 
-  ##  XXX FIXME
   ## 2. Separate stn and wild (the rest of the instructions here are just for stn)
   tar_target(stn, filter(all_carcasses_cropped, carcType == "stn")),
   tar_target(stn_carcs, group_split(group_by(stn, carcID))),
@@ -359,10 +357,6 @@ list(
   # NNN switch back to using the Israel bounding box from the mvmt soc analysis. 
   # NNN use the former latitude cutoff line for deciding which *carcasses* we want, but don't apply a geographic restriction to the *GPS data used for interaction networks*
   
-  ## 4a. Convert gps data to Israel time 
-  # XXX decided not to do this yet--because then I'd have to convert everything else and it would be a whole thing. # NNN convert at the end.
-  # Instead, need to convert carcasses to UTC, and then convert everything back at the end.
-  
   ## 4b. Make gps_all
   tar_target(gps_all, get_gps_all(stn_carcs, gps_combined, days_after, days_before)),
   tar_target(gps_all_stn, get_gps_all(stn_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
@@ -378,30 +372,25 @@ list(
   tar_target(dbf, 30), # will need to get gps data 30 days before in order to get longer-term networks
   tar_target(stn_gps_30days, get_gps_all(stn_carcs, gps_combined, days_after, dbf)),
   tar_target(wild_gps_30days, get_gps_all(wild_carcs, gps_combined, days_after, dbf)),
-  # tar_target(stn_carcs_tcv, timeconvert(stn_carcs)),
-  # tar_target(wild_carcs_tcv, timeconvert(wild_carcs)),
-  tar_target(stn_gps_30days_tcv, timeconvert(stn_gps_30days, old_datetime = "timestamp", new_datetime = "timestamp_il")),
-  tar_target(wild_gps_30days_tcv, timeconvert(wild_gps_30days, old_datetime = "timestamp", new_datetime = "timestamp_il")),
-  tar_target(stmh, 72), # sighting time max hours
-  
+
   # Prepare NBDA data
   ## Prepare NBDA data--stn carcs
   # NNN we were here-- halfway through prepare_nbda_data function review
   
-  tar_target(nd1, nb_shortcut(stn_gps_30days_tcv[1:10], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd2, nb_shortcut(stn_gps_30days_tcv[11:20], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd3, nb_shortcut(stn_gps_30days_tcv[21:30], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd4, nb_shortcut(stn_gps_30days_tcv[31:40], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd5, nb_shortcut(stn_gps_30days_tcv[41:50], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd6, nb_shortcut(stn_gps_30days_tcv[51:60], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd7, nb_shortcut(stn_gps_30days_tcv[61:length(stn_gps_30days_tcv)], ddf, dds, gps_spd, stmh, stb_mins)),
+  tar_target(nd1, nb_shortcut(stn_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[1:10])),
+  tar_target(nd2, nb_shortcut(stn_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[11:20])),
+  tar_target(nd3, nb_shortcut(stn_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[21:30])),
+  tar_target(nd4, nb_shortcut(stn_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[31:40])),
+  tar_target(nd5, nb_shortcut(stn_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[41:50])),
+  tar_target(nd6, nb_shortcut(stn_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[51:60])),
+  tar_target(nd7, nb_shortcut(stn_gps_30days[61:length(stn_gps_30days)], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[61:length(stn_carcs)])),
   ## Prepare NBDA data--wild carcs
   
-  tar_target(nd1_wild, nb_shortcut(wild_gps_30days_tcv[1:10], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd2_wild, nb_shortcut(wild_gps_30days_tcv[11:20], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd3_wild, nb_shortcut(wild_gps_30days_tcv[21:30], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd4_wild, nb_shortcut(wild_gps_30days_tcv[31:40], ddf, dds, gps_spd, stmh, stb_mins)),
-  tar_target(nd5_wild, nb_shortcut(wild_gps_30days_tcv[41:length(wild_gps_30days_tcv)], ddf, dds, gps_spd, stmh, stb_mins)),
+  tar_target(nd1_wild, nb_shortcut(wild_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[1:10])),
+  tar_target(nd2_wild, nb_shortcut(wild_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[11:20])),
+  tar_target(nd3_wild, nb_shortcut(wild_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[21:30])),
+  tar_target(nd4_wild, nb_shortcut(wild_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[31:40])),
+  tar_target(nd5_wild, nb_shortcut(wild_gps_30days[41:length(wild_gps_30days)], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[41:length(wild_carcs)])),
   
   # NNN implement the Elvira change to the order in the flight/feeding network functions. That should eliminate a lot of the NAs. The remaining ones will be set to 0, resulting in 
 
