@@ -5,6 +5,7 @@ library(readr)
 library(here)
 tar_load(minmax_buff)
 # don't forget to interactively authenticate!
+# Note on timestamps: Movebank data is stored in UTC (or GPS time, which is just a few leapseconds off from UTC). So for our purposes, we are considering these data to be in UTC.
 
 ornitela_data_2022 <- move2::movebank_download_study(1252551761,
                                           sensor_type_id = "gps",
@@ -48,9 +49,9 @@ id22 <- id22 %>% dplyr::select(-any_of(toremove))
 id23 <- id23 %>% dplyr::select(-any_of(toremove))
 id24 <- id24 %>% dplyr::select(-any_of(toremove))
 
-write_rds(od22, file = here("data/ornitela_data_2022.RDS"))
-write_rds(od23, file = here("data/ornitela_data_2023.RDS"))
-write_rds(od24, file = here("data/ornitela_data_2024.RDS"))
-write_rds(id22, file = here("data/inpa_data_2022.RDS"))
-write_rds(id23, file = here("data/inpa_data_2023.RDS"))
-write_rds(id24, file = here("data/inpa_data_2024.RDS"))
+write_rds(od22, file = here("data/ornitela_data_2022_version2025-09-17.RDS"))
+write_rds(od23, file = here("data/ornitela_data_2023_version2025-09-17.RDS"))
+write_rds(od24, file = here("data/ornitela_data_2024_version2025-09-17.RDS"))
+write_rds(id22, file = here("data/inpa_data_2022_version2025-09-17.RDS"))
+write_rds(id23, file = here("data/inpa_data_2023_version2025-09-17.RDS"))
+write_rds(id24, file = here("data/inpa_data_2024_version2025-09-17.RDS"))

@@ -90,8 +90,9 @@ carcasses_inpa <- bind_rows(old, new)
 
 # Add a properly-formatted datetime column
 carcasses_inpa <- carcasses_inpa %>%
-  mutate(datetime = lubridate::ymd_hms(paste0(as.character(lubridate::ymd(date)), 
-                                              substr(time, 12, 19))))
+  mutate(datetime_il = lubridate::ymd_hms(paste0(as.character(lubridate::ymd(date)), 
+                                              substr(time, 12, 19)), tz = "Israel"),
+         datetime = lubridate::with_tz(datetime_il, tzone = "UTC"))
 
 # Now it's time to look at the station names. These names matter because we will want to group together carcasses that are at the same station. Due to different translations, we may have some mismatches.
 carcasses_inpa <- carcasses_inpa %>% mutate(stationName = factor(stationName))
