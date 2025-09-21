@@ -1852,3 +1852,18 @@ nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_
   })
   return(out)
 }
+
+# This one is weird because we are working by transmitter ID, but the periods to remove are only by Nili_id, so we need to figure out which transmitter ID applies during the relevant period. Just gonna do this by hand for now.
+# XXX START HERE--THIS IS ANNOYING!!
+remove_periods <- function(dataset){
+  ww <- readxl::read_excel(ww_file, sheet = "all gps tags")
+  toremove <- readxl::read_excel(ww_file, sheet = "periods_to_remove") %>%
+    filter(remove_end >= min(dataset$timestamp))
+  
+  ## Elara
+  ## Endeavour
+  ## Hamsa
+  ## Jakarta
+  ## Y17T58
+  ## Yagur
+}

@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra"),
-  controller = crew_controller_local(workers = 10)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl")#,
+  #controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -338,12 +338,12 @@ list(
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
   # download data to match high frequency period, plus buffer
-  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022_version2025-09-17.RDS"))),
-  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023_version2025-09-17.RDS"))),
-  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024_version2025-09-17.RDS"))),
-  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022_version2025-09-17.RDS"))),
-  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023_version2025-09-17.RDS"))),
-  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024_version2025-09-17.RDS"))),
+  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024_version2025-09-21.RDS"))),
   
   tar_target(gps_2022_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2022), as.data.frame(inpa_data_2022)), crs = "WGS84")),
   tar_target(gps_2023_1, sf::st_as_sf(bind_rows(as.data.frame(ornitela_data_2023), as.data.frame(inpa_data_2023)), crs = "WGS84")),
@@ -356,11 +356,31 @@ list(
   tar_target(gps_combined, get_gps_combined(gps_2022, gps_2023, gps_2024, bbox_south_big)), # NNN remove geographic subsetting step here because we want to allow interactions that happen outside the geographic bounds. Make sure in cleaning that I'm only including the steps that came before defining the social network, NOT the additional cleaning steps applied to focal individuals for which we calculated movement stats. For example, do not need to exclude individuals with <30 days/season. 
   # NNN switch back to using the Israel bounding box from the mvmt soc analysis. 
   # NNN use the former latitude cutoff line for deciding which *carcasses* we want, but don't apply a geographic restriction to the *GPS data used for interaction networks*
+
+  # Data cleaning -----------------------------------------------------------
+  tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
+  ## Remove dates before/after the deploy period
+  tar_target(removed_beforeafter_deploy, process_deployments(ww_file,
+                                                             gps_combined,
+                                                             default_end_date = as.Date("2025-09-21"),
+                                                             verbose = TRUE)), # DONE
+  ## Remove hospital/invalid periods (# XXX COME BACK TO THIS)
+  # tar_target(removed_periods, remove_periods(ww_file, removed_beforeafter_deploy)),
+  ## Clean the data with the various steps in the vultureUtils::cleanData function.
+  tar_target(cleaned, clean_data(removed_beforeafter_deploy)),
+  # START HERE
+  # ## Mask data with the israel region mask
+  # tar_target(mask, "data/raw/CutOffRegion.kml", format = "file"),
+  # tar_target(data_masked, mask_data(with_age_sex, mask)),
+  ## If any vultures have too *high* a fix rate, downsample it to every 10 minutes so it's easier to work with.
+  tar_target(downsampled, downsample_10min(cleaned)),
+
+  # (End data cleaning) -----------------------------------------------------
   
   ## 4b. Make gps_all
-  tar_target(gps_all, get_gps_all(stn_carcs, gps_combined, days_after, days_before)),
-  tar_target(gps_all_stn, get_gps_all(stn_carcs, gps_combined, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
-  tar_target(gps_all_wild, get_gps_all(wild_carcs, gps_combined, days_after, days_before_wild)),
+  tar_target(gps_all, get_gps_all(stn_carcs, downsampled, days_after, days_before)),
+  tar_target(gps_all_stn, get_gps_all(stn_carcs, downsampled, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
+  tar_target(gps_all_wild, get_gps_all(wild_carcs, downsampled, days_after, days_before_wild)),
   # tar_target(roosts, get_roosts(gps_all, col = "tag_local_identifier")),
   # tar_target(roosts_wild, get_roosts(gps_all_wild, col = "tag_local_identifier")),
   
@@ -370,8 +390,8 @@ list(
   tar_target(ddf, 2000),
   tar_target(dds, 1000),
   tar_target(dbf, 30), # will need to get gps data 30 days before in order to get longer-term networks
-  tar_target(stn_gps_30days, get_gps_all(stn_carcs, gps_combined, days_after, dbf)),
-  tar_target(wild_gps_30days, get_gps_all(wild_carcs, gps_combined, days_after, dbf)),
+  tar_target(stn_gps_30days, get_gps_all(stn_carcs, downsampled, days_after, dbf)),
+  tar_target(wild_gps_30days, get_gps_all(wild_carcs, downsampled, days_after, dbf)),
 
   # Prepare NBDA data
   ## Prepare NBDA data--stn carcs
