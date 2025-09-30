@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl")#,
-  #controller = crew_controller_local(workers = 10)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl"),
+  controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -366,21 +366,22 @@ list(
                                                              verbose = TRUE)), # DONE
   ## Remove hospital/invalid periods (# XXX COME BACK TO THIS)
   # tar_target(removed_periods, remove_periods(ww_file, removed_beforeafter_deploy)),
-  ## Clean the data with the various steps in the vultureUtils::cleanData function.
+  ## Clean the data with the various steps in the vultureUtils::cleanData function
   tar_target(cleaned, clean_data(removed_beforeafter_deploy)),
+  
   # START HERE
   # ## Mask data with the israel region mask
   # tar_target(mask, "data/raw/CutOffRegion.kml", format = "file"),
   # tar_target(data_masked, mask_data(with_age_sex, mask)),
   ## If any vultures have too *high* a fix rate, downsample it to every 10 minutes so it's easier to work with.
-  tar_target(downsampled, downsample_10min(cleaned)),
+  tar_target(downsampled, sf::st_transform(sf::st_as_sf(downsample_10min(cleaned), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636)),
 
   # (End data cleaning) -----------------------------------------------------
   
   ## 4b. Make gps_all
-  tar_target(gps_all, get_gps_all(stn_carcs, downsampled, days_after, days_before)),
-  tar_target(gps_all_stn, get_gps_all(stn_carcs, downsampled, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
-  tar_target(gps_all_wild, get_gps_all(wild_carcs, downsampled, days_after, days_before_wild)),
+  # tar_target(gps_all, get_gps_all(stn_carcs, downsampled, days_after, days_before)),
+  # tar_target(gps_all_stn, get_gps_all(stn_carcs, downsampled, days_after, days_before_wild)), # using the same parameters as for the wild carcasses, for comparison
+  # tar_target(gps_all_wild, get_gps_all(wild_carcs, downsampled, days_after, days_before_wild)),
   # tar_target(roosts, get_roosts(gps_all, col = "tag_local_identifier")),
   # tar_target(roosts_wild, get_roosts(gps_all_wild, col = "tag_local_identifier")),
   
@@ -406,6 +407,7 @@ list(
   tar_target(nd7, nb_shortcut(stn_gps_30days[61:length(stn_gps_30days)], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[61:length(stn_carcs)])),
   ## Prepare NBDA data--wild carcs
   
+  # NNN don't love that this is hard-coded--maybe put a big note at the top that it's hard coded and the wild carcasses will change how this works. "There is some hard coding in XXX section"
   tar_target(nd1_wild, nb_shortcut(wild_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[1:10])),
   tar_target(nd2_wild, nb_shortcut(wild_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[11:20])),
   tar_target(nd3_wild, nb_shortcut(wild_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[21:30])),
@@ -417,6 +419,7 @@ list(
   # Flight networks
   ## Flight networks--Cumulative (stn)
   ### Flight networks--Cumulative (stn)-- Binary
+  # NNN remove binary? but leave it for now, at least until I talk with Matt and Sonja. Question for them: any reason to prefer binary when we have access to weighted?
   tar_target(fl_bin_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
   tar_target(fl_bin_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
   tar_target(fl_bin_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),

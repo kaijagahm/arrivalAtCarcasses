@@ -39,6 +39,19 @@ stn %>%
   theme(panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank())
 
+tar_load(minmax_dates)
+stn %>%
+  filter((date >= minmax_dates[[1]] & date <= minmax_dates[[2]]) | (date >= minmax_dates[[3]] & date <= minmax_dates[[4]]) | (date >= minmax_dates[[5]] & date <= minmax_dates[[6]])) %>%
+  mutate(year = lubridate::year(date)) %>%
+  ggplot(aes(x = date, y = stationName, color = stationName))+
+  geom_point(size = 3, alpha = 0.75)+
+  theme_bw()+
+  facet_wrap(~year, scales = "free_x")+
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.position = "none")+
+  labs(y = "Feeding station", x = "Date")
+
 # Calculations for the whole period
 # Intervals
 stn <- stn %>%

@@ -182,3 +182,7 @@ plots_stn[[39]]
 plots_wild_valid[[1]] # a lot of peaks here just as a matter of course--does this indicate that the carcass was there, or just that this is a common place to fly over and we need to do a comparison with a non-carcass area?
 
 # For the purposes of just the wild ones alone, let's back up 24 hours. Which means I need to add 24 hours onto the beginning of the gps data [edit 7/20: added 30 days to the beginning of each year's data for the sake of being able to get networks for NBDA, so that's all well and good.]
+
+wild_carcasses <- wild_carcasses %>%
+  mutate(year = factor(year))
+mapview(wild_carcasses, zcol = "year")

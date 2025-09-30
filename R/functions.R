@@ -672,27 +672,30 @@ get_fl_weighted <- function(dat, dist){
       self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
                                ID2 = sort(unique(dat$tag_local_identifier)),
                                sri = 0)
-      dat$dateOnly <- lubridate::date(dat$timestamp) # XXX FIX! SEE GET_FL_BIN
+      dat$dateOnly <- lubridate::date(dat$timestamp) # NNN--this will make more sense if everything is converted to Israel time, because otherwise the date delineations won't be correct.
+      # NNN check back in previous analysis--do we need to remove the roost sites?
       out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
                                                             consecThreshold = 1,
                                                             idCol = "tag_local_identifier",
                                                             return = "sri",
                                                             distThreshold = dist))
-      if(!("sri" %in% names(out1)) & nrow(out1) == 0){
-        out1$sri <- numeric(0)
+      if(!("sri" %in% names(out1)) & nrow(out1) == 0){ # if the flight edges function returned nothing (if there were no flight interactions)
+        out1$sri <- numeric(0) # a numeric vector of length 0 (adding the column so it exists, but the data frame has 0 rows) (bookkeeping)
       }
+      # making the matrix square--duplicating the interaction rows in the opposite direction
       out2 <- out1[,c("ID2", "ID1", "sri")]
       names(out2) <- c("ID1", "ID2", "sri")
-      out <- bind_rows(out1, out2)
+      out <- bind_rows(out1, out2) # bind together the upper and lower triangle
       out <- out %>%
         mutate(across(c("ID1", "ID2"), as.character)) %>%
-        bind_rows(self_edges) %>%
-        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network
-        arrange(ID1, ID2) %>%
+        bind_rows(self_edges) %>% # add the diagonal
+        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network. Should be very few NAs because of the previous filtering
+        arrange(ID1, ID2) %>% # NNN verify here that the order matches the order vector from the nbda dataset after alphabetizing/removing spaces (need to remove those spaces as early as possible in the process, ideally step 1, so this will all be consistent.)
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
-        mutate(across(everything(), ~replace_na(.x, 0))) %>%
+        mutate(across(everything(), ~replace_na(.x, 0))) %>% # replace any final NAs that resulted from the pivot
         dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
         as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      # NNN check igraph to see if there's a function to convert edgelists to adjacency matrices. Maybe simpler and deals with edge cases.
       row.names(out) <- out$ID1 # doing this because it makes indexing easier later
     }else{
       out <- "blank"
@@ -1664,7 +1667,6 @@ prepare_nbda_data <- function(gps,
   prop_found <- n_found / n_gps
   
   all_indivs_sorted <- sort(unique(gps$tag_local_identifier)) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric.
-  # START HERE WITH REVIEWING CODE! 2025-09-12
   
   oa_indivs <- first_sightings %>%
     arrange(time_since_carcass, timestamp) %>%
@@ -1679,7 +1681,7 @@ prepare_nbda_data <- function(gps,
     stop("All individuals are included in oa_nums, but not all indivs found the carcass. Something's wrong!")
   }
   
-  ami <- seq_along(oa_nums)
+  ami <- seq_along(oa_nums) # for the dynamic networks
   
   # Infer carcass placement timestamp from first row
   if(!is.null(carcass_data)){
@@ -1690,16 +1692,16 @@ prepare_nbda_data <- function(gps,
     first_row <- gps[1, ]
     carcass_placement_time <- first_row$timestamp - dhours(as.numeric(first_row$time_since_carcass))
     carcass_placement_date <- as.Date(carcass_placement_time)
-  }
+  } #NNN change this to incorporate the original records of the carcass instead.
   
   gps_data_cumulative <- map(first_sightings$timestamp, function(ts) {
-    day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts))
+    day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts)) # NNN double check that time zones get treated correctly here--pasting might mess things up. # NNN actually should convert everything to Israel time instead of changing carcasses to UTC, because that way we can use biologically meaningful cutoffs like this one and not have to convert them. 
     gps %>% filter(timestamp >= day_start, timestamp <= ts)
   })
   
   # Dynamic hour-range GPS segments per individual
   gps_data_dynamic_hour_ranges <- list()
-  for (range in n_hours_gps_dynamic) {
+  for (range in n_hours_gps_dynamic) { # c(-720, -24)
     if (length(range) != 2 || range[1] > range[2]) {
       stop("Each element of n_hours_gps_dynamic must be a length-2 numeric vector where the first number <= second.")
     }
@@ -1718,27 +1720,28 @@ prepare_nbda_data <- function(gps,
     gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
-  # Static hour-range GPS segments (shared across individuals)
-  gps_data_static_hour_ranges <- list()
-  for (range in n_hours_gps_static) {
-    if (length(range) != 2 || range[1] > range[2]) {
-      stop("Each element of n_hours_gps_static must be a length-2 numeric vector where the first number <= second.")
-    }
-    start_offset <- range[1]
-    end_offset <- range[2]
-    start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
-    end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
-    var_name <- sprintf("gps_data_static_hours_%s_%s", start_label, end_label)
-    
-    start_time <- carcass_placement_time + dhours(as.numeric(start_offset))
-    end_time <- carcass_placement_time + dhours(as.numeric(end_offset))
-    gps_data <- gps %>% filter(timestamp >= start_time, timestamp <= end_time)
-    
-    gps_data_static_hour_ranges[[var_name]] <- gps_data
-  }
+  # NNN decided to remove the static stuff entirely!
+  # # Static hour-range GPS segments (shared across individuals)
+  # gps_data_static_hour_ranges <- list()
+  # for (range in n_hours_gps_static) {
+  #   if (length(range) != 2 || range[1] > range[2]) {
+  #     stop("Each element of n_hours_gps_static must be a length-2 numeric vector where the first number <= second.")
+  #   }
+  #   start_offset <- range[1]
+  #   end_offset <- range[2]
+  #   start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
+  #   end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
+  #   var_name <- sprintf("gps_data_static_hours_%s_%s", start_label, end_label)
+  #   
+  #   start_time <- carcass_placement_time + dhours(as.numeric(start_offset))
+  #   end_time <- carcass_placement_time + dhours(as.numeric(end_offset))
+  #   gps_data <- gps %>% filter(timestamp >= start_time, timestamp <= end_time)
+  #   
+  #   gps_data_static_hour_ranges[[var_name]] <- gps_data
+  # }
   
   if(identify_seeds){
-    seeds_vec <- as.numeric(all_indivs_sorted %in% seeds)
+    seeds_vec <- as.numeric(all_indivs_sorted %in% seeds) # we've already created the seeds vector previously; this is just converting it to 0s and 1s, which is what NBDA needs.
   }else{
     seeds_vec <- NULL
   }
@@ -1759,14 +1762,17 @@ prepare_nbda_data <- function(gps,
     seeds_vec = seeds_vec
   )
   
-  final_list <- c(base_list, gps_data_dynamic_hour_ranges, gps_data_static_hour_ranges)
+  final_list <- c(base_list, 
+                  gps_data_dynamic_hour_ranges#, 
+                  #gps_data_static_hour_ranges # NNN removing static ranges bc we decided not to use them
+                  )
   return(final_list)
 }
 
 
 make_assMatrix <- function(input) {
   # Case 1: Single data frame (static)
-  if (is.data.frame(input)) {
+  if (is.data.frame(input)) { # (bookkeeping--formatting it exactly as NBDA will expect it)
     mat <- as.matrix(input)
     n_indivs <- nrow(mat)
     assMatrix <- array(
@@ -1781,7 +1787,7 @@ make_assMatrix <- function(input) {
     return(assMatrix)
   }
   
-  # Case 2: List
+  # Case 2: List (dynamic)
   if (!is.list(input)) stop("Input must be a data frame or a list of data frames.")
   if (length(input) == 0) stop("Input list is empty.")
   
@@ -1790,7 +1796,7 @@ make_assMatrix <- function(input) {
   rownames_ref <- rownames(input[[1]])
   colnames_ref <- colnames(input[[1]])
   
-  for (i in seq_along(input)) {
+  for (i in seq_along(input)) { # for each network in the dynamic network list
     df <- input[[i]]
     if (!is.data.frame(df)) stop(paste("Element", i, "is not a data frame."))
     if (!all(dim(df) == dims)) stop(paste("Element", i, "has different dimensions."))
@@ -1798,11 +1804,12 @@ make_assMatrix <- function(input) {
     if (!all(colnames(df) == colnames_ref)) stop(paste("Column names mismatch in element", i))
   }
   
-  mat_list <- lapply(input, as.matrix)
+  mat_list <- lapply(input, as.matrix) # convert each element to a matrix
   n_indivs <- dims[1]
   
   if (length(input) == 1) {
-    # Static case: single matrix wrapped in list
+    # Static case: single matrix wrapped in list 
+    # edge case--in case you requested a dynamic network but there was only one individual that ever found the carcass, so you end up with a list of length 1. Will be one level down, as opposed to a top-level dataframe not included in a list (static case from above)
     assMatrix <- array(
       data = mat_list[[1]],
       dim = c(n_indivs, n_indivs, 1),
@@ -1817,7 +1824,7 @@ make_assMatrix <- function(input) {
     n_time <- length(mat_list)
     assMatrix <- array(
       data = unlist(mat_list),
-      dim = c(n_indivs, n_indivs, 1, n_time),
+      dim = c(n_indivs, n_indivs, 1, n_time), # NNN check--why is there a 1 here and what do the dimensions mean?
       dimnames = list(
         rownames_ref,
         colnames_ref,
