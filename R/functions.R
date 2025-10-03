@@ -422,6 +422,8 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
       mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
+    out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
+      rename("location_long" = X, "location_lat" = Y)
     gps_all[[i]] <- out
   }
   return(gps_all)

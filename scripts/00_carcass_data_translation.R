@@ -387,3 +387,9 @@ mapview(stations, zcol = "stationName", col.regions = custom_colors)
 carcasses_audited <- audited %>%
   bind_cols(st_coordinates(.))
 write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
+
+# Another audit with Shaaked and May --------------------------------------
+mapview(stations, col.regions = "black")+
+  mapview(audited, label = "stationName", zcol = "stationName")
+
+
