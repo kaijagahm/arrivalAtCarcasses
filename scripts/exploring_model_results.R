@@ -16,12 +16,12 @@ tar_load(ns)
 tar_load(ns_wild)
 
 # Saving today's versions
-write_rds(mods_cumul_bin, file = "data/2025-10-01_mods_cumul_bin.RDS")
-write_rds(mods_cumul_wt, file = "data/2025-10-01_mods_cumul_wt.RDS")
-write_rds(mods_cumul_bin_wild, file = "data/2025-10-01_mods_cumul_bin_wild.RDS")
-write_rds(mods_cumul_wt_wild, file = "data/2025-10-01_mods_cumul_wt_wild.RDS")
-write_rds(stats, file = "data/2025-10-01_stats.RDS")
-write_rds(stats, file = "data/2025-10-01_stats_wild.RDS")
+# write_rds(mods_cumul_bin, file = "data/2025-10-01_mods_cumul_bin.RDS")
+# write_rds(mods_cumul_wt, file = "data/2025-10-01_mods_cumul_wt.RDS")
+# write_rds(mods_cumul_bin_wild, file = "data/2025-10-01_mods_cumul_bin_wild.RDS")
+# write_rds(mods_cumul_wt_wild, file = "data/2025-10-01_mods_cumul_wt_wild.RDS")
+# write_rds(stats, file = "data/2025-10-01_stats.RDS")
+# write_rds(stats, file = "data/2025-10-01_stats_wild.RDS")
 # test <- readRDS("data/2025-10-01_mods_cumul_bin.RDS")
 
 stats <- stats %>% mutate(stn_wild = "stn")
