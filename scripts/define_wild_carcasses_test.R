@@ -71,13 +71,15 @@ for(i in 1:length(secs)){
                            minpts = minpts) %>% mutate(eps = hours[i])
 }
 
-all <- purrr::list_rbind(outs_22) %>% bind_rows(purrr::list_rbind(outs_23)) %>% bind_rows(purrr::list_rbind(outs_24))
+all <- purrr::list_rbind(outs_22) %>% bind_rows(purrr::list_rbind(outs_23)) %>% bind_rows(purrr::list_rbind(outs_24)) %>%
+  mutate(uq = paste(cluster, eps, year, sep = "_"))
 
 all_summ <- all %>%
   mutate(cluster = factor(cluster)) %>%
   filter(!is.na(cluster)) %>%
   group_by(year, eps, cluster) %>%
-  summarize(diff_hrs = difftime(max(timestamp), min(timestamp), units = "hours"),
+  summarize(uq = uq[1],
+            diff_hrs = difftime(max(timestamp), min(timestamp), units = "hours"),
             n = n(),
             n_indivs = length(unique(individual_local_identifier)))
 
@@ -96,20 +98,54 @@ all_summ %>%
 # How many of the clusters have at least three individuals?
 all_summ %>%
   ggplot(aes(x = n, y = n_indivs, color = factor(year)))+
-  geom_hline(aes(yintercept = 2),alpha = 0.5)+
+  geom_hline(aes(yintercept = 2), alpha = 0.5)+
   geom_point(size = 2, alpha = 0.5) +
   theme_minimal()
 
 all_summ %>%
   filter(n_indivs >= 3) %>%
-  group_by(year) %>% summarize(n_wild_carcs = length(unique(cluster))) # this seems reasonable!
+  group_by(year, eps) %>% summarize(n_wild_carcs = length(unique(uq))) 
+
+# Let's arbitrarily choose 24 hours for this.
 
 # We really do need some ground-truthing data to see if these are even reasonable...
-all <- sf::st_as_sf(all)
-all22 <- all %>% filter(year == 2022) %>% mutate(cluster = factor(cluster))
-all23 <- all %>% filter(year == 2023) %>% mutate(cluster = factor(cluster))
-all24 <- all %>% filter(year == 2024) %>% mutate(cluster = factor(cluster))
+all_touse <- all %>%
+  filter(eps == 24) %>%
+  sf::st_as_sf() %>%
+  mutate(carcID = paste(str_pad(cluster, width = 2, side = "left", pad = "0"), year, sep = "_"))
+all22 <- all_touse %>% filter(year == 2022)
+all23 <- all_touse %>% filter(year == 2023)
+all24 <- all_touse %>% filter(year == 2024)
 
-mapview(all22, zcol = "cluster")
+mapview(all22, zcol = "carcID")
 mapview(all23, zcol = "cluster")
 mapview(all24, zcol = "cluster")
+
+# Get locations
+wild_carcasses_dbscan <- all_touse %>%
+  group_by(year, carcID) %>%
+  summarize(geometry = sf::st_union(geometry),
+            dateOnly = lubridate::date(timestamp)[1],
+            nBouts = n(),
+            nIndivs = length(unique(individual_local_identifier)),
+            mintime = min(timestamp),
+            maxtime = max(timestamp)) %>%
+  sf::st_centroid() %>%
+  ungroup() %>%
+  bind_cols(sf::st_coordinates(.)) %>%
+  mutate(datetime = mintime,
+         datetime = lubridate::ymd_hms(datetime),
+         datetime_il = lubridate::with_tz(datetime, tzone = "Israel"))
+
+mapview(wild_carcasses_dbscan, zcol = "year")
+tar_load(wild_carcasses)
+
+mapview(wild_carcasses_dbscan, col.regions = "dodgerblue3")+
+  mapview(wild_carcasses, col.regions = "red") # these are more different than I had expected!!
+
+ggplot(wild_carcasses_dbscan, aes(X, Y))+
+  geom_point(color = "dodgerblue3", alpha = 0.75, position = position_nudge(x = 500))+
+  theme_minimal()+
+  geom_point(data = wild_carcasses, aes(X, Y), color = "red", alpha = 0.75)+
+  facet_wrap(~year)+
+  theme(panel.grid.minor = element_blank()) # okay so the good news is that the red ones are (almost?) always on top of a blue one. That means that the dbscan method is finding *more* carcasses but also finding the same ones.
