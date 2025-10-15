@@ -389,7 +389,161 @@ carcasses_audited <- audited %>%
 write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
 
 # Another audit with Shaaked and May --------------------------------------
+library(RColorBrewer)
+library(paletteer)
+
 mapview(stations, col.regions = "black")+
-  mapview(audited, label = "stationName", zcol = "stationName")
+  mapview(audited, label = "stationName", zcol = "stationName", col.regions = paletteer_c("grDevices::rainbow", 37))
+
+# Fixes after new meeting with Shaaked ------------------------------------
+# Hai-Bar Carmel = the whole complex
+# 499018: can set this roughly as the cage location for Carmel 
+carmel_cage_loc <- audited[audited$carcID == "4990018",c("long", "lat")]
+# move Hai Bar Carmel points to the feeding station.
+idx1 <- which(audited$carcID %in% c(4931791, 4921125, 4904674, 4925905))
+lng1 <- stations$long[stations$stationName == "Hai_Bar_Carmel"]
+lat1 <- stations$lat[stations$stationName == "Hai_Bar_Carmel"]
+audited$long[idx1] <- lng1
+audited$lat[idx1] <- lat1
+audited$explanation[idx1] <- "Kaija_Shaaked moved to station"
+
+# move Carmel cage points to the cage location
+idx2 <- which(audited$carcID %in% c(4909227, 5014984, 4974526, 4981075, 4976681, 4976659, 4987102, 4987103, 4987104, 4987105, 4961809, 4962473, 4962475, 4962476, 4962477, 4962479, 4962480, 4962482))
+lng2 <- carmel_cage_loc$long
+lat2 <- carmel_cage_loc$lat
+audited$long[idx2] <- lng2
+audited$lat[idx2] <- lat2
+audited$explanation[idx2] <- "Kaija_Shaaked moved to station"
+
+# 4906144--probably wrong name. Check if scroll down.
+# KG decision: rename to Cachal
+audited$stationName[audited$carcID == 4906144] <- "Kachal"
+audited$explanation[audited$carcID == 4906144] <- "KG renamed to Kachal based on proximity"
+
+# "no idea, delete"
+audited <- audited %>%
+  filter(!(carcID %in% c(4850012, 4871929, 4988920, 4868888, 4850788, 1762465, 4315893, 4850711, 5006137)))
+
+# Gamla stn point is wrong--should be near e.g. 5006712 pts
+long3 <- audited$long[audited$carcID == 5006712]
+lat3 <- audited$lat[audited$carcID == 5006712]
+stations$long[stations$stationName == "Gamla"] <- long3
+stations$lat[stations$stationName == "Gamla"] <- lat3
+stations$explanation[stations$stationName == "Gamla"] <- "Kaija_Shaaked fixed incorrect station coords"
+
+# Move slightly misaligned Gamla points to the new station coords
+idx4 <- which(audited$carcID %in% c(4895890, 4908755, 4992013))
+lng4 <- stations$long[stations$stationName == "Gamla"]
+lat4 <- stations$lat[stations$stationName == "Gamla"]
+audited$long[idx4] <- lng4
+audited$lat[idx4] <- lat4
+audited$explanation[idx4] <- "Kaija_Shaaked moved to station"
+
+# 4924215 visitor building loc. all points to move elsewhere.
+# The problem is, I don't know where these should go because there are three possible cage locations. Just going to leave these be for now because ultimately I don't care about the cage points anyway.
+
+# Fix single point in North Golan: 4927271
+audited$long[audited$carcID == 4927271] <- stations$long[stations$stationName == "North_Golan"]
+audited$lat[audited$carcID == 4927271] <- stations$lat[stations$stationName == "North_Golan"]
+audited$explanation[audited$carcID == 4927271] <- "Kaija_Shaaked moved to station"
+
+# Fix points a little ways away from Kachal
+idx5 <- which(audited$carcID %in% c(4995231, 5016991, 5011708, 5011716, 4846275, 4846276, 4985947))
+lng5 <- stations$long[stations$stationName == "Cachal"]
+lat5 <- stations$lat[stations$stationName == "Cachal"]
+audited$long[idx5] <- lng5
+audited$lat[idx5] <- lat5
+audited$explanation[idx5] <- "Kaija_Shaaked moved to station"
+
+# Fix Hever/Hever cage points
+idx6 <- which(audited$carcID %in% c(4774827, 4046471, 4481174, 3055795, 3055790, 3055799, 3114393, 1873329, 1873331, 1920556, 1920559, 4713589, 4723154, 4239726))
+lng6 <- stations$long[stations$stationName == "Hever"]
+lat6 <- stations$lat[stations$stationName == "Hever"]
+audited$long[idx6] <- lng6
+audited$lat[idx6] <- lat6
+audited$explanation[idx6] <- "Kaija_Shaaked moved to station"
+
+# Fix Gorni Hill / Ben_Yair_view points
+# Ambiguous ones: there are a few carcasses at Ben_Yair_view that are labeled Gorni_Hill. The two stations are close and it's anyone's guess whether they're mislabeled or mis-placed. I'm going to assume for now that they are mislabeled, so I'll just correct the label but not the coordinates, but that assumption isn't really based on strong evidence either way.
+idx7 <- which(audited$carcID %in% c(3126041, 1966034, 3479246))
+audited$stationName[idx7] <- "Ben_Yair_view"
+audited$explanation[idx7] <- "Kaija_Shaaked fixed station name (Gorni Hill > Ben Yair view)"
+
+# Relocate 4850735 to Antenas, although this does raise the question of whether the time is correct
+idx8 <- which(audited$carcID == 4850735)
+lng8 <- stations$long[stations$stationName == "Antenas"]
+lat8 <- stations$lat[stations$stationName == "Antenas"]
+audited$long[idx8] <- lng8
+audited$lat[idx8] <- lat8
+audited$explanation[idx8] <- "Kaija_Shaaked moved to station. V. far so not sure about time."
+
+# Delete 4564184 and 1450235 because I have no idea what's going on with those Shaaked said it should be relocated to the nearby cluster of "Other" points, but I don't know what led us to that conclusion. I'm just going to delete it.
+audited <- audited %>%
+  filter(!(carcID %in% c(4564184, 1450235)))
+
+# Relabel 2953181 as Camus_south because it's with all the other Camus_south points
+audited$stationName[audited$carcID == 2953181] <- "Camus_south"
+audited$explanation[audited$carcID == 2953181] <- "Relabeled to Camus_south to match the points around it (KG)"
+
+# Move 1974887 and 1929902 to Camus_south coords because they're too far away
+idx9 <- which(audited$carcID %in% c(1974887, 1929902))
+lng9 <- stations$long[stations$stationName == "Camus_south"]
+lat9 <- stations$lat[stations$stationName == "Camus_south"]
+audited$long[idx9] <- lng9
+audited$lat[idx9] <- lat9
+audited$explanation[idx9] <- "Kaija_Shaaked moved to station"
+
+# Move points to Small_crater_view because they're on the road
+idx10 <- which(audited$carcID %in% c(4882796, 4781817, 4790816, 4724712, 4724711, 4747265, 4850746, 4768278, 4737538, 4731983))
+lng10 <- stations$long[stations$stationName == "Small_crater_view"]
+lat10 <- stations$lat[stations$stationName == "Small_crater_view"]
+audited$long[idx10] <- lng10
+audited$lat[idx10] <- lat10
+audited$explanation[idx10] <- "Kaija_Shaaked moved to station"
+
+# Fix stray Tzaror points
+idx11 <- which(audited$carcID %in% c(4195626, 2448354, 4420641, 1985750))
+lng11 <- stations$long[stations$stationName == "Tzaror_mount"]
+lat11 <- stations$lat[stations$stationName == "Tzaror_mount"]
+audited$long[idx11] <- lng11
+audited$lat[idx11] <- lat11
+audited$explanation[idx11] <- "Kaija_Shaaked moved to station"
+
+# Relabel a lot of the "Other" points in one particular cluster as Ashmedai. Also for one that's currently labeled Rosh Maale Hatzera
+idx12 <- which(audited$carcID %in% c(1768916, 3758525, 2296768, 2862521, 2026369, 2886595, 4035988, 4808631, 4498675, 2070171, 3076137, 1748428))
+audited$stationName[idx12] <- "Ashmedai"
+audited$explanation[idx12] <- "Relabeled to Camus_south to match the points around it (KG)"
+
+# 1885366 Gezem_mount--relabel to Tzaror_mount
+audited$stationName[audited$carcID == 1885366] <- "Tzaror_mount"
+audited$explanation[audited$carcID == 1885366] <- "Relabeled to Tzaror to match points around it (KG)"
 
 
+# Relabel the second location of Golhan to "Golhan 2" to distinguish it from the first
+idx13 <- which(audited$carcID %in% c(4892923, 4935384, 4962861, 4874955, 4847006, 4811483, 4776380, 4762512))
+audited$stationName[idx13] <- "Golhan2"
+audited$explanation[idx13] <- "Relabeled to Golhan2 to distinguish from other Golhan location (KG)"
+
+# Name the different "Other" places
+audited$stationName[audited$carcID %in% c(4253362, 4181242)] <- "Other1"
+audited$explanation[audited$carcID %in% c(4253362, 4181242)] <- "Numbering the 'Other' locations"
+
+audited$stationName[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "Other2"
+audited$explanation[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "Numbering the 'Other' locations"
+
+idx14 <- which(audited$stationName == "Other" & audited$lat < 29.78893)
+audited$stationName[idx14] <- "Other3"
+audited$explanation[idx14] <- "Numbering the 'Other' locations"
+
+idx15 <- which(audited$stationName == "Other" & audited$long < 34.72570)
+audited$stationName[idx15] <- "Other4"
+audited$explanation[idx15] <- "Numbering the 'Other' locations"
+
+# test <- audited %>% filter(stationName == "Other")
+# audited <- st_as_sf(st_drop_geometry(audited), coords = c("long", "lat"), crs = "WGS84", remove = F) %>% st_transform(32636)
+# 
+# mapview(stations, col.regions = "black")+
+#   mapview(audited, label = "stationName", zcol = "stationName", col.regions = "lightblue") + mapview(test, col.regions = "red")
+# 
+# mapview(stations, col.regions = "black")+
+# mapview(audited, label = "stationName", zcol = "stationName", col.regions = paletteer_c("grDevices::rainbow", 37))#+ mapview(stations, col.regions = "black")
