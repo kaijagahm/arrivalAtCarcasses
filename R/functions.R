@@ -1876,3 +1876,26 @@ remove_periods <- function(dataset){
   ## Y17T58
   ## Yagur
 }
+
+get_roosts <- function(dat, id){
+  roosts <- map(dat, ~vultureUtils::get_roosts_df(df = .x, id = id), 
+                .progress = T)
+  roosts <- roosts %>%
+    map(., ~st_as_sf(.x, crs = "WGS84", 
+                     coords = c("location_long", "location_lat"), 
+                     remove = F), .progress = T)
+  return(roosts)
+}
+
+get_roosting <- function(roosts, id){
+  roosting <- map(roosts, ~{
+    vultureUtils::getRoostEdges(.x, mode = "distance", 
+                                distThreshold = 500,
+                                return = "both", 
+                                latCol = "location_lat", 
+                                longCol = "location_long", 
+                                idCol = id, 
+                                dateCol = "roost_date")
+  }, .progress = T)
+  return(roosting)
+}

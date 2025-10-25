@@ -149,3 +149,5 @@ ggplot(wild_carcasses_dbscan, aes(X, Y))+
   geom_point(data = wild_carcasses, aes(X, Y), color = "red", alpha = 0.75)+
   facet_wrap(~year)+
   theme(panel.grid.minor = element_blank()) # okay so the good news is that the red ones are (almost?) always on top of a blue one. That means that the dbscan method is finding *more* carcasses but also finding the same ones.
+
+writeRDS(wild_carcasses_dbscan)

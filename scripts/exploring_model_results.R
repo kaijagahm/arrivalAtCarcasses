@@ -36,37 +36,37 @@ stats_all <- bind_rows(stats, stats_wild) %>%
   mutate(lower = outputPar - se, upper = outputPar + se, sig_se = ifelse(lower > 0 & !is.na(lower), T, F)) %>%
   mutate(year = lubridate::year(date))
 
-stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "stn", binwt == "wt") %>%
-  mutate(lower = case_when(!sig_se ~ NA, .default = lower),
-         upper = case_when(!sig_se ~ NA, .default = upper)) %>%
-  filter(outputPar < 50) %>%
-  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
-  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
-  geom_segment(aes(y = lower, yend = upper))+
-  geom_point(aes(pch = sig_se))+
-  scale_shape_manual(values = c(1, 19))+
-  theme_classic()+
-  coord_flip()+
-  facet_wrap(~year, scales = "free_y", ncol = 1)+
-  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
-  labs(title = "SFS carcasses", y = "Social transmission", x = "Carcass")
+# stats_all %>%
+#   filter(!is.na(outputPar), stn_wild == "stn", binwt == "wt") %>%
+#   mutate(lower = case_when(!sig_se ~ NA, .default = lower),
+#          upper = case_when(!sig_se ~ NA, .default = upper)) %>%
+#   filter(outputPar < 50) %>%
+#   ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+#   geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+#   geom_segment(aes(y = lower, yend = upper))+
+#   geom_point(aes(pch = sig_se))+
+#   scale_shape_manual(values = c(1, 19))+
+#   theme_classic()+
+#   coord_flip()+
+#   facet_wrap(~year, scales = "free_y", ncol = 1)+
+#   scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
+#   labs(title = "SFS carcasses", y = "Social transmission", x = "Carcass")
 
-stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "wild", binwt == "wt") %>%
-  mutate(lower = case_when(!sig_se ~ NA, .default = lower),
-         upper = case_when(!sig_se ~ NA, .default = upper)) %>%
-  filter(outputPar < 30) %>%
-  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
-  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
-  geom_segment(aes(y = lower, yend = upper))+
-  geom_point(aes(pch = sig_se))+
-  scale_shape_manual(values = c(1, 19))+
-  theme_classic()+
-  coord_flip()+
-  facet_wrap(~year, scales = "free_y", ncol = 1)+
-  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
-  labs(title = "Wild carcasses", y = "Social transmission", x = "Carcass")
+# stats_all %>%
+#   filter(!is.na(outputPar), stn_wild == "wild", binwt == "wt") %>%
+#   mutate(lower = case_when(!sig_se ~ NA, .default = lower),
+#          upper = case_when(!sig_se ~ NA, .default = upper)) %>%
+#   filter(outputPar < 30) %>%
+#   ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+#   geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+#   geom_segment(aes(y = lower, yend = upper))+
+#   geom_point(aes(pch = sig_se))+
+#   scale_shape_manual(values = c(1, 19))+
+#   theme_classic()+
+#   coord_flip()+
+#   facet_wrap(~year, scales = "free_y", ncol = 1)+
+#   scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
+#   labs(title = "Wild carcasses", y = "Social transmission", x = "Carcass")
 
 # What about the relationship to the number of individuals in the diffusion?
 # Does number of individuals predict significant social transmission?
@@ -219,9 +219,9 @@ search_sfs <- data.frame(type = rep("cumul", length = length(mods_cumul_wt)),
 search_wild <- data.frame(type = rep("cumul", length = length(mods_cumul_wt_wild)),
                          lower_min = NA, lower_max = NA, upper_min = NA, upper_max = NA, ci_lower = NA, ci_upper = NA, carcID = map_dbl(wild_carcs, "carcID"))
 
-search_sfs[1,2:5] <- c(0,2, 5,15) # fixed
-search_sfs[2,2:5] <- c(0, 20, 100, 120) # fixed
-search_sfs[3,2:5] <- c(0,2, 6,10) # fixed
+search_sfs[1,2:5] <- c(0,2, 5,15) # fixed/
+search_sfs[2,2:5] <- c(0, 20, 100, 120) # fixed/
+search_sfs[3,2:5] <- c(0,2, 6,10) # fixed/
 search_sfs[4,2:5] <- c(0,1, 4,6) # fixed
 search_sfs[5,2:5] <- c(0, 5, 12, 20) # fixed
 search_sfs[6,2:5] <- c(NA, NA, 2,4) # fixed
@@ -445,3 +445,4 @@ stats_cumul_wt %>%
   facet_wrap(~stn_wild)+
   theme(legend.position = "bottom", text = element_text(size = 14)) + 
   labs(y = "Social transmission strength", x = "Prop. vultures in diffusion", color = "Year")
+

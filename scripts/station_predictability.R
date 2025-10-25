@@ -15,14 +15,15 @@ carcasses_south <- st_crop(carcasses_audited, bbox_south_big)
 
 # Simplify--keeping only dates, not datetimes, because sometimes there are multiple carcasses placed very close to each other in time
 carcs <- carcasses_south %>%
-  select(carcID, date, time, datetime, long, lat, stationName, carcassWeight, geometry, X, Y)
+  select(carcID, date, time, datetime, datetime_il, long, lat, stationName, carcassWeight, geometry, X, Y)
 
 carcs_simple <- carcasses_south %>%
   select(date, stationName) %>%
   st_drop_geometry() %>%
   distinct()
 dim(carcs)
-dim(carcs_simple) # 95 instances of multiple carcasses being placed on the same day
+dim(carcs_simple)
+nrow(carcs)-nrow(carcs_simple) # 95 instances of two carcasses being placed at the same station on the same day
 
 stn <- carcs_simple %>%
   filter(!is.na(stationName))
@@ -72,6 +73,104 @@ stn %>%
        y = "Interval between carcasses (days)",
        caption = "For stations with at least 4 carcasses")+
   theme_minimal()
+
+# A simpler measure--how likely is there to be food there? Considering 6-month period before each carcass, how many of the dates in that period were active at that station?
+tar_load(carcasses_audited)
+tar_load(stats)
+focal_carcs <- carcasses_audited %>%
+  filter(carcID %in% stats$carcID)
+
+stn_days_last6mos <- rep(NA, nrow(focal_carcs))
+for(i in 1:nrow(focal_carcs)){
+  current_date <- focal_carcs$date[i]
+  current_stn <- focal_carcs$stationName[i]
+  prev_6mos <- carcasses_audited %>%
+    filter(date >= (current_date-months(6)) & date <= current_date,
+           stationName == current_stn)
+  all_dates <- seq.Date(from = current_date-months(6), to = current_date)
+  active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
+  stn_days_last6mos[i] <- length(active_dates)/length(all_dates)
+}
+
+focal_carcs$stn_days_last6mos <- stn_days_last6mos
+
+i <- 3
+current_date <- focal_carcs$date[i]
+current_stn <- focal_carcs$stationName[i]
+prev_6mos <- carcasses_audited %>%
+  filter(date >= (current_date-months(6)) & date <= current_date,
+         stationName == current_stn)
+all_dates <- seq.Date(from = current_date-months(6), to = current_date)
+active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
+
+testdf <- data.frame(date = all_dates) %>%
+  mutate(active = ifelse(lubridate::date(date) %in% lubridate::date(active_dates), T, F))
+testdf %>%
+  ggplot(aes(x = date, y = active, col = active))+
+  geom_point(size = 2, alpha = 0.75)+
+  theme_minimal()+
+  labs(y = "Active carcass?", x = "Date")+
+  theme(legend.position = "none")
+
+# What about carcasses in the area? Not just at the same station but within let's say 4km?
+focal_carcs_buffered <- st_buffer(focal_carcs, 4000)
+#mapview(focal_carcs_buffered)
+
+area_days_last6mos <- rep(NA, nrow(focal_carcs))
+for(i in 1:nrow(focal_carcs)){
+  current_date <- focal_carcs$date[i]
+
+  prev_6mos <- carcasses_audited %>%
+    filter(date >= (current_date-months(6)) & date <= current_date)
+  keep <- prev_6mos[st_intersects(prev_6mos, focal_carcs_buffered[i,], sparse = F)[,1],]
+  
+  
+  all_dates <- seq.Date(from = current_date-months(6), to = current_date)
+  active_dates <- sort(unique(c(keep$date, keep$date + days(1), keep$date + days(2))))
+  area_days_last6mos[i] <- length(active_dates)/length(all_dates)
+}
+i <- 3
+current_date <- focal_carcs$date[i]
+
+prev_6mos <- carcasses_audited %>%
+  filter(date >= (current_date-months(6)) & date <= current_date)
+keep <- prev_6mos[st_intersects(prev_6mos, focal_carcs_buffered[i,], sparse = F)[,1],]
+
+
+all_dates <- seq.Date(from = current_date-months(6), to = current_date)
+active_dates <- sort(unique(c(keep$date, keep$date + days(1), keep$date + days(2))))
+
+focal_carcs$area_days_last6mos <- area_days_last6mos
+
+testdf <- data.frame(date = all_dates) %>%
+  mutate(active = ifelse(lubridate::date(date) %in% lubridate::date(active_dates), T, F))
+testdf %>%
+  ggplot(aes(x = date, y = active, col = active))+
+  geom_point(size = 2, alpha = 0.75)+
+  theme_minimal()+
+  labs(y = "Active carcass?", x = "Date")+
+  theme(legend.position = "none")
+
+focal_carcs %>%
+  ggplot(aes(x = stn_days_last6mos, y = area_days_last6mos, color = stationName))+
+  geom_point(size = 2, alpha = 0.75)+
+  theme_minimal()+
+  labs(y = "Prop. days with nearby active carcass, last 6 mos",
+       x = "Prop. days with active carcass at station, last 6 mos",
+       color = "Station")+
+  coord_equal()
+
+focal_carcs %>%
+  ggplot(aes(x = stn_days_last6mos, fill = stationName))+
+  geom_histogram()+
+  theme_minimal()+
+  labs(y = "Count", x = "Predictability (same station, last 6 months)", fill = "Station")
+
+focal_carcs %>%
+  ggplot(aes(x = area_days_last6mos, fill = stationName))+
+  geom_histogram()+
+  theme_minimal()+
+  labs(y = "Count", x = "Predictability (4km radius, last 6 months)", fill = "Station")
 
 # Grab 6 month chunks of carcass dates for each station, starting every 1 month after the beginning of the carcass data.
 dates_beginning <- seq.Date(from = min(stn$date), to = max(stn$date)+days(90), by = "1 month")

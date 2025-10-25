@@ -396,16 +396,6 @@ downsample_10min <- function(data){
   return(downsampled_10min)
 }
 
-get_roosts <- function(dat){
-  roosts <- map(dat, ~vultureUtils::get_roosts_df(df = .x, id = "Nili_id"), 
-                .progress = T)
-  roosts <- roosts %>%
-    map(., ~st_as_sf(.x, crs = "WGS84", 
-                     coords = c("location_long", "location_lat"), 
-                     remove = F), .progress = T)
-  return(roosts)
-}
-
 remove_nighttime <- function(removed_lfr){
   removed_nighttime <- map(removed_lfr, ~{
     times <- suncalc::getSunlightTimes(date = unique(lubridate::date(.x$timestamp)),
@@ -705,19 +695,6 @@ get_feeding <- function(sfdata, roostPolygons){
     rm(fe)
   }
   return(feeding)
-}
-
-get_roosting <- function(roosts){
-  roosting <- map(roosts, ~{
-    vultureUtils::getRoostEdges(.x, mode = "distance", 
-                                distThreshold = 500,
-                                return = "both", 
-                                latCol = "location_lat", 
-                                longCol = "location_long", 
-                                idCol = "Nili_id", 
-                                dateCol = "roost_date")
-  }, .progress = T)
-  return(roosting)
 }
 
 get_list_element <- function(lst, element){
