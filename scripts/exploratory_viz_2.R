@@ -11,8 +11,8 @@ tar_load(inpa)
 tar_load(wild)
 wild_og <- wild
 
-plots_inpa <- readRDS(here("data/plots_inpa.RDS"))
-plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
+plots_inpa <- readRDS(here("data/created/arrival_plots/plots_inpa.RDS"))
+plots_wild_valid <- readRDS(here("data/created/arrival_plots/plots_wild_valid.RDS"))
 names(plots_inpa)
 length(plots_inpa) # all 81 carcasses
 names(plots_wild_valid) 

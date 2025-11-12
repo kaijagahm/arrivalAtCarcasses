@@ -539,17 +539,17 @@ moved_original_locs <- st_drop_geometry(moved) %>%
 relabeled <- both %>%
   filter(edited_station)
 
-st_write(changed, "data/created/changed.kml", driver = "KML", delete_layer = TRUE)
-st_write(moved, "data/created/moved.kml", driver = "KML", delete_layer = TRUE)
-st_write(moved_original_locs, "data/created/moved_original_locs.kml", driver = "KML", delete_layer = TRUE)
-st_write(relabeled, "data/created/relabeled.kml", driver = "KML", delete_layer = TRUE)
-st_write(both, "data/created/all_points.kml", driver = "KML", delete_layer = TRUE)
-write_csv(audited, "data/created/all_points.csv")
+st_write(changed, "data/created/carcass_auditing/changed.kml", driver = "KML", delete_layer = TRUE)
+st_write(moved, "data/created/carcass_auditing/moved.kml", driver = "KML", delete_layer = TRUE)
+st_write(moved_original_locs, "data/created/carcass_auditing/moved_original_locs.kml", driver = "KML", delete_layer = TRUE)
+st_write(relabeled, "data/created/carcass_auditing/relabeled.kml", driver = "KML", delete_layer = TRUE)
+st_write(both, "data/created/carcass_auditing/all_points.kml", driver = "KML", delete_layer = TRUE)
+write_csv(audited, "data/created/carcass_auditing/all_points.csv")
 
 # # Write out the audited carcass data --------------------------------------
 carcasses_audited <- audited %>%
   bind_cols(st_coordinates(.))
-write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
+write_rds(carcasses_audited, file = here("data/created/carcass_auditing/carcasses_audited.RDS"))
 
 # Write out the fixed station data, since I made at least a few edits to station positions
-write_rds(stations, file = here("data/stations.RDS"))
+write_rds(stations, file = here("data/created/carcass_auditing/stations.RDS"))

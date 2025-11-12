@@ -113,8 +113,8 @@ for(i in 1:length(cids_stn)){
   plots_stn[[i]] <- plt
 }
 names(plots_stn) <- cids_stn
-write_rds(plots_stn, file = here("data/plots_stn.RDS"))
-plots_stn <- readRDS(here("data/plots_stn.RDS"))
+write_rds(plots_stn, file = here("data/created/arrival_plots/plots_stn.RDS"))
+plots_stn <- readRDS(here("data/created/arrival_plots/plots_stn.RDS"))
 
 plots_wild_valid <- vector(mode = "list", length = length(cids_wild_valid))
 for(i in 1:length(cids_wild_valid)){
@@ -135,8 +135,8 @@ for(i in 1:length(cids_wild_valid)){
 }
 
 names(plots_wild_valid) <- cids_wild_valid
-write_rds(plots_wild_valid, file = here("data/plots_wild_valid.RDS"))
-plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
+write_rds(plots_wild_valid, file = here("data/created/arrival_plots/plots_wild_valid.RDS"))
+plots_wild_valid <- readRDS(here("data/created/arrival_plots/plots_wild_valid.RDS"))
 
 stats <- all_gps_data %>%
   arrange(timestamp) %>%
