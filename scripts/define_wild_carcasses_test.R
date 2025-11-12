@@ -3,10 +3,12 @@ library(tidyverse)
 library(targets)
 # library(stdbscanr) # no longer loading this--using patched code
 library(sf)
+library(data.table)
 library(mapview)
 tar_load(non_carcass_bo)
 dim(non_carcass_bo)
 glimpse(non_carcass_bo)
+source("R/stdbscanr_source_patched.R")
 
 # subset down
 test <- sf::st_as_sf(non_carcass_bo) %>%
@@ -151,3 +153,46 @@ ggplot(wild_carcasses_dbscan, aes(X, Y))+
   theme(panel.grid.minor = element_blank()) # okay so the good news is that the red ones are (almost?) always on top of a blue one. That means that the dbscan method is finding *more* carcasses but also finding the same ones.
 
 writeRDS(wild_carcasses_dbscan)
+
+# Add in some verification data--verified wild carcasses from the INPA
+wildVerified <- readxl::read_excel("data/raw/INPA_alertSystem_wildCarcassData.xlsx")
+names(wildVerified) <- c("eventID", "alertDate", "alertTime", "locDate", "locTime", "event", "individual", "species", "deviceSN", "areas", "alertStatus", "transmissionSince", "movedSince", "long", "lat", "nIndivs", "reasonClosed", "notifications", "time", "worker", "checkType", "animalLocated", "animalAlive", "carcassLocated", "carcassMedications", "carcassTreatment", "carcassSpecies", "comment")
+
+wildVerified <- wildVerified %>%
+  select(eventID, alertDate, alertTime, locDate, locTime, event, individual, deviceSN, long, lat, nIndivs, reasonClosed, animalLocated, animalAlive, carcassLocated, carcassMedications, carcassTreatment, carcassSpecies)
+
+wvsf <- sf::st_as_sf(wildVerified, coords = c("long", "lat"), crs = "WGS84", remove = F) %>%
+  sf::st_transform(32636) %>%
+  bind_cols(., st_coordinates(.)) %>%
+  mutate(across(c("animalLocated", "animalAlive", "carcassLocated", "carcassMedications"), as.factor)) %>%
+  mutate(animalLocated = ifelse(animalLocated == "yes", T, F),
+         animalAlive = ifelse(animalAlive == "yes", T, F),
+         carcassLocated = ifelse(carcassLocated == "yes", T, F),
+         carcassMedications = ifelse(carcassMedications == "yes", T, F))
+# note that this contains only instances when the carcass *was* located--Shaked seems to have filtered it down for me.
+table(wvsf$carcassLocated, exclude = NULL) # no NAs either.
+
+# How do these fall on a timeline?
+wvsf %>%
+  ggplot(aes(x = alertDate))+
+  geom_histogram()
+
+# Restricting just to our focal time period
+tar_load(minmax_dates)
+wvsf_focal <- wvsf %>%
+  filter(alertDate >= minmax_dates[[5]] & alertDate <= minmax_dates[[6]])
+dim(wvsf_focal)
+mapview(wvsf_focal)
+wvsf_focal %>%
+  ggplot(aes(x = alertDate))+
+  geom_histogram() # at least superficially, this space/time distribution looks kinda similar...
+
+wcdb <- wild_carcasses_dbscan %>% filter(datetime >= minmax_dates[[5]] & datetime <= minmax_dates[[6]])
+wc <- wild_carcasses %>% filter(datetime >= minmax_dates[[5]] & datetime <= minmax_dates[[6]])
+t24 <- st_as_sf(test24)
+
+mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+ 
+  mapview(wcdb, col.regions = "dodgerblue3", layer.name = "DBSCAN")+
+  mapview(wc, col.regions = "red", layer.name = "Spatsoc")+
+  mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses")
+

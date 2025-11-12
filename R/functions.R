@@ -244,49 +244,46 @@ gbp <- function(prepared, predictions,
 get_matches <- function(df, foc, spd){
   if(!is.null(df)){
     with_middles <- df %>%
-      dplyr::mutate(start = lubridate::ymd_hms(start),
-                    end = lubridate::ymd_hms(end),
-                    middle = start + difftime(end, start)/2) %>%
-      dplyr::group_by(bout_id) %>%
-      dplyr::group_split()
+      dplyr::mutate(middle = start + difftime(end, start)/2,
+                    fivebefore = start - lubridate::minutes(5),
+                    fiveafter = start + lubridate::minutes(5),
+                    elevenbefore = start - lubridate::minutes(11),
+                    elevenafter = start + lubridate::minutes(11)) %>%
+      dplyr::group_split(bout_id)
     
     within_5min <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
-    }, .progress = T)
+      foc[.x$fivebefore <= foc$timestamp & foc$timestamp <= .x$fiveafter,]
+    })
     
-    within_5min_speed <- purrr::map(within_5min, ~.x[as.numeric(.x$ground_speed) <= spd,])
+    within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
     
     within_11min_speed <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & as.numeric(foc$ground_speed) < spd,]
-    }, .progress = T)
+      foc[.x$elevenbefore <= foc$timestamp & foc$timestamp <= .x$elevenafter & foc$ground_speed < spd,]
+    })
     
-    keep <- purrr::pmap(list(within_5min, within_5min_speed, 
-                             within_11min_speed, 
-                             with_middles
-    ), ~{
-      if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
-        match <- ..2
-      }
-      # else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
-      #   match <- ..3
-      # }
-      else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
-        match <- ..1
-      }else{
-        match <- foc[0,] # if none of those is true, return a 0-row data frame
-      }
+    keep <- vector(mode = "list", length = length(with_middles))
+    for(i in 1:length(keep)){
+      w5 <- within_5min[[i]]
+      w5s <- within_5min_speed[[i]]
+      w11s <- within_11min_speed[[i]]
+      wm <- with_middles[[i]]
+      if(nrow(w5s) > 0){ # if there are any non-flying points within 5 mins, keep them
+        match <- w5s}else if(nrow(w5) > 0){
+          match <- w5
+        }else{ # if none of those is true, return a 0-row data frame
+          match <- foc[0,]
+        }
       if(nrow(match) > 1){
-        match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
+        match <- match[which.min(abs(as.numeric(match$timestamp - wm$middle[1])))] # if more than one match, take the closest to the middle time (either before or after)
       }
       if(nrow(match) > 0){ # for all bouts where we got any gps match at all...
-        match$bout_id <- ..4$bout_id[1] # assign the bout id of the current bout to the match as well
+        match$bout_id <- wm$bout_id[1] 
         return(match)
       }else{
         match <- as.data.frame(foc[0,])
         match$bout_id <- numeric(0)
-        return(match)
-      }
-    })
+        return(matchSignature())}
+    }
   }else{
     keep <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
     keep <- list(keep[0,])

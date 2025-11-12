@@ -3,6 +3,7 @@ library(here)
 library(readxl)
 library(tidyverse)
 library(RColorBrewer)
+library(paletteer)
 library(sf)
 library(mapview)
 source(here("R/functions.R"))
@@ -112,8 +113,6 @@ carcasses_inpa <- st_as_sf(carcasses_inpa, coords = c("long", "lat"),
 # Check if any duplicate carcasses are left (they should have all been removed)
 carcasses_inpa %>% group_by(carcID) %>% filter(n() > 1) # 0 rows, good.
 
-# write_rds(carcasses_inpa, file = here("data/created/carcasses_inpa.RDS"))
-
 # Read in data about feeding station locations to help us out. 
 # ------------------------------------------------
 north <- readxl::read_excel(here("data/raw/feeding_stations_north.xlsx"), sheet = 2) %>%
@@ -140,8 +139,6 @@ stations <- stations %>%
   arrange(stationName, type) %>%
   group_by(stationName) %>%
   slice(1)
-
-write_rds(stations, here("data/created/stations.RDS"))
 
 # Begin manually fixing stations, in consultation with Gideon
 ## Remove HaMakhtesh HaKatan and HaMakhtesh HaKatan reserve, since they are already accounted for with Hatzera_drill and Ashmedai (and no points are actually assigned to these stations right now) (Gideon told me to make this change in his email on 2024-10-22).
@@ -195,48 +192,9 @@ sort(unique(ci_fixed$stationName))
 
 audited <- ci_fixed %>%
   left_join(carcassAudit)
-
-needhelp <- audited %>%
-  filter(flagGideon == T)
-nrow(needhelp) # 37
-
-canfix <- audited %>%
-  filter(!flagGideon | is.na(flagGideon))
-
-# # new map for gideon:
-# y <- needhelp %>% filter(color == "yellow")
-# p <- needhelp %>% filter(color == "pink")
-# w <- needhelp %>% filter(color == "white")
-# g <- needhelp %>% filter(color == "green")
-# b <- needhelp %>% filter(color == "blue")
-# r <- needhelp %>% filter(color == "red")
-# t <- needhelp %>% filter(color == "tan")
-# pp <- needhelp %>% filter(color == "purple")
-# dr <- needhelp %>% filter(color == "darkred")
-# do <- needhelp %>% filter(color == "darkorange")
-# o <- needhelp %>% filter(color == "orange")
-# dg <- needhelp %>% filter(color == "darkgreen")
-# 
-# mapview(stations, label = "stationName", color = "black", col.regions = "black") +
-#   mapview(canfix, label = "stationName", color = "gray", col.regions = "gray")+
-#   mapview(y, label = "stationName", color = "yellow", col.regions = "yellow", legend = F)+
-#   mapview(p, label = "stationName", color = "pink", col.regions = "pink", legend = F)+
-#   mapview(w, label = "stationName", color = "white", col.regions = "white", legend = F)+
-#   mapview(g, label = "stationName", color = "green", col.regions = "green", legend = F)+
-#   mapview(b, label = "stationName", color = "blue", col.regions = "blue", legend = F)+
-#   mapview(r, label = "stationName", color = "red", col.regions = "red", legend = F)+
-#   mapview(t, label = "stationName", color = "tan", col.regions = "tan", legend = F)+
-#   mapview(pp, label = "stationName", color = "purple", col.regions = "purple", legend = F)+
-#   mapview(dr, label = "stationName", color = "darkred", col.regions = "darkred", legend = F)+
-#   mapview(do, label = "stationName", color = "darkorange4", col.regions = "darkorange4", legend = F)+
-#   mapview(o, label = "stationName", color = "orange", col.regions = "orange", legend = F)+
-#   mapview(dg, label = "stationName", color = "darkgreen", col.regions = "darkgreen", legend = F)
-# XXX on 2024-10-18, sent this map to Gideon along with the carcassAudit spreadsheet so he can help me figure out how to fix the confusing points.
-
-# 2. We're going to need to keep track of which coordinates and stationNames have been edited. Let's create a column for that.
 audited$edited_coords <- NA
-audited$explanation <- NA
 audited$edited_station <- NA
+audited$explanation <- NA
 
 # 3. Move points to the correct feeding stations and mark as moved
 ## Grab the ones that need to be moved
@@ -264,6 +222,7 @@ audited <- audited %>%
          "itmLat_orig" = "itmLat")
 
 for(i in 1:nrow(audited)){
+  cat("i = ", i, "\n")
   if(audited$todo[i] == "reassign" & !is.na(audited$todo[i])){ # if needs reassignment...
     if(audited$reassign_to[i] %in% move_coords$stationName){ # and if we have the coords...
       
@@ -329,33 +288,6 @@ audited$stationName[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- 
 audited$edited_station[audited$carcID %in% intersections$Tzvira_plateau$carcID] <- TRUE
 
 # Another audit with Shaaked and May --------------------------------------
-library(RColorBrewer)
-library(paletteer)
-
-mapview(stations, col.regions = "black")+
-  mapview(audited, label = "stationName", zcol = "stationName", col.regions = paletteer_c("grDevices::rainbow", 37))
-
-# Remaining mysteries after meeting with Shaaked --------------------------
-mysteries <- audited %>%
-  filter(carcID %in% c(3126041, 3479246, 1966034, 4564184, 1848638, 1950783, 3965678, 2031190, 4850012, 4871929, 4988920, 4868888, 4850788, 1762465, 4315893, 4850711, 5006137, 4850735, 4924206)) %>%
-  select(carcID, date, time, datetime, datetime_il, long_orig, lat_orig, long, lat, accuracy_m, accuracy, reportTiming, waterFilled, stationName, carcassType, carcassWeight, starts_with("n_"), cage, explanation) %>%
-  mutate(explanation = case_when(carcID %in% c(3126041, 3479246, 1966034) ~ "Mitzpe Ben Yair vs. Gorni confusion--points are labeled as Gorni but are located near the Ben Yair station, not near Gorni.",
-                                 carcID %in% c(4564184, 1450235) ~ "Unlabeled, but close to the location for the Chail_hills station.",
-                                 carcID %in% c(1848638, 1950783, 3965678, 2031190) ~ "Potential non-station carcass? Cluster of points all in the same location. Gideon seemed to think this might have been a real carcass placed away from a station for management reasons, but we're not sure.", 
-                                 carcID %in% c(5006137, 4871929) ~ "labeled as cage but located far from cages. Many possible cage locations, so not sure where to put it.",
-                                 carcID %in% c(4850012, 4988920, 4868888, 4850788, 1762465, 4850711) ~ "no station name label",
-                                 carcID == 4315893 ~ "labeled as Hever cage but located very far away",
-                                 carcID == 4850735 ~ "Labeled as Antenas, but located extremely far away.",
-                                 carcID == 4924206 ~ "Far from other Gamla cage points, and since there are several Gamla cage locations, don't know exactly where to move it to",
-                                 .default = NA),
-         proposed_solution = case_when(carcID %in% c(3126041, 3479246, 1966034) ~ "Change stationName to Ben Yair",
-                                       carcID %in% c(4564184, 1450235) ~ "Relabel as Chail_hills", 
-                                       carcID %in% c(1848638, 1950783, 3965678, 2031190) ~ "Label as new location and keep points", 
-                                       carcID %in% c(5006137, 4871929, 4850012, 4988920, 4868888, 4850788, 1762465, 4315893, 4850711, 4924206) ~ "delete",
-                                       carcID == 4850735 ~ "Move to Antenas? But not sure if the time will be too far off. Maybe delete instead if we think this is unreliable.",
-                                       .default = NA))
-st_write(mysteries, "data/created/mystery_locations.kml", driver = "KML", delete_layer = TRUE)
-
 # Fixes after new meeting with Shaaked ------------------------------------
 # Hai-Bar Carmel = the whole complex
 # 499018: can set this roughly as the cage location for Carmel 
@@ -379,7 +311,7 @@ audited$explanation[idx2] <- "Kaija_Shaaked moved to Carmel cage"
 audited$edited_coords[idx2] <- TRUE
 
 # 4906144--probably wrong name. Check if scroll down.
-# KG decision: rename to Cachal
+# KG decision: rename to Kachal
 audited$stationName[audited$carcID == 4906144] <- "Kachal"
 audited$explanation[audited$carcID == 4906144] <- "KG renamed to Kachal based on proximity. Assuming the original station name (North_Golan) was wrong."
 audited$edited_station[audited$carcID == 4906144] <- TRUE 
@@ -389,7 +321,7 @@ long3 <- audited$long[audited$carcID == 5006712]
 lat3 <- audited$lat[audited$carcID == 5006712]
 stations$long[stations$stationName == "Gamla"] <- long3
 stations$lat[stations$stationName == "Gamla"] <- lat3
-stations$explanation[stations$stationName == "Gamla"] <- "Kaija_Shaaked fixed incorrect Gamla station coords"
+audited$explanation[stations$stationName == "Gamla"] <- "Kaija_Shaaked fixed incorrect Gamla station coords"
 
 # Move slightly misaligned Gamla points to the new station coords
 idx4 <- which(audited$carcID %in% c(4895890, 4908755, 4992013))
@@ -402,7 +334,6 @@ audited$explanation[idx4] <- "Kaija_Shaaked moved to Gamla station"
 
 # 4924215 visitor building loc. all points to move elsewhere.
 # The problem is, I don't know where these should go because there are three possible cage locations. Just going to leave these be for now because ultimately I don't care about the cage points anyway.
-# XXX come back to this at the end
 
 # Fix single point in North Golan: 4927271
 audited$long[audited$carcID == 4927271] <- stations$long[stations$stationName == "North_Golan"]
@@ -410,13 +341,13 @@ audited$lat[audited$carcID == 4927271] <- stations$lat[stations$stationName == "
 audited$explanation[audited$carcID == 4927271] <- "Kaija_Shaaked moved to North_Golan station"
 audited$edited_coords[audited$carcID == 4927271] <- TRUE
 
-# Fix points a little ways away from Kachal
+# Fix points a little ways away from Cachal
 idx5 <- which(audited$carcID %in% c(4995231, 5016991, 5011708, 5011716, 4846275, 4846276, 4985947))
 lng5 <- stations$long[stations$stationName == "Cachal"]
 lat5 <- stations$lat[stations$stationName == "Cachal"]
 audited$long[idx5] <- lng5
 audited$lat[idx5] <- lat5
-audited$explanation[idx5] <- "Kaija_Shaaked moved to Kachal station"
+audited$explanation[idx5] <- "Kaija_Shaaked moved to Cachal station"
 audited$edited_coords[idx5] <- TRUE
 
 # Fix Hever/Hever cage points
@@ -429,13 +360,13 @@ audited$explanation[idx6] <- "Kaija_Shaaked moved to Hever station"
 audited$edited_coords[idx6] <- TRUE
 
 # Fix Gorni Hill / Ben_Yair_view points
-# Ambiguous ones: there are a few carcasses at Ben_Yair_view that are labeled Gorni_Hill. The two stations are close and it's anyone's guess whether they're mislabeled or mis-placed. I'm going to assume for now that they are mislabeled, so I'll just correct the label but not the coordinates, but that assumption isn't really based on strong evidence either way.
+# Ambiguous ones: there are a few carcasses at Ben_Yair_view that are labeled Gorni_Hill. The two stations are close and it's anyone's guess whether they're mislabeled or mis-placed. I'm going to assume for now that they are mislabeled, so I'll just correct the label but not the coordinates, but that assumption isn't really based on strong evidence either way. # May confirms these were mislabeled, not mis-located.
 idx7 <- which(audited$carcID %in% c(3126041, 1966034, 3479246))
 audited$stationName[idx7] <- "Ben_Yair_view"
 audited$edited_station[idx7] <- TRUE
 audited$explanation[idx7] <- "Kaija_Shaaked fixed station name (Gorni Hill > Ben Yair view)"
 
-# Relocate 4850735 to Antenas, although this does raise the question of whether the time is correct
+# Relocate 4850735 to Antenas, although this does raise the question of whether the time is correct # May confirms this is right
 idx8 <- which(audited$carcID == 4850735)
 lng8 <- stations$long[stations$stationName == "Antenas"]
 lat8 <- stations$lat[stations$stationName == "Antenas"]
@@ -500,23 +431,56 @@ audited$edited_station[idx13] <- TRUE
 audited$explanation[idx13] <- "Relabeled to Golhan2 to distinguish from other Golhan location (KG)"
 
 # Name the different "Other" places
-audited$stationName[audited$carcID %in% c(4253362, 4181242)] <- "Other1"
+audited$stationName[audited$carcID %in% c(4253362, 4181242)] <- "Random_Feeding_JD"
 audited$edited_station[audited$carcID %in% c(4253362, 4181242)] <- TRUE
-audited$explanation[audited$carcID %in% c(4253362, 4181242)] <- "Numbering the 'Other' locations"
+audited$explanation[audited$carcID %in% c(4253362, 4181242)] <- "Random feeding experiments conducted by rangers"
 
-audited$stationName[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "Other2"
-audited$explanation[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "Numbering the 'Other' locations"
+audited$stationName[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "Nahal_Saif_Barrels"
+audited$explanation[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- "May: Experiment by Arie"
 audited$edited_station[audited$carcID %in% c(1848638, 1950783, 3965678, 2031190)] <- TRUE
 
-idx14 <- which(audited$stationName == "Other" & audited$lat < 29.78893)
-audited$edited_station[idx14] <- TRUE
-audited$stationName[idx14] <- "Other3"
-audited$explanation[idx14] <- "Numbering the 'Other' locations"
+audited$edited_station[audited$carcID == 3059634] <- TRUE
+audited$stationName[audited$carcID == 3059634] <- "Random_Feeding_SA"
+audited$explanation[audited$carcID == 3059634] <- "Gazelle roadkill; ranger placed it at location experimentally."
+audited <- audited %>%
+  filter(!(carcID %in% c(3059636, 3059637))) # remove the other two and retain 3059634 as gazelle point.
 
 idx15 <- which(audited$stationName == "Other" & audited$long < 34.72570)
 audited$edited_station[idx15] <- TRUE
-audited$stationName[idx15] <- "Other4"
-audited$explanation[idx15] <- "Numbering the 'Other' locations"
+audited$stationName[idx15] <- "Chail_hills"
+audited$explanation[idx15] <- "This is the real location of the Chail_hills station"
+stations$long[stations$stationName == "Chail_hills"] <- audited$long[audited$carcID == 1730414]
+stations$lat[stations$stationName == "Chail_hills"] <- audited$lat[audited$carcID == 1730414]
+
+# May: 4564184 and 1450235--relabel as Chail_hills, and move coords to Chail hills stn coords
+idx16 <- which(audited$carcID %in% c(4564184, 1450235))
+lng16 <- stations$long[stations$stationName == "Chail_hills"]
+lat16 <- stations$lat[stations$stationName == "Chail_hills"]
+audited$long[idx16] <- lng16
+audited$lat[idx16] <- lat16
+audited$explanation[idx16] <- "May relabeled and moved to Chail_hills"
+audited$edited_coords[idx16] <- TRUE
+
+# Remove some fake carcasses that were inserted for testing purposes.
+audited <- audited %>%
+  filter(!(carcID %in% c(4868888, 4988920, 4850788, 4850711)))
+
+# May: Assign 4871929 to Gamla cage using May's estimated coords.
+audited$lat[audited$carcID == 4871929] <- 32.541615
+audited$long[audited$carcID == 4871929] <- 35.454660
+audited$edited_coords[audited$carcID == 4871929] <- TRUE
+audited$explanation[audited$carcID == 4871929] <- "Moved to Gamla cage--GPS jamming"
+
+# May: 1762465--relabel as "Upper Ein Avdat"
+audited$stationName[audited$carcID == 1762465] <- "Upper_Ein_Avdat"
+audited$edited_station[audited$carcID == 1762465] <- TRUE
+audited$explanation[idx16] <- "May: this was a one-time feeding for vulture day activities"
+
+# May: 4315893--move coords to Hever stn, keep label as is
+audited$lat[audited$carcID == 4315893] <- stations$lat[stations$stationName == "Hever"]
+audited$long[audited$carcID == 4315893] <- stations$long[stations$stationName == "Hever"]
+audited$edited_coords[audited$carcID == 4315893] <- TRUE
+audited$explanation[audited$carcID == 4315893] <- "May: retrospective report; coords were inaccurate."
 
 # Fix the NA stations
 audited$stationName[audited$carcID == 5016662] <- "Hai_Bar_Carmel"
@@ -530,11 +494,21 @@ audited$explanation[audited$carcID == 5011580] <- "Relabeled to Small_Crater_vie
 # test <- audited %>% filter(is.na(stationName))
 audited <- st_as_sf(st_drop_geometry(audited), coords = c("long", "lat"), crs = "WGS84", remove = F) %>% st_transform(32636)
 
-# mapview(stations, col.regions = "black")+
-#   mapview(audited, label = "stationName", zcol = "stationName", col.regions = "lightblue") + mapview(test, col.regions = "red")
+# Label 4850012 as Nahal Daliyot
+audited$stationName[audited$carcID == 4850012] <- "Nahal_Daliyot"
+audited$edited_station[audited$carcID == 4850012] <- TRUE
+audited$explanation[audited$carcID == 4850012] <- "May: Experiment for a potential new feeding station"
+
+# Label 4924206 and 5006137 as Kachal_cage, and move to Cachal. These are already labeled as "cage".
+audited$stationName[audited$carcID %in% c(4924206, 5006137)] <- "Kachal_cage"
+audited$long[audited$carcID %in% c(4924206, 5006137)] <- stations$long[stations$stationName == "Cachal"]
+audited$lat[audited$carcID %in% c(4924206, 5006137)] <- stations$lat[stations$stationName == "Cachal"]
+audited$edited_station[audited$carcID %in% c(4924206, 5006137)] <- TRUE
+audited$edited_coords[audited$carcID %in% c(4924206, 5006137)] <- TRUE
+audited$explanation[audited$carcID %in% c(4924206, 5006137)] <- "May: Move to Kachal station and label as Kachal_cage"
 
 mapview(stations, col.regions = "black")+
-  mapview(audited, label = "stationName", zcol = "stationName", col.regions = paletteer_c("grDevices::rainbow", 38))#+ mapview(stations, col.regions = "black")
+  mapview(audited, label = "stationName", zcol = "stationName", col.regions = paletteer_c("grDevices::rainbow", 42))+ mapview(stations, col.regions = "black")
 
 # Summary of edits made
 orig <- bind_rows(old, new) %>%
@@ -546,7 +520,7 @@ new <- audited %>%
   distinct()
 
 both <- left_join(orig, new, by = "carcID") %>%
-  filter(!is.na(carcID)) %>%
+  filter(!is.na(carcID), !is.na(long), !is.na(lat)) %>%
   select(carcID, stationName_orig, stationName, long_orig, lat_orig, long, lat, edited_coords, edited_station, explanation) %>%
   sf::st_as_sf(coords = c("long", "lat"), remove = F, crs = "WGS84")
 
@@ -570,11 +544,12 @@ st_write(moved, "data/created/moved.kml", driver = "KML", delete_layer = TRUE)
 st_write(moved_original_locs, "data/created/moved_original_locs.kml", driver = "KML", delete_layer = TRUE)
 st_write(relabeled, "data/created/relabeled.kml", driver = "KML", delete_layer = TRUE)
 st_write(both, "data/created/all_points.kml", driver = "KML", delete_layer = TRUE)
-# 
+write_csv(audited, "data/created/all_points.csv")
+
 # # Write out the audited carcass data --------------------------------------
-# carcasses_audited <- audited %>%
-#   bind_cols(st_coordinates(.))
-# write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
-# 
-# # Write out the fixed station data, since I made at least one edit to a station position
-# write_rds(stations, file = here("data/stations.RDS"))
+carcasses_audited <- audited %>%
+  bind_cols(st_coordinates(.))
+write_rds(carcasses_audited, file = here("data/created/carcasses_audited.RDS"))
+
+# Write out the fixed station data, since I made at least a few edits to station positions
+write_rds(stations, file = here("data/stations.RDS"))
