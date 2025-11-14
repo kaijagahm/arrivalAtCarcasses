@@ -140,17 +140,13 @@ wild_carcasses_dbscan <- all_touse %>%
          datetime_il = lubridate::with_tz(datetime, tzone = "Israel"))
 
 mapview(wild_carcasses_dbscan, zcol = "year")
-tar_load(wild_carcasses)
 
-mapview(wild_carcasses_dbscan, col.regions = "dodgerblue3")+
-  mapview(wild_carcasses, col.regions = "red") # these are more different than I had expected!!
-
+mapview(wild_carcasses_dbscan, col.regions = "dodgerblue3")
 ggplot(wild_carcasses_dbscan, aes(X, Y))+
   geom_point(color = "dodgerblue3", alpha = 0.75, position = position_nudge(x = 500))+
   theme_minimal()+
-  geom_point(data = wild_carcasses, aes(X, Y), color = "red", alpha = 0.75)+
   facet_wrap(~year)+
-  theme(panel.grid.minor = element_blank()) # okay so the good news is that the red ones are (almost?) always on top of a blue one. That means that the dbscan method is finding *more* carcasses but also finding the same ones.
+  theme(panel.grid.minor = element_blank())
 
 writeRDS(wild_carcasses_dbscan)
 
@@ -188,11 +184,9 @@ wvsf_focal %>%
   geom_histogram() # at least superficially, this space/time distribution looks kinda similar...
 
 wcdb <- wild_carcasses_dbscan %>% filter(datetime >= minmax_dates[[5]] & datetime <= minmax_dates[[6]])
-wc <- wild_carcasses %>% filter(datetime >= minmax_dates[[5]] & datetime <= minmax_dates[[6]])
 t24 <- st_as_sf(test24)
 
 mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+ 
   mapview(wcdb, col.regions = "dodgerblue3", layer.name = "DBSCAN")+
-  mapview(wc, col.regions = "red", layer.name = "Spatsoc")+
   mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses")
 

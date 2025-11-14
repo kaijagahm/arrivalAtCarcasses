@@ -343,38 +343,6 @@ get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
 }
 
 # Clustering --------------------------------------------------------------
-get_wild_carcass_bouts <- function(non_carcass_bouts, time, dst, minBouts, stations, stationDist, minIndivs){
-  # Remove any that are too close to a known station
-  stations_buffered <- st_buffer(stations, stationDist)
-  ncb <- sf::st_as_sf(non_carcass_bouts, crs = 32636) %>% bind_cols(st_coordinates(.))
-  tokeep <- map_dbl(st_intersects(ncb, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
-  non_carcass_bouts <- non_carcass_bouts[tokeep,]
-  
-  # Format appropriately for spatsoc
-  ncb$timestamp <- as.POSIXct(ncb$start, tz = "UTC")
-  ncb <- data.table::data.table(ncb)
-  
-  spatsoc::group_times(ncb, 
-                       datetime = 'timestamp', 
-                       threshold = time)
-  spatsoc::group_pts(ncb, threshold = dst, 
-                     id ='boutID', coords = c('X', 'Y'), 
-                     timegroup = 'timegroup')
-  
-  # Restrict to groups that have at least 3 bouts and at least 3 individuals
-  ncb_filtered <- ncb %>%
-    group_by(group) %>%
-    filter(n() >= minBouts,
-           length(unique(individual_local_identifier)) > minIndivs)
-  
-  # convert back to sf object for mapping
-  wild_carcass_bouts_df <- as.data.frame(ncb_filtered) %>%
-    rename("carcID" = group) %>%
-    sf::st_as_sf(crs = 32636)
-  
-  return(wild_carcass_bouts_df)
-}
-
 get_wild_carcasses <- function(wild_carcass_bo_df){
   # Get carcasses
   wild_carcasses <- wild_carcass_bo_df %>%

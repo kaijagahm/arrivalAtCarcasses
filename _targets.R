@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl"),
-  controller = crew_controller_local(workers = 15)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table"),
+  controller = crew_controller_local(workers = 2)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -471,7 +471,7 @@ list(
   tar_target(feeding_bo_2024, map(full_2024, ~getfeeding(.x, feeding_bo_prob_thresh))),
   
   ## Bind them together to get all feeding bouts
-  tar_target(feeding_bouts, mutate(as.data.frame(data.table::rbindlist(c(feeding_bo_2022, feeding_bo_2023, feeding_bo_2024), use.name = T, ignore.attr = T)),
+  tar_target(feeding_bouts, mutate(as.data.frame(data.table::rbindlist(c(feeding_bo_2022, feeding_bo_2023, feeding_bo_2024), use.name = T, ignore.attr = T, fill = T)),
                                    year = lubridate::year(start),
                                    boutID = paste(device_id, bout_id, year, sep = "_"))), 
   tar_target(feeding_bo_spatial, st_transform(sf::st_as_sf(feeding_bouts, coords = c("location_long", "location_lat"), crs = "WGS84"), 32636)),
@@ -510,8 +510,20 @@ list(
   tar_target(non_carcass_bo, filter(feeding_bo_noslope, !(boutID %in% carcass_bo_df$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
-  tar_target(wild_dist, 200), # NNN change to average max distance of bouts from known active carcasses, doubled. Should be approx. 800.
-  tar_target(wild_time, '12 hours'), # note: cannot be more than 24 hours. If we want more than 24 hours, we need to do this grouping a different way. # NNN figure this out--should it actually be 24? How does spatsoc group things? Is it a sliding window or a consecutive window?
+  tar_target(wild_dist, 50),
+  tar_target(wild_time_hrs, 12),
+  tar_target(wild_min_pts, 3),
+  tar_target(non_carcass_bo_prepped, bind_cols(mutate(non_carcass_bo, 
+                                            timestamp_numeric = 
+                                              as.numeric(difftime(timestamp, 
+                                                                  min(timestamp), units = "secs"))), sf::st_coordinates(non_carcass_bo))),
+  tar_target(wild_carcass_bo_df_stdbscanr, get_clusters_from_data(non_carcass_bo_prepped, 
+                                                                  x = "X", y = "Y", 
+                                                                  t = "timestamp_numeric",
+                                                                  eps = wild_dist, 
+                                                                  eps_t = wild_time_hrs*60*60, 
+                                                                  minpts = 3)),
+  
   tar_target(wild_carcass_bo_df, get_wild_carcass_bouts(non_carcass_bo,
                                                         time = wild_time,
                                                         dst = wild_dist,
