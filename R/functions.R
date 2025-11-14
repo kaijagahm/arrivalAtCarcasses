@@ -246,49 +246,56 @@ get_matches <- function(df, foc, spd){
     with_middles <- df %>%
       dplyr::mutate(middle = start + difftime(end, start)/2,
                     fivebefore = start - lubridate::minutes(5),
-                    fiveafter = start + lubridate::minutes(5),
-                    elevenbefore = start - lubridate::minutes(11),
-                    elevenafter = start + lubridate::minutes(11)) %>%
+                    fiveafter = start + lubridate::minutes(5)#,
+                    # elevenbefore = start - lubridate::minutes(11),
+                    # elevenafter = start + lubridate::minutes(11)
+                    ) %>%
       dplyr::group_split(bout_id)
     
     within_5min <- purrr::map(with_middles, ~{
       foc[.x$fivebefore <= foc$timestamp & foc$timestamp <= .x$fiveafter,]
     })
     
-    within_5min_speed <- purrr::map(within_5min, ~.x[.x$ground_speed <= spd,])
+    within_5min_speed <- purrr::map(within_5min, ~return(.x[.x$ground_speed <= spd,]))
     
-    within_11min_speed <- purrr::map(with_middles, ~{
-      foc[.x$elevenbefore <= foc$timestamp & foc$timestamp <= .x$elevenafter & foc$ground_speed < spd,]
-    })
+    # within_11min_speed <- purrr::map(with_middles, ~{
+    #   foc[.x$elevenbefore <= foc$timestamp & foc$timestamp <= .x$elevenafter & foc$ground_speed < spd,]
+    # })
     
     keep <- vector(mode = "list", length = length(with_middles))
     for(i in 1:length(keep)){
       w5 <- within_5min[[i]]
       w5s <- within_5min_speed[[i]]
-      w11s <- within_11min_speed[[i]]
+      #w11s <- within_11min_speed[[i]]
       wm <- with_middles[[i]]
       if(nrow(w5s) > 0){ # if there are any non-flying points within 5 mins, keep them
-        match <- w5s}else if(nrow(w5) > 0){
+        match <- w5s
+        }else if(nrow(w5) > 0){ # else, if there are ANY points within 5 mins, keep them.
           match <- w5
         }else{ # if none of those is true, return a 0-row data frame
           match <- foc[0,]
         }
       if(nrow(match) > 1){
-        match <- match[which.min(abs(as.numeric(match$timestamp - wm$middle[1])))] # if more than one match, take the closest to the middle time (either before or after)
+        match <- match[which.min(abs(as.numeric(match$timestamp - wm$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
       }
       if(nrow(match) > 0){ # for all bouts where we got any gps match at all...
         match$bout_id <- wm$bout_id[1] 
-        return(match)
+        keep[[i]] <- match
       }else{
         match <- as.data.frame(foc[0,])
         match$bout_id <- numeric(0)
-        return(matchSignature())}
+        keep[[i]] <- match}
     }
   }else{
-    keep <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- data.frame(tag_local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
     keep <- list(keep[0,])
   }
   keep_df <- purrr::list_rbind(keep)
+  if(nrow(keep_df) == 0){
+    keep <- data.frame(tag_local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- list(keep[0,])
+    keep_df <- purrr::list_rbind(keep)
+  }
   return(keep_df)
 }
 
