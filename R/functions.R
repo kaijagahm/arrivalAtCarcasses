@@ -332,6 +332,14 @@ get_carcass_bouts <- function(bouts, carcasses, dist, hours_after){
   return(carcass_bouts)
 }
 
+get_station_bouts <- function(bouts, stations, dist){
+  buf <- st_buffer(stations, dist)
+  bts <- st_transform(st_as_sf(bouts), 32636)
+  which_stn <- which(map_dbl(st_intersects(bts, buf), length) == 1)
+  bts_stn <- bts[which_stn,]
+  return(bts_stn)
+}
+
 get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
   stats <- carcass_bouts_df %>%
     dplyr::select(carcID, boutID, individual_id) %>%
@@ -343,11 +351,12 @@ get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
 }
 
 # Clustering --------------------------------------------------------------
-get_wild_carcasses <- function(wild_carcass_bo_df){
+get_wild_carcasses <- function(df){
   # Get carcasses
-  wild_carcasses <- wild_carcass_bo_df %>%
-    mutate(year = lubridate::year(timestamp)) %>%
-    group_by(year, carcID) %>%
+  df <- as.data.frame(df)
+  df <- st_as_sf(df) # should already have a geometry column
+  wild_carcasses <- df %>%
+    group_by(year, "carcID" = cluster) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = lubridate::date(timestamp)[1],
               nBouts = n(),
@@ -359,16 +368,10 @@ get_wild_carcasses <- function(wild_carcass_bo_df){
     bind_cols(sf::st_coordinates(.)) %>%
     mutate(datetime = mintime,
            datetime = lubridate::ymd_hms(datetime),
-           datetime_il = lubridate::with_tz(datetime, tzone = "Israel")) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
+           datetime_il = lubridate::with_tz(datetime, tzone = "Israel"),
+           carcType = "wild") # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
-# "Limitations of threshold
-# The threshold of group_times is considered only within the scope of 24 hours and this poses limitations on it:
-# 
-# threshold must evenly divide into 60 minutes or 24 hours
-# multi-day blocks are consistent across years and timegroups from these are by year.
-# number of minutes cannot exceed 60
-# threshold cannot be fractional"
 
 # prepare_data ------------------------------------------------------------
 get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){

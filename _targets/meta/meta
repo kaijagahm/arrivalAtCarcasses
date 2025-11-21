@@ -358,8 +358,6 @@ device_ids_2024|stem|59992ba16cdf25bc|354955b1d93ec596|d752e6d9eb984fa4|-1455697
 bo_pr_2023|stem|ae4b9d487279c709|81826a55eb7c9ec2|0a89e3ff9bd11c58|495749963||t20397.8295815215s|s9462310b|9462310|rds|local|vector|||6.016|There was 1 warning in `mutate()`. i In argument: `start = lubridate::ymd_hms(start)`. Caused by warning: !  1 failed to parse.|
 device_ids_2023|stem|a74b18cbd8a556ed|c26a88866c684435|f8e146fd5541c8f0|1373015996||t20397.829586358s|s248b|248|rds|local|vector|||0||
 wild_gps_forroosts|stem|93f6753c445be5fc|400314adaca98d43|cae2665587853cdc|1296499884||t20397.8310014509s|s47b|47|rds|local|vector|||0||
-stn_gps_forroosts|stem|93f6753c445be5fc|c5356a9e357346cc|c4f5857b01259174|87906736||t20397.8310062481s|s47b|47|rds|local|vector|||0||
-roosts_stn|stem|2f4b31a729aa22d1|aaf271e47cd5125d|ae38f871f4941e08|-126049309||t20397.8310098851s|s45b|45|rds|local|vector|||0.015||
 gps_focal_indivs_2022|stem|03c35c8afe1b3253|d4399b602168ffdb|dba0a9b7de371779|-1696163938||t20397.8330440872s|s7963413b|7963413|rds|local|vector|||3.766||
 gps_focal_indivs_2024|stem|d0bf283fb850308a|102994ad46c4c5e8|7d8400b31951c36d|1360243394||t20397.8330533876s|s8697494b|8697494|rds|local|vector|||4||
 gps_focal_indivs_2023|stem|e0716e68265c59b8|f14e0a40bbd081c6|45d3c2756da61f97|-1547241877||t20397.8330927454s|s10442131b|10442131|rds|local|vector|||4.359||
@@ -455,11 +453,32 @@ feeding_bo_spatial|stem|ac16f0962659debe|3db1bf6e1cf73067|5beb44054a6f315e|-1148
 feeding_bo_stationary|stem|a5dbb24156139540|b245a66cb9ad45b8|462b76fc98d2f24a|-978469263||t20406.9559710387s|s710653b|710653|rds|local|vector|||0.031||
 feeding_bo_stationary_withslopes|stem|fd6370da5cc52a2f|3e37dea692408bcb|74e82a3ac3343e39|692737749||t20406.9566421305s|s725661b|725661|rds|local|vector|||57.485||
 feeding_bo_noslope|stem|f47e9273dfcb1141|0ac65a7d6d919014|26be9182c77eca8c|602521626||t20406.9566464496s|s555691b|555691|rds|local|vector|||0||
-carcass_bo|stem|59d0803e0ce39067|0bad90934faa6fa9|85460481c6a52220|-2137821756||t20406.9567070066s|s2416274b|2416274|rds|local|vector|||4.437||
 carcass_bo_df|stem|a1dea82e8e6494f9|3cf73268e2f831c6|f1f4b38c7cb02533|-1069898492||t20406.956732032s|s1023904b|1023904|rds|local|vector|||0.907||
 non_carcass_bo|stem|2faf3b741341c043|5afc5239ced69ae6|b4ebdaa8487d7afb|770955119||t20406.9567364654s|s144654b|144654|rds|local|vector|||0.016||
 carcasses_focal_withstats|stem|ea60d31c99dadba4|13807fa526cf1b20|fe9f31563f60b277|101664956||t20406.9618630727s|s8438b|8438|rds|local|vector|||0.047||
 carcass_bo_dedup|stem|3baae4d0a782919c|6ac4282b11afefce|2f4ec4e3173b047e|445266035||t20406.9618770724s|s497788b|497788|rds|local|vector|||1.141||
+get_wild_carcass_bouts|function|487295675aa3788a
+wild_min_pts|stem|6da5b7dd94159200|2eac0bc41fe1538f|2c530c1562a7fbd1|-2077961306||t20406.9659400738s|s52b|52|rds|local|vector|||24||
+non_carcass_bo_prepped|stem|8020894abe04c15d|55804037f4981cb8|d6510dbc0bb3de5a|1099165358||t20406.9659439728s|s167347b|167347|rds|local|vector|||0.015||
+wild_carcass_bo_df_stdbscanr|stem|033c8a0a3cf665d7|df71a43cdb52753a|cb57dad3ece5a3d2|1369866904||t20406.9659587359s|s177843b|177843|rds|local|vector|||1.078||
+wild_carcasses_stdbscanr|stem|ed0a699a7e9026bf|806b6cd3cd487b89|13b117306baca361|1832096246||t20406.9710671793s|s5654b|5654|rds|local|vector|||1.219||
+stn_carcs|stem|82f2fcaa5893ad25|6bde925d89accb2f|fde7daaa5b72ad61|-1134313350||t20406.9721300169s|s12154b|12154|rds|local|vector|||0.062||
+dist_bo_stations|stem|3b05efb2ab20881e|2d06c1a214257fb1|2c530c1562a7fbd1|1592959317||t20412.8739642677s|s54b|54|rds|local|vector|||50.109||
+carcass_bo|stem|59d0803e0ce39067|77668889eb04308a|3503d4fa8dff6ea6|-2137821756||t20412.8740256187s|s2416274b|2416274|rds|local|vector|||4.312||
+station_bo|stem|f43a33d53e097fc1|14f4e3afc213c0f2|371ae3c098ec4b47|932490337||t20412.8740297644s|s291129b|291129|rds|local|vector|||0.125||
+station_bo_df|stem|error|af0ce9fa8afca263|7c8b689eae2402e0|2058448970||t20412.874032677s||0|null|local|vector|||0.079||`x` must be a list, not a <sf/data.frame> object.
+stn_gps_30days|stem|3b8a5bbe366d6f19|a95eb75fd6029944|d0d5f6254270fc70|-1489332406||t20412.8773105523s|s303802697b|303802697|rds|local|vector|||79.906||
+stn_gps_forroosts|stem|b7b949eed31eaa54|c5356a9e357346cc|51773740b868942c|87906736||t20412.8786244572s|s51356069b|51356069|rds|local|vector|||30.984||
+roosts_stn_2|stem|af4406c34948270c|16d8358859cb56f3|8f8fc04bc985b0b9|-1877586461||t20412.8793568153s|s113769b|113769|rds|local|vector|||54.391||
+roosts_stn_1|stem|b951c0d42005e45f|c3fca5626c381130|8f8fc04bc985b0b9|-96813986||t20412.8794729252s|s121847b|121847|rds|local|vector|||64.453||
+roosts_stn_3|stem|442eafe2adb31f81|35db87937bfdfd56|8f8fc04bc985b0b9|1424996334||t20412.8800384294s|s121155b|121155|rds|local|vector|||50.141||
+roosts_stn_4|stem|bca8ab0e306f0239|6074fc238b1d8a02|8f8fc04bc985b0b9|-1114027367||t20412.8801303871s|s114301b|114301|rds|local|vector|||48.094||
+roosts_stn_5|stem|5af5920da644423d|6ce1fabe432d2079|8f8fc04bc985b0b9|409754876||t20412.8807120084s|s106540b|106540|rds|local|vector|||49.766||
+roosts_stn_6|stem|98329369c52e54b9|e0348daeca9bcf6b|8f8fc04bc985b0b9|-840591687||t20412.880729507s|s104528b|104528|rds|local|vector|||43.484||
+roosts_stn|stem|63a797ab2aa47591|aaf271e47cd5125d|419621fce3829352|-126049309||t20412.8807356747s|s681438b|681438|rds|local|vector|||0.016||
+non_station_bo|stem|931549593208c138|ebc3aef3781c3053|960d02cfc7ca0565|1717360769||t20413.7400735583s|s295260b|295260|rds|local|vector|||0.016||
+non_station_bo_df|stem|error|5755df51f76e5560|b1ec77b1b262b064|-357178219||t20413.7400779115s||0|null|local|vector|||0.094||`x` must be a list, not a <sf/data.frame> object.
+non_station_bo_prepped|stem|c0bee315bc93e053|57d156bfc3457de8|b1ec77b1b262b064|-1983542454||t20413.7400797527s|s345347b|345347|rds|local|vector|||0.016||
 rotate_data_table|function|8ff0c7c0e298c44a
 convertsf|function|896ad86c2c3887a5
 join_inpa_ornitela|function|0f5e0af9a7c3bf40
@@ -485,7 +504,6 @@ get_network_metrics|function|9f356285a6b543fa
 get_fl_weighted|function|d8e227c970355873
 get_roost_dates|function|f95c759b9a6a71ba
 substitute_na_distances|function|e85b4e4ccaa38fee
-get_wild_carcass_bouts|function|487295675aa3788a
 get_nbdaData_list_flex|function|6b1f39937aa09cfd
 mean_amplitude|function|badaf723abe07336
 split_seasons|function|351942da17a95c00
@@ -574,12 +592,13 @@ get_situcolors|function|8d4c9a3b2eba20b3
 discoveryplot|function|d284b11222d4b585
 compile_movement_behavior|function|ff8bf71896d920ac
 get_focal|function|ac14d4b5085e87b6
+get_station_bouts|function|b2e8df860673d07b
 get_see_carcass|function|bf3b0e5b159bb6cc
 get_demo|function|fb6afaf5a6af5729
 remove_lfr|function|a80a1ba4cec47ac7
 get_acc_data|function|8f0e5facb667ede3
 prepare_full_dataset|function|b109f9773b98162d
-get_wild_carcasses|function|4b0250f1cca26233
+get_wild_carcasses|function|a993d54ee11e72b5
 get_pngs|function|9b09ad7e7efe082b
 flip_devices|function|c3a312a8c104857a
 get_loginObject|function|3d0444bbc27ce24f
@@ -615,30 +634,19 @@ get_metrics_wrapped_1season|function|79e5c9c980f51698
 prepare_dataset|function|8c0ebe7fe2c9aeae
 get_clusters_from_data|function|1cb2606df5778ff2
 caldev|function|c5b4f7878dbcfcbf
-wild_dist|stem|d2e3b9b8bbe97155|d6c480ee8049249e|2c530c1562a7fbd1|-1133726987||t20406.9659400738s|s52b|52|rds|local|vector|||24||
-wild_min_pts|stem|6da5b7dd94159200|2eac0bc41fe1538f|2c530c1562a7fbd1|-2077961306||t20406.9659400738s|s52b|52|rds|local|vector|||24||
-wild_time_hrs|stem|d0c479820101e9af|b186683e73018aad|2c530c1562a7fbd1|-537497617||t20406.9659419093s|s52b|52|rds|local|vector|||0||
-wild_carcass_bo_df|stem|error|4f1c0c6826daa203|40550ae6b67b72be|414243725||t20406.9659441742s||0|null|local|vector|||0.188||object 'wild_time' not found
-non_carcass_bo_prepped|stem|8020894abe04c15d|55804037f4981cb8|d6510dbc0bb3de5a|1099165358||t20406.9659439728s|s167347b|167347|rds|local|vector|||0.015||
-wild_carcasses|stem|error|2e910e5570ddae13|10e4ac47ee090b02|547751345||t20406.9659454324s||0|null|local|vector|||0.047||no applicable method for 'mutate' applied to an object of class 'NULL'
-wild_carcass_bo_again|stem|error|4b4f6b3448bdddc9|aecc54f413191b5f|-1335266467||t20406.9659465099s||0|null|local|vector|||0.047||no applicable method for 'select' applied to an object of class 'NULL'
-all_carcasses|stem|error|9112c05512816efd|a2beec6d6c359a7f|-969723668||t20406.9659475375s||0|null|local|vector|||0.047||no applicable method for 'mutate' applied to an object of class 'NULL'
-all_carcasses_cropped|stem|error|720211bf67a1aafe|2bd8dd78f6c869af|864567237||t20406.96594835s||0|null|local|vector|||0.032||no applicable method for 'st_crop' applied to an object of class 'NULL'
-wild|stem|error|07b8a72c60877c2b|73edb525ea032740|2075403839||t20406.9659494462s||0|null|local|vector|||0.046||no applicable method for 'filter' applied to an object of class 'NULL'
-wild_carcs|stem|error|50bf3b680df4e95a|38dc0c5438fd6a75|1152211664||t20406.9659506674s||0|null|local|vector|||0.032||no applicable method for 'group_by' applied to an object of class 'NULL'
-wild_carcass_bo_df_stdbscanr|stem|033c8a0a3cf665d7|df71a43cdb52753a|cb57dad3ece5a3d2|1369866904||t20406.9659587359s|s177843b|177843|rds|local|vector|||1.078||
-stn|stem|error|aed33255bbadcce1|73edb525ea032740|529122795||t20406.9659603693s||0|null|local|vector|||0.047||no applicable method for 'filter' applied to an object of class 'NULL'
-stn_carcs|stem|error|6bde925d89accb2f|4d7275c492a38bfd|-1134313350||t20406.9659611531s||0|null|local|vector|||0.031||no applicable method for 'group_by' applied to an object of class 'NULL'
-wild_gps_30days|stem|error|46d8de1b7e73af74|124229f4fef970d0|-485767732||t20406.966044846s||0|null|local|vector|||0.907||i In argument: `&...`. Caused by error: ! Incompatible classes: <NULL> - <Period>
-stn_gps_30days|stem|error|a95eb75fd6029944|b7e2bc5c46fb9e3c|-1489332406||t20406.9660490662s||0|null|local|vector|||0.172||i In argument: `&...`. Caused by error: ! Incompatible classes: <NULL> - <Period>
-roosts_wild_1|stem|error|244101baab4e2597|7e708314ef8dab48|1619405992||t20406.9660494871s||0|null|local|vector|||0.328||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_1|stem|error|c3fca5626c381130|78149437ccb740b5|-96813986||t20406.96605086s||0|null|local|vector|||0.078||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_2|stem|error|16d8358859cb56f3|78149437ccb740b5|-1877586461||t20406.9660514569s||0|null|local|vector|||0.125||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_wild_2|stem|error|d897944c7ec9ca07|7e708314ef8dab48|-1027430838||t20406.9660526616s||0|null|local|vector|||0.094||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_wild_3|stem|error|8956f8e5f68c12b5|7e708314ef8dab48|-1921161678||t20406.9660530311s||0|null|local|vector|||0.094||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_wild_5|stem|error|92bc4b2fa20b6486|7e708314ef8dab48|1929800229||t20406.9660545718s||0|null|local|vector|||0.094||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_wild_4|stem|error|d64d321c54d3c8b4|7e708314ef8dab48|8458268||t20406.9660552042s||0|null|local|vector|||0.11||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_3|stem|error|35db87937bfdfd56|78149437ccb740b5|1424996334||t20406.9660562993s||0|null|local|vector|||0.078||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_4|stem|error|6074fc238b1d8a02|78149437ccb740b5|-1114027367||t20406.9660568495s||0|null|local|vector|||0.094||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_5|stem|error|6ce1fabe432d2079|78149437ccb740b5|409754876||t20406.9660578161s||0|null|local|vector|||0.078||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
-roosts_stn_6|stem|error|e0348daeca9bcf6b|78149437ccb740b5|-840591687||t20406.9660584362s||0|null|local|vector|||0.093||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
+wild_dist|stem|0647bcd1433c2c3f|61d5d0ce88fac560|2c530c1562a7fbd1|-1133726987||t20413.7449398291s|s52b|52|rds|local|vector|||27.984||
+wild_time_hrs|stem|c59cfed3f1e7e322|60bff58b6a7c2ad3|2c530c1562a7fbd1|-537497617||t20413.7449669304s|s52b|52|rds|local|vector|||30.219||
+wild_carcass_bo_df|stem|e5e44a247b338d86|8cccf4e89a7452af|914eadab938db566|414243725||t20413.7450118516s|s373077b|373077|rds|local|vector|||3.547||
+wild_carcasses|stem|f4a8b21a1f85c7b1|bcd41918ba62fc41|408dc8d4c4eed3e3|547751345||t20413.7450262453s|s5818b|5818|rds|local|vector|||1.031||
+all_carcasses|stem|5d677b532a18eb6a|9112c05512816efd|e0babddeb75f5be9|-969723668||t20413.7450283735s|s13406b|13406|rds|local|vector|||0.031||
+wild_carcass_bo_again|stem|error|4b4f6b3448bdddc9|473ce3274e797a7e|-1335266467||t20413.7450310009s||0|null|local|vector|||0.109||Can't subset rows with `i`. x Logical subscript `i` must be size 1 or 117, not 0.
+all_carcasses_cropped|stem|833de2177749ceeb|720211bf67a1aafe|7134fbbca6811915|864567237||t20413.7450300888s|s11522b|11522|rds|local|vector|||0.015|attribute variables are assumed to be spatially constant throughout all geometries|
+stn|stem|eed9614c9c3830dd|aed33255bbadcce1|b7edafc539c307d2|529122795||t20413.7450322157s|s6756b|6756|rds|local|vector|||0.016||
+wild|stem|6141609e2dc235c5|07b8a72c60877c2b|b7edafc539c307d2|2075403839||t20413.7450322389s|s6362b|6362|rds|local|vector|||0.016||
+wild_carcs|stem|25b1836dda122fa6|50bf3b680df4e95a|153568d7ac4c2326|1152211664||t20413.7450350657s|s14325b|14325|rds|local|vector|||0.109||
+wild_gps_30days|stem|error|46d8de1b7e73af74|04e8937678d6bf66|-485767732||t20413.7470359579s||0|null|local|vector|||165.625||i In argument: `dist_to_carcass = as.numeric(st_distance(., ic))`. Caused by error: ! `dist_to_carcass` must be size 122320 or 1, not 366960.
+roosts_wild_1|stem|error|244101baab4e2597|7e708314ef8dab48|1619405992||t20413.7470457922s||0|null|local|vector|||0.437||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
+roosts_wild_2|stem|error|d897944c7ec9ca07|7e708314ef8dab48|-1027430838||t20413.7470460148s||0|null|local|vector|||0.453||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
+roosts_wild_4|stem|error|d64d321c54d3c8b4|7e708314ef8dab48|8458268||t20413.7470462358s||0|null|local|vector|||0.078||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
+roosts_wild_5|stem|error|92bc4b2fa20b6486|7e708314ef8dab48|1929800229||t20413.7470464153s||0|null|local|vector|||0.094||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.
+roosts_wild_3|stem|error|8956f8e5f68c12b5|7e708314ef8dab48|-1921161678||t20413.7470470411s||0|null|local|vector|||0.406||i In index: 1. Caused by error in `vultureUtils::get_roosts_df()`: ! Assertion on 'df' failed: Must be of type 'data.frame', not 'NULL'.

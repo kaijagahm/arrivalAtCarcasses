@@ -6,7 +6,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table"),
-  controller = crew_controller_local(workers = 2)
+  controller = crew_controller_local(workers = 5)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -499,40 +499,33 @@ list(
   tar_target(carcasses_focal, get_focal(carcasses_audited, minmax_dates)), 
   
   ## Match bouts to carcasses
-  tar_target(dist_bo_carcasses, 750), # NNN don't have good justification for this
+  tar_target(dist_bo_stations, 750), # NNN don't have good justification for this
   tar_target(hours_after_carcass, 72),
   tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_noslope, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
                                            carcasses = carcasses_focal,
-                                           dist = dist_bo_carcasses,
+                                           dist = dist_bo_stations,
                                            hours_after = hours_after_carcass)),
-  # as.numeric(st_distance(stations, stations)) -> dists; dists[dists < 1500] # NNN look into this after we've resolved the stations with May and Shaaked
   tar_target(carcass_bo_df, purrr::list_rbind(carcass_bo)), 
+  tar_target(station_bo, get_station_bouts(bouts = feeding_bo_noslope, stations = stations, dist = dist_bo_stations)),
+  tar_target(non_station_bo, filter(feeding_bo_noslope, !(boutID %in% station_bo$boutID))),
   tar_target(non_carcass_bo, filter(feeding_bo_noslope, !(boutID %in% carcass_bo_df$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
-  tar_target(wild_dist, 50),
-  tar_target(wild_time_hrs, 12),
+  tar_target(wild_dist, 200),
+  tar_target(wild_time_hrs, 24),
   tar_target(wild_min_pts, 3),
-  tar_target(non_carcass_bo_prepped, bind_cols(mutate(non_carcass_bo, 
+  tar_target(non_station_bo_prepped, bind_cols(mutate(non_station_bo, 
                                             timestamp_numeric = 
                                               as.numeric(difftime(timestamp, 
-                                                                  min(timestamp), units = "secs"))), sf::st_coordinates(non_carcass_bo))),
-  tar_target(wild_carcass_bo_df_stdbscanr, get_clusters_from_data(non_carcass_bo_prepped, 
+                                                                  min(timestamp), units = "secs"))), sf::st_coordinates(non_station_bo))),
+  tar_target(wild_carcass_bo_df, get_clusters_from_data(non_station_bo_prepped, 
                                                                   x = "X", y = "Y", 
                                                                   t = "timestamp_numeric",
                                                                   eps = wild_dist, 
                                                                   eps_t = wild_time_hrs*60*60, 
                                                                   minpts = 3)),
+  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
   
-  tar_target(wild_carcass_bo_df, get_wild_carcass_bouts(non_carcass_bo,
-                                                        time = wild_time,
-                                                        dst = wild_dist,
-                                                        minBouts = 3,
-                                                        stations = stations,
-                                                        stationDist = dist_bo_carcasses,
-                                                        minIndivs = 3)), # NNN will need to rerun based on the above wild_dist
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df) %>%
-               mutate(carcType = "wild")),
   tar_target(wild_carcass_bo_again, assign_time_dist(wild_carcass_bo_df, wild_carcasses)),
   tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
                arrange(boutID, time_since_carcass) %>%
