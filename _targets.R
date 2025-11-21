@@ -5,7 +5,7 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table"),
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere"),
   controller = crew_controller_local(workers = 5)
 )
 
@@ -525,13 +525,11 @@ list(
                                                                   eps_t = wild_time_hrs*60*60, 
                                                                   minpts = 3)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
-  
-  tar_target(wild_carcass_bo_again, assign_time_dist(wild_carcass_bo_df, wild_carcasses)),
-  tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
-               arrange(boutID, time_since_carcass) %>%
-               slice(1) %>%
-               ungroup()), # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
-  ## Combine carcasses
+  # tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
+  #              arrange(boutID, time_since_carcass) %>%
+  #              slice(1) %>%
+  #              ungroup()), # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
+  # ## Combine carcasses
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bo_df)), 
   tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "stn", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
   
@@ -606,18 +604,21 @@ list(
   tar_target(stn_gps_forroosts, map(stn_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
   tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
   
-  tar_target(roosts_stn_1, get_roosts(stn_gps_forroosts[1:10], id = "individual_local_identifier")),
-  tar_target(roosts_stn_2, get_roosts(stn_gps_forroosts[11:20], id = "individual_local_identifier")),
-  tar_target(roosts_stn_3, get_roosts(stn_gps_forroosts[21:30], id = "individual_local_identifier")),
-  tar_target(roosts_stn_4, get_roosts(stn_gps_forroosts[31:40], id = "individual_local_identifier")),
-  tar_target(roosts_stn_5, get_roosts(stn_gps_forroosts[41:50], id = "individual_local_identifier")),
-  tar_target(roosts_stn_6, get_roosts(stn_gps_forroosts[51:length(stn_gps_forroosts)], id = "individual_local_identifier")),
+  tar_target(idname, "individual_local_identifier"),
+  tar_target(tsname, "timestamp_il"),
+  tar_target(tzname, "Israel"),
+  tar_target(roosts_stn_1, NEW_get_roosts(stn_gps_forroosts[1:10], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_2, NEW_get_roosts(stn_gps_forroosts[11:20], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_3, NEW_get_roosts(stn_gps_forroosts[21:30], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_4, NEW_get_roosts(stn_gps_forroosts[31:40], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_5, NEW_get_roosts(stn_gps_forroosts[41:50], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_6, NEW_get_roosts(stn_gps_forroosts[51:length(stn_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
   
-  tar_target(roosts_wild_1, get_roosts(wild_gps_forroosts[1:10], id = "individual_local_identifier")),
-  tar_target(roosts_wild_2, get_roosts(wild_gps_forroosts[11:20], id = "individual_local_identifier")),
-  tar_target(roosts_wild_3, get_roosts(wild_gps_forroosts[21:30], id = "individual_local_identifier")),
-  tar_target(roosts_wild_4, get_roosts(wild_gps_forroosts[31:40], id = "individual_local_identifier")),
-  tar_target(roosts_wild_5, get_roosts(wild_gps_forroosts[41:length(wild_gps_forroosts)], id = "individual_local_identifier")),
+  tar_target(roosts_wild_1, NEW_get_roosts(wild_gps_forroosts[1:10], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_wild_2, NEW_get_roosts(wild_gps_forroosts[11:20], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_wild_3, NEW_get_roosts(wild_gps_forroosts[21:30], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_wild_4, NEW_get_roosts(wild_gps_forroosts[31:40], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_wild_5, NEW_get_roosts(wild_gps_forroosts[41:length(wild_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
   
   tar_target(roosts_stn, c(roosts_stn_1, roosts_stn_2, roosts_stn_3, roosts_stn_4, roosts_stn_5, roosts_stn_6)),
   tar_target(roosts_wild, c(roosts_wild_1, roosts_wild_2, roosts_wild_3, roosts_wild_4, roosts_wild_5))#,

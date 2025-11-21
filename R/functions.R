@@ -356,6 +356,7 @@ get_wild_carcasses <- function(df){
   df <- as.data.frame(df)
   df <- st_as_sf(df) # should already have a geometry column
   wild_carcasses <- df %>%
+    filter(!is.na(cluster)) %>%
     group_by(year, "carcID" = cluster) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = lubridate::date(timestamp)[1],
@@ -400,17 +401,18 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
     out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
       rename("location_long" = X, "location_lat" = Y)
     gps_all[[i]] <- out
+    cat("done with", i, "\n")
   }
   return(gps_all)
 }
 
-get_roosts <- function(gps_all, col){
-  r <- map(gps_all, ~{
-    if(nrow(.x) > 0){return(get_roosts_df(.x, id = col))}
-    else{return(NULL)}
-  })
-  return(r)
-}
+# get_roosts <- function(gps_all, col){
+#   r <- map(gps_all, ~{
+#     if(nrow(.x) > 0){return(get_roosts_df(.x, id = col))}
+#     else{return(NULL)}
+#   })
+#   return(r)
+# }
 
 # get_seeds_gps <- function(gps_all, stn_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
 #   seeds_gps <- map2(gps_all, stn_carcs, ~{
@@ -1862,6 +1864,15 @@ get_roosts <- function(dat, id){
   return(roosts)
 }
 
+NEW_get_roosts <- function(dat, id, ts = "timestamp_il", tz = "Israel"){
+  roosts <- purrr::map(dat, ~NEW_get_roosts_df(df = .x, id = id, timestamp = ts, timestamp_tz = tz))
+  roosts <- roosts %>%
+    purrr::map(., ~st_as_sf(.x, crs = "WGS84", 
+                     coords = c("location_long", "location_lat"), 
+                     remove = F), .progress = T)
+  return(roosts)
+}
+
 get_roosting <- function(roosts, id){
   roosting <- map(roosts, ~{
     vultureUtils::getRoostEdges(.x, mode = "distance", 
@@ -1874,3 +1885,139 @@ get_roosting <- function(roosts, id){
   }, .progress = T)
   return(roosting)
 }
+
+NEW_get_roosts_df <- function(df, id = "local_identifier", timestamp = "timestamp", 
+                               x = "location_long", y = "location_lat", ground_speed = "ground_speed", 
+                               speed_units = "m/s", buffer = 1, twilight = 61, morning_hours = c(0:12), 
+                               night_hours = c(13:23), quiet = F,
+                               timestamp_tz = "UTC") 
+{
+  if (!quiet) {
+    cat("\nFinding roosts... this may take a while if your dataset is large.\n")
+    start <- Sys.time()
+  }
+  checkmate::assertDataFrame(df)
+  checkmate::assertCharacter(id, len = 1)
+  checkmate::assertSubset(id, names(df))
+  checkmate::assertCharacter(timestamp, len = 1)
+  checkmate::assertSubset(timestamp, names(df))
+  checkmate::assertCharacter(x, len = 1)
+  checkmate::assertSubset(x, names(df))
+  checkmate::assertCharacter(y, len = 1)
+  checkmate::assertSubset(y, names(df))
+  checkmate::assertCharacter(ground_speed, len = 1)
+  checkmate::assertSubset(ground_speed, names(df))
+  checkmate::assertCharacter(speed_units, len = 1)
+  checkmate::assertSubset(speed_units, c("m/s", "km/h"))
+  checkmate::assertNumeric(buffer, len = 1)
+  checkmate::assertNumeric(twilight, len = 1)
+  checkmate::assertNumeric(morning_hours, upper = 24, lower = 0)
+  checkmate::assertNumeric(night_hours, upper = 24, lower = 0)
+  checkmate::assertNumeric(df[[x]])
+  checkmate::assertNumeric(df[[y]])
+  checkmate::assertNumeric(df[[ground_speed]])
+  if ("sf" %in% class(df)) {
+    df <- df %>% sf::st_drop_geometry()
+  }
+  twilight_secs <- twilight * 60
+  if (speed_units == "km/h") {
+    df <- df %>% dplyr::mutate(`:=`({
+      {
+        ground_speed
+      }
+    }, round(.data[[ground_speed]]/3.6, 3)))
+  }
+  
+  # XXX--this is bad because it assumes a particular format, but whatever.
+  df[[timestamp]] <- as.POSIXct(df[[timestamp]], format = "%Y-%m-%d %H:%M:%S", 
+                                tz = timestamp_tz)
+  
+  if (sum(is.na(df[[timestamp]])) > 0) {
+    stop("Timestamp needs to be defined as.POSIXct (%Y-%m-%d %H:%M:%S)")
+  }
+  df$date <- as.Date(df[[timestamp]], tz = timestamp_tz) # this is going to be the date in the specified/local time zone
+  indivs <- df %>% dplyr::group_by(.data[[id]]) %>% dplyr::group_split(.keep = T)
+  roosts <- purrr::map(indivs, ~{
+    temp.id <- unique(.x[[id]]) 
+    id.df <- .x %>% dplyr::group_by(date) %>% 
+      dplyr::arrange({{timestamp}}) %>%
+      dplyr::mutate(row_id = dplyr::case_when(dplyr::row_number() == 
+                                                1 ~ "first", dplyr::row_number() == max(dplyr::row_number()) ~ 
+                                                "last"), hour = lubridate::hour(.data[[timestamp]])) %>% 
+      dplyr::filter(row_id %in% c("first", "last")) %>% # only including the first and last point per date
+      dplyr::ungroup() %>% 
+      dplyr::mutate(day_diff = round(difftime(dplyr::lead(date), date, units = "days")))
+    
+    matrix <- as.matrix(id.df[, c(x, y)]) # matrix of locations
+    leadMatrix <- as.matrix(cbind(dplyr::lead(id.df[[x]]), 
+                                  dplyr::lead(id.df[[y]]))) # matrix of locations for the next point
+    distances <- geosphere::distGeo(p1 = matrix, p2 = leadMatrix) * 
+      0.001 %>% round(., 2) # getting the distance between the first and last point, which ends up being 0 because the values are really small and we're rounding to 2 digits
+    id.df$dist_km <- distances
+    id.df$dist_km[id.df$day_diff != 1] <- NA # set to NA if this point is on the same day as the following point or if it's more than 1 day different
+    
+    data <- id.df %>% dplyr::select(date, "lat" = {{y}}, "lon" = {{x}}) %>% as.data.frame() # the line after this was unnecessarily re-creating the date column so I fixed it.
+    # data <- data.frame(date = as.Date(id.df[[timestamp]], tz = timestamp_tz), 
+    #                    lat = id.df[[y]], lon = id.df[[x]]) 
+    id.df$sunrise <- suncalc::getSunlightTimes(data = data, 
+                                               keep = c("sunrise"), tz = timestamp_tz)$sunrise
+    id.df$sunset <- suncalc::getSunlightTimes(data = data, 
+                                              keep = c("sunset"), tz = timestamp_tz)$sunset
+    id.df$sunrise_twilight <- id.df$sunrise + twilight_secs
+    id.df$sunset_twilight <- id.df$sunset - twilight_secs
+    id.df <- id.df %>% dplyr::mutate(daylight = ifelse(.data[[timestamp]] >= 
+                                                         sunrise_twilight & .data[[timestamp]] <= sunset_twilight, 
+                                                       "day", "night"))
+    id.df <- id.df %>% 
+      dplyr::mutate(is_roost = dplyr::case_when(row_id == "last" & daylight == "night" & hour %in% 
+                                                  night_hours & ({{ground_speed}} <= 4 | is.na({{ground_speed}})) ~ 1, 
+                                                row_id == "first" & daylight == "night" & 
+                                                  hour %in% morning_hours & ({{ground_speed}} <= 4 | is.na({{ground_speed}})) ~ 1, 
+                                                dist_km <= buffer ~ 1), # because of the NA insertion that we did earlier, this effectively means "if the point is NOT on the same day as the next point, and it's <= 1km from the following morning's point, then call it a roost"
+                    roost_date = dplyr::case_when(is_roost == 1 & row_id == "last" ~ date, 
+                                                  is_roost == 1 & row_id == "first" ~ date-days(1))#,
+                    # roost_date = as.Date(roost_date) # why was this necessary? This should already be a date. And this function is dangerous because it puts it back to UTC.
+      )
+    temp.id.roosts <- dplyr::filter(id.df, is_roost == 1)
+    temp.id.roosts <- temp.id.roosts %>% dplyr::group_by(roost_date) %>% 
+      dplyr::arrange({
+        {
+          timestamp
+        }
+      }) %>% dplyr::filter(dplyr::row_number() == 1) %>%  # if there are multiple roosts per roost date, take the first one
+      dplyr::ungroup() %>% dplyr::select(-c("row_id", 
+                                            "hour"))
+    temp.id.roosts <- temp.id.roosts %>% dplyr::select({
+      {
+        id
+      }
+    }, date, roost_date, sunrise, sunset, sunrise_twilight, 
+    sunset_twilight, daylight, is_roost, location_lat, 
+    location_long)
+    return(temp.id.roosts)
+  }) %>% purrr::list_rbind()
+  if (!quiet) {
+    end <- Sys.time()
+    duration <- difftime(end, start, units = "secs")
+    cat(paste0("Roost computation completed in ", duration, 
+               " seconds."))
+  }
+  roosts <- roosts %>% dplyr::select({
+    {
+      id
+    }
+  }, date, roost_date, sunrise, sunset, sunrise_twilight, sunset_twilight, 
+  daylight, is_roost, location_lat, location_long)
+  return(roosts)
+}
+
+# tar_load(stn_gps_forroosts)
+# test <- stn_gps_forroosts[[1]]
+# glimpse(test)
+# newroosts_test <- NEW_get_roosts_df(test, id = "individual_local_identifier", timestamp = "timestamp_il", x = "location_long", y = "location_lat", timestamp_tz = "Israel")
+# oldroosts_test <- get_roosts_df(test, id = "individual_local_identifier")
+# dim(newroosts_test)
+# dim(oldroosts_test)
+# new <- sf::st_as_sf(newroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
+# old <- sf::st_as_sf(oldroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
+# mapview(new, col.regions = "blue")+ mapview(old, col.regions = "red")
