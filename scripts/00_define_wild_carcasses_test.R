@@ -7,6 +7,7 @@ library(data.table)
 library(mapview)
 tar_load(non_station_bo)
 source("R/stdbscanr_source_patched.R")
+source("R/functions.R")
 
 # add xy cols
 test <- sf::st_as_sf(non_station_bo) %>%

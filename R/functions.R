@@ -406,76 +406,6 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
   return(gps_all)
 }
 
-# get_roosts <- function(gps_all, col){
-#   r <- map(gps_all, ~{
-#     if(nrow(.x) > 0){return(get_roosts_df(.x, id = col))}
-#     else{return(NULL)}
-#   })
-#   return(r)
-# }
-
-# get_seeds_gps <- function(gps_all, stn_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
-#   seeds_gps <- map2(gps_all, stn_carcs, ~{
-#     dttm <- .y$datetime[1]
-#     .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
-#       filter((ground_speed >= 5 & dist_to_carcass < seed_distance_flight) | (ground_speed < 5 & dist_to_carcass < seed_distance_stationary))
-#   })
-#   return(seeds_gps)
-# }
-
-# get_distances <- function(roosts, stn_carcs){
-#   stn_carcs <- map(stn_carcs, ~.x %>% mutate(year = lubridate::year(date)))
-#   distances <- map2(roosts, stn_carcs, ~{
-#     if(!is.null(.x)){
-#       dist <- .x %>%
-#         sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
-#         sf::st_transform(32636) %>%
-#         mutate(dist = as.numeric(st_distance(., .y))) %>%
-#         st_drop_geometry() %>%
-#         dplyr::select(tag_local_identifier, roost_date, dist) %>%
-#         pivot_wider(id_cols = "tag_local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_") %>%
-#         mutate(year = .y$year[1])
-#     }else{
-#       dist <- NULL
-#     }
-#     return(dist)
-#   })
-#   return(distances)
-# }
-# 
-# get_www <- function(ww){
-#   www <- ww %>%
-#     dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
-#     mutate(age_2022 = 2022-birth_year,
-#            age_2023 = 2023-birth_year,
-#            age_2024 = 2024-birth_year,
-#            age_group_2022 = case_when(age_2022 > 5 ~ "02_adult",
-#                                       age_2022 <= 5 ~ "01_juv_sub",
-#                                       .default = NA),
-#            age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
-#                                       age_2023 <= 5 ~ "01_juv_sub",
-#                                       .default = NA),
-#            age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
-#                                       age_2024 <= 5 ~ "01_juv_sub",
-#                                       .default = NA)) %>%
-#     dplyr::select("tag_local_identifier" = "Movebank_id", age_group_2022, age_group_2023, age_group_2024) %>%
-#     distinct()
-#   return(www)
-# }
-# 
-# get_ilvs <- function(distances, www){
-#   yrs <- map_dbl(distances, ~.x$year[1])
-#   ilvs <- map2(distances, yrs, ~{
-#     tojoin <- www %>%
-#       dplyr::select(tag_local_identifier, "age_group" = paste0("age_group_", .y))
-#     out <- left_join(.x, tojoin, by = "tag_local_identifier")
-#     to_rename <- names(out)[grepl("roost_", names(out))]
-#     new_names <- paste0("roost_night", 0:(length(to_rename)-1))
-#     names(out)[names(out) %in% to_rename] <- new_names
-#     return(out)})
-#   return(ilvs)
-# }
-
 remove_points_before <- function(gps_all, stn_carcs, days_after, hours_before = 0){
   gps <- map2(gps_all, stn_carcs, ~{
     dttm <- .y$datetime[1]
@@ -1598,7 +1528,8 @@ prepare_nbda_data <- function(gps,
                               identify_seeds = FALSE,
                               seed_time_before = NULL,
                               sighting_time_max_hours = 72,
-                              carcass_data = NULL) {
+                              carcass_data = NULL,
+                              age_ilv = T) {
   
   gps$ground_speed <- as.numeric(gps$ground_speed)
   
@@ -1645,7 +1576,22 @@ prepare_nbda_data <- function(gps,
   n_gps <- length(unique(gps$tag_local_identifier))
   prop_found <- n_found / n_gps
   
-  all_indivs_sorted <- sort(unique(gps$tag_local_identifier)) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric.
+  all_indivs_sorted <- sort(unique(as.character(gps$tag_local_identifier))) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric. # 2025-12-05 I think this is fixed now.
+  
+  if (age_ilv) {
+    year = max(gps$year)
+    colname <- paste0("age_", year)
+    age <- gps %>%
+      st_drop_geometry() %>%
+      filter(!is.na(tag_local_identifier)) %>%
+      select(tag_local_identifier, {{colname}}) %>%
+      distinct() %>%
+      mutate(tag_local_identifier = as.character(tag_local_identifier))
+    
+    age_ordered <- age[match(all_indivs_sorted, age$tag_local_identifier),]
+    age_matrix <- cbind(age_ordered[[colname]])
+    # 2025-12-05 XXX START HERE AND MAKE SURE THE ORDER IS RIGHT!
+  }
   
   oa_indivs <- first_sightings %>%
     arrange(time_since_carcass, timestamp) %>%
@@ -1699,26 +1645,6 @@ prepare_nbda_data <- function(gps,
     gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
-  # NNN decided to remove the static stuff entirely!
-  # # Static hour-range GPS segments (shared across individuals)
-  # gps_data_static_hour_ranges <- list()
-  # for (range in n_hours_gps_static) {
-  #   if (length(range) != 2 || range[1] > range[2]) {
-  #     stop("Each element of n_hours_gps_static must be a length-2 numeric vector where the first number <= second.")
-  #   }
-  #   start_offset <- range[1]
-  #   end_offset <- range[2]
-  #   start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
-  #   end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
-  #   var_name <- sprintf("gps_data_static_hours_%s_%s", start_label, end_label)
-  #   
-  #   start_time <- carcass_placement_time + dhours(as.numeric(start_offset))
-  #   end_time <- carcass_placement_time + dhours(as.numeric(end_offset))
-  #   gps_data <- gps %>% filter(timestamp >= start_time, timestamp <= end_time)
-  #   
-  #   gps_data_static_hour_ranges[[var_name]] <- gps_data
-  # }
-  
   if(identify_seeds){
     seeds_vec <- as.numeric(all_indivs_sorted %in% seeds) # we've already created the seeds vector previously; this is just converting it to 0s and 1s, which is what NBDA needs.
   }else{
@@ -1737,14 +1663,11 @@ prepare_nbda_data <- function(gps,
     oa_nums = oa_nums,
     ami = ami,
     gps_data_cumulative = gps_data_cumulative,
-    #gps_data_sameday = gps_data_sameday,
     seeds_vec = seeds_vec
   )
   
   final_list <- c(base_list, 
-                  gps_data_dynamic_hour_ranges#, 
-                  #gps_data_static_hour_ranges # NNN removing static ranges bc we decided not to use them
-                  )
+                  gps_data_dynamic_hour_ranges)
   return(final_list)
 }
 
@@ -2021,3 +1944,27 @@ NEW_get_roosts_df <- function(df, id = "local_identifier", timestamp = "timestam
 # new <- sf::st_as_sf(newroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
 # old <- sf::st_as_sf(oldroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
 # mapview(new, col.regions = "blue")+ mapview(old, col.regions = "red")
+
+fix_names_ages <- function(gps_combined, ww_file){
+  ww <- read_excel(ww_file, sheet = "all gps tags")
+  # pull out just the names columns, nothing else, and remove any duplicates
+  ww_tojoin <- ww %>% dplyr::select(Nili_id, Movebank_id, birth_year) %>% distinct() 
+  
+  # Prepare for join: are there any individuals in the `local_identifier` column of `joined0` that don't appear in the `Movebank_id` column of `ww_tojoin`?
+  problems <- gps_combined %>% filter(!(individual_local_identifier %in% ww_tojoin$Movebank_id)) %>% pull(individual_local_identifier) %>% unique()
+  
+  # problems # check this against the who's who and try to make changes. The only problem is E60w.
+  out <- gps_combined %>%
+    left_join(ww_tojoin, by = c("individual_local_identifier" = "Movebank_id"))
+  
+  out <- out %>%
+    mutate(Nili_id = case_when(is.na(Nili_id) & individual_local_identifier == "E60w" ~ "gili", .default = Nili_id),
+           birth_year = case_when(individual_local_identifier == "E60w" ~ ww$birth_year[ww$Nili_id == "gili"], .default = birth_year))
+  
+  out <- out %>%
+    mutate(age_2022 = 2022-birth_year,
+           age_2023 = 2023-birth_year,
+           age_2024 = 2024-birth_year)
+  
+  return(out)
+}
