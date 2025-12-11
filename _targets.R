@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere")#,
-  #controller = crew_controller_local(workers = 5)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere"),
+  controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -479,11 +479,17 @@ list(
   ## Further restrictions on feeding bouts
   tar_target(feeding_bo_stationary, dplyr::filter(feeding_bo_spatial, as.numeric(ground_speed) <= gps_spd)),
   
+  ## Use buffered cliffs layer created by Shaked to remove "feeding bouts" that are too much on a slope/cliff
+  tar_target(filenames, list.files(here("data/created/DEMs_Shaked/final_25deg_100buff/"), pattern = ".gpkg", full.names = T)),
+  tar_target(slopes_layer, st_transform(dplyr::bind_rows(purrr::map(filenames, ~sf::st_read(.x))), 32636)),
+  tar_target(feeding_bo_nocliffs, feeding_bo_stationary[is.na(as.numeric(sf::st_intersects(feeding_bo_stationary, slopes_layer))),]),
+  
+  # old DEM
   ## Using DEM to remove "feeding bouts" that are too much on a slope
-  tar_target(filenames, list.files(here("data/raw/DEMs/ASTER/"), pattern = ".tif", full.names = T)),
-  tar_target(feeding_bo_stationary_withslopes, get_slopes(filenames, bbox_south_big, neighbors = 8, feeding_bo_stationary)),
-  tar_target(slope_thresh, 15),
-  tar_target(feeding_bo_noslope, filter(feeding_bo_stationary_withslopes, slope < slope_thresh)),
+  # tar_target(filenames, list.files(here("data/raw/DEMs/ASTER/"), pattern = ".tif", full.names = T)),
+  # tar_target(feeding_bo_stationary_withslopes, get_slopes(filenames, bbox_south_big, neighbors = 8, feeding_bo_stationary)),
+  # tar_target(slope_thresh, 15),
+  # tar_target(feeding_bo_noslope, filter(feeding_bo_stationary_withslopes, slope < slope_thresh)),
   
   ## SFS
   ### Created in 00_carcass_data_translation.R
@@ -505,10 +511,10 @@ list(
                                            carcasses = carcasses_focal,
                                            dist = dist_bo_stations,
                                            hours_after = hours_after_carcass)),
-  tar_target(carcass_bo_df, purrr::list_rbind(carcass_bo)), 
+  # tar_target(carcass_bo_df, purrr::list_rbind(carcass_bo)), 
   tar_target(station_bo, get_station_bouts(bouts = feeding_bo_noslope, stations = stations, dist = dist_bo_stations)),
   tar_target(non_station_bo, filter(feeding_bo_noslope, !(boutID %in% station_bo$boutID))),
-  tar_target(non_carcass_bo, filter(feeding_bo_noslope, !(boutID %in% carcass_bo_df$boutID))),
+  # tar_target(non_carcass_bo, filter(feeding_bo_noslope, !(boutID %in% carcass_bo_df$boutID))),
   
   ## Cluster the remaining bouts to detect wild carcasses
   tar_target(wild_dist, 200),
@@ -523,8 +529,11 @@ list(
                                                         t = "timestamp_numeric",
                                                         eps = wild_dist, 
                                                         eps_t = wild_time_hrs*60*60, 
-                                                        minpts = 3)),
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
+                                                        minpts = wild_min_pts)),
+  tar_target(validation, mutate(rename(readxl::read_excel("data/raw/wildCarcassValidation/carcass review list_2025-12-10_OrrShakedMay.xlsx"), "carcID" = `carcass id`), carcID = as.numeric(carcID))),
+  tar_target(wild_carcass_bo_df_validated, dplyr::left_join(wild_carcass_bo_df, validation, by = c("cluster" = "carcID"))),
+  tar_target(wild_carcass_clusters_touse, dplyr::filter(wild_carcass_bo_df_validated, status == "valid")), # XXX 2025-12-10 start here with checks
+  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_clusters_touse)),
   # tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
   #              arrange(boutID, time_since_carcass) %>%
   #              slice(1) %>%
@@ -627,12 +636,12 @@ list(
   
   # Prepare NBDA data
   ## Prepare NBDA data--stn carcs
-  tar_target(nd1, nb_shortcut(stn_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[1:10])),
-  tar_target(nd2, nb_shortcut(stn_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[11:20])),
-  tar_target(nd3, nb_shortcut(stn_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[21:30])),
-  tar_target(nd4, nb_shortcut(stn_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[31:40])),
-  tar_target(nd5, nb_shortcut(stn_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[41:50])),
-  tar_target(nd6, nb_shortcut(stn_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[51:60])),
+  tar_target(nd1, nb_shortcut(stn_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[1:10], age_ilv = T)),
+  tar_target(nd2, nb_shortcut(stn_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[11:20], age_ilv = T)),
+  tar_target(nd3, nb_shortcut(stn_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[21:30], age_ilv = T)),
+  tar_target(nd4, nb_shortcut(stn_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[31:40], age_ilv = T)),
+  tar_target(nd5, nb_shortcut(stn_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[41:50], age_ilv = T)),
+  tar_target(nd6, nb_shortcut(stn_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[51:60], age_ilv = T)),
   
   ## Prepare NBDA data--wild carcs
   # tar_target(nd1_wild, nb_shortcut(wild_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[1:10])),
@@ -707,22 +716,22 @@ list(
   ### Prepare data for NBDA--Cumulative (stn)--Binary--seeds
   tar_target(data_cumul_bin_1, purrr::map2(nd1, fl_bin_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   tar_target(data_cumul_bin_2, purrr::map2(nd2, fl_bin_cumulative_2, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   tar_target(data_cumul_bin_3, purrr::map2(nd3, fl_bin_cumulative_3, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   tar_target(data_cumul_bin_4, purrr::map2(nd4, fl_bin_cumulative_4, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   tar_target(data_cumul_bin_5, purrr::map2(nd5, fl_bin_cumulative_5, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   tar_target(data_cumul_bin_6, purrr::map2(nd6, fl_bin_cumulative_6, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
   
   # ### Prepare data for NBDA--Cumulative (wild)--Binary--seeds
   # tar_target(data_cumul_bin_1_wild, purrr::map2(nd1_wild, fl_bin_cumulative_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){

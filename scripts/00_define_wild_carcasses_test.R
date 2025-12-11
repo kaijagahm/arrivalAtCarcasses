@@ -168,7 +168,6 @@ wvsf_focal %>%
   ggplot(aes(x = alertDate))+
   geom_histogram() # at least superficially, this space/time distribution looks kinda similar...
 
-# mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+ 
 mapview(wild_carcasses_params[[1]], col.regions = "dodgerblue3", layer.name = "DBSCAN1")+
   mapview(wild_carcasses_params[[2]], col.regions = "darkblue", layer.name = "DBSCAN2")+
   mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses")
@@ -185,9 +184,8 @@ minpts2 <- 3
 idx2 <- which(params$param_hrs == hrs2 & params$param_dists == dist2 & params$param_minpts == minpts2)
 layername2 = paste0(hrs2, "hrs_", dist2, "m_", minpts2)
 
-mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
+mapview(test24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
   mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses", homebutton = F)+
-  # mapview(wild_carcasses_params[[idx1]], col.regions = "darkblue", layer.name = layername1)+
   mapview(wild_carcasses_params[[idx2]], col.regions = "dodgerblue2", layer.name = layername2)
 
 # 50 meters is definitely too small
@@ -200,7 +198,7 @@ layername2 = paste0(hrs2, "hrs_", dist2, "m_", minpts2)
 hrs24_m200_min3 <- wild_carcasses_params[[which(params$param_hrs == 24 & params$param_dists == 200 & params$param_minpts == 3)]]
 
 r <- sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")
-mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
+mapview(test24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
   mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses", homebutton = F)+
   mapview(wild_carcasses_params[[idx2]], col.regions = "dodgerblue2", layer.name = layername2)+
   mapview(r, col.regions = "magenta")
@@ -210,14 +208,14 @@ wc <- wild_carcasses %>%
   filter(year == 2024)
 
 r <- sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")
-mapview(t24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
+mapview(test24, col.regions = "black", cex = 2, layer.name = "Non-SFS feeding bouts")+
   mapview(wvsf_focal, col.regions = "yellow", layer.name = "Confirmed carcasses", homebutton = F)+
   mapview(wild_carcasses_params[[idx2]], col.regions = "dodgerblue2", layer.name = layername2)+
   mapview(r, col.regions = "magenta")+
   mapview(wc, col.regions = "red")
 
 tar_load(non_station_bo_prepped)
-st_write(t24, "data/created/non_sfs_feeding_bouts_2024.kml")
+st_write(test24, "data/created/non_sfs_feeding_bouts_2024.kml")
 st_write(non_station_bo_prepped, "data/created/non_sfs_feeding_bouts_2022_2023_2024.kml")
 st_write(wc, "data/created/cluster_centroids_200m_24hr_min3_2024.kml")
 st_write(wild_carcasses, "data/created/cluster_centroids_200m_24hr_min3_2022_2023_2024.kml")

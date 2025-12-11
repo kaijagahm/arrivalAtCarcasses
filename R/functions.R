@@ -1582,15 +1582,14 @@ prepare_nbda_data <- function(gps,
     year = max(gps$year)
     colname <- paste0("age_", year)
     age <- gps %>%
-      st_drop_geometry() %>%
-      filter(!is.na(tag_local_identifier)) %>%
-      select(tag_local_identifier, {{colname}}) %>%
-      distinct() %>%
-      mutate(tag_local_identifier = as.character(tag_local_identifier))
+      sf::st_drop_geometry() %>%
+      dplyr::filter(!is.na(tag_local_identifier)) %>%
+      dplyr::select(tag_local_identifier, {{colname}}) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(tag_local_identifier = as.character(tag_local_identifier))
     
     age_ordered <- age[match(all_indivs_sorted, age$tag_local_identifier),]
-    age_matrix <- cbind(age_ordered[[colname]])
-    # 2025-12-05 XXX START HERE AND MAKE SURE THE ORDER IS RIGHT!
+    age_ilv_matrix <- cbind(age_ordered[[colname]])
   }
   
   oa_indivs <- first_sightings %>%
@@ -1621,7 +1620,7 @@ prepare_nbda_data <- function(gps,
   
   gps_data_cumulative <- map(first_sightings$timestamp, function(ts) {
     day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts)) # NNN double check that time zones get treated correctly here--pasting might mess things up. # NNN actually should convert everything to Israel time instead of changing carcasses to UTC, because that way we can use biologically meaningful cutoffs like this one and not have to convert them. 
-    gps %>% filter(timestamp >= day_start, timestamp <= ts)
+    gps %>% dplyr::filter(timestamp >= day_start, timestamp <= ts)
   })
   
   # Dynamic hour-range GPS segments per individual
@@ -1666,7 +1665,12 @@ prepare_nbda_data <- function(gps,
     seeds_vec = seeds_vec
   )
   
-  final_list <- c(base_list, 
+  if(age_ilv){
+    next_list <- c(base_list, 
+                   "age_ilv_matrix" = list(age_ilv_matrix))
+  }else{next_list <- base_list}
+  
+  final_list <- c(next_list, 
                   gps_data_dynamic_hour_ranges)
   return(final_list)
 }
@@ -1748,7 +1752,7 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_list){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_list, age_ilv = T){
   out <- purrr::map2(.x = list, .y = carcass_data_list, ~{
     prepare_nbda_data(gps = .x,
                       identify_seeds = seeds,
@@ -1757,7 +1761,8 @@ nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_
                       gps_spd = gps_spd,
                       n_hours_gps_static = list(c(-720, -24)),
                       sighting_time_max_hours = stmh,
-                      carcass_data = .y)
+                      carcass_data = .y,
+                      age_ilv = age_ilv)
   })
   return(out)
 }
