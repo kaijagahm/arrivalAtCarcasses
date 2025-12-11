@@ -507,15 +507,13 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bo_stations, 750), # NNN don't have good justification for this
   tar_target(hours_after_carcass, 72),
-  tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_noslope, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
+  tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_nocliffs, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
                                            carcasses = carcasses_focal,
                                            dist = dist_bo_stations,
                                            hours_after = hours_after_carcass)),
-  # tar_target(carcass_bo_df, purrr::list_rbind(carcass_bo)), 
-  tar_target(station_bo, get_station_bouts(bouts = feeding_bo_noslope, stations = stations, dist = dist_bo_stations)),
-  tar_target(non_station_bo, filter(feeding_bo_noslope, !(boutID %in% station_bo$boutID))),
-  # tar_target(non_carcass_bo, filter(feeding_bo_noslope, !(boutID %in% carcass_bo_df$boutID))),
-  
+  tar_target(station_bo, get_station_bouts(bouts = feeding_bo_nocliffs, stations = stations, dist = dist_bo_stations)),
+  tar_target(non_station_bo, filter(feeding_bo_nocliffs, !(boutID %in% station_bo$boutID))),
+
   ## Cluster the remaining bouts to detect wild carcasses
   tar_target(wild_dist, 200),
   tar_target(wild_time_hrs, 24),
@@ -530,10 +528,10 @@ list(
                                                         eps = wild_dist, 
                                                         eps_t = wild_time_hrs*60*60, 
                                                         minpts = wild_min_pts)),
-  tar_target(validation, mutate(rename(readxl::read_excel("data/raw/wildCarcassValidation/carcass review list_2025-12-10_OrrShakedMay.xlsx"), "carcID" = `carcass id`), carcID = as.numeric(carcID))),
-  tar_target(wild_carcass_bo_df_validated, dplyr::left_join(wild_carcass_bo_df, validation, by = c("cluster" = "carcID"))),
-  tar_target(wild_carcass_clusters_touse, dplyr::filter(wild_carcass_bo_df_validated, status == "valid")), # XXX 2025-12-10 start here with checks
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_clusters_touse)),
+  # tar_target(wild_carcass_clusters_touse, dplyr::filter(wild_carcass_bo_df_validated, status == "valid")), # XXX 2025-12-10 start here with checks
+  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
+  # tar_target(validation, mutate(rename(readxl::read_excel("data/raw/wildCarcassValidation/carcass review list_2025-12-10_OrrShakedMay.xlsx"), "carcID" = `carcass id`), carcID = as.numeric(carcID))),
+  # tar_target(wild_carcasses_validated, dplyr::left_join(wild_carcasses, validation, by = "carcID")),
   # tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
   #              arrange(boutID, time_since_carcass) %>%
   #              slice(1) %>%
@@ -654,22 +652,6 @@ list(
   
   # Flight networks
   ## Flight networks--Cumulative (stn)
-  ### Flight networks--Cumulative (stn)-- Binary
-  # NNN remove binary? but leave it for now, at least until I talk with Matt and Sonja. Question for them: any reason to prefer binary when we have access to weighted?
-  tar_target(fl_bin_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  tar_target(fl_bin_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  tar_target(fl_bin_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  tar_target(fl_bin_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  tar_target(fl_bin_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  tar_target(fl_bin_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  
-  tar_target(fl_bin_cumulative_1, purrr::map2(fl_bin_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_bin_cumulative_2, purrr::map2(fl_bin_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_bin_cumulative_3, purrr::map2(fl_bin_cumulative_3_prelim, nd3, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_bin_cumulative_4, purrr::map2(fl_bin_cumulative_4_prelim, nd4, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_bin_cumulative_5, purrr::map2(fl_bin_cumulative_5_prelim, nd5, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_bin_cumulative_6, purrr::map2(fl_bin_cumulative_6_prelim, nd6, ~fix_nets(.x, .y$all_indivs_sorted))),
-  
   ### Flight networks--Cumulative (stn)--Weighted
   tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
   tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
@@ -685,20 +667,6 @@ list(
   tar_target(fl_wt_cumulative_5, purrr::map2(fl_wt_cumulative_5_prelim, nd5, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_6, purrr::map2(fl_wt_cumulative_6_prelim, nd6, ~fix_nets(.x, .y$all_indivs_sorted))),
   
-  # ## Flight networks--Cumulative (wild)
-  # ### Flight networks--Cumulative (wild)--Binary
-  # tar_target(fl_bin_cumulative_1_wild_prelim, purrr::map(nd1_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  # tar_target(fl_bin_cumulative_2_wild_prelim, purrr::map(nd2_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  # tar_target(fl_bin_cumulative_3_wild_prelim, purrr::map(nd3_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  # tar_target(fl_bin_cumulative_4_wild_prelim, purrr::map(nd4_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  # tar_target(fl_bin_cumulative_5_wild_prelim, purrr::map(nd5_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_bin(.x, dist = ddf))})),
-  # 
-  # tar_target(fl_bin_cumulative_1_wild, purrr::map2(fl_bin_cumulative_1_wild_prelim, nd1_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  # tar_target(fl_bin_cumulative_2_wild, purrr::map2(fl_bin_cumulative_2_wild_prelim, nd2_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  # tar_target(fl_bin_cumulative_3_wild, purrr::map2(fl_bin_cumulative_3_wild_prelim, nd3_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  # tar_target(fl_bin_cumulative_4_wild, purrr::map2(fl_bin_cumulative_4_wild_prelim, nd4_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  # tar_target(fl_bin_cumulative_5_wild, purrr::map2(fl_bin_cumulative_5_wild_prelim, nd5_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  # 
   # ### Flight networks--Cumulative (wild)--Weighted
   # tar_target(fl_wt_cumulative_1_wild_prelim, purrr::map(nd1_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
   # tar_target(fl_wt_cumulative_2_wild_prelim, purrr::map(nd2_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
@@ -713,43 +681,6 @@ list(
   # tar_target(fl_wt_cumulative_5_wild, purrr::map2(fl_wt_cumulative_5_wild_prelim, nd5_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
 
   # Prepare data for NBDA
-  ### Prepare data for NBDA--Cumulative (stn)--Binary--seeds
-  tar_target(data_cumul_bin_1, purrr::map2(nd1, fl_bin_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  tar_target(data_cumul_bin_2, purrr::map2(nd2, fl_bin_cumulative_2, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  tar_target(data_cumul_bin_3, purrr::map2(nd3, fl_bin_cumulative_3, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  tar_target(data_cumul_bin_4, purrr::map2(nd4, fl_bin_cumulative_4, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  tar_target(data_cumul_bin_5, purrr::map2(nd5, fl_bin_cumulative_5, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  tar_target(data_cumul_bin_6, purrr::map2(nd6, fl_bin_cumulative_6, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec, asoc_ilv = .x$age_ilv_matrix)}else{NULL}})),
-  
-  # ### Prepare data for NBDA--Cumulative (wild)--Binary--seeds
-  # tar_target(data_cumul_bin_1_wild, purrr::map2(nd1_wild, fl_bin_cumulative_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  # tar_target(data_cumul_bin_2_wild, purrr::map2(nd2_wild, fl_bin_cumulative_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  # tar_target(data_cumul_bin_3_wild, purrr::map2(nd3_wild, fl_bin_cumulative_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  # tar_target(data_cumul_bin_4_wild, purrr::map2(nd4_wild, fl_bin_cumulative_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  # tar_target(data_cumul_bin_5_wild, purrr::map2(nd5_wild, fl_bin_cumulative_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  
   ### Prepare data for NBDA--Cumulative (stn)--Weighted--seeds
   tar_target(data_cumul_wt_1, purrr::map2(nd1, fl_wt_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
     nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
@@ -788,14 +719,6 @@ list(
   #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
   
   ## NBDA models
-  ### Cumulative, binary (stn)
-  tar_target(mods_cumul_bin, purrr::map(c(data_cumul_bin_1, data_cumul_bin_2, data_cumul_bin_3, data_cumul_bin_4, data_cumul_bin_5, data_cumul_bin_6
-                                          #, data_cumul_bin_7
-  ), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  
-  # ### Cumulative, binary (wild)
-  # tar_target(mods_cumul_bin_wild, purrr::map(c(data_cumul_bin_1_wild, data_cumul_bin_2_wild, data_cumul_bin_3_wild, data_cumul_bin_4_wild, data_cumul_bin_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  
   ### Cumulative, weighted (stn)
   tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6
                                          #, data_cumul_wt_7
@@ -804,25 +727,19 @@ list(
   # ### Cumulative, weighted (wild)
   # tar_target(mods_cumul_wt_wild, purrr::map(c(data_cumul_wt_1_wild, data_cumul_wt_2_wild, data_cumul_wt_3_wild, data_cumul_wt_4_wild, data_cumul_wt_5_wild), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
   
-  tar_target(stats_cumul_bin, mutate(purrr::list_rbind(map(mods_cumul_bin, getmodstats)), type = "cumul", binwt = "bin", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
   tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
   
-  # tar_target(stats_cumul_bin_wild, mutate(purrr::list_rbind(map(mods_cumul_bin_wild, getmodstats)), type = "cumul", binwt = "bin", seeds = T, carcID = purrr::map_dbl(wild_carcs, "carcID"))),
   # tar_target(stats_cumul_wt_wild, mutate(purrr::list_rbind(map(mods_cumul_wt_wild, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(wild_carcs, "carcID"))),
   
-  # tar_target(stats_30days_bin, mutate(purrr::list_rbind(map(mods_30days_bin, getmodstats)), type = "30days", binwt = "bin", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
   # tar_target(stats_30days_wt, mutate(purrr::list_rbind(map(mods_30days_wt, getmodstats)), type = "30days", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
   
-  # tar_target(stats_30days_bin_wild, mutate(purrr::list_rbind(map(mods_30days_bin_wild, getmodstats)), type = "30days", binwt = "bin", seeds = T, carcID = purrr::map_dbl(wild_carcs, "carcID"))),
   # tar_target(stats_30days_wt_wild, mutate(purrr::list_rbind(map(mods_30days_wt_wild, getmodstats)), type = "30days", binwt = "wt", seeds = T, carcID = purrr::map_dbl(wild_carcs, "carcID"))),
   
-  tar_target(stats, purrr::list_rbind(list(stats_cumul_bin, stats_cumul_wt#,
-                                           # stats_30days_bin,
+  tar_target(stats, purrr::list_rbind(list(stats_cumul_wt
                                            # stats_30days_wt
   ))),
   
-  # tar_target(stats_wild, purrr::list_rbind(list(stats_cumul_bin_wild, stats_cumul_wt_wild#,
-  #                                               # stats_30days_bin_wild,
+  # tar_target(stats_wild, purrr::list_rbind(list(stats_cumul_wt_wild#,
   #                                               # stats_30days_wt_wild
   # ))),
   
