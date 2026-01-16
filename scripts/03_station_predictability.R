@@ -74,196 +74,119 @@ stn %>%
        caption = "For stations with at least 4 carcasses")+
   theme_minimal()
 
-# A simpler measure--how likely is there to be food there? Considering 6-month period before each carcass, how many of the dates in that period were active at that station?
-tar_load(carcasses_audited)
-tar_load(stats)
-focal_carcs <- carcasses_audited %>%
-  filter(carcID %in% stats$carcID)
+stn %>%
+  group_by(stationName) %>%
+  filter(n() > 4) %>%
+  ggplot(aes(x = stationName, y = log(interval)))+
+  geom_boxplot(outlier.size = 0.2)+
+  coord_flip()+
+  labs(x = "SFS",
+       y = "Log-transformed interval between carcasses (days)",
+       caption = "For stations with at least 4 carcasses")+
+  theme_minimal() # this is better
 
-stn_days_last6mos <- rep(NA, nrow(focal_carcs))
-for(i in 1:nrow(focal_carcs)){
-  current_date <- focal_carcs$date[i]
-  current_stn <- focal_carcs$stationName[i]
+stn_summ <- stn %>%
+  group_by(stationName) %>%
+  summarize(mean = mean(interval, na.rm = T),
+            sd = sd(interval, na.rm = T),
+            n = n())
+
+stn_summ %>%
+  filter(n() > 4) %>%
+  ggplot(aes(x = stationName, y = sd))+
+  geom_point()
+
+stn_summ %>%
+  ggplot(aes(x = n, y = sd))+
+  geom_point() # there's a clear relationship between number of carcasses and sd (interval length)
+
+# Probably what's relevant is only the 6-month period before each carcass.
+
+# A simpler measure--how likely is there to be food there? Considering 6-month period before each carcass, how many of the dates in that period were active at that station?
+tar_load(stn_carcs)
+carcs_focal <- sf::st_as_sf(purrr::list_rbind(stn_carcs))
+carcs_buffered <-  st_buffer(carcs_focal, 4000)
+
+stn_days_last6mos <- rep(NA, nrow(carcs_focal))
+# area_days_last6mos <- rep(NA, nrow(carcs_focal))
+n_deposited_dates_last6mos <- rep(NA, nrow(carcs_focal))
+mean_intervals_last6mos <- rep(NA, nrow(carcs_focal))
+mean_log_intervals_last6mos <- rep(NA, nrow(carcs_focal))
+sd_intervals_last6mos <- rep(NA, nrow(carcs_focal))
+sd_log_intervals_last6mos <- rep(NA, nrow(carcs_focal))
+for(i in 1:nrow(carcs_focal)){
+  current_date <- carcs_focal$date[i]
+  current_stn <- carcs_focal$stationName[i]
   prev_6mos <- carcasses_audited %>%
     filter(date >= (current_date-months(6)) & date <= current_date,
            stationName == current_stn)
-  all_dates <- seq.Date(from = current_date-months(6), to = current_date)
-  active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
-  stn_days_last6mos[i] <- length(active_dates)/length(all_dates)
+  # prev_6mos_area <- prev_6mos[st_intersects(prev_6mos, carcs_buffered[i,], sparse = F)[,1],]
+  all_dates <- seq.Date(from = current_date%m-%months(6), to = current_date) # to account for uneven month lengths
+  deposited_dates <- sort(unique(prev_6mos$date))
+  n_deposited_dates <- length(deposited_dates)
+  intervals <- as.numeric(lead(deposited_dates)-deposited_dates)
+  mean_interval <- mean(intervals, na.rm = T)
+  mean_log_interval <- mean(log(intervals), na.rm = T)
+  sd_interval <- sd(intervals, na.rm = T)
+  sd_log_interval <- sd(log(intervals), na.rm = T)
+  # deposited_dates_area <- sort(unique(prev_6mos_area$date))
+  # active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
+  # area_days_last6mos[i] <- length(deposited_dates_area)/length(all_dates)
+  stn_days_last6mos[i] <- length(deposited_dates)/length(all_dates)
+  n_deposited_dates_last6mos[i] <- n_deposited_dates
+  mean_intervals_last6mos[i] <- mean_interval
+  sd_intervals_last6mos[i] <- sd_interval
+  mean_log_intervals_last6mos[i] <- mean_log_interval
+  sd_log_intervals_last6mos[i] <- sd_log_interval
 }
 
-focal_carcs$stn_days_last6mos <- stn_days_last6mos
-
-i <- 3
-current_date <- focal_carcs$date[i]
-current_stn <- focal_carcs$stationName[i]
-prev_6mos <- carcasses_audited %>%
-  filter(date >= (current_date-months(6)) & date <= current_date,
-         stationName == current_stn)
-all_dates <- seq.Date(from = current_date-months(6), to = current_date)
-active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
-
-testdf <- data.frame(date = all_dates) %>%
-  mutate(active = ifelse(lubridate::date(date) %in% lubridate::date(active_dates), T, F))
-testdf %>%
-  ggplot(aes(x = date, y = active, col = active))+
-  geom_point(size = 2, alpha = 0.75)+
-  theme_minimal()+
-  labs(y = "Active carcass?", x = "Date")+
-  theme(legend.position = "none")
-
-# What about carcasses in the area? Not just at the same station but within let's say 4km?
-focal_carcs_buffered <- st_buffer(focal_carcs, 4000)
-#mapview(focal_carcs_buffered)
-
-area_days_last6mos <- rep(NA, nrow(focal_carcs))
-for(i in 1:nrow(focal_carcs)){
-  current_date <- focal_carcs$date[i]
-
-  prev_6mos <- carcasses_audited %>%
-    filter(date >= (current_date-months(6)) & date <= current_date)
-  keep <- prev_6mos[st_intersects(prev_6mos, focal_carcs_buffered[i,], sparse = F)[,1],]
-  
-  
-  all_dates <- seq.Date(from = current_date-months(6), to = current_date)
-  active_dates <- sort(unique(c(keep$date, keep$date + days(1), keep$date + days(2))))
-  area_days_last6mos[i] <- length(active_dates)/length(all_dates)
-}
-i <- 3
-current_date <- focal_carcs$date[i]
-
-prev_6mos <- carcasses_audited %>%
-  filter(date >= (current_date-months(6)) & date <= current_date)
-keep <- prev_6mos[st_intersects(prev_6mos, focal_carcs_buffered[i,], sparse = F)[,1],]
+carcs_focal$stn_days_last6mos <- stn_days_last6mos
+# carcs_focal$area_days_last6mos <- area_days_last6mos
+carcs_focal$n_deposited_dates_last6mos <- n_deposited_dates_last6mos
+carcs_focal$mean_interval_last6mos <- mean_intervals_last6mos
+carcs_focal$mean_log_interval_last6mos <- mean_log_intervals_last6mos
+carcs_focal$sd_interval_last6mos <- sd_intervals_last6mos
+carcs_focal$sd_log_interval_last6mos <- sd_log_intervals_last6mos
 
 
-all_dates <- seq.Date(from = current_date-months(6), to = current_date)
-active_dates <- sort(unique(c(keep$date, keep$date + days(1), keep$date + days(2))))
+carcs_focal %>%
+  ggplot(aes(x = stn_days_last6mos, y = n_deposited_dates_last6mos, col = stationName))+
+  geom_point() # makes sense that this is exactly linear
 
-focal_carcs$area_days_last6mos <- area_days_last6mos
-
-testdf <- data.frame(date = all_dates) %>%
-  mutate(active = ifelse(lubridate::date(date) %in% lubridate::date(active_dates), T, F))
-testdf %>%
-  ggplot(aes(x = date, y = active, col = active))+
-  geom_point(size = 2, alpha = 0.75)+
-  theme_minimal()+
-  labs(y = "Active carcass?", x = "Date")+
-  theme(legend.position = "none")
-
-focal_carcs %>%
-  ggplot(aes(x = stn_days_last6mos, y = area_days_last6mos, color = stationName))+
-  geom_point(size = 2, alpha = 0.75)+
-  theme_minimal()+
-  labs(y = "Prop. days with nearby active carcass, last 6 mos",
-       x = "Prop. days with active carcass at station, last 6 mos",
-       color = "Station")+
-  coord_equal()
-
-focal_carcs %>%
+carcs_focal %>%
   ggplot(aes(x = stn_days_last6mos, fill = stationName))+
   geom_histogram()+
-  theme_minimal()+
-  labs(y = "Count", x = "Predictability (same station, last 6 months)", fill = "Station")
+  theme(legend.position = "bottom") # for proportion of days with carcasses, we have a bi or trimodal distribution, just by number of days there were carcasses placed in the last 6 months.
 
-focal_carcs %>%
-  ggplot(aes(x = area_days_last6mos, fill = stationName))+
+carcs_focal %>%
+  ggplot(aes(x = sd_interval_last6mos, fill = stationName))+
   geom_histogram()+
-  theme_minimal()+
-  labs(y = "Count", x = "Predictability (4km radius, last 6 months)", fill = "Station")
+  theme(legend.position = "bottom") # sd of interval doesn't get us nice groupings like proportion did.
 
-# Grab 6 month chunks of carcass dates for each station, starting every 1 month after the beginning of the carcass data.
-dates_beginning <- seq.Date(from = min(stn$date), to = max(stn$date)+days(90), by = "1 month")
-dates_end <- dates_beginning + days(180) # 6 month windows, starting each month
+# does it even make sense to take the standard deviation of log-transformed intervals?
+carcs_focal %>%
+  ggplot(aes(x = sd_log_interval_last6mos, fill = stationName))+
+  geom_histogram()+
+  theme(legend.position = "bottom") 
 
-dates <- data.frame(beg = dates_beginning, end = dates_end)
-stns <- sort(unique(stn$stationName))
-dates_exp <- expand_grid(stns, dates)
-
-carcasses_moving_window <- vector(mode = "list", length = nrow(dates_exp))
-for(i in 1:nrow(dates_exp)){
-  carcasses_moving_window[[i]] <- stn %>%
-    filter(stationName == dates_exp$stns[i], date >= dates_exp$beg[i], date < dates_exp$end[i]) %>% bind_cols(dates_exp[i,])
-}
-
-cmw <- purrr::list_rbind(carcasses_moving_window)
-dim(cmw)
-dim(stn)
-
-set.seed(5)
-random_stations <- sample(unique(cmw$stationName), 4)
-cmw %>%
-  filter(stationName %in% random_stations) %>%
-  ggplot(aes(x = end, y = interval))+
-  geom_point(alpha = 0.1)+
-  geom_smooth()+
-  facet_wrap(~stationName)+
-  theme_minimal()+
-  theme(panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        axis.text.x = element_blank())+
-  labs(y = "Time between carcasses (days)",
-       x = "End of 6-month period")
-
-cmw %>%
-  filter(stationName %in% random_stations) %>%
-  ggplot(aes(x = end, y = 1/interval))+
-  geom_point(alpha = 0.1)+
-  geom_smooth()+
-  facet_wrap(~stationName)+
-  theme_minimal()+
-  theme(panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        axis.text.x = element_blank())+
-  labs(y = "Carcass placement rate (1/days)",
-       x = "End of 6-month period")
-
-predi <- cmw %>%
-  group_by(stationName, end) %>%
-  summarize(mn_int = mean(interval, na.rm = T),
-            var_int = var(interval, na.rm = T),
-            sd_int = sd(interval, na.rm = T)) %>%
-  ungroup()
-
-predi %>%
-  filter(end < lubridate::date("2024-01-01")) %>%
-  ggplot(aes(x = end, y = sd_int))+
+carcs_focal %>%
+  ggplot(aes(x = mean_interval_last6mos, y = sd_interval_last6mos, col = stationName, size = n_deposited_dates_last6mos))+
   geom_point()+
-  labs(y = "SD days between carcasses", x = "End of 6 month period")+
-  theme_minimal()
+  theme_minimal()+
+  theme(legend.position = "bottom")
 
-predi %>%
-  filter(end < lubridate::date("2024-01-01")) %>%
-  ggplot(aes(x = end, y = var_int))+
+carcs_focal %>%
+  ggplot(aes(x = mean_log_interval_last6mos, y = sd_log_interval_last6mos, col = stationName, size = n_deposited_dates_last6mos))+
   geom_point()+
-  labs(y = "Variance in days between carcasses", x = "End of 6 month period")+
-  theme_minimal()
+  theme_minimal()+
+  theme(legend.position = "bottom")
 
-predi %>%
-  filter(end < lubridate::date("2024-01-01")) %>%
-  ggplot(aes(x = end, y = var_int))+
-  geom_point()+
-  labs(y = "Variance in days between carcasses", x = "End of 6 month period")+
-  theme_minimal()
 
-# Okay, but ideally we would want to look at the distribution of station variabilities per 6-month period.
-predi %>%
-  filter(end < lubridate::date("2024-01-01")) %>% # because things seem to get weird over here--probably need to exclude the north for starters
-  ggplot(aes(x = var_int))+
-  geom_density(aes(group = factor(end), color = end), linewidth = 0.1, alpha = 0.2)+
-  theme_minimal()+ # okay, this is super duper right-skewed
-  labs(x = "Variance in carcass interval",
-       color = "6-month window")+
-  scale_color_viridis_c()
 
-# What happens if we log-transform the variances?
-predi %>%
-  filter(end < lubridate::date("2024-01-01")) %>% 
-  ggplot(aes(x = log(var_int), color = end))+
-  geom_density(aes(group = factor(end)), linewidth = 0.1)+
-  theme_minimal()+ # this is so beautiful that it basically has me convinced that this is how we should divide the stations up.
-  labs(x = "Variance in carcass interval (log-transformed)")+
-  scale_color_viridis_c()
+
+
+
+
 
 # But now of course we're going to have a question about the relationship between number of carcasses and variance, and I expect them to be highly correlated:
 predi %>%
