@@ -249,7 +249,7 @@ get_matches <- function(df, foc, spd){
                     fiveafter = start + lubridate::minutes(5)#,
                     # elevenbefore = start - lubridate::minutes(11),
                     # elevenafter = start + lubridate::minutes(11)
-                    ) %>%
+      ) %>%
       dplyr::group_split(bout_id)
     
     within_5min <- purrr::map(with_middles, ~{
@@ -270,11 +270,11 @@ get_matches <- function(df, foc, spd){
       wm <- with_middles[[i]]
       if(nrow(w5s) > 0){ # if there are any non-flying points within 5 mins, keep them
         match <- w5s
-        }else if(nrow(w5) > 0){ # else, if there are ANY points within 5 mins, keep them.
-          match <- w5
-        }else{ # if none of those is true, return a 0-row data frame
-          match <- foc[0,]
-        }
+      }else if(nrow(w5) > 0){ # else, if there are ANY points within 5 mins, keep them.
+        match <- w5
+      }else{ # if none of those is true, return a 0-row data frame
+        match <- foc[0,]
+      }
       if(nrow(match) > 1){
         match <- match[which.min(abs(as.numeric(match$timestamp - wm$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
       }
@@ -581,13 +581,15 @@ get_fl_weighted <- function(dat, dist){
       self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
                                ID2 = sort(unique(dat$tag_local_identifier)),
                                sri = 0)
-      dat$dateOnly <- lubridate::date(dat$timestamp) # NNN--this will make more sense if everything is converted to Israel time, because otherwise the date delineations won't be correct.
+      dat$dateOnly_il <- lubridate::date(dat$timestamp_il)
       # NNN check back in previous analysis--do we need to remove the roost sites?
-      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                            consecThreshold = 1,
-                                                            idCol = "tag_local_identifier",
-                                                            return = "sri",
-                                                            distThreshold = dist))
+      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = NULL,
+                                            speedThreshLower = 4,
+                                            speedThreshUpper = NULL,
+                                            consecThreshold = 1,
+                                            idCol = "tag_local_identifier",
+                                            return = "sri",
+                                            distThreshold = dist))
       if(!("sri" %in% names(out1)) & nrow(out1) == 0){ # if the flight edges function returned nothing (if there were no flight interactions)
         out1$sri <- numeric(0) # a numeric vector of length 0 (adding the column so it exists, but the data frame has 0 rows) (bookkeeping)
       }
@@ -622,12 +624,14 @@ get_fl_bin <- function(dat, dist){
       self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
                                ID2 = sort(unique(dat$tag_local_identifier)),
                                value = 0)
-      dat$dateOnly <- lubridate::date(dat$timestamp) #XXX fix getFlightEdges to not require this!
-      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                            consecThreshold = 1,
-                                                            idCol = "tag_local_identifier",
-                                                            return = "edges",
-                                                            distThreshold = dist)) %>%
+      dat$dateOnly <- lubridate::date(dat$timestamp)
+      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = NULL,
+                                            speedThreshLower = 4,
+                                            speedThreshUpper = NULL,
+                                            consecThreshold = 1,
+                                            idCol = "tag_local_identifier",
+                                            return = "edges",
+                                            distThreshold = dist)) %>%
         dplyr::select(ID1, ID2) %>%
         distinct() %>%
         mutate(value = 1)
@@ -1634,13 +1638,13 @@ prepare_nbda_data <- function(gps,
     start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
     end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
     var_name <- sprintf("gps_data_dynamic_hours_%s_%s", start_label, end_label)
-
+    
     gps_data_list <- map(first_sightings$timestamp, function(ts) {
       start_time <- ts + lubridate::dhours(as.numeric(start_offset))
       end_time <- ts + lubridate::dhours(as.numeric(end_offset))
       gps %>% filter(timestamp >= start_time, timestamp <= end_time)
     })
-
+    
     gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
@@ -1796,8 +1800,8 @@ NEW_get_roosts <- function(dat, id, ts = "timestamp_il", tz = "Israel"){
   roosts <- purrr::map(dat, ~NEW_get_roosts_df(df = .x, id = id, timestamp = ts, timestamp_tz = tz))
   roosts <- roosts %>%
     purrr::map(., ~st_as_sf(.x, crs = "WGS84", 
-                     coords = c("location_long", "location_lat"), 
-                     remove = F), .progress = T)
+                            coords = c("location_long", "location_lat"), 
+                            remove = F), .progress = T)
   return(roosts)
 }
 
@@ -1815,10 +1819,10 @@ get_roosting <- function(roosts, id){
 }
 
 NEW_get_roosts_df <- function(df, id = "local_identifier", timestamp = "timestamp", 
-                               x = "location_long", y = "location_lat", ground_speed = "ground_speed", 
-                               speed_units = "m/s", buffer = 1, twilight = 61, morning_hours = c(0:12), 
-                               night_hours = c(13:23), quiet = F,
-                               timestamp_tz = "UTC") 
+                              x = "location_long", y = "location_lat", ground_speed = "ground_speed", 
+                              speed_units = "m/s", buffer = 1, twilight = 61, morning_hours = c(0:12), 
+                              night_hours = c(13:23), quiet = F,
+                              timestamp_tz = "UTC") 
 {
   if (!quiet) {
     cat("\nFinding roosts... this may take a while if your dataset is large.\n")
