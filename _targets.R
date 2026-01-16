@@ -484,13 +484,6 @@ list(
   tar_target(slopes_layer, st_transform(dplyr::bind_rows(purrr::map(filenames, ~sf::st_read(.x))), 32636)),
   tar_target(feeding_bo_nocliffs, feeding_bo_stationary[is.na(as.numeric(sf::st_intersects(feeding_bo_stationary, slopes_layer))),]),
   
-  # old DEM
-  ## Using DEM to remove "feeding bouts" that are too much on a slope
-  # tar_target(filenames, list.files(here("data/raw/DEMs/ASTER/"), pattern = ".tif", full.names = T)),
-  # tar_target(feeding_bo_stationary_withslopes, get_slopes(filenames, bbox_south_big, neighbors = 8, feeding_bo_stationary)),
-  # tar_target(slope_thresh, 15),
-  # tar_target(feeding_bo_noslope, filter(feeding_bo_stationary_withslopes, slope < slope_thresh)),
-  
   ## SFS
   ### Created in 00_carcass_data_translation.R
   ### Only spatial, not time-restricted.
