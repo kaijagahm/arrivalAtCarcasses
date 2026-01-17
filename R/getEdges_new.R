@@ -1,22 +1,3 @@
-# New version of the getEdges function, following Elvira's logic (i.e., updated version of the function)
-#' @param dataset a cleaned GPS dataset. Should be an sf object. Must have columns "location_long" and "location_lat" for conversion back to sf
-#' @param roostPolygons an sf object containing roost polygons, to be used for excluding GPS points, or NULL
-#' @param roostBuffer distance in meters by which to buffer roost polygons before masking, or NULL
-#' @param consecThreshold the number of consecutive timegroups that an interaction has to exist in for it to be counted
-#' @param distThreshold threshold distance (m) to define an interaction
-#' @param speedThreshUpper upper speed threshold (units of `speedCol`), or NULL. Not inclusive: e.g., will keep speeds < speedThreshUpper, but not =.
-#' @param speedThreshLower lower speed threshold (units of `speedCol`), or NULL. Not inclusive: e.g., will keep speeds > speedThreshLower, but not =.
-#' @param timeThreshold for defining timegroups. Standard character string, e.g. "10 minutes"
-#' @param idCol name of the column containing individual IDs
-#' @param quiet whether to print messages about the filtering or not
-#' @param includeAllVertices logical; whether to append a vector of all individuals in the original dataset to the output list
-#' @param daytimeOnly logical; whether to filter points to daytime only before defining interactions.
-#' @param sunLat numeric latitude to use for sunrise/sunset calculations, if daytimeOnly = T. Default is Jerusalem.
-#' @param sunLong longitude to use for sunrise/sunset calculations, if daytimeOnly = T. Default is Jerusalem.
-#' @param return what to return. Either "edges" (an edgelist), "sri" (SRI values), or "both" (a list containing both edges and sri)
-#' @param getLocs Whether to return interaction locations (midpoint between points involved in each interaction). Valid only for "edges" and "both".
-#' @param speedCol name of the column containing ground speed. To be used for speed filtering (`speedThreshUpper` and `speedThreshLower` should be given in the same units as this column)
-#' @param timestampCol name of the column containing the timestamps to be used. Must be in POSIXct format with an attached time zone; otherwise it will be coerced to POSIXct with UTC by default.
 getEdges_new <- function(dataset,
                          roostPolygons = NULL,
                          roostBuffer = NULL,
@@ -242,22 +223,6 @@ getEdges_new <- function(dataset,
   
 }
 
-# New version of the spaceTimeGroups function, following Elvira's logic (i.e., updated version of the function)
-#' @param dataset filtered data, to be space-grouped (timegroups were already done earlier)
-#' @param denom unfiltered, timegrouped data, for the SRI denominator.
-#' @param distThreshold distance in meters used to define an interaction
-#' @param allPairs data frame containing all pairs of individuals, bidirectional but with self edges removed.
-#' @param consecThreshold
-#' @param crsToSet CRS to set for the dataset without transforming
-#' @param crsToTransform CRS to transform to
-#' @param timestampCol name of the column containing the timestamps to be used. Must be in POSIXct format with an attached time zone
-#' @param timeThreshold for defining timegroups. Standard character string, e.g. "10 minutes"
-#' @param idCol
-#' @param latCol
-#' @param longCol
-#' @param returnDist logical; whether to return the distance between individuals in an interaction or not
-#' @param fillNA whether to fill the edgelist with NAs for individuals that did not interact with any others in that timegroup. See documentation for spatsoc::edge_dist().
-#' @param sri logical; whether to calculate SRI
 spaceTimeGroups_new <- function(dataset,
                                 denom,
                                 distThreshold,
@@ -407,12 +372,6 @@ spaceTimeGroups_new <- function(dataset,
   return(outList)
 }
 
-# New version of the calcSRI function, following Elvira's logic (i.e., updated version of the function)
-#' @param fulldataset dataset to determine occurrences
-#' @param edges edgelist, already filtered for consecutiveness if applicable
-#' @param allPairs
-#' @param idCol
-#' @param timegroupCol
 calcSRI_new <- function(fulldataset,
                         edges,
                         allPairs,

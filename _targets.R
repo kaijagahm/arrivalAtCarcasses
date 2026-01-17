@@ -508,9 +508,9 @@ list(
   tar_target(non_station_bo, filter(feeding_bo_nocliffs, !(boutID %in% station_bo$boutID))),
 
   ## Cluster the remaining bouts to detect wild carcasses
-  tar_target(wild_dist, 200),
-  tar_target(wild_time_hrs, 24),
-  tar_target(wild_min_pts, 3),
+  tar_target(wild_dist, 200), #chosen in meeting with Orr
+  tar_target(wild_time_hrs, 24), # chosen in meeting with Orr
+  tar_target(wild_min_pts, 3), # common sense-- we've always used 3. Validated in meeting with Orr.
   tar_target(non_station_bo_prepped, bind_cols(mutate(non_station_bo, 
                                                       timestamp_numeric = 
                                                         as.numeric(difftime(timestamp, 
@@ -521,10 +521,17 @@ list(
                                                         eps = wild_dist, 
                                                         eps_t = wild_time_hrs*60*60, 
                                                         minpts = wild_min_pts)),
-  # tar_target(wild_carcass_clusters_touse, dplyr::filter(wild_carcass_bo_df_validated, status == "valid")), # XXX 2025-12-10 start here with checks
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
-  # tar_target(validation, mutate(rename(readxl::read_excel("data/raw/wildCarcassValidation/carcass review list_2025-12-10_OrrShakedMay.xlsx"), "carcID" = `carcass id`), carcID = as.numeric(carcID))),
-  # tar_target(wild_carcasses_validated, dplyr::left_join(wild_carcasses, validation, by = "carcID")),
+  tar_target(validation_2026, readxl::read_excel("data/raw/wildCarcassValidation/carcassReviewList_Shaked_2026.xlsx", sheet = 2)),
+  tar_target(validation_previous, readxl::read_excel("data/raw/wildCarcassValidation/carcassReviewList_Shaked_2026.xlsx", sheet = 1)),
+  tar_target(new_valid, pull(filter(validation_2026, status == "valid"), `carcass id`)),
+  tar_target(new_invalid, pull(filter(validation_2026, status != "valid"), `carcass id`)),
+  tar_target(old_valid, pull(filter(validation_previous, status == "valid"), carcID_2)),
+  # XXX start here, this is a total mess because of the new and the old having to get merged...
+  
+  
+  
+  tar_target(wild_carcasses_validated, dplyr::left_join(wild_carcasses, validation_2026, by = "carcID")),
   # tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
   #              arrange(boutID, time_since_carcass) %>%
   #              slice(1) %>%

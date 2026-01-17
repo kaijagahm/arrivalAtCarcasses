@@ -219,3 +219,7 @@ st_write(test24, "data/created/non_sfs_feeding_bouts_2024.kml")
 st_write(non_station_bo_prepped, "data/created/non_sfs_feeding_bouts_2022_2023_2024.kml")
 st_write(wc, "data/created/cluster_centroids_200m_24hr_min3_2024.kml")
 st_write(wild_carcasses, "data/created/cluster_centroids_200m_24hr_min3_2022_2023_2024.kml")
+
+# 2026: Now time to review Shaked's feedback on the newly clustered carcasses
+# Had to re-do the clustering using Shaked's new cliff layer.
+
