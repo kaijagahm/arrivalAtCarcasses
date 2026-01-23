@@ -522,23 +522,17 @@ list(
                                                         eps_t = wild_time_hrs*60*60, 
                                                         minpts = wild_min_pts)),
   tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
-  tar_target(validation_2026, readxl::read_excel("data/raw/wildCarcassValidation/carcassReviewList_Shaked_2026.xlsx", sheet = 2)),
-  tar_target(validation_previous, readxl::read_excel("data/raw/wildCarcassValidation/carcassReviewList_Shaked_2026.xlsx", sheet = 1)),
-  tar_target(new_valid, pull(filter(validation_2026, status == "valid"), `carcass id`)),
-  tar_target(new_invalid, pull(filter(validation_2026, status != "valid"), `carcass id`)),
-  tar_target(old_valid, pull(filter(validation_previous, status == "valid"), carcID_2)),
-  # XXX start here, this is a total mess because of the new and the old having to get merged...
-  
-  
-  
-  tar_target(wild_carcasses_validated, dplyr::left_join(wild_carcasses, validation_2026, by = "carcID")),
+  tar_target(validation, filter(sf::st_read("data/raw/wildCarcassValidation/cluster_centroids_200m_24hr_min3_2022_2023_2022_NOCLIFFS_withnames.kml"), Name != "")),
+  tar_target(validation_cleaned, mutate(separate_wider_delim(separate_wider_delim(validation, cols = "Name", delim = "_", names = c("carcIDs", "status")), cols = "carcIDs", delim = "(", names = c("carcID", "carcID_old"), too_few = "align_start"), carcID_old = str_remove_all(carcID_old, "\\)"))),
+  tar_target(validation_tojoin, dplyr::mutate(dplyr::filter(dplyr::select(validation_cleaned, carcID, status), status == "valid"), carcID = as.integer(carcID))),
+  tar_target(wild_carcasses_validated, left_join(validation_tojoin, wild_carcasses, by = "carcID")),
   # tar_target(carcass_bo_dedup, group_by(carcass_bo_df, boutID) %>%
   #              arrange(boutID, time_since_carcass) %>%
   #              slice(1) %>%
   #              ungroup()), # Rule: each duplicated bout is assigned to the carcass for which it is closer to the time of carcass placement
   # ## Combine carcasses
   tar_target(carcasses_focal_withstats, get_bout_stats(carcasses_focal, carcass_bo_df)), 
-  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "stn", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
+  tar_target(all_carcasses, bind_rows(carcasses_focal_withstats %>% mutate(carcType = "stn", year = lubridate::year(date)) %>% dplyr::select(-starts_with("n_")), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
   
   tar_target(bbox_south_big, sf::st_transform(
     st_as_sfc(st_set_crs(st_bbox(c("xmin" = 34.205, "xmax" = 35.787,
