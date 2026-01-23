@@ -340,16 +340,6 @@ get_station_bouts <- function(bouts, stations, dist){
   return(bts_stn)
 }
 
-get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
-  stats <- carcass_bouts_df %>%
-    dplyr::select(carcID, boutID, individual_id) %>%
-    dplyr::group_by(carcID) %>% 
-    dplyr::summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individual_id))) %>%
-    dplyr::ungroup()
-  out <- dplyr::left_join(carcasses_focal, stats, by = "carcID")
-  return(out)
-}
-
 # Clustering --------------------------------------------------------------
 get_wild_carcasses <- function(df){
   # Get carcasses
@@ -375,18 +365,6 @@ get_wild_carcasses <- function(df){
 }
 
 # prepare_data ------------------------------------------------------------
-get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){
-  gps_combined <- bind_rows(gps_2022, gps_2023) %>%
-    bind_rows(gps_2024) %>%
-    #bind_cols(sf::st_coordinates(.)) %>%
-    #rename("location_long" = X,
-    #       "location_lat" = Y) %>%
-    st_transform(32636) %>%
-    st_crop(bbox) %>%
-    mutate(year = lubridate::year(timestamp))
-  return(gps_combined)
-}
-
 get_gps_all <- function(carcs, gps_combined, days_after, days_before){
   gps_all <- vector(mode = "list", length = length(carcs))
   for(i in 1:length(carcs)){
