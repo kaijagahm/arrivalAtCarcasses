@@ -256,7 +256,7 @@ get_matches <- function(df, foc, spd){
       foc[.x$fivebefore <= foc$timestamp & foc$timestamp <= .x$fiveafter,]
     })
     
-    within_5min_speed <- purrr::map(within_5min, ~return(.x[.x$ground_speed <= spd,]))
+    within_5min_speed <- purrr::map(within_5min, ~return(.x[as.numeric(.x$ground_speed) <= spd,]))
     
     # within_11min_speed <- purrr::map(with_middles, ~{
     #   foc[.x$elevenbefore <= foc$timestamp & foc$timestamp <= .x$elevenafter & foc$ground_speed < spd,]
@@ -1749,19 +1749,22 @@ nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_
   return(out)
 }
 
-# This one is weird because we are working by transmitter ID, but the periods to remove are only by Nili_id, so we need to figure out which transmitter ID applies during the relevant period. Just gonna do this by hand for now.
 # XXX START HERE--THIS IS ANNOYING!!
-remove_periods <- function(dataset){
-  ww <- readxl::read_excel(ww_file, sheet = "all gps tags")
+remove_periods <- function(ww_file, dataset){
   toremove <- readxl::read_excel(ww_file, sheet = "periods_to_remove") %>%
-    filter(remove_end >= min(dataset$timestamp))
-  
-  ## Elara
-  ## Endeavour
-  ## Hamsa
-  ## Jakarta
-  ## Y17T58
-  ## Yagur
+    dplyr::filter(remove_end >= min(dataset$timestamp))
+  if(!(any(toremove$Nili_id %in% dataset$Nili_id))){
+    message("No Nili_ids from the periods_to_remove sheet are present in the dataset. No periods to remove.")
+    return(dataset)
+  }else{
+    toremove_long <- toremove %>%
+      dplyr::mutate(date_il = purrr::map2(remove_start, remove_end, seq, by = "day")) %>%
+      dplyr::select(Nili_id, date_il) %>%
+      tidyr::unnest(date_il) %>% dplyr::mutate(remove = T, date_il = as.Date(date_il))
+    joined <- dplyr::left_join(dataset, toremove_long, by = c("Nili_id", "date_il"))
+    dataset <- joined %>% dplyr::filter(is.na(remove)) %>% dplyr::select(-remove)
+    return(dataset)
+  }
 }
 
 get_roosts <- function(dat, id){
