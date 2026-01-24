@@ -24,6 +24,9 @@ getEdges_new <- function(dataset,
   if(!is.POSIXct(dataset[[timestampCol]])){
     dataset <- dataset %>%
       dplyr::mutate({{ timestampCol }} := as.POSIXct(.data[[timestampCol]], format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
+    warning("Converting timestamp column to POSIXct and assuming UTC. If this is wrong, make sure that your timestamp column is already a POSIXct object so this step will be skipped")
+  }else{
+    message("Timestamp column is already POSIXct, so no conversion is performed. Has timezone: ", tz(dataset[[timestampCol]]))
   }
   
   #Convert dataset to data.table (needed for spatsoc functions)
@@ -70,7 +73,7 @@ getEdges_new <- function(dataset,
   
   if (!is.null(roostPolygons)) {
     if (!is.null(roostBuffer)) {
-      roostPolygons <- convertAndBuffer(roostPolygons, dist = roostBuffer)  #buffer polygons
+      roostPolygons <- vultureUtils::convertAndBuffer(roostPolygons, dist = roostBuffer)  #buffer polygons
     }
     removedRoosts_dataset <- dataset_sf[lengths(sf::st_intersects(dataset_sf, roostPolygons)) == 0, ]
   } else {
@@ -107,7 +110,7 @@ getEdges_new <- function(dataset,
   
   #FILTER BASED ON SPEED (if thresholds set)
   # NOTE: < and > are used.
-  filteredData <- filterLocs(df = dataset_dayonly,
+  filteredData <- vultureUtils::filterLocs(df = dataset_dayonly,
                              speedThreshUpper = speedThreshUpper,
                              speedThreshLower = speedThreshLower,
                              speedCol = speedCol)
@@ -292,6 +295,8 @@ spaceTimeGroups_new <- function(dataset,
     edgesFiltered <- consecEdges(edgeList = edges_without_duplicate,
                                  consecThreshold = consecThreshold) %>%
       dplyr::ungroup()
+  }else{
+    edgesFiltered <- edges_without_duplicate
   }
   
   #HANDLE EMPTY RESULT (no valid interactions)

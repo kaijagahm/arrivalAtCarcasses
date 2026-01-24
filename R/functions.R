@@ -553,7 +553,7 @@ get_roosts_weighted <- function(dates){
   })
 }
 
-get_fl_weighted <- function(dat, dist){
+get_fl_weighted <- function(dat, dist, rp, spd){
   if(is.data.frame(dat)){
     if(nrow(dat) > 0){
       self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
@@ -561,8 +561,8 @@ get_fl_weighted <- function(dat, dist){
                                sri = 0)
       dat$dateOnly_il <- lubridate::date(dat$timestamp_il)
       # NNN check back in previous analysis--do we need to remove the roost sites?
-      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = NULL,
-                                            speedThreshLower = 4,
+      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = rp,
+                                            speedThreshLower = spd,
                                             speedThreshUpper = NULL,
                                             consecThreshold = 1,
                                             idCol = "tag_local_identifier",
@@ -1513,6 +1513,7 @@ prepare_nbda_data <- function(gps,
                               carcass_data = NULL,
                               age_ilv = T) {
   
+  gps$year <- lubridate::year(gps$date_il)
   gps$ground_speed <- as.numeric(gps$ground_speed)
   
   carc_id <- unique(gps$carcID)
@@ -1561,7 +1562,7 @@ prepare_nbda_data <- function(gps,
   all_indivs_sorted <- sort(unique(as.character(gps$tag_local_identifier))) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric. # 2025-12-05 I think this is fixed now.
   
   if (age_ilv) {
-    year = max(gps$year)
+    year = max(gps$year, na.rm = T)
     colname <- paste0("age_", year)
     age <- gps %>%
       sf::st_drop_geometry() %>%

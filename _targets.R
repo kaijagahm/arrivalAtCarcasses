@@ -5,13 +5,14 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere"),
-  controller = crew_controller_local(workers = 10)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere")#,
+  #controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
 
 list(
+  tar_target(rp, sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")),
   # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
   tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
   tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
@@ -621,17 +622,15 @@ list(
   tar_target(nd5, nb_shortcut(stn_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[41:50], age_ilv = T)),
   tar_target(nd6, nb_shortcut(stn_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[51:60], age_ilv = T)),
 
-  # NNN implement the Elvira change to the order in the flight/feeding network functions. That should eliminate a lot of the NAs. The remaining ones will be set to 0, resulting in
-
   # Flight networks
   ## Flight networks--Cumulative (stn)
   ### Flight networks--Cumulative (stn)--Weighted
-  tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
-  tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
-  tar_target(fl_wt_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
-  tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
-  tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
-  tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf))})),
+  tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  tar_target(fl_wt_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp))})),
+  tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
 
   tar_target(fl_wt_cumulative_1, purrr::map2(fl_wt_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_2, purrr::map2(fl_wt_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
