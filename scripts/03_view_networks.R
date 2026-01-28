@@ -2,66 +2,77 @@ library(tidyverse)
 library(targets)
 library(tidygraph)
 library(ggraph)
-
-tar_load(fl_wt_cumulative_1)
-graphs <- map(fl_wt_cumulative_1[[2]], ~tidygraph::as_tbl_graph(as.matrix(.x)))
-
 windowsFonts(Arial = windowsFont("Arial"))
 theme_set(
   theme_graph(base_family = "Arial") +
     theme(text = element_text(family = "Arial"))
 )
+tar_load(fl_wt_cumulative_1)
+tar_load(fl_wt_cumulative_2)
+tar_load(fl_wt_cumulative_3)
+tar_load(fl_wt_cumulative_4)
+tar_load(fl_wt_cumulative_5)
+tar_load(fl_wt_cumulative_6)
+fl_wt_cumulative <- c(fl_wt_cumulative_1, fl_wt_cumulative_2, fl_wt_cumulative_3, fl_wt_cumulative_4, fl_wt_cumulative_5, fl_wt_cumulative_6)
+tar_load(stn_carcs)
+carcIDs <- map_dbl(stn_carcs, "carcID")
+
+graphs <- map(fl_wt_cumulative, ~map(.x, ~tidygraph::as_tbl_graph(as.matrix(.x))))
 
 get_layout <- function(graphs) {
-  
-  # ---- 1. Collect all nodes ----
-  all_nodes <- graphs %>%
-    map(~ .x %>% activate(nodes) %>% as_tibble()) %>%
-    list_rbind() %>%
-    distinct(name)
-  
-  # ---- 2. Collect all edges, converting indices to names ----
-  edges_union <- graphs %>%
-    map(function(g) {
-      nodes <- g %>% activate(nodes) %>% as_tibble()
-      
-      g %>%
-        activate(edges) %>%
-        as_tibble() %>%
-        mutate(
-          ID1 = nodes$name[from],
-          ID2 = nodes$name[to]
-        ) %>%
-        select(ID1, ID2, weight)
-    }) %>%
-    list_rbind() %>%
-    filter(weight > 0, !is.na(weight)) %>%
-    group_by(ID1, ID2) %>%
-    summarise(weight = mean(weight), .groups = "drop")
-  
-  # ---- 3. Build union graph ----
-  g_union <- tbl_graph(
-    nodes = all_nodes,
-    edges = edges_union,
-    directed = FALSE
-  )
-  
-  # ---- 4. Compute layout ----
-  g_layout <- g_union %>%
-    activate(edges) %>%
-    mutate(layout_weight = weight)
-  
-  layout_tbl <- create_layout(
-    g_layout,
-    layout  = "fr",
-    weights = layout_weight
-  )
-  
-  return(layout_tbl)
+  if(length(graphs) > 0){
+    
+    # ---- 1. Collect all nodes ----
+    all_nodes <- graphs %>%
+      map(~ .x %>% activate(nodes) %>% as_tibble()) %>%
+      list_rbind() %>%
+      distinct(name)
+    
+    # ---- 2. Collect all edges, converting indices to names ----
+    edges_union <- graphs %>%
+      map(function(g) {
+        nodes <- g %>% activate(nodes) %>% as_tibble()
+        
+        g %>%
+          activate(edges) %>%
+          as_tibble() %>%
+          mutate(
+            ID1 = nodes$name[from],
+            ID2 = nodes$name[to]
+          ) %>%
+          select(ID1, ID2, weight)
+      }) %>%
+      list_rbind() %>%
+      filter(weight > 0, !is.na(weight)) %>%
+      group_by(ID1, ID2) %>%
+      summarise(weight = mean(weight), .groups = "drop")
+    
+    # ---- 3. Build union graph ----
+    g_union <- tbl_graph(
+      nodes = all_nodes,
+      edges = edges_union,
+      directed = FALSE
+    )
+    
+    # ---- 4. Compute layout ----
+    g_layout <- g_union %>%
+      activate(edges) %>%
+      mutate(layout_weight = weight)
+    
+    layout_tbl <- create_layout(
+      g_layout,
+      layout  = "fr",
+      weights = layout_weight
+    )
+    
+    return(layout_tbl)
+  }
+  else{
+    return(NULL)
+  }
 }
 
-layout <- get_layout(graphs)
-
+layouts <- map(graphs, get_layout)
 
 plot_network_fixed <- function(graph, layout_tbl, title = NULL) {
   
@@ -99,7 +110,7 @@ plot_network_fixed <- function(graph, layout_tbl, title = NULL) {
   
   # ---- 4. Plot ----
   plot <- ggraph(g, layout = "manual", x = x, y = y) +
-    geom_edge_link(aes(alpha = sri)) +
+    geom_edge_link(aes(alpha = sri), show.legend = F) +
     
     ## hide absent nodes
     geom_node_point(
@@ -122,4 +133,16 @@ plot_network_fixed <- function(graph, layout_tbl, title = NULL) {
   return(plot)
 }
 
-plots <- map2(graphs, 1:length(graphs), ~plot_network_fixed(.x, layout_tbl = layout, title = .y))
+for(diffusion in 29:length(graphs)){
+  cat("starting diffusion #", diffusion, " of ", length(graphs), "\n")
+  layout <- layouts[[diffusion]]
+  if(!is.null(layout)){
+    carcID <- carcIDs[diffusion]
+    gs <- map2(graphs[[diffusion]], 1:length(graphs[[diffusion]]), 
+               ~plot_network_fixed(.x, layout_tbl = layout, title = paste0(carcID, ", network", .y)))
+    walk2(gs, str_pad(as.character(1:length(gs)), width = 3, side = "left", pad = "0"), ~ggsave(.x, filename = paste0("fig/cumulative_flight_networks/stn/carcID_", carcID, "_graph", .y, ".png"), width = 6, height = 6))
+  }else{
+    next
+  }
+  cat(100*round(diffusion/length(graphs), 3), "% complete\n")
+}
