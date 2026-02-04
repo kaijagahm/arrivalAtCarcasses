@@ -5,14 +5,16 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere"),
-  controller = crew_controller_local(workers = 10)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere")#,
+  #controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
 
 list(
   tar_target(rp, sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")),
+  tar_target(rp_minus_stations, sf::st_difference(sf::st_transform(rp, 32636), stations_union)),
+
   # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
   tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
   tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
@@ -486,6 +488,8 @@ list(
   ### Created in 00_carcass_data_translation.R
   ### Only spatial, not time-restricted.
   tar_target(stations, readRDS(here("data/created/stations.RDS"))),
+  tar_target(stations_buffered, sf::st_buffer(stations, 1000)),
+  tar_target(stations_union, sf::st_union(stations_buffered)),
   
   ## Station carcasses
   ### Created in 00_carcass_data_translation.R
