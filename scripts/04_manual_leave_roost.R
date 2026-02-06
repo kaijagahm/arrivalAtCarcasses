@@ -13,6 +13,9 @@ library(targets)
 library(mapview)
 library(ggraph)
 library(tidygraph)
+library(move2)
+library(gganimate)
+library(ggspatial)
 
 # get roost location data
 tar_load(roosts_stn) # this isn't great for our purposes because it's on a per-carcass basis, but that's ok
@@ -182,6 +185,27 @@ departure_graphs[[1]]
 departure_graphs[[2]]
 departure_graphs[[3]]
 
+# Out of curiosity, how much more specific can we get? First, what are the intervals between consecutive points for individuals?
+intervals <- test_gps %>%
+  st_drop_geometry() %>%
+  group_by(individual_local_identifier, date_il) %>%
+  arrange(timestamp_il, .by_group = T) %>%
+  mutate(interval = as.numeric(difftime(timestamp_il, lag(timestamp_il), units = "mins")))
+
+intervals %>%
+  # removing 200+ minute intervals because most individuals have just a few of those, which are probably during the night
+  filter(date_il == lubridate::ymd("2022-10-15"), interval < 200) %>%
+  ggplot(aes(x = individual_local_identifier, y = interval))+
+  geom_boxplot(outlier.size = 0.5)+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())+
+  labs(y = "Interval (mins)", x = "Individual")
+
+# so we have some very short intervals but also a lot of very long intervals. But an important thing we see here is that almost nobody has intervals less than 10 minutes. So I don't think it's really possible to directly calculate departure intervals less than 10 minutes.
+
+# I could try interpolating locations, but I worry that linear interpolation doesn't make a lot of sense for departure times, since by definition we expect they spent some of the time sitting still and some of the time flying. By definition, linear is an inappropriate interpolation method to use.
+# https://bartk.gitlab.io/move2/reference/mt_interpolate.html
+
 # What about the trajectories after the departures?
 head(test_gps)
 
@@ -193,3 +217,69 @@ head(test_gps)
 # "We focused on three indices of the ‘following behaviour’, (i) the proportion of the flight time that individuals spent close to each other (within detection range); (ii) the mean distance between individuals during the flight; (iii) whether the informed was leading the dyad, namely closer to the goal site and how this changed along the joint flight."
 
 # So we need to calculate individual daily displacement, restrict the GPS data to only dyads that flew far enough (does this restriction make sense for us, or not?) and then plot it onto the map...
+# I think linear interpolation actually might make more sense for the subsequent trajectories, because then we can measure distance along the interpolated points and actually look at dyad distance over time.
+
+# Let's start by just plotting some dyads on the map
+departure_gps <- test_gps %>% filter(date_il == lubridate::ymd("2022-11-14")) %>% filter(individual_local_identifier %in% c("K39", "A75w"))
+
+departure_lines <- departure_gps %>%
+  arrange(individual_local_identifier, timestamp_il) %>%
+  group_by(individual_local_identifier) %>%
+  summarise(do_union = FALSE) %>%
+  st_cast("LINESTRING")
+
+# Let's look at K39 and A75w
+tar_load(stations)
+mapview(departure_gps, zcol = "individual_local_identifier")+mapview(stations, col.regions = "red") # okay, these ones aren't near any stations, but there could still be a carcass... anyway let's move on
+
+ggplot(mapping = aes(color = individual_local_identifier)) +
+  geom_sf(data = departure_lines, linewidth = 0.8, aes(alpha = timestamp_il)) +
+  geom_sf(data = departure_gps, size = 2)
+
+mv <- mt_as_move2(
+  departure_gps,
+  coords = c("location_long", "location_lat"),
+  time = "timestamp_il",
+  track_id = "individual_local_identifier",
+  crs = st_crs(departure_gps)
+)
+
+mv <- mv %>%
+  arrange(individual_local_identifier, timestamp_il)
+
+mv <- mv %>% # drop any duplicates
+  distinct(individual_local_identifier, timestamp_il, .keep_all = TRUE)
+
+# interpolate to 5 min timestamps
+interpolated_5min <- mt_interpolate(
+  mv[!sf::st_is_empty(mv), ],
+  time = seq(
+    as.POSIXct("2022-11-14 00:00:00"),
+    as.POSIXct("2022-11-14 11:59:00"), "5 mins"
+  ),
+  max_time_lag = units::as_units(1, "hours"),
+  omit = TRUE
+) %>%
+  select(individual_local_identifier, timestamp_il)
+
+# calculate distance at each timestep
+distances <- interpolated_5min %>%
+  group_by(timestamp_il) %>%
+  group_modify(~ {
+    if (nrow(.x) != 2) return(NULL)
+    
+    tibble(
+      timestamp_il = .x$timestamp_il[1],
+      id1 = .x$individual_local_identifier[1],
+      id2 = .x$individual_local_identifier[2],
+      distance_m = as.numeric(st_distance(.x$geometry[1],
+                                          .x$geometry[2]))
+    )
+  }) %>%
+  ungroup()
+
+distances %>%
+  ggplot(aes(x = timestamp_il, y = distance_m)) +
+  geom_line()
+
+# Okay, so this is a start in terms of plotting how far apart they are. But in order to do what they did, we would also need to figure out which of these interpolated locations are "flight" so we can calculate proportion of flight time spent together, and figure out when they're flying. Or maybe we just extract the flight segments and then interpolate those? But that sounds really complicated.
