@@ -601,6 +601,8 @@ list(
   tar_target(idname, "individual_local_identifier"),
   tar_target(tsname, "timestamp_il"),
   tar_target(tzname, "Israel"),
+  tar_target(downsampled_forroosts, rename(bind_cols(st_coordinates(st_transform(downsampled, "WGS84")), downsampled), "location_long" = X, "location_lat" = Y)),
+  tar_target(roosts_all, sf::st_as_sf(NEW_get_roosts(list(downsampled_forroosts), id = idname, ts = tsname, tz = tzname)[[1]])),
   tar_target(roosts_stn_1, NEW_get_roosts(stn_gps_forroosts[1:10], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_stn_2, NEW_get_roosts(stn_gps_forroosts[11:20], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_stn_3, NEW_get_roosts(stn_gps_forroosts[21:30], id = idname, ts = tsname, tz = tzname)),
@@ -731,5 +733,11 @@ list(
   ))),
 
   ## Number of individuals involved in each diffusion
-  tar_target(ns, purrr::list_rbind(purrr::map(c(nd1, nd2, nd3, nd4, nd5, nd6), ~{as.data.frame(t(unlist(.x[1:4])))})))
+  tar_target(ns, purrr::list_rbind(purrr::map(c(nd1, nd2, nd3, nd4, nd5, nd6), ~{as.data.frame(t(unlist(.x[1:4])))}))),
+  
+  # Manual calculation of co-departures from roosts and following
+  tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))),
+  
+  tar_target(downsampled_updated, mutate(downsampled_forroosts, roostID_gps = as.numeric(st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations))))
+  # XXX START HERE WITH TRANSFERRING 04_MANUAL_LEAVE_ROOSTS.r over to the main pipeline
 )

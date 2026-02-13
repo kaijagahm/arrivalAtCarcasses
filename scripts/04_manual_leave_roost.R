@@ -119,7 +119,7 @@ roost_mats <- purrr::map(leaving_points_dates, ~{
   rownames(mat) <- .x$individual_local_identifier
   colnames(mat) <- .x$individual_local_identifier
   return(mat)
-  })
+})
 
 roost_mats_long <- purrr::map(roost_mats, ~{
   .x %>% as.data.frame() %>% rownames_to_column("ID1") %>%
@@ -133,7 +133,7 @@ difftime_mats <- purrr::map(leaving_points_dates, ~{
   rownames(mat) <- .x$individual_local_identifier
   colnames(mat) <- .x$individual_local_identifier
   return(mat)
-  })
+})
 
 difftime_mats_long <- purrr::map(difftime_mats, ~{
   .x %>% as.data.frame() %>% rownames_to_column("ID1") %>%
@@ -146,7 +146,7 @@ sync_departures <- purrr::map(both, ~{
   .x %>% filter(same_roost == 1) %>%
     select(-same_roost) %>%
     filter(ID1 < ID2) # remove self loops and repeats
-  })
+})
 
 # Now let's visualize these as roost departure networks. Is the 10 min threshold too high? Do we have dyads, or a lot of groups leaving together?
 edgelists <- map2(sync_departures, leaving_points_dates, ~{
@@ -158,7 +158,7 @@ departure_nets <- map2(edgelists, leaving_points_dates, ~{
   tbl_graph(edges = .x, directed = F) %>%
     activate(nodes) %>%
     left_join(distinct(select(.y, individual_local_identifier, roostID)), by = c("name" = "individual_local_identifier"))
-  })
+})
 
 departure_dates <- map_chr(leaving_points_dates, ~as.character(.x$date_il[1]))
 
@@ -186,7 +186,7 @@ departure_graphs[[2]]
 departure_graphs[[3]]
 
 # Out of curiosity, how much more specific can we get? First, what are the intervals between consecutive points for individuals?
-intervals <- test_gps %>%
+intervals <- data_rejoined %>%
   st_drop_geometry() %>%
   group_by(individual_local_identifier, date_il) %>%
   arrange(timestamp_il, .by_group = T) %>%
@@ -194,7 +194,7 @@ intervals <- test_gps %>%
 
 intervals %>%
   # removing 200+ minute intervals because most individuals have just a few of those, which are probably during the night
-  filter(date_il == lubridate::ymd("2022-10-15"), interval < 200) %>%
+  filter(date_il == lubridate::ymd("2022-11-15"), interval < 200) %>%
   ggplot(aes(x = individual_local_identifier, y = interval))+
   geom_boxplot(outlier.size = 0.5)+
   theme_minimal()+
@@ -207,7 +207,8 @@ intervals %>%
 # https://bartk.gitlab.io/move2/reference/mt_interpolate.html
 
 # What about the trajectories after the departures?
-head(test_gps)
+head(data_rejoined)
+data_rejoined <- sf::st_as_sf(data_rejoined)
 
 # Get data for a single day, and perhaps for a single roost
 # Plot lines onto a map to show trajectories
@@ -220,21 +221,11 @@ head(test_gps)
 # I think linear interpolation actually might make more sense for the subsequent trajectories, because then we can measure distance along the interpolated points and actually look at dyad distance over time.
 
 # Let's start by just plotting some dyads on the map
-departure_gps <- test_gps %>% filter(date_il == lubridate::ymd("2022-11-14")) %>% filter(individual_local_identifier %in% c("K39", "A75w"))
-
-departure_lines <- departure_gps %>%
-  arrange(individual_local_identifier, timestamp_il) %>%
-  group_by(individual_local_identifier) %>%
-  summarise(do_union = FALSE) %>%
-  st_cast("LINESTRING")
+departure_gps <- data_rejoined %>% filter(date_il == lubridate::ymd("2022-11-14")) %>% filter(individual_local_identifier %in% c("K39", "A75w"))
 
 # Let's look at K39 and A75w
 tar_load(stations)
 mapview(departure_gps, zcol = "individual_local_identifier")+mapview(stations, col.regions = "red") # okay, these ones aren't near any stations, but there could still be a carcass... anyway let's move on
-
-ggplot(mapping = aes(color = individual_local_identifier)) +
-  geom_sf(data = departure_lines, linewidth = 0.8, aes(alpha = timestamp_il)) +
-  geom_sf(data = departure_gps, size = 2)
 
 mv <- mt_as_move2(
   departure_gps,
@@ -250,6 +241,7 @@ mv <- mv %>%
 mv <- mv %>% # drop any duplicates
   distinct(individual_local_identifier, timestamp_il, .keep_all = TRUE)
 
+tar_load(gps_spd)
 # interpolate to 5 min timestamps
 interpolated_5min <- mt_interpolate(
   mv[!sf::st_is_empty(mv), ],
@@ -260,11 +252,38 @@ interpolated_5min <- mt_interpolate(
   max_time_lag = units::as_units(1, "hours"),
   omit = TRUE
 ) %>%
-  select(individual_local_identifier, timestamp_il)
+  mutate(interp = T) %>%
+  bind_rows(mutate(mv[!sf::st_is_empty(mv), ], interp = F)) %>%
+  arrange(individual_local_identifier, timestamp_il) %>%
+  
+  select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, , roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
+  ungroup()
+
+interpolated_5min <- interpolated_5min %>%
+  mutate(flight = ground_speed > gps_spd) %>%
+  arrange(individual_local_identifier, timestamp_il) %>%
+  fill(date_il) %>%
+  group_by(individual_local_identifier, date_il) %>%
+  fill(flight) %>%
+  fill(roost_X) %>%
+  fill(roost_Y) %>%
+  fill(roostID) %>%
+  fill(left_roost) %>%
+  ungroup()
+
+after_departure <- interpolated_5min %>%
+  group_by(individual_local_identifier, date_il) %>%
+  mutate(after_departure = cumsum(left_roost)) %>%
+  filter(after_departure > 0) %>%
+  ungroup() %>%
+  select(-after_departure)
+
 
 # calculate distance at each timestep
-distances <- interpolated_5min %>%
+pairwise_distances <- after_departure %>%
+  filter(interp) %>% # keep only interpolated points so they'll be aligned
   group_by(timestamp_il) %>%
+  filter(n() == 2) %>%
   group_modify(~ {
     if (nrow(.x) != 2) return(NULL)
     
@@ -272,14 +291,114 @@ distances <- interpolated_5min %>%
       timestamp_il = .x$timestamp_il[1],
       id1 = .x$individual_local_identifier[1],
       id2 = .x$individual_local_identifier[2],
+      flight1 = .x$flight[1],
+      flight2 = .x$flight[2],
       distance_m = as.numeric(st_distance(.x$geometry[1],
                                           .x$geometry[2]))
     )
   }) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(flight_status = case_when(flight1 & flight2 ~ "both",
+                                   (flight1 & !flight2)|(!flight1 & flight2) ~ "one",
+                                   !flight1 & !flight2 ~ "zero"))
 
 distances %>%
-  ggplot(aes(x = timestamp_il, y = distance_m)) +
-  geom_line()
+  ggplot(aes(x = timestamp_il, y = distance_m, color = flight_status)) +
+  geom_point()+
+  theme_classic()+
+  labs(y = "Distance apart (m)",
+       color = "Flight?",
+       x = "Timestamp",
+       title = c("K39 and A75w on 2022-11-14"))
 
-# Okay, so this is a start in terms of plotting how far apart they are. But in order to do what they did, we would also need to figure out which of these interpolated locations are "flight" so we can calculate proportion of flight time spent together, and figure out when they're flying. Or maybe we just extract the flight segments and then interpolate those? But that sounds really complicated.
+# This looks like a reasonable way to look at post-departure flights.
+
+# Now we need to calculate daily displacement for each individual
+displ <- after_departure %>%
+  group_by(individual_local_identifier) %>%
+  mutate(displacement = c(st_distance(
+    !!!syms(attr(., "sf_column")),
+    (!!!syms(attr(., "sf_column")))[row_number() == 1]
+  )))
+
+max_displacement <- displ %>%
+  group_by(individual_local_identifier, date_il) %>%
+  summarize(max_displ_m = max(displacement, na.rm = T))
+# XXX will have to join this back on to look at whether the dyad falls within the max displacement range or not.
+
+#"We focused on three indices of the ‘following behaviour’, (i) the proportion of the flight time that individuals spent close to each other (within detection range); (ii) the mean distance between individuals during the flight; (iii) whether the informed was leading the dyad, namely closer to the goal site and how this changed along the joint flight."
+tar_load(ddf) # we're using 2km ddf
+
+distances <- distances %>%
+  mutate(in_sight = case_when(distance_m <= ddf ~ T, .default = F))
+
+distances %>%
+  group_by(id1, id2) %>%
+  summarize(prop_both_flying = sum(flight_status == "both")/n(),
+            prop_in_sight = sum(in_sight)/n(),
+            prop_in_sight_both_flying = sum(flight_status == "both" & in_sight)/n())
+
+# Informed/uninformed status of carcasses
+#"Hence, we classified individuals as informed in cases they were within detection range (i.e. less than 4 km) of an existing carcass in the 2 days preceding the feeding event. These included cases in which individuals ate from the carcass at previous days, landed but did not eat or flew above the carcass but did not land. Cases in which individuals were between 4 and 10 km from the food resource were excluded (425 dyads) to avoid false classification of individual’s information status."
+
+tar_load(all_carcasses_south)
+all_carcasses_active <- all_carcasses_south %>%
+  select(carcID, carcType, date) %>%
+  mutate(maxdate = date + lubridate::days(3),
+         year = factor(lubridate::year(date))) %>%
+  mutate(date_seq = map2(date, maxdate, ~ seq(.x, .y, by = "1 day"))) %>%
+  unnest(date_seq) %>%
+  select(carcID, carcType, date = date_seq, year, geometry)
+
+active_daily_buffered <- all_carcasses_active %>%
+  st_buffer(ddf) %>% # buffer by ddf. Do we want to do something different, like 4km?
+  group_by(date) %>%
+  group_split()
+
+names(active_daily_buffered) <- map_chr(active_daily_buffered, ~as.character(.x$date[1]))
+
+# Graph the availability of carcasses
+all_carcasses_active %>%
+  st_drop_geometry() %>%
+  group_by(year, date, carcType) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(x = date, y = n, color = carcType))+
+  geom_line()+
+  facet_wrap(~year, scales = "free_x")+
+  theme_minimal() # okay cool, we've seen something like this before.
+
+# Now I'd like to get trajectories for each individual on each day and then figure out
+## 1. How many active carcasses did they pass by on each day?
+## 2. For each active carcass, were they informed about it or not on each day?
+tar_load(downsampled)
+mv_all <- mt_as_move2(
+  downsampled,
+  coords = c("location_long", "location_lat"),
+  time = "timestamp_il",
+  track_id = "individual_local_identifier",
+  crs = st_crs(downsampled)
+)
+
+# daily_tracks <- mv_all %>%
+#   group_by(individual_local_identifier, date_il) %>%
+#   filter(n() > 1) %>%
+#   summarise(do_union = FALSE) %>%   # keeps point order
+#   st_cast("LINESTRING")
+# write_rds(daily_tracks, file = "data/created/daily_tracks.RDS")
+daily_tracks <- readRDS("data/created/daily_tracks.RDS")
+
+daily_tracks_list <- daily_tracks %>%
+  group_by(date_il) %>%
+  group_split()
+names(daily_tracks_list) <- map_chr(daily_tracks_list, ~as.character(.x$date_il[1]))
+
+names(daily_tracks_list) %in% names(active_daily_buffered) # why don't these match up? that's weird.
+for(i in 1:length(daily_tracks_list)){
+  date <- names(daily_tracks_list)[i]
+  if(date %in% names(active_daily_buffered)){
+    carcs <- active_daily_buffered[names(active_daily_buffered == date)]
+    
+  }else{
+    return()
+  }
+}
