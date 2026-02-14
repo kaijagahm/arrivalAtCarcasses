@@ -371,12 +371,14 @@ all_carcasses_active %>%
 ## 1. How many active carcasses did they pass by on each day?
 ## 2. For each active carcass, were they informed about it or not on each day?
 tar_load(downsampled)
+tar_load(bbox_south_big)
+downsampled_south <- st_crop(downsampled, bbox_south_big)
 mv_all <- mt_as_move2(
-  downsampled,
+  downsampled_south,
   coords = c("location_long", "location_lat"),
   time = "timestamp_il",
   track_id = "individual_local_identifier",
-  crs = st_crs(downsampled)
+  crs = st_crs(downsampled_south)
 )
 
 # daily_tracks <- mv_all %>%
@@ -392,13 +394,175 @@ daily_tracks_list <- daily_tracks %>%
   group_split()
 names(daily_tracks_list) <- map_chr(daily_tracks_list, ~as.character(.x$date_il[1]))
 
-names(daily_tracks_list) %in% names(active_daily_buffered) # why don't these match up? that's weird.
-for(i in 1:length(daily_tracks_list)){
-  date <- names(daily_tracks_list)[i]
-  if(date %in% names(active_daily_buffered)){
-    carcs <- active_daily_buffered[names(active_daily_buffered == date)]
-    
-  }else{
-    return()
-  }
-}
+names(daily_tracks_list) %in% names(active_daily_buffered) # I think the reason these don't match up is because the GPS data includes 30 days before(?) the hf carcass periods
+tar_load(minmax_dates)
+dates <- as.Date(unlist(map(minmax_dates, lubridate::date)))
+nms <- names(daily_tracks_list)
+tokeep <- c(which(nms >= dates[1] & nms <= dates[2]),
+            which(nms >= dates[3] & nms <= dates[4]),
+            which(nms >= dates[5] & nms <= dates[6]))
+daily_tracks_list <- daily_tracks_list[tokeep]
+
+nms <- names(active_daily_buffered)
+tokeep <- c(which(nms >= dates[1] & nms <= dates[2]),
+            which(nms >= dates[3] & nms <= dates[4]),
+            which(nms >= dates[5] & nms <= dates[6]))
+active_daily_buffered <- active_daily_buffered[tokeep]
+
+length(daily_tracks_list) == length(active_daily_buffered) # FALSE, because there are a couple dates with no active carcasses I guess?
+
+names(active_daily_buffered) %in% names(daily_tracks_list)
+names(daily_tracks_list) %in% names(active_daily_buffered)
+
+daily_tracks_list <- daily_tracks_list[names(active_daily_buffered)] # keep only the ones from both dates
+length(daily_tracks_list) == length(active_daily_buffered) # TRUE now
+
+informed_matrices <- map2(daily_tracks_list, active_daily_buffered, ~{
+  out <- st_intersects(.x, .y, sparse = F)
+  rownames(out) <- .x$individual_local_identifier
+  colnames(out) <- .y$carcID
+  return(out)
+  })
+names(informed_matrices) <- names(daily_tracks_list)
+
+informed_long <- map(informed_matrices, ~{
+  int_long <- as.data.frame(.x) %>%
+    tibble::rownames_to_column("individual_local_identifier") %>%
+    pivot_longer(
+      -individual_local_identifier,
+      names_to = "carcID",
+      values_to = "intersects"
+    )
+  return(int_long)
+})
+names(informed_long) <- names(daily_tracks_list)
+
+informed_long_df <- purrr::list_rbind(informed_long, names_to = "date_il") %>%
+  mutate(carcID = as.numeric(carcID)) %>%
+  left_join(all_carcasses_south %>% select(carcID, carcType, year), by = "carcID")
+#this should now have all possible combinations, as well as the info and locations of the carcasses!
+
+# Individuals per carcass -------------------------------------------------
+# How many individuals saw each carcass each day?
+indivs_per_carcass <- informed_long_df %>%
+  group_by(carcID, carcType, year, date_il) %>%
+  summarize(informed = sum(intersects),
+            total = n()) %>%
+  ungroup() %>%
+  group_by(carcID, carcType, year) %>%
+  arrange(date_il, .by_group = T) %>%
+  mutate(day = 1:n()) %>%
+  ungroup() %>%
+  mutate(prop = round(informed/total, 4))
+
+## Raw numbers, lines
+indivs_per_carcass %>%
+  ggplot(aes(x = day, y = informed, group = carcID, color = carcType))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~year)+
+  theme_minimal()
+
+## Proportions, lines
+indivs_per_carcass %>%
+  ggplot(aes(x = day, y = prop, group = carcID, color = carcType))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~year)+
+  theme_minimal() # very similar
+
+## Proportions, boxplot
+indivs_per_carcass %>%
+  ggplot(aes(x = factor(day), y = prop, color = carcType, fill = carcType))+
+  geom_line(aes(group = carcID), alpha = 0.2)+
+  geom_boxplot(alpha = 0.2)+
+  facet_wrap(~year)+
+  theme_minimal()+
+  labs(y = "Proportion informed",
+       x = "Day",
+       color = "Type", fill = "Type")
+# Note that this is only who is directly flying by the carcass that day, not cumulative over time
+
+# What about cumulative?
+indivs_per_carcass_cumul <- informed_long_df %>%
+  filter(intersects) %>%
+  arrange(year, carcID, carcType, date_il) %>%
+  group_by(year, carcID, individual_local_identifier) %>%
+  slice(1) %>%
+  ungroup() %>%
+  group_by(year, carcID, carcType, date_il) %>%
+  summarize(firsts = length(unique(individual_local_identifier))) %>%
+  mutate(day = 1:n(),
+         cum_indivs = cumsum(firsts)) %>%
+  ungroup()
+
+indivs_per_carcass_cumul %>%
+  ggplot(aes(x = factor(day), y = cum_indivs, color = carcType))+
+  geom_line(aes(group = carcID), alpha = 0.2)+
+  geom_boxplot(alpha = 0.2)+
+  facet_wrap(~year, ncol = 1)+
+  theme_minimal()+
+  labs(y = "Cumulative indivs",
+       x = "Day",
+       color = "Type")
+
+# Carcasses per individual ------------------------------------------------
+## How many carcasses does each individual see on each day?
+indiv_carc_stats <- informed_long_df %>%
+  group_by(individual_local_identifier, date_il, year) %>%
+  summarize(total = length(unique(carcID)),
+            missed = length(unique(carcID[!intersects])),
+            seen = length(unique(carcID[intersects])),
+            total_wild = length(unique(carcID[carcType == "wild"])),
+            total_stn = length(unique(carcID[carcType == "stn"])),
+            missed_wild = length(unique(carcID[carcType == "wild" & !intersects])),
+            missed_stn = length(unique(carcID[carcType == "stn" & !intersects])),
+            seen_wild = length(unique(carcID[carcType == "wild" & intersects])),
+            seen_stn = length(unique(carcID[carcType == "stn" & intersects]))) %>%
+  ungroup()
+
+indiv_carc_stats %>%
+  ggplot(aes(x = individual_local_identifier, y = seen))+
+  geom_boxplot(outlier.size = 0.5)+
+  facet_wrap(~year, scales = "free_x", ncol = 1)+
+  theme_minimal()+
+  theme(axis.text.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())+
+  labs(y = "Seen per day", x = "Individual")
+# Most individuals see 1-5 carcasses per day, but most individuals also have days when they see 0 carcasses.
+
+indiv_carc_stats %>%
+  pivot_longer(cols = c("seen", "seen_wild", "seen_stn"), names_to = "type", values_to = "seen") %>%
+  mutate(type = str_remove(type, "seen_"),
+         type = case_when(type == "seen" ~ "total", .default = type)) %>%
+  filter(type != "total") %>%
+  ggplot(aes(x = individual_local_identifier, y = seen, color = type))+
+  geom_boxplot(outlier.size = 0.5)+
+  facet_wrap(~year, scales = "free_x", nrow = 1)+
+  theme_minimal()+
+  theme(axis.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())+
+  labs(y = "Seen per day", x = "Individual")+
+  coord_flip()
+
+## What proportion of the active carcasses does each individual see on each day?
+indiv_carc_stats %>%
+  mutate(prop_seen = seen/total) %>%
+  ggplot(aes(x = individual_local_identifier, y = prop_seen))+
+  geom_boxplot(outlier.size = 0.5)+
+  facet_wrap(~year, scales = "free_x")+
+  theme_minimal()+
+  theme(axis.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())+
+  labs(y = "Proportion seen per day", x = "Individual")+
+  coord_flip() # on average, individuals are seeing 20-40% of the carcasses available on the landscape each day.
+
+indiv_carc_stats %>%
+  mutate(prop_seen = seen/total) %>%
+  ggplot(aes(x = jitter(total), y = jitter(prop_seen), color = factor(year)))+
+  geom_point(pch = 1, alpha = 0.75)+
+  theme_minimal()+
+  geom_smooth(method = "lm") # no strong relationship between number of carcasses available and the proportion seen
