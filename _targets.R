@@ -5,7 +5,7 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere")#,
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph")#,
   #controller = crew_controller_local(workers = 10)
 )
 
@@ -738,6 +738,64 @@ list(
   # Manual calculation of co-departures from roosts and following
   tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))),
   
-  tar_target(downsampled_updated, mutate(downsampled_forroosts, roostID_gps = as.numeric(st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations))))
-  # XXX START HERE WITH TRANSFERRING 04_MANUAL_LEAVE_ROOSTS.r over to the main pipeline
+  tar_target(downsampled_updated, dplyr::mutate(downsampled_forroosts, roostID_gps = as.numeric(sf::st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations)))),
+
+  tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)),
+  
+  tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))),
+  
+  tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))),
+  tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier))),
+  tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),
+  tar_target(data_timeordered, purrr::map2(indiv_date_list, leftpoints, ~{
+    .x$left_roost <- FALSE
+    if(!is.na(.y)){.x$left_roost[.y] <- TRUE}
+    return(.x)})),
+  tar_target(data_rejoined, sf::st_as_sf(as.data.frame(data.table::rbindlist(data_timeordered)), crs = 32636)),
+  tar_target(leaving_points, dplyr::filter(data_rejoined, left_roost)),
+  tar_target(leaving_points_dates, group_split(group_by(leaving_points, date_il))),
+  tar_target(roost_mats, purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$roostID, .x$roostID, FUN = "==") * 1
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)})),
+  tar_target(roost_mats_long, purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")})),
+  tar_target(difftime_mats, purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$timestamp_il, .x$timestamp_il,
+                 function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)})),
+  tar_target(difftime_mats_long, purrr::map(difftime_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")})),
+  tar_target(both, purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2")))),
+  tar_target(sync_departures, purrr::map(both, ~{dplyr::filter(.x, same_roost == 1) %>% dplyr::select(-same_roost) %>% filter(ID1 < ID2)})),
+  tar_target(departure_edgelists, purrr::map2(sync_departures, leaving_points_dates, ~{.x %>% rename("from" = ID1, "to" = ID2) %>%
+      mutate(weight = 1 / (time_diff_min + 1))})),
+  tar_target(departure_nets, purrr::map2(departure_edgelists, leaving_points_dates, ~{
+    tidygraph::tbl_graph(edges = .x, directed = F) %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::left_join(dplyr::distinct(dplyr::select(.y, individual_local_identifier, roostID)), by = c("name" = "individual_local_identifier"))})),
+  
+  # Trajectories after departure
+  tar_target(mv, move2::mt_as_move2(
+    data_rejoined,
+    time = "timestamp_il", track_id = "individual_local_identifier",
+    crs = st_crs(data_rejoined))),
+  
+  tar_target(interpolated_5min, move2::mt_interpolate( # XXX start here--need to break into three chunks before interpolating
+    mv[!sf::st_is_empty(mv), ],
+    time = seq(
+      as.POSIXct("2022-11-14 00:00:00"),
+      as.POSIXct("2022-11-14 11:59:00"), "5 mins"
+    ),
+    max_time_lag = units::as_units(1, "hours"),
+    omit = TRUE
+  ) %>%
+    mutate(interp = T) %>%
+    bind_rows(mutate(mv[!sf::st_is_empty(mv), ], interp = F)) %>%
+    arrange(individual_local_identifier, timestamp_il) %>%
+    
+    select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, , roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
+    ungroup())
+  
 )

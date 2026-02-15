@@ -108,7 +108,7 @@ data_rejoined %>%
   scale_size_manual(values = c(0.5, 1.5), name = "Departure")+
   theme(axis.title.x = element_blank())
 
-# Now apply to each date
+# Now apply to each date # XXX start here with moving to targets pipeline
 leaving_points_dates <- leaving_points %>% group_by(date_il) %>%
   group_split()
 
@@ -184,24 +184,6 @@ departure_graphs <- map2(departure_nets, departure_dates, ~{
 departure_graphs[[1]]
 departure_graphs[[2]]
 departure_graphs[[3]]
-
-# Out of curiosity, how much more specific can we get? First, what are the intervals between consecutive points for individuals?
-intervals <- data_rejoined %>%
-  st_drop_geometry() %>%
-  group_by(individual_local_identifier, date_il) %>%
-  arrange(timestamp_il, .by_group = T) %>%
-  mutate(interval = as.numeric(difftime(timestamp_il, lag(timestamp_il), units = "mins")))
-
-intervals %>%
-  # removing 200+ minute intervals because most individuals have just a few of those, which are probably during the night
-  filter(date_il == lubridate::ymd("2022-11-15"), interval < 200) %>%
-  ggplot(aes(x = individual_local_identifier, y = interval))+
-  geom_boxplot(outlier.size = 0.5)+
-  theme_minimal()+
-  theme(axis.text.x = element_blank())+
-  labs(y = "Interval (mins)", x = "Individual")
-
-# so we have some very short intervals but also a lot of very long intervals. But an important thing we see here is that almost nobody has intervals less than 10 minutes. So I don't think it's really possible to directly calculate departure intervals less than 10 minutes.
 
 # I could try interpolating locations, but I worry that linear interpolation doesn't make a lot of sense for departure times, since by definition we expect they spent some of the time sitting still and some of the time flying. By definition, linear is an inappropriate interpolation method to use.
 # https://bartk.gitlab.io/move2/reference/mt_interpolate.html
@@ -355,7 +337,13 @@ active_daily_buffered <- all_carcasses_active %>%
   group_by(date) %>%
   group_split()
 
+active_daily_buffered_10km <- all_carcasses_active %>%
+  st_buffer(10000) %>%
+  group_by(date) %>%
+  group_split() # "Cases in which individuals were between 4 and 10 km from the food resource were excluded (425 dyads) to avoid false classification of individual’s information status."
+
 names(active_daily_buffered) <- map_chr(active_daily_buffered, ~as.character(.x$date[1]))
+names(active_daily_buffered_10km) <- map_chr(active_daily_buffered_10km, ~as.character(.x$date[1]))
 
 # Graph the availability of carcasses
 all_carcasses_active %>%
@@ -408,6 +396,7 @@ tokeep <- c(which(nms >= dates[1] & nms <= dates[2]),
             which(nms >= dates[3] & nms <= dates[4]),
             which(nms >= dates[5] & nms <= dates[6]))
 active_daily_buffered <- active_daily_buffered[tokeep]
+active_daily_buffered_10km <- active_daily_buffered_10km[tokeep]
 
 length(daily_tracks_list) == length(active_daily_buffered) # FALSE, because there are a couple dates with no active carcasses I guess?
 
@@ -416,6 +405,9 @@ names(daily_tracks_list) %in% names(active_daily_buffered)
 
 daily_tracks_list <- daily_tracks_list[names(active_daily_buffered)] # keep only the ones from both dates
 length(daily_tracks_list) == length(active_daily_buffered) # TRUE now
+length(daily_tracks_list) == length(active_daily_buffered_10km)
+names(daily_tracks_list) == names(active_daily_buffered)
+names(daily_tracks_list) == names(active_daily_buffered_10km)
 
 informed_matrices <- map2(daily_tracks_list, active_daily_buffered, ~{
   out <- st_intersects(.x, .y, sparse = F)
@@ -423,7 +415,16 @@ informed_matrices <- map2(daily_tracks_list, active_daily_buffered, ~{
   colnames(out) <- .y$carcID
   return(out)
   })
+
+informed_matrices_10km <- map2(daily_tracks_list, active_daily_buffered_10km, ~{
+  out <- st_intersects(.x, .y, sparse = F)
+  rownames(out) <- .x$individual_local_identifier
+  colnames(out) <- .y$carcID
+  return(out)
+})
+
 names(informed_matrices) <- names(daily_tracks_list)
+names(informed_matrices_10km) <- names(daily_tracks_list)
 
 informed_long <- map(informed_matrices, ~{
   int_long <- as.data.frame(.x) %>%
@@ -435,12 +436,39 @@ informed_long <- map(informed_matrices, ~{
     )
   return(int_long)
 })
+
+informed_long_10km <- map(informed_matrices_10km, ~{
+  int_long <- as.data.frame(.x) %>%
+    tibble::rownames_to_column("individual_local_identifier") %>%
+    pivot_longer(
+      -individual_local_identifier,
+      names_to = "carcID",
+      values_to = "intersects"
+    )
+  return(int_long)
+})
 names(informed_long) <- names(daily_tracks_list)
+names(informed_long_10km) <- names(daily_tracks_list)
 
 informed_long_df <- purrr::list_rbind(informed_long, names_to = "date_il") %>%
   mutate(carcID = as.numeric(carcID)) %>%
   left_join(all_carcasses_south %>% select(carcID, carcType, year), by = "carcID")
+
+informed_long_df_10km <- purrr::list_rbind(informed_long_10km, names_to = "date_il") %>%
+  mutate(carcID = as.numeric(carcID)) %>% rename("intersects_10km" = intersects)
 #this should now have all possible combinations, as well as the info and locations of the carcasses!
+
+informed_joined <- left_join(informed_long_df, informed_long_df_10km, by = c("date_il", "individual_local_identifier", "carcID")) %>%
+  relocate(intersects_10km, .after = "intersects") %>%
+  mutate(informed = intersects, # considering anything between 4km and 10km as "maybe"
+         uninformed = !intersects & !intersects_10km,
+         maybe = !intersects & intersects_10km) %>%
+  select(date_il, individual_local_identifier, carcID, carcType, year, informed, maybe, uninformed, geometry)
+
+joined_long <- informed_joined %>%
+  pivot_longer(cols = c("informed", "maybe", "uninformed"), names_to = "status", values_to = "lgl") %>%
+  filter(lgl) %>%
+  select(-lgl)
 
 # Individuals per carcass -------------------------------------------------
 # How many individuals saw each carcass each day?

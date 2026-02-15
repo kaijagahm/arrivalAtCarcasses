@@ -1594,3 +1594,21 @@ fix_names_ages <- function(gps_combined, ww_file){
   
   return(out)
 }
+
+get_leftroost <- function(ordered_df, threshold){
+  checkmate::assert_data_frame(ordered_df)
+  checkmate::assert_subset("in_a_roost", names(ordered_df))
+  checkmate::assert_numeric(threshold)
+  n <- nrow(ordered_df)
+  rle_obj <- rle(as.numeric(ordered_df$in_a_roost))
+  first_seq_out <- min(which(rle_obj$lengths >= threshold & rle_obj$values == 0))
+  if(!is.infinite(first_seq_out)){
+    first_point_out <- sum(rle_obj$lengths[1:(first_seq_out-1)])+1
+    if(first_point_out > n){
+      first_point_out <- NA
+    }
+  }else{
+    first_point_out <- NA
+  }
+  return(first_point_out)
+}
