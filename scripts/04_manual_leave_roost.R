@@ -108,7 +108,7 @@ data_rejoined %>%
   scale_size_manual(values = c(0.5, 1.5), name = "Departure")+
   theme(axis.title.x = element_blank())
 
-# Now apply to each date # XXX start here with moving to targets pipeline
+# Now apply to each date
 leaving_points_dates <- leaving_points %>% group_by(date_il) %>%
   group_split()
 
@@ -238,7 +238,7 @@ interpolated_5min <- mt_interpolate(
   bind_rows(mutate(mv[!sf::st_is_empty(mv), ], interp = F)) %>%
   arrange(individual_local_identifier, timestamp_il) %>%
   
-  select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, , roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
+  select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
   ungroup()
 
 interpolated_5min <- interpolated_5min %>%

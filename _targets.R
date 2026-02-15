@@ -14,7 +14,7 @@ lapply(list.files("R", full.names = TRUE), source)
 list(
   tar_target(rp, sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")),
   tar_target(rp_minus_stations, sf::st_difference(sf::st_transform(rp, 32636), stations_union)),
-
+  
   # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
   tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
   tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
@@ -508,7 +508,7 @@ list(
                                            hours_after = hours_after_carcass)),
   tar_target(station_bo, get_station_bouts(bouts = feeding_bo_nocliffs, stations = stations, dist = dist_bo_stations)),
   tar_target(non_station_bo, filter(feeding_bo_nocliffs, !(boutID %in% station_bo$boutID))),
-
+  
   ## Cluster the remaining bouts to detect wild carcasses
   tar_target(wild_dist, 200), #chosen in meeting with Orr
   tar_target(wild_time_hrs, 24), # chosen in meeting with Orr
@@ -536,7 +536,7 @@ list(
                                    "ymin" = 29.478, "ymax" = 31.775)),
                          "WGS84")), 32636)), ### NNN can I just draw a line at Jerusalem and take everything south of that? Does it change anything?
   tar_target(jerusalem_northing_36n, 3514000),
-
+  
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
@@ -549,7 +549,7 @@ list(
   tar_target(stn_carcs, group_split(group_by(stn, carcID))),
   tar_target(wild, filter(all_carcasses_south, carcType == "wild")),
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
-
+  
   # download data to match high frequency period, plus buffer
   tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022_version2025-09-21.RDS"))),
   tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023_version2025-09-21.RDS"))),
@@ -557,7 +557,7 @@ list(
   tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022_version2025-09-21.RDS"))),
   tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023_version2025-09-21.RDS"))),
   tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024_version2025-09-21.RDS"))),
-
+  
   tar_target(gps_1, purrr::map2(.x = list(ornitela_data_2022, ornitela_data_2023, ornitela_data_2024), .y = list(inpa_data_2022, inpa_data_2023, inpa_data_2024), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs = "WGS84"))),
   
   tar_target(gps, purrr::map(gps_1, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
@@ -565,7 +565,7 @@ list(
   tar_target(gps_combined, st_transform(st_as_sf(mutate(purrr::list_rbind(gps), ground_speed = as.numeric(ground_speed))), 32636)),
   
   tar_target(fixed_names_ages, fix_names_ages(gps_combined, ww_file)),
-
+  
   # Data cleaning -----------------------------------------------------------
   tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
   tar_target(ww, readxl::read_excel(ww_file, sheet = "all gps tags")),
@@ -577,7 +577,7 @@ list(
   
   ## Clean the data with the various steps in the vultureUtils::cleanData function
   tar_target(cleaned, clean_data(removed_beforeafter_deploy)),
-
+  
   # Note: we decided NOT to mask the data to the israel region because we don't need to limit the area in which social interactions could have occurred. We did mask the carcasses, though, taking only the ones south of Jerusalem. In addition, Shaked and I used visual inspection to classify wild carcasses only in the Israel/Jordan area and not farther out. To compare, can look at the original wild_carcasses file and then the validated one, and notice that the ones that didn't have a "status" assigned were outside of the geographic area. There weren't any edge cases.
   ## If any vultures have too *high* a fix rate, downsample it to every 10 minutes so it's easier to work with.
   tar_target(downsampled, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
@@ -585,7 +585,7 @@ list(
   # Remove hospital/invalid periods
   tar_target(removed_periods, remove_periods(ww_file, downsampled)),
   # (End data cleaning) -----------------------------------------------------
-
+  
   # Preparing data for NBDA -------------------------------------------------
   ## Stn carcasses
   tar_target(stb_mins, 30), # seed time before (mins)
@@ -594,10 +594,10 @@ list(
   tar_target(dbf, 30), # days before carcass to get data for longer-term networks
   tar_target(stn_gps_30days, get_gps_all(stn_carcs, downsampled, days_after, dbf)),
   tar_target(wild_gps_30days, get_gps_all(wild_carcs, downsampled, days_after, dbf)),
-
+  
   tar_target(stn_gps_forroosts, map(stn_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
   tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
-
+  
   tar_target(idname, "individual_local_identifier"),
   tar_target(tsname, "timestamp_il"),
   tar_target(tzname, "Israel"),
@@ -609,16 +609,16 @@ list(
   tar_target(roosts_stn_4, NEW_get_roosts(stn_gps_forroosts[31:40], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_stn_5, NEW_get_roosts(stn_gps_forroosts[41:50], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_stn_6, NEW_get_roosts(stn_gps_forroosts[51:length(stn_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
-
+  
   tar_target(roosts_wild_1, NEW_get_roosts(wild_gps_forroosts[1:10], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_2, NEW_get_roosts(wild_gps_forroosts[11:20], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_3, NEW_get_roosts(wild_gps_forroosts[21:30], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_4, NEW_get_roosts(wild_gps_forroosts[31:40], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_5, NEW_get_roosts(wild_gps_forroosts[41:length(wild_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
-
+  
   tar_target(roosts_stn, c(roosts_stn_1, roosts_stn_2, roosts_stn_3, roosts_stn_4, roosts_stn_5, roosts_stn_6)),
   tar_target(roosts_wild, c(roosts_wild_1, roosts_wild_2, roosts_wild_3, roosts_wild_4, roosts_wild_5)),
-
+  
   # Prepare NBDA data
   ## Prepare NBDA data--stn carcs
   tar_target(nd1, nb_shortcut(stn_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[1:10], age_ilv = T)),
@@ -649,7 +649,7 @@ list(
   tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
   tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
   tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-
+  
   tar_target(fl_wt_cumulative_1, purrr::map2(fl_wt_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_2, purrr::map2(fl_wt_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_3, purrr::map2(fl_wt_cumulative_3_prelim, nd3, ~fix_nets(.x, .y$all_indivs_sorted))),
@@ -681,7 +681,7 @@ list(
   tar_target(fl_wt_cumulative_9_wild, purrr::map2(fl_wt_cumulative_9_prelim_wild, nd9_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_10_wild, purrr::map2(fl_wt_cumulative_10_prelim_wild, nd10_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
   tar_target(fl_wt_cumulative_11_wild, purrr::map2(fl_wt_cumulative_11_prelim_wild, nd11_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-
+  
   # Prepare data for NBDA
   ### Prepare data for NBDA--Cumulative (stn)--Weighted--seeds
   tar_target(data_cumul_wt_1, purrr::map2(nd1, fl_wt_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
@@ -726,12 +726,12 @@ list(
   ## NBDA models
   ### Cumulative, weighted (stn)
   tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-
+  
   tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
-
+  
   tar_target(stats, purrr::list_rbind(list(stats_cumul_wt
   ))),
-
+  
   ## Number of individuals involved in each diffusion
   tar_target(ns, purrr::list_rbind(purrr::map(c(nd1, nd2, nd3, nd4, nd5, nd6), ~{as.data.frame(t(unlist(.x[1:4])))}))),
   
@@ -739,13 +739,13 @@ list(
   tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))),
   
   tar_target(downsampled_updated, dplyr::mutate(downsampled_forroosts, roostID_gps = as.numeric(sf::st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations)))),
-
+  
   tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)),
   
   tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))),
   
   tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))),
-  tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier))),
+  tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier), .keep = T)),
   tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),
   tar_target(data_timeordered, purrr::map2(indiv_date_list, leftpoints, ~{
     .x$left_roost <- FALSE
@@ -753,49 +753,102 @@ list(
     return(.x)})),
   tar_target(data_rejoined, sf::st_as_sf(as.data.frame(data.table::rbindlist(data_timeordered)), crs = 32636)),
   tar_target(leaving_points, dplyr::filter(data_rejoined, left_roost)),
-  tar_target(leaving_points_dates, group_split(group_by(leaving_points, date_il))),
-  tar_target(roost_mats, purrr::map(leaving_points_dates, ~{
+  tar_target(leaving_points_dates, group_split(group_by(leaving_points, date_il), .keep = T)),
+  tar_target(dates, purrr::map_chr(leaving_points_dates, ~as.character(.x$date_il[1]))),
+  tar_target(roost_mats, setNames(purrr::map(leaving_points_dates, ~{
     mat <- outer(.x$roostID, .x$roostID, FUN = "==") * 1
     rownames(mat) <- .x$individual_local_identifier
     colnames(mat) <- .x$individual_local_identifier
-    return(mat)})),
-  tar_target(roost_mats_long, purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")})),
-  tar_target(difftime_mats, purrr::map(leaving_points_dates, ~{
+    return(mat)}), dates)),
+  tar_target(roost_mats_long, setNames(purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")}), dates)),
+  tar_target(difftime_mats, setNames(purrr::map(leaving_points_dates, ~{
     mat <- outer(.x$timestamp_il, .x$timestamp_il,
                  function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
     rownames(mat) <- .x$individual_local_identifier
     colnames(mat) <- .x$individual_local_identifier
-    return(mat)})),
-  tar_target(difftime_mats_long, purrr::map(difftime_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")})),
-  tar_target(both, purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2")))),
-  tar_target(sync_departures, purrr::map(both, ~{dplyr::filter(.x, same_roost == 1) %>% dplyr::select(-same_roost) %>% filter(ID1 < ID2)})),
-  tar_target(departure_edgelists, purrr::map2(sync_departures, leaving_points_dates, ~{.x %>% rename("from" = ID1, "to" = ID2) %>%
+    return(mat)}), dates)),
+  tar_target(difftime_mats_long, setNames(purrr::map(difftime_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")}), dates)),
+  tar_target(both, setNames(purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2"))), dates)),
+  tar_target(departure_times, setNames(purrr::map(both, ~{dplyr::filter(.x, same_roost == 1) %>% dplyr::select(-same_roost) %>% filter(ID1 < ID2)}), dates)),
+  tar_target(sync_departures, setNames(purrr::map(departure_times, ~filter(.x, time_diff_min <= 10)), dates)),
+  tar_target(sync_departures_df, mutate(purrr::list_rbind(sync_departures, names_to = "date_il"), year = lubridate::year(date_il))),
+  tar_target(departure_edgelists, purrr::map2(departure_times, leaving_points_dates, ~{.x %>% rename("from" = ID1, "to" = ID2) %>%
       mutate(weight = 1 / (time_diff_min + 1))})),
   tar_target(departure_nets, purrr::map2(departure_edgelists, leaving_points_dates, ~{
     tidygraph::tbl_graph(edges = .x, directed = F) %>%
       tidygraph::activate(nodes) %>%
       dplyr::left_join(dplyr::distinct(dplyr::select(.y, individual_local_identifier, roostID)), by = c("name" = "individual_local_identifier"))})),
   
-  # Trajectories after departure
-  tar_target(mv, move2::mt_as_move2(
-    data_rejoined,
-    time = "timestamp_il", track_id = "individual_local_identifier",
-    crs = st_crs(data_rejoined))),
+  tar_target(data_split_years, dplyr::group_split(dplyr::arrange(dplyr::mutate(data_rejoined, year = case_when(date_il < lubridate::ymd("2023-01-01") ~ 2022, date_il > lubridate::ymd("2023-01-01") & date_il < lubridate::ymd("2023-07-01") ~ 2023, date_il > lubridate::ymd("2023-07-01") ~ 2024)), individual_local_identifier), year, .keep = T)),
   
-  tar_target(interpolated_5min, move2::mt_interpolate( # XXX start here--need to break into three chunks before interpolating
-    mv[!sf::st_is_empty(mv), ],
+  # Trajectories after departure
+  tar_target(mv, purrr::map(data_split_years, ~move2::mt_as_move2(
+    .x,
+    time = "timestamp_il", track_id = "individual_local_identifier",
+    crs = st_crs(data_rejoined)))),
+  
+  tar_target(interpolated_1hr, purrr::map(mv, ~move2::mt_interpolate(
+    .x[!sf::st_is_empty(.x), ],
     time = seq(
-      as.POSIXct("2022-11-14 00:00:00"),
-      as.POSIXct("2022-11-14 11:59:00"), "5 mins"
+      as.POSIXct(min(.x$date_il, na.rm = T)),
+      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "1 hour"
     ),
-    max_time_lag = units::as_units(1, "hours"),
+    max_time_lag = units::as_units(3, "hours"),
     omit = TRUE
   ) %>%
     mutate(interp = T) %>%
-    bind_rows(mutate(mv[!sf::st_is_empty(mv), ], interp = F)) %>%
+    bind_rows(mutate(.x[!sf::st_is_empty(.x), ], interp = F)) %>%
     arrange(individual_local_identifier, timestamp_il) %>%
-    
-    select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, , roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
-    ungroup())
+    ungroup())),
   
+  tar_target(interpolated_tidied, purrr::map(interpolated_1hr, ~{
+    .x %>% 
+      dplyr::select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(flight = ground_speed > gps_spd) %>% 
+      arrange(individual_local_identifier, timestamp_il) %>% 
+      tidyr::fill(date_il) %>% 
+      dplyr::group_by(individual_local_identifier, date_il) %>% 
+      tidyr::fill(flight) %>% 
+      tidyr::fill(roost_X) %>% 
+      tidyr::fill(roost_Y) %>% 
+      tidyr::fill(roostID) %>% 
+      tidyr::fill(left_roost) %>% 
+      dplyr::ungroup()})),
+  
+  tar_target(after_departure, purrr::map(interpolated_tidied, ~{.x %>%
+      dplyr::group_by(individual_local_identifier, date_il) %>%
+      dplyr::mutate(after = cumsum(left_roost)) %>%
+      dplyr::filter(after > 0) %>%
+      dplyr::ungroup() %>% dplyr::select(-after)})),
+  
+  tar_target(after_departure_interp_only, purrr::map(after_departure, ~filter(.x, interp))),
+  
+  tar_target(sync_departures_list, dplyr::group_split(sync_departures_df, year, .keep = TRUE))#,
+  
+# XXX START HERE TOMORROW
+  # 
+  # outs <- vector(mode = "list", length = nrow(test_sync))
+  # for(i in 1:nrow(test_sync)){
+  #   pair <- unlist(test_sync[i, c("ID1", "ID2")])
+  #   date <- test_sync$date_il[i]
+  #   trajs <- dplyr::filter(test_trajs, individual_local_identifier %in% pair & date_il == date)
+  # 
+  #   outs[[i]] <- trajs %>%
+  #     dplyr::group_by(timestamp_il) %>%
+  #     dplyr::filter(n() == 2) %>%
+  #     dplyr::group_modify(~ {
+  #       tibble(
+  #         id1 = .x$individual_local_identifier[1],
+  #         id2 = .x$individual_local_identifier[2],
+  #         flight1 = .x$flight[1],
+  #         flight2 = .x$flight[2],
+  #         distance_m = as.numeric(sf::st_distance(.x$geometry[1],
+  #                                             .x$geometry[2]))
+  #       )
+  #     }) %>%
+  #     ungroup()
+  # 
+  #   cat("done with ", i, "\n")
+  # }
 )

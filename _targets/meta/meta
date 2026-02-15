@@ -592,19 +592,31 @@ downsampled_updated|stem|df4466187de2dc4e|3927d08837e070a3|46f00dc3034b4fe5|-156
 roosts_tojoin|stem|b1aa428bbf02e2e7|4ae85656fbde1ea8|7e3d811b32c4e5ac|1502104124||t20499.1215597381s|s173629b|173629|rds|local|vector|||0.016||
 gps_joined|stem|868471ffa40f176e|24ce1704a86b53f5|f87dcc40cc9ccbdb|622216331||t20499.1219840911s|s42180701b|42180701|rds|local|vector|||3.609||
 gps_joined_knownroost|stem|373a40b6884490fb|5a18f6b956f0138b|8dadbb68da0e46e6|384387413||t20499.1223140012s|s27521129b|27521129|rds|local|vector|||2.375||
-indiv_date_list|stem|5471358bf3101b41|98647c4b2a3e7a53|74fd9cc76f8ff87f|887437332||t20499.1240653044s|s78367378b|78367378|rds|local|vector|||15.813||
 leftpoints|stem|473b3b13616f5443|24324db773c79bc4|af59fa229a1a23af|1751516377||t20499.1253870329s|s18515b|18515|rds|local|vector|||3.078|no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min;|
 data_timeordered|stem|9232b0555bb8b4c1|cf511c34d16a42b4|fd8ca55706aaa282|1731065438||t20499.1258958085s|s78772893b|78772893|rds|local|vector|||1.953||
 data_rejoined|stem|e8f8cdf175a2a19d|b4e21a71a5d4b7dc|9d001eae99b1b645|2009645183||t20499.1326514389s|s27668145b|27668145|rds|local|vector|||6.437||
 leaving_points|stem|86531925a7fe7ff0|a6c289532dc8ee13|a6133d1378b203e8|-991016612||t20499.132741535s|s777296b|777296|rds|local|vector|||0.109||
-leaving_points_dates|stem|0895d5847acdc230|91ad9bcb8a859d68|6e065e37c23e1ff0|-1176678478||t20499.1335940792s|s2088258b|2088258|rds|local|vector|||0.547||
-difftime_mats|stem|7cfc3923b96f19c3|6c202c0c629608a6|bfebde7d00b26430|-2018120604||t20499.1396509027s|s2372073b|2372073|rds|local|vector|||0.547||
-roost_mats|stem|8957f8d2c4272c93|34b151988732325a|bfebde7d00b26430|291571566||t20499.1396631294s|s192775b|192775|rds|local|vector|||0.047||
-difftime_mats_long|stem|d12ec1a0690915d2|4c2e0f0e4dff7baf|0ea07e7f23e64124|1713523074||t20499.1396998243s|s2717440b|2717440|rds|local|vector|||1.672||
-roost_mats_long|stem|cf493d79b9efd3fd|be16872207d7c3d2|602a61cc66d82c23|1653682476||t20499.1397258899s|s395178b|395178|rds|local|vector|||1.266||
-sync_departures|stem|160a14ac2308e912|29b1fcd9ad63a4d9|fc1a63e6b59a1efb|123400001||t20499.1410124596s|s607498b|607498|rds|local|vector|||1.375||
-both|stem|8e23e1b23ff7e852|d747caaea03778f4|b458cde92fac9d39|-266576288||t20499.1425302148s|s2899628b|2899628|rds|local|vector|||1.953||
-departure_edgelists|stem|d6dec6e7b36ed4fc|0963bdaefb7cd555|37103f1ccf0b4b30|-1020863180||t20499.1425449227s|s1654864b|1654864|rds|local|vector|||0.61||
+indiv_date_list|stem|5471358bf3101b41|efb29043dd4ef2c2|74fd9cc76f8ff87f|887437332||t20499.2445172152s|s78367378b|78367378|rds|local|vector|||15.297||
+leaving_points_dates|stem|0895d5847acdc230|e9b66bf53db8ce5c|6e065e37c23e1ff0|-1176678478||t20499.2445301083s|s2088258b|2088258|rds|local|vector|||0.234||
+mv_split_years|stem|e4e9a18c0261c37b|d262a2e9036a8e97|33f532cbd344ab49|212101831||t20499.2448386176s|s27697340b|27697340|rds|local|vector|||3.359||
+interpolated_5min|stem|error|ce547b5e88e4f5ac|eab3e58909f52e76|-615736235||t20499.2449242781s||0|null|local|vector|||0.828||i In index: 1. Caused by error: ! The input does not inherit the <move2> class
+mv|stem|e51b2789eb47457e|1b2f1d1b9095c8d1|20a50da4489f78a7|1255949883||t20499.2485841577s|s27700115b|27700115|rds|local|vector|||0.453||
+data_split_years|stem|e4e9a18c0261c37b|56831a6531e48d09|a6133d1378b203e8|151749845||t20499.2499755201s|s27697340b|27697340|rds|local|vector|||6.36||
+interpolated_1hr|stem|0d771216ded4e344|0ba8bab6775745e7|429470e6cf3e5457|1755983846||t20499.2511839634s|s40818868b|40818868|rds|local|vector|||73||
+interpolated_tidied|stem|bdc2475e8cb69b34|4b72f2a1ab2b21d0|9df5d462e9abe4a2|-1336905500||t20499.2534517883s|s18726837b|18726837|rds|local|vector|||4.125||
+after_departure|stem|4930928517c167b7|a376002bdd096cc4|90f73d16ad86b3cd|-828275600||t20499.2535665873s|s11779075b|11779075|rds|local|vector|||0.954||
+dates|stem|8c41e11c828d68a6|0d24ea43ed05659b|bfebde7d00b26430|-1505472729||t20499.2557223337s|s492b|492|rds|local|vector|||0.015||
+roost_mats|stem|feba5e089b9c5fc7|43802168fcdf2b42|5ff097bf49815949|291571566||t20499.2570867407s|s193450b|193450|rds|local|vector|||0.078||
+difftime_mats|stem|20e3bc764c52aa66|f30d06a140418527|5ff097bf49815949|-2018120604||t20499.2571113671s|s2372694b|2372694|rds|local|vector|||1.063||
+roost_mats_long|stem|28191e5945056cb1|61bc0ab5dbc11745|0e45f01fdfa7e2b2|1653682476||t20499.2571393495s|s395880b|395880|rds|local|vector|||1.484||
+difftime_mats_long|stem|7411d40c1a4734ca|842abb2aae4eb03f|deb091fa429e2215|1713523074||t20499.2571707009s|s2718081b|2718081|rds|local|vector|||1.422||
+both|stem|3383aea685bc4d44|6ee3308167dabd9b|8c9b53b30f9add93|-266576288||t20499.2572287928s|s2900349b|2900349|rds|local|vector|||2.047||
+departure_edgelists|stem|c1cd134cf0135c03|583008164e5bb035|b37ee82106d3ae70|-1020863180||t20499.2572671877s|s1655594b|1655594|rds|local|vector|||0.578||
+departure_nets|stem|2498fafbf0af4333|ed3a7b1fe30c4291|d7fa5f134476b9bb|1132436494||t20499.2573261792s|s2924864b|2924864|rds|local|vector|||3.062||
+departure_times|stem|3a605bf017a29114|732b191df96cf0fa|79bffbde20f98a1c|1345171857||t20499.2578885834s|s608194b|608194|rds|local|vector|||0.968||
+sync_departures|stem|33e994639813c4ed|1e030aa6907c5dd8|3909d0e97f6e8b38|123400001||t20499.257894766s|s101064b|101064|rds|local|vector|||0.282||
+sync_departures_df|stem|fc5b46eef09cb7dd|9473af0d23dd188e|86d381ec7437a7bc|-2091809919||t20499.2589142911s|s91712b|91712|rds|local|vector|||0.328||
+sync_departures_list|stem|e9129fa8a484b664|f6e3b1375a649d0e|bfc0872741c38d87|-349634241||t20499.2597231889s|s94817b|94817|rds|local|vector|||0.047||
 rotate_data_table|function|8ff0c7c0e298c44a
 convertsf|function|896ad86c2c3887a5
 join_inpa_ornitela|function|0f5e0af9a7c3bf40
@@ -758,4 +770,4 @@ get_fl_weighted|function|a5afd2bbb1192bc7
 get_fl_bin|function|cdc445250168c5d9
 get_fl_wt_list|function|fe9d8f7cd4cf7712
 get_fl_bin_list|function|0b66f2d67575a7a7
-departure_nets|stem|dbe513b6e935375e|ed3a7b1fe30c4291|6953e2714bd2eda4|1132436494||t20499.1431051477s|s2924129b|2924129|rds|local|vector|||4.047||
+after_departure_interp_only|stem|6bc58fad33c980e9|7383e0f6184f252c|bf88d5ff1cfa6d98|1737218327||t20499.2689761724s|s2047556b|2047556|rds|local|vector|||0.813||
