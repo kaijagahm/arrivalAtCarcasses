@@ -117,8 +117,6 @@ networks_long <- map(dynamic_networks_fixed, ~{
 })
 networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time")
 
-# XXX START HERE
-
 # Network must contain all individuals
 # "The networks dataframe is used as the reference for all unique IDs, thus each ID must be included at least once in either the focal or other column. If a dyad is absent, their connection is assumed to be zero."
 all(sort(unique(c(network_long$focal, network_long$other))) == all_indivs_sorted) #TRUE
