@@ -5,8 +5,12 @@ library(ggplot2)
 library(tidyverse)
 library(posterior)
 library(targets)
+library(sf)
 lapply(list.files("R", full.names = TRUE), source) 
 # using just one carcass as an example
+tar_load(gps_spd)
+tar_load(stmh)
+sighting_time_max_hours <- 72
 tar_load(data_cumul_wt_3) # this is a list of nbdaData objects
 nbda_data <- data_cumul_wt_3[[4]] # carcass 4417687, which is the 4th element of the 3rd list of 10, so element 24 of stn_carcs
 tar_load(stn_gps_30days)
@@ -36,7 +40,6 @@ seeds <- gps %>%
 seeds # these are the names of the seed individuals
 
 # Get first sightings
-sighting_time_max_hours <- 72
 first_sightings <- gps %>%
   filter(time_since_carcass >= 0 & time_since_carcass <= sighting_time_max_hours) %>%
   filter((ground_speed > gps_spd & dist_to_carcass <= ddf) |
@@ -87,15 +90,34 @@ test_event_data <- bind_rows(test_event_data,
 
 tar_load(hours_after_carcass)
 gps_fornetwork <- gps %>%
-  filter(timestamp_il %in% carc$date:(carc$date + lubridate::hours(hours_after_carcass))) # limiting to 72 hours after the carcass
+  filter(timestamp_il %in% carc$date:(carc$date + lubridate::hours(hours_after_carcass))) %>%
+  mutate(time = as.numeric(time_since_carcass, units = "secs")) %>% # this will now correspond to the numeric times in test_event_data.
+  filter(time >= 0)
 
+# "if the user’s observation period included 10 events and the dataset does contain censored individuals, they should supply edge weights from 11 networks in total, where time=1 should contain the network representing the period from [t0,te1), time=2 represents [te1,te2), and time=11 represents from [te10,tend]. NB: If there are censored individuals, the end of the observation period should necessarily be larger than the time of the final event (event_data$t_end > max(event_data$time)."
+# Note: it does NOT say what to do if there are seed individuals... I assume I don't provide a network for those, since they're set to 0, so the first one will just be from 0 through te1? (e1 = event 1)
+# Also, what they're saying about the end of the observation period seems to contradict how they said to encode the censored individuals (i.e. set them to tend+1)
+
+cutpoints <- unique(test_event_data$time)
+sort(unique(cut(gps_fornetwork$time, breaks = cutpoints))) # these look right!
+gps_fornetwork$network <- cut(gps_fornetwork$time, breaks = cutpoints)
+length(unique(gps_fornetwork$network))
+network_intervals <- sort(unique(gps_fornetwork$network))
+
+gps_list <- gps_fornetwork %>% arrange(network) %>% group_split(network, .keep = TRUE)
 tar_load(rp)
-network <- get_fl_weighted(dat = gps_fornetwork, dist = ddf, rp = rp, spd = gps_spd)
-network_fixed <- fix_nets(nets = list(network), indivs = all_indivs_sorted)[[1]]
-network_long <- network_fixed %>%
-  rownames_to_column(var = "focal") %>%
-  pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
-  mutate(trial = carc_id)
+dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
+
+networks_long <- map(dynamic_networks_fixed, ~{
+  out <- .x %>% rownames_to_column(var = "focal") %>%
+    pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+    mutate(trial = carc_id)
+  return(out)
+})
+networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time")
+
+# XXX START HERE
 
 # Network must contain all individuals
 # "The networks dataframe is used as the reference for all unique IDs, thus each ID must be included at least once in either the focal or other column. If a dyad is absent, their connection is assumed to be zero."

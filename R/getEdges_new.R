@@ -21,12 +21,12 @@ getEdges_new <- function(dataset,
   dataset_rawdata <- dataset # XXX check if this is redundant with dataset_denominator
   
   # If timestampCol isn't already POSIXct, convert it, assuming UTC.
-  if(!is.POSIXct(dataset[[timestampCol]])){
+  if(!lubridate::is.POSIXct(dataset[[timestampCol]])){
     dataset <- dataset %>%
       dplyr::mutate({{ timestampCol }} := as.POSIXct(.data[[timestampCol]], format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
     warning("Converting timestamp column to POSIXct and assuming UTC. If this is wrong, make sure that your timestamp column is already a POSIXct object so this step will be skipped")
   }else{
-    message("Timestamp column is already POSIXct, so no conversion is performed. Has timezone: ", tz(dataset[[timestampCol]]))
+    message("Timestamp column is already POSIXct, so no conversion is performed. Has timezone: ", lubridate::tz(dataset[[timestampCol]]))
   }
   
   #Convert dataset to data.table (needed for spatsoc functions)

@@ -1612,3 +1612,29 @@ get_leftroost <- function(ordered_df, threshold){
   }
   return(first_point_out)
 }
+
+get_trajectories_sync_pair <- function(sync, trajs){
+  outs <- vector(mode = "list", length = nrow(sync))
+  for(i in 1:nrow(sync)){
+    pair <- unlist(sync[i, c("ID1", "ID2")])
+    date <- sync$date_il[i]
+    trajs_pair <- dplyr::filter(trajs, individual_local_identifier %in% pair & date_il == date)
+
+    outs[[i]] <- trajs_pair %>%
+      dplyr::group_by(timestamp_il) %>%
+      dplyr::filter(n() == 2) %>%
+      dplyr::group_modify(~ {
+        tibble(
+          id1 = .x$individual_local_identifier[1],
+          id2 = .x$individual_local_identifier[2],
+          flight1 = .x$flight[1],
+          flight2 = .x$flight[2],
+          distance_m = as.numeric(sf::st_distance(.x$geometry[1],
+                                              .x$geometry[2]))
+        )
+      }) %>%
+      ungroup()
+   cat("done with ", i, "/", nrow(sync), "\n")
+  }
+  return(outs)
+}

@@ -6,7 +6,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph")#,
-  #controller = crew_controller_local(workers = 10)
+  #controller = crew_controller_local(workers = 3)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -761,6 +761,7 @@ list(
     colnames(mat) <- .x$individual_local_identifier
     return(mat)}), dates)),
   tar_target(roost_mats_long, setNames(purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")}), dates)),
+  tar_target(roost_mats_same_whichroost, filter(left_join(mutate(purrr::list_rbind(roost_mats_long, names_to = "date_il"), date_il = lubridate::ymd(date_il)), leaving_points, by = c("ID1" = "individual_local_identifier", "date_il")), same_roost == 1)),
   tar_target(difftime_mats, setNames(purrr::map(leaving_points_dates, ~{
     mat <- outer(.x$timestamp_il, .x$timestamp_il,
                  function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
@@ -787,13 +788,13 @@ list(
     time = "timestamp_il", track_id = "individual_local_identifier",
     crs = st_crs(data_rejoined)))),
   
-  tar_target(interpolated_1hr, purrr::map(mv, ~move2::mt_interpolate(
+  tar_target(interpolated_10min, purrr::map(mv, ~move2::mt_interpolate(
     .x[!sf::st_is_empty(.x), ],
     time = seq(
       as.POSIXct(min(.x$date_il, na.rm = T)),
-      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "1 hour"
+      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "10 mins"
     ),
-    max_time_lag = units::as_units(3, "hours"),
+    max_time_lag = units::as_units(1, "hours"),
     omit = TRUE
   ) %>%
     mutate(interp = T) %>%
@@ -801,7 +802,7 @@ list(
     arrange(individual_local_identifier, timestamp_il) %>%
     ungroup())),
   
-  tar_target(interpolated_tidied, purrr::map(interpolated_1hr, ~{
+  tar_target(interpolated_tidied, purrr::map(interpolated_10min, ~{
     .x %>% 
       dplyr::select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
       dplyr::ungroup() %>% 
@@ -824,31 +825,16 @@ list(
   
   tar_target(after_departure_interp_only, purrr::map(after_departure, ~filter(.x, interp))),
   
-  tar_target(sync_departures_list, dplyr::group_split(sync_departures_df, year, .keep = TRUE))#,
+  tar_target(sync_departures_list, dplyr::group_split(sync_departures_df, year, .keep = TRUE)),
   
-# XXX START HERE TOMORROW
-  # 
-  # outs <- vector(mode = "list", length = nrow(test_sync))
-  # for(i in 1:nrow(test_sync)){
-  #   pair <- unlist(test_sync[i, c("ID1", "ID2")])
-  #   date <- test_sync$date_il[i]
-  #   trajs <- dplyr::filter(test_trajs, individual_local_identifier %in% pair & date_il == date)
-  # 
-  #   outs[[i]] <- trajs %>%
-  #     dplyr::group_by(timestamp_il) %>%
-  #     dplyr::filter(n() == 2) %>%
-  #     dplyr::group_modify(~ {
-  #       tibble(
-  #         id1 = .x$individual_local_identifier[1],
-  #         id2 = .x$individual_local_identifier[2],
-  #         flight1 = .x$flight[1],
-  #         flight2 = .x$flight[2],
-  #         distance_m = as.numeric(sf::st_distance(.x$geometry[1],
-  #                                             .x$geometry[2]))
-  #       )
-  #     }) %>%
-  #     ungroup()
-  # 
-  #   cat("done with ", i, "\n")
-  # }
+  tar_target(trajectories_sync_list_2022, get_trajectories_sync_pair(sync_departures_list[[1]], after_departure_interp_only[[1]])),
+  tar_target(trajectories_sync_list_2023, get_trajectories_sync_pair(sync_departures_list[[2]], after_departure_interp_only[[2]])),
+  tar_target(trajectories_sync_list_2024, get_trajectories_sync_pair(sync_departures_list[[3]], after_departure_interp_only[[3]])),
+  
+  tar_target(trajectories_sync_2022, purrr::list_rbind(trajectories_sync_list_2022)),
+  tar_target(trajectories_sync_2023, purrr::list_rbind(trajectories_sync_list_2023)),
+  tar_target(trajectories_sync_2024, purrr::list_rbind(trajectories_sync_list_2024)),
+  
+  tar_target(trajectories_sync, mutate(purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year"), date_il = lubridate::date(timestamp_il)))
+
 )
