@@ -131,17 +131,28 @@ data_list <- import_user_STb(event_data = test_event_data,
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
 cat(model_full_dynamic) # really long string with the model code
 
-full_fit_dynamic <- fit_STb(data_list,
-                    model_full_dynamic,
-                    parallel_chains = 3,
-                    chains = 3,
-                    cores = 3,
-                    iter = 1000,
-                    refresh=100
-) # okay so this takes forever, like FOREVER oh my god
-
-STb_save(full_fit, output_dir = "data/cmdstan_saves", name="my_first_fit")
-full_fit <- readRDS('cmdstan_saves/my_first_fit.rds') 
+# full_fit_dynamic <- fit_STb(data_list,
+#                     model_full_dynamic,
+#                     parallel_chains = 3,
+#                     chains = 3,
+#                     cores = 3,
+#                     iter = 1000,
+#                     refresh=100
+# ) # okay so this takes forever, like FOREVER oh my god
+# STb_save(full_fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic")
+full_fit <- readRDS('data/cmdstan_saves/dynamic.rds') 
 STb_summary(full_fit, digits = 3)
 
-#"The most important output are the intrinsic rate (lambda_0), and the relative strength of social transmission (s), whose interpretations are the same as the NBDA package. The relative strength of social transmission (s = s_prime / lambda_0) is generally what we’re after. %ST for network n is reported as percent_ST[n]. This is a single-network model, thus percent_ST[1] is the estimated percentage of events that occurred through social transmission. The [1] refers to the “assoc” network, as we’ve only given a single network. If you fit a multi-network model, all networks will have an estimate. For a number of reasons, STbayes actually fits lambda_0 and social transmission rate (s_prime) on the log scale. The linear transformation of s_prime itself usually isn’t reported and is excluded from the output, but you could calculate it yourself from the fit."
+#"The most important output are the intrinsic rate (lambda_0), and the relative strength of social transmission (s), whose interpretations are the same as the NBDA package. The relative strength of social transmission (s = s_prime / lambda_0) is generally what we’re after. %ST for network n is reported as percent_ST[n]. This is a single-network model, thus percent_ST[1] is the estimated percentage of events that occurred through social transmission. The [1] refers to the “assoc” network, as we’ve only given a single network. If you fit a multi-network model, all networks will have an estimate. For a number of reasons, STbayes actually fits lambda_0 and social transmission rate (s_prime) on the log scale. The linear transformation of s_prime itself usually isn’t reported and is excluded from the output, but you could calculate it yourself from the fit.
+
+plot_data_obs <- get_plot_data(test_event_data)
+plot_data_ppc <- get_plot_data_ppc(fit = full_fit, data_list = data_list)
+
+# plot it
+ggplot() +
+  geom_line(data = plot_data_ppc, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial") +
+  theme_minimal()

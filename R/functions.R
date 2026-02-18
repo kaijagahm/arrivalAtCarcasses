@@ -1638,3 +1638,64 @@ get_trajectories_sync_pair <- function(sync, trajs){
   }
   return(outs)
 }
+
+get_plot_data <- function(event_data){
+  out <- event_data %>%
+    filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+    group_by(trial) %>%
+    arrange(time, .by_group = TRUE) %>%
+    mutate(
+      cum_prop = row_number() / n(),
+      type = "observed"
+    ) %>%
+    select(trial, time, cum_prop, type) %>%
+    ungroup()
+  
+  # add in 0,0 starting point
+  plot_data_obs <- bind_rows(
+    out,
+    out %>%
+      distinct(trial) %>%
+      mutate(time = 0, cum_prop = 0, type = "observed")
+  ) %>%
+    arrange(trial, time)
+  return(plot_data_obs)
+}
+get_plot_data_ppc <- function(fit, data_list){
+  draws_df <- as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = F))
+  ppc_long <- draws_df %>%
+    select(starts_with("acquisition_time[")) %>%
+    pivot_longer(
+      cols = everything(),
+      names_to = c("trial", "ind"),
+      names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+      values_to = "time"
+    ) %>%
+    mutate(
+      trial = as.integer(trial),
+      ind = as.integer(ind),
+      draw = rep(1:(nrow(draws_df)), 
+                 each = length(unique(.$trial)) * length(unique(.$ind)))
+    )
+  # thin for plotting
+  sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+  ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+  
+  # build cumulative curves per draw
+  plot_data_ppc <- ppc_long %>%
+    group_by(draw, trial, time) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(draw, trial) %>%
+    arrange(time) %>%
+    mutate(cum_prop = cumsum(n) / data_list$Q)
+  
+  # add in 0,0 starting point
+  out <- bind_rows(
+    plot_data_ppc,
+    plot_data_ppc %>%
+      distinct(trial, draw) %>%
+      mutate(time = 0, cum_prop = 0, type = "ppc")
+  ) %>%
+    arrange(trial, time)
+  return(out)
+}

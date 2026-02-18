@@ -125,6 +125,22 @@ cat(model_full) # really long string with the model code
 full_fit <- readRDS('data/cmdstan_saves/my_first_fit.rds') 
 
 #"The most important output are the intrinsic rate (lambda_0), and the relative strength of social transmission (s), whose interpretations are the same as the NBDA package. The relative strength of social transmission (s = s_prime / lambda_0) is generally what we’re after. %ST for network n is reported as percent_ST[n]. This is a single-network model, thus percent_ST[1] is the estimated percentage of events that occurred through social transmission. The [1] refers to the “assoc” network, as we’ve only given a single network. If you fit a multi-network model, all networks will have an estimate. For a number of reasons, STbayes actually fits lambda_0 and social transmission rate (s_prime) on the log scale. The linear transformation of s_prime itself usually isn’t reported and is excluded from the output, but you could calculate it yourself from the fit."
-STb_summary(full_fit, digits = 3)
+STb_summary(full_fit, digits = 10) # if we show more digits, then it's not actually 0, it's just really small.
+sm <- STb_summary(full_fit, digits = 10)
+s_prime <- exp(sm$Median[sm$Parameter == "log_s_prime_mean"])
+lambda_0 <- exp(sm$Median[sm$Parameter == "log_lambda_0_mean"]) # we can calculate this one ourselves instead of relying on the estimate
+rel_strength_s = s_prime/lambda_0 # 918.8883. This is similar to, but not the same as, the reported s value of 9.279 x 10^2 = 928. Why isn't it the same?
 
-# Okay so for this particular model, we see that lambda_0 is being reported as 0, which makes sense since the network I gave it was over a long period of time. I didn't really expect there to be anything. Need to do a dynamic network. I just wish it didn't take so incredibly long to run!!
+plot_data_obs <- get_plot_data(test_event_data)
+plot_data_ppc <- get_plot_data_ppc(fit = full_fit, data_list = data_list)
+
+# plot it
+ggplot() +
+  geom_line(data = plot_data_ppc, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial") +
+  theme_minimal()
+
+# Wow, that's a really bad fit.
