@@ -29,35 +29,12 @@ stb_mins # 30 mins
 seeds <- character(0)
 time_window <- stb_mins / 60
 
-get_seeds <- function(gps, ddf, dds, gps_spd){
-  gps %>%
-    filter(time_since_carcass >= -time_window,
-           time_since_carcass <= 0,
-           (ground_speed > gps_spd & dist_to_carcass <= ddf) |
-             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
-    distinct(individual_local_identifier) %>%
-    pull(individual_local_identifier) %>%
-    as.character()
-}
 seeds <- get_seeds(gps, ddf, dds, gps_spd)
 seeds_lower <- get_seeds(gps, ddf_lower, dds, gps_spd)
 seeds_higher <- get_seeds(gps, ddf_higher, dds, gps_spd)
 
 # Get first sightings
 sighting_time_max_hours <- 72
-get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
-  first_sightings <- gps %>%
-    filter(time_since_carcass >= 0 & time_since_carcass <= stmh) %>%
-    filter((ground_speed > gps_spd & dist_to_carcass <= ddf) |
-             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
-    group_by(individual_local_identifier) %>%
-    arrange(time_since_carcass, timestamp) %>%
-    slice(1) %>%
-    ungroup() %>%
-    arrange(time_since_carcass) %>%
-    filter(!(individual_local_identifier %in% seeds))
-  return(first_sightings)
-}
 first_sightings <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf, dds, seeds)
 first_sightings_lower <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf_lower, dds, seeds_lower)
 first_sightings_higher <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf_higher, dds, seeds_higher)
@@ -65,33 +42,6 @@ first_sightings_higher <- get_first_sightings(gps, sighting_time_max_hours, gps_
 all_indivs_sorted <- sort(unique(as.character(gps$individual_local_identifier)))
 
 # Now we have the event data; time to format it the way that STbayes needs.
-format_event_data <- function(first_sightings, seeds, all_indivs_sorted){
-  event_data <- first_sightings %>%
-    st_drop_geometry() %>%
-    dplyr::mutate(trial = carc_id, t_end = max(timestamp_il)) %>%
-    dplyr::select(individual_local_identifier, trial, time_since_carcass, t_end) %>%
-    mutate(time = as.numeric(time_since_carcass, units = "secs")) %>%
-    rename("id" = individual_local_identifier) %>%
-    mutate(t_end = max(time)) %>%
-    select(id, trial, time, t_end)
-  
-  #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
-  # add the seeds back in (pre-trained demonstrators)
-  event_data <- bind_rows(data.frame(id = seeds, trial = carc_id, t_end = max(event_data$time), time = 0),
-           event_data)
-  
-  #If an individual never learned during the observation period, set its value tend+1. These will be treated as right-censored individuals in the likelihood calculation.
-  # okay so for these, we need to figure out if there are any individuals in the gps dataset that don't appear in the first sightings.
-  never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
-  t_end <- event_data$t_end[1]
-  event_data <- bind_rows(event_data,
-                               data.frame(id = never_learned, trial = carc_id, t_end = t_end, time = t_end + 1)) %>%
-    arrange(time, id) %>%
-    mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
-  
-  return(event_data)
-}
-
 event_data <- format_event_data(first_sightings, seeds, all_indivs_sorted)
 event_data_lower <- format_event_data(first_sightings_lower, seeds_lower, all_indivs_sorted)
 event_data_higher <- format_event_data(first_sightings_higher, seeds_higher, all_indivs_sorted)
