@@ -119,20 +119,20 @@ networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time")
 
 # Network must contain all individuals
 # "The networks dataframe is used as the reference for all unique IDs, thus each ID must be included at least once in either the focal or other column. If a dyad is absent, their connection is assumed to be zero."
-all(sort(unique(c(network_long$focal, network_long$other))) == all_indivs_sorted) #TRUE
+all(sort(unique(c(networks_long_dynamic$focal, networks_long_dynamic$other))) == all_indivs_sorted) #TRUE
 
 data_list <- import_user_STb(event_data = test_event_data, 
-                             networks = network_long,
+                             networks = networks_long_dynamic,
                              network_type = "undirected") # this provides really helpful confirmatory checks
 
 # "If you were making a multi-network model, you could add as many columns as you want."
 # good to know for later!
 
-model_full <- generate_STb_model(data_list, gq = T, est_acqTime = T)
-cat(model_full) # really long string with the model code
+model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
+cat(model_full_dynamic) # really long string with the model code
 
-full_fit <- fit_STb(data_list,
-                    model_full,
+full_fit_dynamic <- fit_STb(data_list,
+                    model_full_dynamic,
                     parallel_chains = 3,
                     chains = 3,
                     cores = 3,
