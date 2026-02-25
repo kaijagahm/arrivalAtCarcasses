@@ -35,6 +35,20 @@ seeds_higher <- get_seeds(gps, ddf_higher, dds, gps_spd)
 
 # Get first sightings
 sighting_time_max_hours <- 72
+get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
+  first_sightings <- gps %>%
+    filter(time_since_carcass >= 0 & time_since_carcass <= stmh) %>%
+    filter((ground_speed > gps_spd & dist_to_carcass <= ddf) |
+             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
+    group_by(individual_local_identifier) %>%
+    arrange(time_since_carcass, timestamp) %>%
+    slice(1) %>%
+    ungroup() %>%
+    arrange(time_since_carcass) %>%
+    filter(!(individual_local_identifier %in% seeds))
+  return(first_sightings)
+}
+>>>>>>> 51680f82de19aff49404349164a019a0f0c59f8d
 first_sightings <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf, dds, seeds)
 first_sightings_lower <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf_lower, dds, seeds_lower)
 first_sightings_higher <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf_higher, dds, seeds_higher)
@@ -42,6 +56,36 @@ first_sightings_higher <- get_first_sightings(gps, sighting_time_max_hours, gps_
 all_indivs_sorted <- sort(unique(as.character(gps$individual_local_identifier)))
 
 # Now we have the event data; time to format it the way that STbayes needs.
+<<<<<<< HEAD
+=======
+format_event_data <- function(first_sightings, seeds, all_indivs_sorted){
+  event_data <- first_sightings %>%
+    st_drop_geometry() %>%
+    dplyr::mutate(trial = carc_id, t_end = max(timestamp_il)) %>%
+    dplyr::select(individual_local_identifier, trial, time_since_carcass, t_end) %>%
+    mutate(time = as.numeric(time_since_carcass, units = "secs")) %>%
+    rename("id" = individual_local_identifier) %>%
+    mutate(t_end = max(time)) %>%
+    select(id, trial, time, t_end)
+  
+  #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
+  # add the seeds back in (pre-trained demonstrators)
+  event_data <- bind_rows(data.frame(id = seeds, trial = carc_id, t_end = max(event_data$time), time = 0),
+           event_data)
+  
+  #If an individual never learned during the observation period, set its value tend+1. These will be treated as right-censored individuals in the likelihood calculation.
+  # okay so for these, we need to figure out if there are any individuals in the gps dataset that don't appear in the first sightings.
+  never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
+  t_end <- event_data$t_end[1]
+  event_data <- bind_rows(event_data,
+                               data.frame(id = never_learned, trial = carc_id, t_end = t_end, time = t_end + 1)) %>%
+    arrange(time, id) %>%
+    mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
+  
+  return(event_data)
+}
+
+>>>>>>> 51680f82de19aff49404349164a019a0f0c59f8d
 event_data <- format_event_data(first_sightings, seeds, all_indivs_sorted)
 event_data_lower <- format_event_data(first_sightings_lower, seeds_lower, all_indivs_sorted)
 event_data_higher <- format_event_data(first_sightings_higher, seeds_higher, all_indivs_sorted)
@@ -108,6 +152,7 @@ full_fit <- readRDS('data/cmdstan_saves/full_fit_static.rds')
 full_fit_lower <- readRDS('data/cmdstan_saves/full_fit_static_lower.rds')
 full_fit_higher <- readRDS('data/cmdstan_saves/full_fit_static_higher.rds') 
 
+<<<<<<< HEAD
 STb_summary(full_fit, digits = 3)
 
 plot_data_obs_lower <- get_plot_data(event_data_lower)
@@ -146,6 +191,9 @@ ggplot() +
 
 
 # XXXX START HERE 2026-02-18
+=======
+# XXXX START HERE
+>>>>>>> 51680f82de19aff49404349164a019a0f0c59f8d
 
 #"The most important output are the intrinsic rate (lambda_0), and the relative strength of social transmission (s), whose interpretations are the same as the NBDA package. The relative strength of social transmission (s = s_prime / lambda_0) is generally what we’re after. %ST for network n is reported as percent_ST[n]. This is a single-network model, thus percent_ST[1] is the estimated percentage of events that occurred through social transmission. The [1] refers to the “assoc” network, as we’ve only given a single network. If you fit a multi-network model, all networks will have an estimate. For a number of reasons, STbayes actually fits lambda_0 and social transmission rate (s_prime) on the log scale. The linear transformation of s_prime itself usually isn’t reported and is excluded from the output, but you could calculate it yourself from the fit."
 STb_summary(full_fit, digits = 10) # if we show more digits, then it's not actually 0, it's just really small.
