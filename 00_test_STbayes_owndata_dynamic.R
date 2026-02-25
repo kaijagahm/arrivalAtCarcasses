@@ -13,11 +13,56 @@ tar_load(stmh)
 sighting_time_max_hours <- 72
 tar_load(data_cumul_wt_3) # this is a list of nbdaData objects
 nbda_data <- data_cumul_wt_3[[4]] # carcass 4417687, which is the 4th element of the 3rd list of 10, so element 24 of stn_carcs
-tar_load(stn_gps_30days)
-gps <- stn_gps_30days[21:30][[4]] # the gps data that we will use for this carcass
+
 tar_load(stn_carcs)
 carc <- stn_carcs[21:30][[4]]
+event_time <- carc$datetime_il
 
+# Saving gps data as temp file because it takes too long otherwise.
+# tar_load(stn_gps_30days)
+# gps <- stn_gps_30days[21:30][[4]] # the gps data that we will use for this carcass
+# write_rds(gps, "data/created/gps_for_STbayes.RDS")
+gps <- readRDS("data/created/gps_for_STbayes.RDS")
+
+suntimes <- suncalc::getSunlightTimes(date = sort(unique(gps$date_il)), lat = 31.434306, lon = 34.991889, keep = c("sunrise", "sunset"), tz = "Israel") %>% select("date_il" = date, sunrise, sunset)
+
+gps <- left_join(gps, suntimes)
+test_daylight <- gps %>% filter(timestamp_il >= sunrise & timestamp_il <= sunset)
+# table(gps$daylight)
+# table(test_daylight$daylight) # sweet, we only have daylight, and it's the same number as before, which means this worked.
+gps <- test_daylight %>%
+  filter(time_since_carcass >= 0)
+
+night_df <- suntimes %>%
+  filter(date_il >= lubridate::date(event_time)) %>% # IMPORTANT!! only stuff since the carcass date; otherwise these numbers will be wrong.
+  mutate(prev_sunset = lag(sunset),
+         night_hrs = as.numeric(difftime(sunrise, prev_sunset, units = "hours")),
+         cumul_night_hrs = cumsum(ifelse(is.na(night_hrs), 0, night_hrs)) + night_hrs*0,
+         cumul_night_hrs = replace_na(cumul_night_hrs, 0))
+
+
+gps <- gps %>%
+  left_join(select(night_df, date_il, cumul_night_hrs), by = "date_il") %>%
+  mutate(daytime_since_carcass = as.numeric(time_since_carcass)-cumul_night_hrs) %>%
+  arrange(timestamp_il)
+
+gps %>%
+  st_drop_geometry() %>%
+  mutate(across(contains("_since_carcass"), as.numeric)) %>%
+  pivot_longer(cols = c("time_since_carcass", "daytime_since_carcass"), names_to = "type", values_to = "hours") %>%
+  select(timestamp_il, type, hours) %>%
+  mutate(type = str_remove(type, "_since_carcass")) %>%
+  mutate(type = case_when(type == "time" ~ "real time", .default = type)) %>%
+  ggplot(aes(x = timestamp_il, y = hours, color = type))+
+  geom_point()+
+  theme_minimal()+
+  scale_color_manual(name = "Type", values = c("dodgerblue2", "black"))+
+  labs(y = "Hours since carcass", x = "Time", title = "Two ways to measure time since carcass")+
+  NULL
+  
+# XXX START HERE--MAKE THIS INTO A FUNCTION, THEN RE-RUN MODELS WITH NEW EVENT TIMES
+  
+  
 carc_id <- carc$carcID
 gps$year <- lubridate::year(gps$date_il)
 gps$ground_speed <- as.numeric(gps$ground_speed)
@@ -33,8 +78,12 @@ time_window <- stb_mins / 60
 seeds <- get_seeds(gps, ddf, dds, gps_spd)
 seeds # these are the names of the seed individuals
 
+# Adjust times to remove nights
+
+
 # Get first sightings
 first_sightings <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf, dds, seeds)
+
 
 all_indivs_sorted <- sort(unique(as.character(gps$individual_local_identifier)))
 
@@ -114,8 +163,8 @@ data_list <- import_user_STb(event_data = event_data,
                              networks = networks_long_dynamic,
                              network_type = "undirected") # this provides really helpful confirmatory checks
 data_list_cumul <- import_user_STb(event_data = event_data, 
-                             networks = networks_long_dynamic_cumul,
-                             network_type = "undirected")
+                                   networks = networks_long_dynamic_cumul,
+                                   network_type = "undirected")
 
 # "If you were making a multi-network model, you could add as many columns as you want."
 # good to know for later!
