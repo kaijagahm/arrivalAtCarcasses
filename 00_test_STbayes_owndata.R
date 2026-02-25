@@ -108,6 +108,43 @@ full_fit <- readRDS('data/cmdstan_saves/full_fit_static.rds')
 full_fit_lower <- readRDS('data/cmdstan_saves/full_fit_static_lower.rds')
 full_fit_higher <- readRDS('data/cmdstan_saves/full_fit_static_higher.rds') 
 
+STb_summary(full_fit, digits = 3)
+
+plot_data_obs_lower <- get_plot_data(event_data_lower)
+plot_data_ppc_lower <- get_plot_data_ppc(fit = full_fit_lower, data_list = data_list_lower)
+
+ggplot() +
+  geom_line(data = plot_data_ppc_lower, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs_lower, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial", title = "1km threshold") +
+  theme_minimal()
+
+plot_data_obs <- get_plot_data(event_data)
+plot_data_ppc <- get_plot_data_ppc(fit = full_fit, data_list = data_list)
+
+ggplot() +
+  geom_line(data = plot_data_ppc, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial", title = "2km threshold") +
+  theme_minimal()
+
+plot_data_obs_higher <- get_plot_data(event_data_higher)
+plot_data_ppc_higher <- get_plot_data_ppc(fit = full_fit_higher, data_list = data_list_higher)
+
+ggplot() +
+  geom_line(data = plot_data_ppc_higher, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs_higher, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial", title = "4km threshold") +
+  theme_minimal()
+
+
+
 # XXXX START HERE 2026-02-18
 
 #"The most important output are the intrinsic rate (lambda_0), and the relative strength of social transmission (s), whose interpretations are the same as the NBDA package. The relative strength of social transmission (s = s_prime / lambda_0) is generally what we’re after. %ST for network n is reported as percent_ST[n]. This is a single-network model, thus percent_ST[1] is the estimated percentage of events that occurred through social transmission. The [1] refers to the “assoc” network, as we’ve only given a single network. If you fit a multi-network model, all networks will have an estimate. For a number of reasons, STbayes actually fits lambda_0 and social transmission rate (s_prime) on the log scale. The linear transformation of s_prime itself usually isn’t reported and is excluded from the output, but you could calculate it yourself from the fit."
