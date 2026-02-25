@@ -2,7 +2,10 @@ library(tidyverse)
 library(targets)
 library(sf)
 library(NBDA)
-
+tar_load(mods_cumul_bin)
+tar_load(mods_cumul_wt)
+tar_load(mods_cumul_bin_wild)
+tar_load(mods_cumul_wt_wild)
 tar_load(stats)
 tar_load(stats_wild)
 tar_load(stn)
@@ -11,6 +14,15 @@ tar_load(stn_carcs)
 tar_load(wild_carcs)
 tar_load(ns)
 tar_load(ns_wild)
+
+# Saving today's versions
+# write_rds(mods_cumul_bin, file = "data/created/exploring_model_results/2025-10-01_mods_cumul_bin.RDS")
+# write_rds(mods_cumul_wt, file = "data/created/exploring_model_results/2025-10-01_mods_cumul_wt.RDS")
+# write_rds(mods_cumul_bin_wild, file = "data/created/exploring_model_results/2025-10-01_mods_cumul_bin_wild.RDS")
+# write_rds(mods_cumul_wt_wild, file = "data/created/exploring_model_results/2025-10-01_mods_cumul_wt_wild.RDS")
+# write_rds(stats, file = "data/created/exploring_model_results/2025-10-01_stats.RDS")
+# write_rds(stats, file = "data/created/exploring_model_results/2025-10-01_stats_wild.RDS")
+# test <- readRDS("data/created/exploring_model_results/2025-10-01_mods_cumul_bin.RDS")
 
 stats <- stats %>% mutate(stn_wild = "stn")
 stats_wild <- stats_wild %>% mutate(stn_wild = "wild")
@@ -24,37 +36,37 @@ stats_all <- bind_rows(stats, stats_wild) %>%
   mutate(lower = outputPar - se, upper = outputPar + se, sig_se = ifelse(lower > 0 & !is.na(lower), T, F)) %>%
   mutate(year = lubridate::year(date))
 
-stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "stn", binwt == "wt") %>%
-  mutate(lower = case_when(!sig_se ~ NA, .default = lower),
-         upper = case_when(!sig_se ~ NA, .default = upper)) %>%
-  filter(outputPar < 50) %>%
-  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
-  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
-  geom_segment(aes(y = lower, yend = upper))+
-  geom_point(aes(pch = sig_se))+
-  scale_shape_manual(values = c(1, 19))+
-  theme_classic()+
-  coord_flip()+
-  facet_wrap(~year, scales = "free_y", ncol = 1)+
-  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
-  labs(title = "SFS carcasses", y = "Social transmission", x = "Carcass")
+# stats_all %>%
+#   filter(!is.na(outputPar), stn_wild == "stn", binwt == "wt") %>%
+#   mutate(lower = case_when(!sig_se ~ NA, .default = lower),
+#          upper = case_when(!sig_se ~ NA, .default = upper)) %>%
+#   filter(outputPar < 50) %>%
+#   ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+#   geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+#   geom_segment(aes(y = lower, yend = upper))+
+#   geom_point(aes(pch = sig_se))+
+#   scale_shape_manual(values = c(1, 19))+
+#   theme_classic()+
+#   coord_flip()+
+#   facet_wrap(~year, scales = "free_y", ncol = 1)+
+#   scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
+#   labs(title = "SFS carcasses", y = "Social transmission", x = "Carcass")
 
-stats_all %>%
-  filter(!is.na(outputPar), stn_wild == "wild", binwt == "wt") %>%
-  mutate(lower = case_when(!sig_se ~ NA, .default = lower),
-         upper = case_when(!sig_se ~ NA, .default = upper)) %>%
-  filter(outputPar < 30) %>%
-  ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
-  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
-  geom_segment(aes(y = lower, yend = upper))+
-  geom_point(aes(pch = sig_se))+
-  scale_shape_manual(values = c(1, 19))+
-  theme_classic()+
-  coord_flip()+
-  facet_wrap(~year, scales = "free_y", ncol = 1)+
-  scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
-  labs(title = "Wild carcasses", y = "Social transmission", x = "Carcass")
+# stats_all %>%
+#   filter(!is.na(outputPar), stn_wild == "wild", binwt == "wt") %>%
+#   mutate(lower = case_when(!sig_se ~ NA, .default = lower),
+#          upper = case_when(!sig_se ~ NA, .default = upper)) %>%
+#   filter(outputPar < 30) %>%
+#   ggplot(aes(x = factor(carcID), y = outputPar, col = interaction(type, binwt)))+
+#   geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+#   geom_segment(aes(y = lower, yend = upper))+
+#   geom_point(aes(pch = sig_se))+
+#   scale_shape_manual(values = c(1, 19))+
+#   theme_classic()+
+#   coord_flip()+
+#   facet_wrap(~year, scales = "free_y", ncol = 1)+
+#   scale_color_manual(values = c("firebrick4", "dodgerblue4"))+
+#   labs(title = "Wild carcasses", y = "Social transmission", x = "Carcass")
 
 # What about the relationship to the number of individuals in the diffusion?
 # Does number of individuals predict significant social transmission?
@@ -207,58 +219,56 @@ search_sfs <- data.frame(type = rep("cumul", length = length(mods_cumul_wt)),
 search_wild <- data.frame(type = rep("cumul", length = length(mods_cumul_wt_wild)),
                          lower_min = NA, lower_max = NA, upper_min = NA, upper_max = NA, ci_lower = NA, ci_upper = NA, carcID = map_dbl(wild_carcs, "carcID"))
 
-search_sfs[1,2:5] <- c(0,2, 10,15)
-search_sfs[2,2:5] <- c(5,10, 80,100)
-search_sfs[3,2:5] <- c(0,2, 8,10)
-search_sfs[4,2:5] <- c(0,2, 4,6)
-search_sfs[5,2:5] <- c(2,5, 175,185)
-search_sfs[6,2:5] <- c(NA, NA, 2,4)
-search_sfs[9,2:5] <- c(0,1, 2,4)
-search_sfs[10,2:5] <- c(0,2, 25,30)
-search_sfs[14,2:5] <- c(0.6, 0.8, 4,6)
-search_sfs[15,2:5] <- c(0, 20, 210, 220)
-search_sfs[18,2:5] <- c(NA, NA, 40, 70)
-search_sfs[19,2:5] <- c(NA, NA, 50, 70)
-search_sfs[21,2:5] <- c(NA, NA, 0.3, 0.4)
-search_sfs[22,2:5] <- c(NA, NA, 3, 4)
-search_sfs[23,2:5] <- c(20,30, NA, NA)
-search_sfs[24,2:5] <- c(NA,NA, 3, 4)
-search_sfs[25,2:5] <- c(0, 0.5, 1, 2)
-search_sfs[27,2:5] <- c(NA, NA, 0.5, 1)
-search_sfs[28,2:5] <- c(0, 0.5, 2.5, 5)
-search_sfs[29,2:5] <- c(NA, NA, 0.5, 1)
-search_sfs[32,2:5] <- c(0, 0.2, 0.3, 0.4)
-search_sfs[34,2:5] <- c(NA, NA, 0.5, 2)
-search_sfs[35,2:5] <- c(NA, NA, 1, 1.5)
-search_sfs[36,2:5] <- c(NA, NA, 0.4, 0.8)
-search_sfs[38,2:5] <- c(0.2, 0.4, 1, 2)
-search_sfs[39,2:5] <- c(0, 1, 4, 5)
-search_sfs[40,2:5] <- c(150, 170, NA, NA)
-search_sfs[41,2:5] <- c(0, 1, 8, 10)
-search_sfs[45,2:5] <- c(NA, NA, 1, 1.5)
-search_sfs[47,2:5] <- c(0, 1, 2, 3)
-search_sfs[48,2:5] <- c(30, 40, NA, NA)
-search_sfs[50,2:5] <- c(0, 0.5, 1, 1.5)
-search_sfs[51,2:5] <- c(0, 0.25, 1.5, 2)
-search_sfs[52,2:5] <- c(NA, NA, 10, 15)
-search_sfs[53,2:5] <- c(NA, NA, 6, 8)
-search_sfs[55,2:5] <- c(NA, NA, 20, 40)
-search_sfs[56,2:5] <- c(0, 1, 2, 3)
-search_sfs[57,2:5] <- c(0, 2, 10, 15)
-search_sfs[59,2:5] <- c(0, 2, 6, 8)
-search_sfs[60,2:5] <- c(NA, NA, 20, 40)
-search_sfs[61,2:5] <- c(0, 0.5, 1, 2)
-search_sfs[62,2:5] <- c(0, 0.5, 2, 3)
-search_sfs[63,2:5] <- c(0, 1, 3, 4)
-search_sfs[64,2:5] <- c(10, 15, NA, NA)
-search_sfs[65,2:5] <- c(0, 0.1, 1.5, 2)
-plotProfLik(which = 1, model = mods_cumul_wt[[65]], range = c(0, 2))
+search_sfs[1,2:5] <- c(0,2, 5,15) # fixed/
+search_sfs[2,2:5] <- c(0, 20, 100, 120) # fixed/
+search_sfs[3,2:5] <- c(0,2, 6,10) # fixed/
+search_sfs[4,2:5] <- c(0,1, 4,6) # fixed
+search_sfs[5,2:5] <- c(0, 5, 12, 20) # fixed
+search_sfs[6,2:5] <- c(NA, NA, 2,4) # fixed
+search_sfs[9,2:5] <- c(0,1, 2,4) # fixed
+search_sfs[10,2:5] <- c(0, 10, 80, 120) # fixed
+search_sfs[14,2:5] <- c(0, 1, 3, 4) # fixed
+search_sfs[15,2:5] <- c(0, 20, 210, 220) # fixed
+search_sfs[18,2:5] <- c(NA, NA, 400, 500) # fixed 
+search_sfs[20,2:5] <- c(NA, NA, 0, 0.2) # fixed
+search_sfs[21,2:5] <- c(NA, NA, 3, 4) # fixed
+search_sfs[22,2:5] <- c(0, 20, 1300, 1500) # fixed
+search_sfs[23,2:5] <- c(NA, NA, 0.5, 1) # fixed
+search_sfs[24,2:5] <- c(0, 0.2, 0.6, 0.8) #fixed
+search_sfs[27,2:5] <- c(0, 0.5, 2, 4) # fixed
+search_sfs[28,2:5] <- c(NA, NA, 0.5, 1) # fixed
+search_sfs[29,2:5] <- c(NA, NA, 1, 1.5) # fixed
+search_sfs[32,2:5] <- c(0, 0.05, 0.35, 0.5) # fixed
+search_sfs[34,2:5] <- c(NA, NA, 0.5, 1) # fixed
+search_sfs[35,2:5] <- c(NA, NA, 6, 9) # fixed
+search_sfs[37,2:5] <- c(0, 0.5, 1, 2)#fixed
+search_sfs[38,2:5] <- c(0, 0.5, 1, 2) # fixed
+search_sfs[39,2:5] <- c(140, 200, NA, NA) # fixed
+search_sfs[40,2:5] <- c(NA, NA, 1.5, 2) # fixed
+search_sfs[44,2:5] <- c(NA, NA, 0.5, 1) # fixed
+search_sfs[47,2:5] <- c(20, 40, NA, NA) # fixed
+search_sfs[48,2:5] <- c(NA, NA, 100, 200) # fixed
+search_sfs[49,2:5] <- c(0, 0.2, 0.7, 1) # fixed
+search_sfs[50,2:5] <- c(NA, NA, 0.75, 1.5)# fixed
+search_sfs[51,2:5] <- c(NA, NA, 80, 100) # fixed
+search_sfs[52,2:5] <- c(NA, NA, 1, 1.5) # fixed
+search_sfs[54,2:5] <- c(NA, NA, 30, 40) # fixed
+search_sfs[55,2:5] <- c(0, 0.2, 0.75, 1.5) # fixed
+search_sfs[56,2:5] <- c(0.5, 1, 4, 6) # fixed
+search_sfs[58,2:5] <- c(0, 1, 2, 4) # fixed
+search_sfs[59,2:5] <- c(NA, NA, 20, 40) # fixed
+search_sfs[60,2:5] <- c(NA, NA, 0.5, 1) # fixed
+search_sfs[61,2:5] <- c(0, 0.1, 4, 6) # fixed
+search_sfs[62,2:5] <- c(0, 0.1, 4, 6) # fixed
+search_sfs[63,2:5] <- c(10, 20, NA, NA) # fixed
+# plotProfLik(which = 1, model = mods_cumul_wt[[65]], range = c(0, 2))
 
-search_wild[1,2:5] <- c(0, .5, 2, 3)
-search_wild[2,2:5] <- c(0, 1, 4, 5)
-search_wild[3,2:5] <- c(0, 1, 20, 30)
-search_wild[5,2:5] <- c(0, 1, 3, 4)
-search_wild[6,2:5] <- c(NA, NA, 1, 2)
+search_wild[1,2:5] <- c(0, .5, 1.5, 2.5) # fixed
+search_wild[2,2:5] <- c(0, 1, 4, 5) # fixed
+search_wild[3,2:5] <- c(0, 1, 20, 30) # fixed
+search_wild[5,2:5] <- c(0, 1, 3, 4) # fixed
+search_wild[6,2:5] <- c(NA, NA, 1, 2) # fixed
+# spot checked the rest and they look fine
 search_wild[7,2:5] <- c(0, 1, 4, 6)
 search_wild[8,2:5] <- c(0, 2, 15, 17)
 search_wild[9,2:5] <- c(0, 1, 4, 6)
@@ -352,6 +362,7 @@ stats_cumul_wt <- stats_all %>%
   left_join(cis_all, by = "carcID") %>%
   mutate(sig_ci = case_when(`Lower CI` > 0 & !is.na(`Lower CI`) ~ T, .default = F))
 
+# XXX THIS ONE!
 stats_cumul_wt %>%
   ggplot(aes(x = factor(carcID), y = propsolve, color = factor(year)))+
   geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
@@ -365,6 +376,23 @@ stats_cumul_wt %>%
   labs(y = "Prop. solved by social transmission", x = "Carcass")+
   theme(legend.position = "none")
 
+# CIs for S instead of propsolve
+stats_cumul_wt %>%
+  filter(outputPar < 20) %>% # have to remove the high outliers
+  ggplot(aes(x = factor(carcID), y = outputPar, color = factor(year)))+
+  geom_hline(aes(yintercept = 0), linetype = 3, color = "black")+
+  geom_segment(aes(y = `Lower CI`, yend = `Upper CI`))+
+  geom_point()+
+  scale_shape_manual(values = c(1, 19))+
+  theme_classic()+
+  coord_flip()+
+  ggh4x::facet_grid2(rows = vars(year), cols = vars(stn_wild), 
+                     scales = "free", independent = "all")+
+  labs(y = "S", x = "Carcass", caption = "Note varying scales; also, these aren't marked sig/non-sig.")+
+  theme(legend.position = "none")
+# why are some missing CIs? I'm not sure-- some I think I couldn't get from the profLik graphs, others idk.
+# XXX if time: check whether the ones that are missing these line up with the ones that have NAs for the manual plots above.
+
 stats_cumul_wt %>%
   mutate(sig_num = case_when(ps_lower > 0 & !is.na(ps_lower) ~ 1, .default = 0)) %>%
   ggplot(aes(x = prop_found, y = sig_num, color = factor(year))) +
@@ -376,6 +404,7 @@ stats_cumul_wt %>%
   labs(y = "Social transmission detected", x = "Prop. vultures in diffusion")+
   scale_y_continuous(breaks = c(0, 1))
 
+# S detected?
 stats_cumul_wt %>%
   mutate(sig_num = case_when(ps_lower > 0 & !is.na(ps_lower) ~ 1, .default = 0)) %>%
   ggplot(aes(x = prop_found, y = sig_num)) +
@@ -387,6 +416,7 @@ stats_cumul_wt %>%
   labs(y = "Social transmission detected", x = "Prop. vultures in diffusion")+
   scale_y_continuous(breaks = c(0, 1))
 
+# S strength
 stats_cumul_wt %>%
   filter(sig_ci) %>%
   mutate(stn_wild = case_when(stn_wild == "stn" ~ "SFS",
@@ -401,6 +431,7 @@ stats_cumul_wt %>%
   theme(legend.position = "bottom", text = element_text(size = 14)) + 
   labs(y = "Social transmission strength", x = "Prop. vultures in diffusion")
 
+# S strength by year
 stats_cumul_wt %>%
   filter(sig_ci) %>%
   mutate(stn_wild = case_when(stn_wild == "stn" ~ "SFS",
@@ -414,3 +445,4 @@ stats_cumul_wt %>%
   facet_wrap(~stn_wild)+
   theme(legend.position = "bottom", text = element_text(size = 14)) + 
   labs(y = "Social transmission strength", x = "Prop. vultures in diffusion", color = "Year")
+

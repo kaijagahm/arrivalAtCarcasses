@@ -14,8 +14,8 @@ tar_load(days_after)
 hist(lubridate::date(gps_combined$timestamp), breaks = "weeks") # we have GPS data spanning the hf periods
 
 # Get histograms, for reference later
-plots_stn <- readRDS(here("data/plots_stn.RDS"))
-plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
+plots_stn <- readRDS(here("data/created/arrival_plots/plots_stn.RDS"))
+plots_wild_valid <- readRDS(here("data/created/arrival_plots/plots_wild_valid.RDS"))
 names(plots_stn)
 length(plots_stn) # all 65 carcasses
 names(plots_wild_valid) 
@@ -288,7 +288,7 @@ test <- prepare_nbda_data(gps = gps_30days,
                           n_hours_gps_static = list(c(-720, -24), 
                                                     c(-168, -24)),
                           sighting_time_max_hours = 72)
-save(test, file = here("data/test.Rda"))
+save(test, file = here("data/created/data_nbda/test.Rda"))
 
 # Networks
 ## Dynamic
@@ -326,8 +326,8 @@ nets_stn <- list("fl_bin_sameday" = fl_bin_sameday,
                   "fl_wt_n720n024" = fl_wt_n720n024,
                   "fl_bin_n168n024" = fl_bin_n168n024,
                   "fl_wt_n168n024" = fl_wt_n168n024)
-save(nets_stn, file = here("data/nets_stn.Rda"))
-load(here("data/nets_stn.Rda"))
+save(nets_stn, file = here("data/created/data_nbda/nets_stn.Rda"))
+load(here("data/created/data_nbda/nets_stn.Rda"))
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday <- nbdaData(label = test$carcID, 
@@ -451,7 +451,7 @@ test_wild <- prepare_nbda_data(gps = gps_30days_wild,
                           n_hours_gps_static = list(c(-720, -24), 
                                                     c(-168, -24)),
                           sighting_time_max_hours = 72)
-save(test_wild, file = here("data/test_wild.Rda"))
+save(test_wild, file = here("data/created/data_nbda/test_wild.Rda"))
 # XXX Note: we're going to need to back it up an hour, and I haven't thought through how to do that yet. 
 
 # # Networks
@@ -489,8 +489,8 @@ save(test_wild, file = here("data/test_wild.Rda"))
 #                   "fl_wt_n720n024_wild" = fl_wt_n720n024_wild, 
 #                   "fl_bin_n168n024_wild" = fl_bin_n168n024_wild, 
 #                   "fl_wt_n168n024_wild" = fl_wt_n168n024_wild)
-# save(nets_wild, file = here("data/nets_wild.Rda"))
-load(here("data/nets_wild.Rda"))
+# save(nets_wild, file = here("data/created/data_nbda/nets_wild.Rda"))
+load(here("data/created/data_nbda/nets_wild.Rda"))
 
 ## Dynamic flight networks, entire day of first sighting, including after first sighting
 data_sameday_wild <- nbdaData(label = test_wild$carcID, 

@@ -244,54 +244,58 @@ gbp <- function(prepared, predictions,
 get_matches <- function(df, foc, spd){
   if(!is.null(df)){
     with_middles <- df %>%
-      dplyr::mutate(start = lubridate::ymd_hms(start),
-                    end = lubridate::ymd_hms(end),
-                    middle = start + difftime(end, start)/2) %>%
-      dplyr::group_by(bout_id) %>%
-      dplyr::group_split()
+      dplyr::mutate(middle = start + difftime(end, start)/2,
+                    fivebefore = start - lubridate::minutes(5),
+                    fiveafter = start + lubridate::minutes(5)#,
+                    # elevenbefore = start - lubridate::minutes(11),
+                    # elevenafter = start + lubridate::minutes(11)
+      ) %>%
+      dplyr::group_split(bout_id)
     
     within_5min <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(5)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + minutes(5)),]
-    }, .progress = T)
+      foc[.x$fivebefore <= foc$timestamp & foc$timestamp <= .x$fiveafter,]
+    })
     
-    within_5min_speed <- purrr::map(within_5min, ~.x[as.numeric(.x$ground_speed) <= spd,])
+    within_5min_speed <- purrr::map(within_5min, ~return(.x[as.numeric(.x$ground_speed) <= spd,]))
     
-    within_11min_speed <- purrr::map(with_middles, ~{
-      foc[(.x$start[1] - lubridate::minutes(11)) <= foc$timestamp & foc$timestamp <= (.x$end[1] + lubridate::minutes(11)) & as.numeric(foc$ground_speed) < spd,]
-    }, .progress = T)
+    # within_11min_speed <- purrr::map(with_middles, ~{
+    #   foc[.x$elevenbefore <= foc$timestamp & foc$timestamp <= .x$elevenafter & foc$ground_speed < spd,]
+    # })
     
-    keep <- purrr::pmap(list(within_5min, within_5min_speed, 
-                             within_11min_speed, 
-                             with_middles
-    ), ~{
-      if(nrow(..2) > 0){ # if there are any non-flying points within 5 mins, keep them
-        match <- ..2
-      }
-      # else if(nrow(..3) > 0){ # otherwise, if there are any non-flying points within 11min, keep them
-      #   match <- ..3
-      # }
-      else if(nrow(..1) > 0){ # otherwise, if there are any flying points within 5min, keep them
-        match <- ..1
-      }else{
-        match <- foc[0,] # if none of those is true, return a 0-row data frame
+    keep <- vector(mode = "list", length = length(with_middles))
+    for(i in 1:length(keep)){
+      w5 <- within_5min[[i]]
+      w5s <- within_5min_speed[[i]]
+      #w11s <- within_11min_speed[[i]]
+      wm <- with_middles[[i]]
+      if(nrow(w5s) > 0){ # if there are any non-flying points within 5 mins, keep them
+        match <- w5s
+      }else if(nrow(w5) > 0){ # else, if there are ANY points within 5 mins, keep them.
+        match <- w5
+      }else{ # if none of those is true, return a 0-row data frame
+        match <- foc[0,]
       }
       if(nrow(match) > 1){
-        match <- match[which.min(abs(as.numeric(match$timestamp - ..4$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
+        match <- match[which.min(abs(as.numeric(match$timestamp - wm$middle[1]))),] # if more than one match, take the closest to the middle time (either before or after)
       }
       if(nrow(match) > 0){ # for all bouts where we got any gps match at all...
-        match$bout_id <- ..4$bout_id[1] # assign the bout id of the current bout to the match as well
-        return(match)
+        match$bout_id <- wm$bout_id[1] 
+        keep[[i]] <- match
       }else{
         match <- as.data.frame(foc[0,])
         match$bout_id <- numeric(0)
-        return(match)
-      }
-    })
+        keep[[i]] <- match}
+    }
   }else{
-    keep <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- data.frame(tag_local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
     keep <- list(keep[0,])
   }
   keep_df <- purrr::list_rbind(keep)
+  if(nrow(keep_df) == 0){
+    keep <- data.frame(tag_local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, location_lat = NA, location_long = NA, individual_id = NA, tag_local_identifier = NA, bout_id = NA)
+    keep <- list(keep[0,])
+    keep_df <- purrr::list_rbind(keep)
+  }
   return(keep_df)
 }
 
@@ -328,54 +332,22 @@ get_carcass_bouts <- function(bouts, carcasses, dist, hours_after){
   return(carcass_bouts)
 }
 
-get_bout_stats <- function(carcasses_focal, carcass_bouts_df){
-  stats <- carcass_bouts_df %>%
-    dplyr::select(carcID, boutID, individual_id) %>%
-    dplyr::group_by(carcID) %>% 
-    dplyr::summarize(nBouts = length(unique(boutID)), nIndivs = length(unique(individual_id))) %>%
-    dplyr::ungroup()
-  out <- dplyr::left_join(carcasses_focal, stats, by = "carcID")
-  return(out)
+get_station_bouts <- function(bouts, stations, dist){
+  buf <- st_buffer(stations, dist)
+  bts <- st_transform(st_as_sf(bouts), 32636)
+  which_stn <- which(map_dbl(st_intersects(bts, buf), length) == 1)
+  bts_stn <- bts[which_stn,]
+  return(bts_stn)
 }
 
 # Clustering --------------------------------------------------------------
-get_wild_carcass_bouts <- function(non_carcass_bouts, time, dst, minBouts, stations, stationDist, minIndivs){
-  # Remove any that are too close to a known station
-  stations_buffered <- st_buffer(stations, stationDist)
-  ncb <- sf::st_as_sf(non_carcass_bouts, crs = 32636) %>% bind_cols(st_coordinates(.))
-  tokeep <- map_dbl(st_intersects(ncb, stations_buffered), length) == 0 # keep the ones that don't intersect with any feeding station buffer areas
-  non_carcass_bouts <- non_carcass_bouts[tokeep,]
-  
-  # Format appropriately for spatsoc
-  ncb$timestamp <- as.POSIXct(ncb$start, tz = "UTC")
-  ncb <- data.table::data.table(ncb)
-  
-  spatsoc::group_times(ncb, 
-                       datetime = 'timestamp', 
-                       threshold = time)
-  spatsoc::group_pts(ncb, threshold = dst, 
-                     id ='boutID', coords = c('X', 'Y'), 
-                     timegroup = 'timegroup')
-  
-  # Restrict to groups that have at least 3 bouts and at least 3 individuals
-  ncb_filtered <- ncb %>%
-    group_by(group) %>%
-    filter(n() >= minBouts,
-           length(unique(individual_local_identifier)) > minIndivs)
-  
-  # convert back to sf object for mapping
-  wild_carcass_bouts_df <- as.data.frame(ncb_filtered) %>%
-    rename("carcID" = group) %>%
-    sf::st_as_sf(crs = 32636)
-  
-  return(wild_carcass_bouts_df)
-}
-
-get_wild_carcasses <- function(wild_carcass_bo_df){
+get_wild_carcasses <- function(df){
   # Get carcasses
-  wild_carcasses <- wild_carcass_bo_df %>%
-    mutate(year = lubridate::year(timestamp)) %>%
-    group_by(year, carcID) %>%
+  df <- as.data.frame(df)
+  df <- st_as_sf(df) # should already have a geometry column
+  wild_carcasses <- df %>%
+    filter(!is.na(cluster)) %>%
+    group_by(year, "carcID" = cluster) %>%
     summarize(geometry = sf::st_union(geometry),
               dateOnly = lubridate::date(timestamp)[1],
               nBouts = n(),
@@ -387,30 +359,12 @@ get_wild_carcasses <- function(wild_carcass_bo_df){
     bind_cols(sf::st_coordinates(.)) %>%
     mutate(datetime = mintime,
            datetime = lubridate::ymd_hms(datetime),
-           datetime_il = lubridate::with_tz(datetime, tzone = "Israel")) # arbitrarily deciding that the min time of the first bout defines the "carcass time"
+           datetime_il = lubridate::with_tz(datetime, tzone = "Israel"),
+           carcType = "wild") # arbitrarily deciding that the min time of the first bout defines the "carcass time"
   return(wild_carcasses)
 }
-# "Limitations of threshold
-# The threshold of group_times is considered only within the scope of 24 hours and this poses limitations on it:
-# 
-# threshold must evenly divide into 60 minutes or 24 hours
-# multi-day blocks are consistent across years and timegroups from these are by year.
-# number of minutes cannot exceed 60
-# threshold cannot be fractional"
 
 # prepare_data ------------------------------------------------------------
-get_gps_combined <- function(gps_2022, gps_2023, gps_2024, bbox){
-  gps_combined <- bind_rows(gps_2022, gps_2023) %>%
-    bind_rows(gps_2024) %>%
-    #bind_cols(sf::st_coordinates(.)) %>%
-    #rename("location_long" = X,
-    #       "location_lat" = Y) %>%
-    st_transform(32636) %>%
-    st_crop(bbox) %>%
-    mutate(year = lubridate::year(timestamp))
-  return(gps_combined)
-}
-
 get_gps_all <- function(carcs, gps_combined, days_after, days_before){
   gps_all <- vector(mode = "list", length = length(carcs))
   for(i in 1:length(carcs)){
@@ -422,80 +376,13 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
       mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
+    out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
+      rename("location_long" = X, "location_lat" = Y)
     gps_all[[i]] <- out
+    cat("done with", i, "\n")
   }
   return(gps_all)
 }
-
-get_roosts <- function(gps_all, col){
-  r <- map(gps_all, ~{
-    if(nrow(.x) > 0){return(get_roosts_df(.x, id = col))}
-    else{return(NULL)}
-  })
-  return(r)
-}
-
-# get_seeds_gps <- function(gps_all, stn_carcs, seed_time_before, seed_distance_flight, seed_distance_stationary){
-#   seeds_gps <- map2(gps_all, stn_carcs, ~{
-#     dttm <- .y$datetime[1]
-#     .x %>% filter(timestamp >= dttm-seed_time_before & timestamp <= dttm) %>%
-#       filter((ground_speed >= 5 & dist_to_carcass < seed_distance_flight) | (ground_speed < 5 & dist_to_carcass < seed_distance_stationary))
-#   })
-#   return(seeds_gps)
-# }
-
-# get_distances <- function(roosts, stn_carcs){
-#   stn_carcs <- map(stn_carcs, ~.x %>% mutate(year = lubridate::year(date)))
-#   distances <- map2(roosts, stn_carcs, ~{
-#     if(!is.null(.x)){
-#       dist <- .x %>%
-#         sf::st_as_sf(., coords = c("location_long", "location_lat"), crs = "WGS84") %>%
-#         sf::st_transform(32636) %>%
-#         mutate(dist = as.numeric(st_distance(., .y))) %>%
-#         st_drop_geometry() %>%
-#         dplyr::select(tag_local_identifier, roost_date, dist) %>%
-#         pivot_wider(id_cols = "tag_local_identifier", names_from = "roost_date", values_from = "dist", names_prefix = "roost_") %>%
-#         mutate(year = .y$year[1])
-#     }else{
-#       dist <- NULL
-#     }
-#     return(dist)
-#   })
-#   return(distances)
-# }
-# 
-# get_www <- function(ww){
-#   www <- ww %>%
-#     dplyr::select(Nili_id, Movebank_id, Nili_id, birth_year, sex) %>%
-#     mutate(age_2022 = 2022-birth_year,
-#            age_2023 = 2023-birth_year,
-#            age_2024 = 2024-birth_year,
-#            age_group_2022 = case_when(age_2022 > 5 ~ "02_adult",
-#                                       age_2022 <= 5 ~ "01_juv_sub",
-#                                       .default = NA),
-#            age_group_2023 = case_when(age_2023 > 5 ~ "02_adult",
-#                                       age_2023 <= 5 ~ "01_juv_sub",
-#                                       .default = NA),
-#            age_group_2024 = case_when(age_2024 > 5 ~ "02_adult",
-#                                       age_2024 <= 5 ~ "01_juv_sub",
-#                                       .default = NA)) %>%
-#     dplyr::select("tag_local_identifier" = "Movebank_id", age_group_2022, age_group_2023, age_group_2024) %>%
-#     distinct()
-#   return(www)
-# }
-# 
-# get_ilvs <- function(distances, www){
-#   yrs <- map_dbl(distances, ~.x$year[1])
-#   ilvs <- map2(distances, yrs, ~{
-#     tojoin <- www %>%
-#       dplyr::select(tag_local_identifier, "age_group" = paste0("age_group_", .y))
-#     out <- left_join(.x, tojoin, by = "tag_local_identifier")
-#     to_rename <- names(out)[grepl("roost_", names(out))]
-#     new_names <- paste0("roost_night", 0:(length(to_rename)-1))
-#     names(out)[names(out) %in% to_rename] <- new_names
-#     return(out)})
-#   return(ilvs)
-# }
 
 remove_points_before <- function(gps_all, stn_carcs, days_after, hours_before = 0){
   gps <- map2(gps_all, stn_carcs, ~{
@@ -526,7 +413,7 @@ get_firsts <- function(at_carcass, stn_carcs){
       out <- .x %>%
         filter(timestamp >= .y$datetime) %>%
         arrange(timestamp) %>%
-        group_by(tag_local_identifier) %>%
+        group_by(individual_local_identifier) %>%
         slice(1) %>%
         ungroup() %>%
         arrange(timestamp)
@@ -534,11 +421,11 @@ get_firsts <- function(at_carcass, stn_carcs){
         out$rownumber <- 1:nrow(out)
         return(out)
       }else{
-        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, individual_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
         return(out)
       }
     }else{
-      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, individual_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
       return(out)
     }
   })
@@ -551,7 +438,7 @@ get_firsts_see <- function(see_carcass, stn_carcs){
       out <- .x %>%
         filter(timestamp >= .y$datetime) %>%
         arrange(timestamp) %>%
-        group_by(tag_local_identifier) %>%
+        group_by(individual_local_identifier) %>%
         slice(1) %>%
         ungroup() %>%
         arrange(timestamp)
@@ -559,11 +446,11 @@ get_firsts_see <- function(see_carcass, stn_carcs){
         out$rownumber <- 1:nrow(out)
         return(out)
       }else{
-        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+        out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, individual_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
         return(out)
       }
     }else{
-      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, tag_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
+      out <- data.frame(local_identifier = NA, tag_id = NA, timestamp = NA, dateOnly = NA, ground_speed = NA, individual_id = NA, individual_local_identifier = NA, location_long = NA, location_lat = NA, dist_to_carcass = NA, carcID = .y$carcID, geometry = NA, rownumber=  NA)
       return(out)
     }
   }) 
@@ -571,15 +458,15 @@ get_firsts_see <- function(see_carcass, stn_carcs){
 }
 
 get_has_visits <- function(firsts){
-  map_dbl(firsts, ~nrow(.x[!is.na(.x$tag_local_identifier),])) > 0
+  map_dbl(firsts, ~nrow(.x[!is.na(.x$individual_local_identifier),])) > 0
 }
 
 get_has_sightings <- function(firsts_see){
-  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$tag_local_identifier),])) > 0
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$individual_local_identifier),])) > 0
 }
 
 get_has_enough_sightings <- function(firsts_see, min_sightings){
-  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$tag_local_identifier),])) > min_sightings
+  map_dbl(firsts_see, ~nrow(.x[!is.na(.x$individual_local_identifier),])) > min_sightings
 }
 
 get_flight_allday <- function(gps, subsettor){
@@ -638,7 +525,7 @@ get_roost_dates <- function(roosts, subsettor){
 get_roosts_bin <- function(dates, roost_thresh){
   map(dates, ~{
     outout <- map(.x, ~{
-      ids <- .x$tag_local_identifier
+      ids <- .x$individual_local_identifier
       out <- as.data.frame(st_distance(.x)) %>%
         mutate(across(everything(), as.numeric))
       out[out < roost_thresh] <- 1
@@ -654,7 +541,7 @@ get_roosts_bin <- function(dates, roost_thresh){
 get_roosts_weighted <- function(dates){
   map(dates, ~{ # XXX start here
     outout <- map(.x, ~{
-      ids <- .x$tag_local_identifier
+      ids <- .x$individual_local_identifier
       out <- as.data.frame(st_distance(.x)) %>%
         mutate(across(everything(), as.numeric))
       out <- 1/sqrt(out)
@@ -666,33 +553,38 @@ get_roosts_weighted <- function(dates){
   })
 }
 
-get_fl_weighted <- function(dat, dist){
+get_fl_weighted <- function(dat, dist, rp, spd){
   if(is.data.frame(dat)){
     if(nrow(dat) > 0){
-      self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
-                               ID2 = sort(unique(dat$tag_local_identifier)),
+      self_edges <- data.frame(ID1 = sort(unique(dat$individual_local_identifier)),
+                               ID2 = sort(unique(dat$individual_local_identifier)),
                                sri = 0)
-      dat$dateOnly <- lubridate::date(dat$timestamp) # XXX FIX! SEE GET_FL_BIN
-      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                            consecThreshold = 1,
-                                                            idCol = "tag_local_identifier",
-                                                            return = "sri",
-                                                            distThreshold = dist))
-      if(!("sri" %in% names(out1)) & nrow(out1) == 0){
-        out1$sri <- numeric(0)
+      dat$dateOnly_il <- lubridate::date(dat$timestamp_il)
+      # NNN check back in previous analysis--do we need to remove the roost sites?
+      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = rp,
+                                            speedThreshLower = spd,
+                                            speedThreshUpper = NULL,
+                                            consecThreshold = 1,
+                                            idCol = "individual_local_identifier",
+                                            return = "sri",
+                                            distThreshold = dist))
+      if(!("sri" %in% names(out1)) & nrow(out1) == 0){ # if the flight edges function returned nothing (if there were no flight interactions)
+        out1$sri <- numeric(0) # a numeric vector of length 0 (adding the column so it exists, but the data frame has 0 rows) (bookkeeping)
       }
+      # making the matrix square--duplicating the interaction rows in the opposite direction
       out2 <- out1[,c("ID2", "ID1", "sri")]
       names(out2) <- c("ID1", "ID2", "sri")
-      out <- bind_rows(out1, out2)
+      out <- bind_rows(out1, out2) # bind together the upper and lower triangle
       out <- out %>%
         mutate(across(c("ID1", "ID2"), as.character)) %>%
-        bind_rows(self_edges) %>%
-        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network
-        arrange(ID1, ID2) %>%
+        bind_rows(self_edges) %>% # add the diagonal
+        mutate(sri = case_when((is.nan(sri)|is.na(sri)) ~ 0, .default = sri)) %>% # XXX forcing all NaNs and NAs to zero because we don't have a choice--can't have missing values in the network. Should be very few NAs because of the previous filtering
+        arrange(ID1, ID2) %>% # NNN verify here that the order matches the order vector from the nbda dataset after alphabetizing/removing spaces (need to remove those spaces as early as possible in the process, ideally step 1, so this will all be consistent.)
         pivot_wider(id_cols = "ID1", names_from = "ID2", values_from = "sri") %>%
-        mutate(across(everything(), ~replace_na(.x, 0))) %>%
+        mutate(across(everything(), ~replace_na(.x, 0))) %>% # replace any final NAs that resulted from the pivot
         dplyr::select(ID1, all_of(.$ID1)) %>% # get the rows and columns to be in the same order
         as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
+      # NNN check igraph to see if there's a function to convert edgelists to adjacency matrices. Maybe simpler and deals with edge cases.
       row.names(out) <- out$ID1 # doing this because it makes indexing easier later
     }else{
       out <- "blank"
@@ -707,15 +599,17 @@ get_fl_weighted <- function(dat, dist){
 get_fl_bin <- function(dat, dist){
   if(is.data.frame(dat)){
     if(nrow(dat) > 0){
-      self_edges <- data.frame(ID1 = sort(unique(dat$tag_local_identifier)),
-                               ID2 = sort(unique(dat$tag_local_identifier)),
+      self_edges <- data.frame(ID1 = sort(unique(dat$individual_local_identifier)),
+                               ID2 = sort(unique(dat$individual_local_identifier)),
                                value = 0)
-      dat$dateOnly <- lubridate::date(dat$timestamp) #XXX fix getFlightEdges to not require this!
-      out1 <- suppressMessages(vultureUtils::getFlightEdges(dat, roostPolygons = NULL,
-                                                            consecThreshold = 1,
-                                                            idCol = "tag_local_identifier",
-                                                            return = "edges",
-                                                            distThreshold = dist)) %>%
+      dat$dateOnly <- lubridate::date(dat$timestamp)
+      out1 <- suppressMessages(getEdges_new(dat, roostPolygons = NULL,
+                                            speedThreshLower = 4,
+                                            speedThreshUpper = NULL,
+                                            consecThreshold = 1,
+                                            idCol = "individual_local_identifier",
+                                            return = "edges",
+                                            distThreshold = dist)) %>%
         dplyr::select(ID1, ID2) %>%
         distinct() %>%
         mutate(value = 1)
@@ -984,7 +878,7 @@ get_ilvs_lists <- function(ilvs_nbda, days_vec_nbda){
   for(i in 1:length(ilvs_lists)){
     ilvs <- ilvs_nbda[[i]]
     nights_vec <- days_vec_nbda[[i]]-1
-    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% dplyr::select(tag_local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
+    ilvs_this_carcass <- map(nights_vec, ~ilvs %>% dplyr::select(individual_local_identifier, paste0("roost_night", .x), age_group) %>% rename("dist_roost" = 2))
     ilvs_lists[[i]] <- ilvs_this_carcass
   }
   return(ilvs_lists)
@@ -1178,7 +1072,7 @@ get_merged <- function(bouts_predictions){
   merged <- purrr::list_rbind(bouts_predictions)
   merged$sensor <- "ACC"
   merged <- merged %>%
-    dplyr::rename("tag_local_identifier" = device_id,
+    dplyr::rename("individual_local_identifier" = device_id,
                   "timestamp" = start) %>%
     dplyr::mutate(timestamp = case_when(nchar(timestamp) == 10 ~ paste0(timestamp, " 00:00:00"),
                                         .default = timestamp)) %>%
@@ -1189,7 +1083,7 @@ get_merged <- function(bouts_predictions){
 get_full <- function(gps, merged){
   full <- bind_rows(gps, mutate(merged, timestamp = lubridate::ymd_hms(timestamp)))
   full <- full %>%
-    group_by(tag_local_identifier) %>%
+    group_by(individual_local_identifier) %>%
     arrange(timestamp) %>%
     mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
     ungroup()
@@ -1198,66 +1092,12 @@ get_full <- function(gps, merged){
 
 prepare_gps_crossref <- function(full){
   full <- full %>%
-    group_by(tag_local_identifier) %>%
+    group_by(individual_local_identifier) %>%
     arrange(timestamp) %>%
     mutate(time_diff = as.numeric(difftime(lead(timestamp), timestamp, units = "secs"))) %>%
     ungroup()
   return(full)
 }
-
-# attach_gps <- function(x, a = gps_bef, b = gps_aft, spd = gps_spd){
-#   out <- x %>% 
-#     group_by(tag_local_identifier) %>%
-#     arrange(timestamp) %>%
-#     rename("llo" = location_long, "lla" = location_lat, "td" = time_diff) %>%
-#     mutate(
-#       llo2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(llo),
-#                        is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(llo),
-#                        is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(llo),
-#                        is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(llo),
-#                        .default = llo),
-#       lla2 = case_when(is.na(lla) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(lla),
-#                        is.na(lla) & td < a & lead(ground_speed <= spd) ~ lead(lla),
-#                        is.na(lla) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(lla),
-#                        is.na(lla) & td < b & lead(ground_speed <= spd) ~ lead(lla),
-#                        .default =lla),
-#       gs2 = case_when(is.na(llo) & lag(td) <= a & lag(ground_speed <= spd) ~ lag(ground_speed),
-#                       is.na(llo) & td < a & lead(ground_speed <= spd) ~ lead(ground_speed),
-#                       is.na(llo) & lag(td) <= b & lag(ground_speed <= spd) ~ lag(ground_speed),
-#                       is.na(llo) & td < b & lead(ground_speed <= spd) ~ lead(ground_speed),
-#                       .default = ground_speed)
-#     )%>% 
-#     # try another method of assigning still-unassigned acc bouts
-#     mutate(
-#       llo3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(llo),
-#                        is.na(llo2) & td < a ~ lead(llo), 
-#                        .default = llo2),
-#       lla3 = case_when(is.na(lla2) & lag(td) <= a ~ lag(lla2),
-#                        is.na(lla2) & td < a ~ lead(lla), 
-#                        .default = lla2),
-#       gs3 = case_when(is.na(llo2) & lag(td) <= a ~ lag(ground_speed),
-#                       is.na(llo2) & td < a ~ lead(ground_speed), 
-#                       .default =  gs2)
-#     ) %>%
-#     ungroup()
-#   return(out)
-# }
-# 
-# keep_highest_gps_pair <- function(attached){
-#   out <- attached %>%
-#     dplyr::filter(sensor == "ACC") %>%
-#     dplyr::mutate(location_long = dplyr::case_when(!is.na(llo2) ~ llo2,
-#                                                    is.na(llo2) & !is.na(llo3) ~ llo3,
-#                                                    .default = location_long),
-#                   location_lat = dplyr::case_when(!is.na(lla2) ~ lla2,
-#                                                   is.na(lla2) & !is.na(lla3) ~ lla3,
-#                                                   .default = location_lat),
-#                   ground_speed = dplyr::case_when(!is.na(gs2) ~ gs2,
-#                                                   is.na(gs2) & !is.na(gs3) ~ gs3,
-#                                                   .default = ground_speed)) %>%
-#     dplyr::select(-c("llo2", "lla2", "gs2", "llo3", "lla3", "gs3"))
-#   return(out)
-# }
 
 getfeeding <- function(x, thresh){
   if(!is.null(x)){
@@ -1276,13 +1116,6 @@ get_gps_forbouts_indivs <- function(device_ids, gps){
   return(out)
 }
 
-buffer_cliffs <- function(cliffs, buffer_m, crs_to_transform = 32636){
-  transf <- sf::st_transform(cliffs, crs_to_transform)
-  out_polys <- st_buffer(transf, buffer_m)
-  out_multipoly <- st_union(out_polys)
-  return(out_multipoly)
-}
-
 join_gps_bouts <- function(bp, wg){
   if(!is.null(bp) & !is.null(wg)){
     first_gps <- as.data.frame(wg) %>% 
@@ -1299,310 +1132,6 @@ join_gps_bouts <- function(bp, wg){
   return(out)
 }
 
-remove_bouts_on_cliffs <- function(bouts, cliffs){
-  intersections <- st_intersects(bouts, cliffs)
-  lgl <- map_dbl(intersections, length)
-  tokeep <- which(lgl == 0)
-  keep <- bouts[tokeep,]
-  return(keep)
-}
-
-# DEM ---------------------------------------------------------------------
-get_slopes <- function(filenames, bbox_south_big, neighbors = 8, feeding_bouts_stationary){
-  bbox_south_vect <- terra::vect(st_transform(bbox_south_big, "WGS84"))
-  demlist <- vector(mode = "list", length = length(filenames))
-  for(i in 1:length(demlist)){
-    demlist[[i]] <- terra::rast(filenames[i])
-  } 
-  cropped_list <- map(demlist, function(r) {
-    tryCatch({
-      crop(r, bbox_south_vect)
-    }, error = function(e) {
-      message("Error cropping raster: ", e$message)
-      return(NULL) # Return NULL if an error occurs
-    })
-  })
-  filtered_list <- cropped_list[!sapply(cropped_list, is.null)]
-  merged_raster <- Reduce(f = merge, x =filtered_list)
-  terrain <- terra::terrain(merged_raster, v = "slope", unit = "degrees", neighbors = neighbors)
-  terrain_proj <- terra::project(terrain, "epsg:32636")
-  
-  feeding_bouts_vect <- terra::vect(feeding_bouts_stationary)
-  slopes <- terra::extract(terrain_proj, feeding_bouts_vect)
-  feeding_bouts_stationary_withslopes <- mutate(feeding_bouts_stationary, slope = slopes$slope)
-  return(feeding_bouts_stationary_withslopes)
-}
-
-
-# Raster functions --------------------------------------------------------
-points_to_raster <- function(
-    carcasses_sf,            # sf POINT object
-    bbox,                    # bounding box (numeric or object convertible to sf bbox)
-    resolution = 10000       # grid cell size in meters (default 10km)
-) {
-  # Ensure carcasses are in a projected CRS (assume UTM if not set)
-  if (is.na(st_crs(carcasses_sf))) {
-    stop("Input 'carcasses_sf' must have a defined CRS.")
-  }
-  if (st_is_longlat(carcasses_sf)) {
-    stop("Please project 'carcasses_sf' to a projected CRS (e.g., UTM).")
-  }
-  
-  # Convert bbox to sf polygon if needed
-  if (is.numeric(bbox) && length(bbox) == 4) {
-    bbox_mat <- matrix(c(bbox[1], bbox[2], bbox[3], bbox[4]), ncol = 2, byrow = TRUE)
-    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]), crs = st_crs(carcasses_sf)))
-  } else if (inherits(bbox, "sf") || inherits(bbox, "sfc") || inherits(bbox, "SpatVector")) {
-    bbox_poly <- st_as_sfc(st_bbox(bbox))
-    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
-  } else {
-    stop("Invalid 'bbox' format. Provide a numeric vector of length 4 or an sf/sfc/SpatVector object.")
-  }
-  
-  # Create a regular grid over the bounding box
-  grid <- st_make_grid(bbox_poly, cellsize = resolution, square = TRUE)
-  grid_sf <- st_sf(grid_id = 1:length(grid), geometry = grid)
-  
-  # Spatial join: assign carcasses to grid cells
-  joined <- st_join(carcasses_sf, grid_sf, join = st_within)
-  
-  # Count carcasses per grid cell
-  counts <- joined |>
-    group_by(grid_id) |>
-    summarise(carcass_count = n(), .groups = "drop")
-  
-  # Merge counts back to full grid, fill NAs with 0
-  grid_with_counts <- left_join(grid_sf, st_drop_geometry(counts), by = "grid_id") |>
-    mutate(carcass_count = ifelse(is.na(carcass_count), 0, carcass_count))
-  
-  # Convert to SpatVector
-  grid_vect <- vect(grid_with_counts)
-  
-  # Create raster template
-  r_template <- rast(grid_vect, resolution = resolution)
-  
-  # Rasterize
-  r <- rasterize(grid_vect, r_template, field = "carcass_count", fun = NULL, background = 0)
-  
-  return(r)
-}
-dist_to_carcasses <- function(
-    carcasses_sf,
-    bbox,
-    resolution = 1000,
-    start_date = NULL,
-    end_date = NULL,
-    active_days = 3,         # used only if weight_col=NULL
-    weight_col = NULL,       # NULL = unweighted, else name of weight col
-    decay_rate = 0,          # ignored if weight_col=NULL
-    min_weight = 0,          # ignored if weight_col=NULL
-    distance_power = 1,
-    visibility_radius = Inf  # Inf means no limit
-) {
-  # Validate inputs
-  if (!"date" %in% names(carcasses_sf)) stop("Missing 'date' column.")
-  if (!inherits(carcasses_sf$date, "Date")) {
-    carcasses_sf$date <- as.Date(carcasses_sf$date)
-  }
-  if (st_is_longlat(carcasses_sf)) stop("Please project 'carcasses_sf' to a projected CRS.")
-  
-  if (!is.null(weight_col) && !(weight_col %in% names(carcasses_sf))) {
-    stop(paste("Missing weight column:", weight_col))
-  }
-  
-  # Convert start/end dates
-  if (!is.null(start_date)) start_date <- as.Date(start_date)
-  if (!is.null(end_date)) end_date <- as.Date(end_date)
-  all_dates <- sort(unique(carcasses_sf$date))
-  if (is.null(start_date)) start_date <- min(all_dates)
-  if (is.null(end_date)) end_date <- max(all_dates)
-  date_seq <- seq(start_date, end_date, by = "day")
-  
-  # Build bbox polygon
-  if (is.numeric(bbox) && length(bbox) == 4) {
-    bbox_poly <- st_as_sfc(st_bbox(c(xmin = bbox[1], ymin = bbox[2], xmax = bbox[3], ymax = bbox[4]),
-                                   crs = st_crs(carcasses_sf)))
-  } else {
-    bbox_poly <- st_as_sfc(st_bbox(bbox))
-    bbox_poly <- st_transform(bbox_poly, st_crs(carcasses_sf))
-  }
-  
-  # Create grid and centroids
-  grid <- st_make_grid(bbox_poly, cellsize = resolution)
-  grid_sf <- st_sf(grid_id = seq_along(grid), geometry = grid)
-  suppressWarnings({
-    centroids <- st_centroid(grid_sf)
-  })
-  grid_vect <- vect(grid_sf)
-  r_template <- rast(grid_vect, resolution = resolution)
-  
-  # If weighted, fix missing weights
-  if (!is.null(weight_col)) {
-    if (anyNA(carcasses_sf[[weight_col]])) {
-      mean_weight <- mean(carcasses_sf[[weight_col]], na.rm = TRUE)
-      carcasses_sf[[weight_col]][is.na(carcasses_sf[[weight_col]])] <- mean_weight
-    }
-  }
-  
-  dist_stack <- rast()
-  empty_days <- c()
-  
-  for (current_date in date_seq) {
-    current_date <- as.Date(current_date)
-    
-    if (is.null(weight_col)) {
-      # Unweighted version: select active carcasses within active_days window
-      if (is.null(active_days)) stop("active_days must be set if weight_col=NULL")
-      active_window_start <- current_date - (active_days - 1)
-      active_carcasses <- carcasses_sf %>%
-        filter(date >= active_window_start & date <= current_date)
-      
-      if (nrow(active_carcasses) == 0) {
-        # Assign max diagonal distance
-        bbox_coords <- st_bbox(bbox_poly)
-        bbox_diagonal <- sqrt((bbox_coords["xmax"] - bbox_coords["xmin"])^2 +
-                                (bbox_coords["ymax"] - bbox_coords["ymin"])^2)
-        r <- setValues(r_template, bbox_diagonal)
-      } else {
-        dist_matrix <- st_distance(centroids, active_carcasses)
-        dist_matrix_mat <- as.numeric(dist_matrix)
-        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
-        
-        if (is.finite(visibility_radius)) {
-          # Mask distances beyond visibility radius
-          dist_matrix_mat[dist_matrix_mat > visibility_radius] <- NA
-          mean_distances <- apply(dist_matrix_mat, 1, function(x) {
-            if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
-          })
-          # Replace NAs by max at the end
-        } else {
-          mean_distances <- apply(dist_matrix_mat, 1, mean)
-        }
-        
-        grid_sf$mean_dist <- mean_distances
-        grid_vect <- vect(grid_sf)
-        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = mean)
-      }
-    } else {
-      # Weighted version
-      decay_df <- carcasses_sf %>%
-        mutate(days_elapsed = as.numeric(current_date - .data[["date"]])) %>%
-        filter(!is.na(.data[[weight_col]]), days_elapsed >= 0) %>%
-        mutate(
-          decayed_weight = .data[[weight_col]] * exp(-decay_rate * days_elapsed),
-          active = decayed_weight >= min_weight
-        ) %>%
-        filter(active)
-      
-      if (nrow(decay_df) == 0) {
-        r <- setValues(r_template, NA)
-        empty_days <- c(empty_days, current_date)
-      } else {
-        dist_matrix <- st_distance(centroids, decay_df)
-        dist_matrix_mat <- as.numeric(dist_matrix)
-        dist_matrix_mat <- matrix(dist_matrix_mat, nrow = nrow(centroids))
-        
-        weight_matrix <- matrix(rep(decay_df$decayed_weight, each = nrow(centroids)),
-                                nrow = nrow(centroids))
-        
-        if (is.finite(visibility_radius)) {
-          in_range <- dist_matrix_mat <= visibility_radius
-          weight_matrix[!in_range] <- 0
-          dist_matrix_mat[!in_range] <- NA
-        }
-        
-        weighted_dists <- (dist_matrix_mat ^ distance_power) * weight_matrix
-        sum_weights <- rowSums(weight_matrix, na.rm = TRUE)
-        
-        weighted_mean_dist <- rowSums(weighted_dists, na.rm = TRUE) / sum_weights
-        weighted_mean_dist[sum_weights == 0] <- NA
-        
-        grid_sf$mean_dist <- weighted_mean_dist
-        grid_vect <- vect(grid_sf)
-        r <- rasterize(grid_vect, r_template, field = "mean_dist", fun = NULL)
-      }
-    }
-    
-    names(r) <- format(current_date, "%Y-%m-%d")
-    dist_stack <- c(dist_stack, r)
-  }
-  
-  # Replace NA pixels with global max distance across all layers
-  if (nlyr(dist_stack) == 0) stop("No layers were created.")
-  
-  global_max <- max(global(dist_stack, fun = "max", na.rm = TRUE)[[1]], na.rm = TRUE)
-  dist_stack[is.na(dist_stack)] <- global_max
-  
-  # Attach metadata
-  attr(dist_stack, "empty_days") <- empty_days
-  attr(dist_stack, "weight_col") <- weight_col
-  attr(dist_stack, "visibility_radius") <- visibility_radius
-  
-  return(dist_stack)
-}
-
-get_pngs <- function(rasterstack){
-  dates <- names(rasterstack)
-  
-  # Compute global min and max for color scale
-  global_min <- min(values(rasterstack), na.rm = TRUE)
-  global_max <- max(values(rasterstack), na.rm = TRUE)
-  
-  # Temporary list to store frame file paths
-  png_files <- character(nlyr(rasterstack))
-  
-  # Loop through each raster layer
-  for (i in seq_len(nlyr(rasterstack))) {
-    r <- rasterstack[[i]]
-    date_label <- dates[i]
-    
-    # Convert raster to data frame for ggplot
-    r_df <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
-    colnames(r_df) <- c("x", "y", "value")
-    
-    # Create ggplot
-    p <- ggplot(r_df) +
-      geom_raster(aes(x = x, y = y, fill = value)) +
-      coord_equal() +
-      scale_fill_viridis_c(
-        name = "Avg. Distance (m)",
-        limits = c(global_min, global_max),
-        na.value = "grey90",
-        direction = -1
-      ) +
-      labs(
-        title = paste("Date:", date_label),
-        x = NULL,
-        y = NULL
-      ) +
-      theme_minimal(base_size = 14) +
-      theme(
-        plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
-        legend.position = "right"
-      )
-    
-    # Save to PNG
-    png_file <- tempfile(fileext = ".png")
-    ggsave(png_file, plot = p, width = 6, height = 6, dpi = 150)
-    png_files[i] <- png_file
-  }
-  return(png_files)
-}
-
-get_cell_vals_long <- function(stack){
-  cell_coords <- map(1:(dim(stack)[1]*dim(stack)[2]), ~xyFromCell(stack, .x))
-  pts <- map(cell_coords, ~vect(matrix(.x, ncol = 2), type = "points", crs = crs(stack)))
-  ts <- map(pts, ~terra::extract(stack, .x))
-  values <-  map(ts, ~as_tibble(as.numeric(.x[1, -1])))
-  cell_values_long <- data.table::rbindlist(values, idcol = "cell")
-  coords <- data.table::rbindlist(map(cell_coords, as_tibble), idcol = "cell")
-  cell_values_long <- left_join(cell_values_long, coords, by = "cell") %>%
-    group_by(cell) %>%
-    mutate(date = lubridate::ymd(names(stack))) %>%
-    ungroup()
-  return(cell_values_long)
-}
-
 # Functions for preparing NBDA data ---------------------------------------
 # How to handle seeds:
 # From the NBDA documentation: "demons: an optional binary numeric vector specifying which individuals are trained demonstrators or had otherwise already acquired the target behaviour prior to the start of the diffusion. Length should match the number of rows of assMatrix. e.g. c(0,0,1,0,0,0,1) specifies that individuals 3 and 7 are trained demonstrators."
@@ -1616,8 +1145,10 @@ prepare_nbda_data <- function(gps,
                               identify_seeds = FALSE,
                               seed_time_before = NULL,
                               sighting_time_max_hours = 72,
-                              carcass_data = NULL) {
+                              carcass_data = NULL,
+                              age_ilv = T) {
   
+  gps$year <- lubridate::year(gps$date_il)
   gps$ground_speed <- as.numeric(gps$ground_speed)
   
   carc_id <- unique(gps$carcID)
@@ -1636,8 +1167,8 @@ prepare_nbda_data <- function(gps,
              time_since_carcass <= 0,
              (ground_speed > gps_spd & dist_to_carcass <= ddf) |
                (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
-      distinct(tag_local_identifier) %>%
-      pull(tag_local_identifier) %>%
+      distinct(individual_local_identifier) %>%
+      pull(individual_local_identifier) %>%
       as.character()
   }
   
@@ -1648,7 +1179,7 @@ prepare_nbda_data <- function(gps,
              (ground_speed <= gps_spd & dist_to_carcass <= dds))
   
   first_sightings <- gps_after_in_sight %>%
-    group_by(tag_local_identifier) %>%
+    group_by(individual_local_identifier) %>%
     arrange(time_since_carcass, timestamp) %>%
     slice(1) %>%
     ungroup() %>%
@@ -1656,30 +1187,43 @@ prepare_nbda_data <- function(gps,
   
   if(identify_seeds){
     first_sightings <- first_sightings %>%
-      filter(!(tag_local_identifier %in% seeds))
+      filter(!(individual_local_identifier %in% seeds))
   }
   
-  n_found <- length(unique(first_sightings$tag_local_identifier))
-  n_gps <- length(unique(gps$tag_local_identifier))
+  n_found <- length(unique(first_sightings$individual_local_identifier))
+  n_gps <- length(unique(gps$individual_local_identifier))
   prop_found <- n_found / n_gps
   
-  all_indivs_sorted <- sort(unique(gps$tag_local_identifier)) # NNN fix order here--for some reason, tag_local_identifier is a factor, and some of the levels have spaces on the end, which is causing weird ordering. Needs to be character or numeric.
-  # START HERE WITH REVIEWING CODE! 2025-09-12
+  all_indivs_sorted <- sort(unique(as.character(gps$individual_local_identifier)))
+  
+  if (age_ilv) {
+    year = max(gps$year, na.rm = T)
+    colname <- paste0("age_", year)
+    age <- gps %>%
+      sf::st_drop_geometry() %>%
+      dplyr::filter(!is.na(individual_local_identifier)) %>%
+      dplyr::select(individual_local_identifier, {{colname}}) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(individual_local_identifier = as.character(individual_local_identifier))
+    
+    age_ordered <- age[match(all_indivs_sorted, age$individual_local_identifier),]
+    age_ilv_matrix <- cbind(age_ordered[[colname]])
+  }
   
   oa_indivs <- first_sightings %>%
     arrange(time_since_carcass, timestamp) %>%
-    pull(tag_local_identifier) %>%
+    pull(individual_local_identifier) %>%
     as.character()
   
   oa_nums <- match(oa_indivs, all_indivs_sorted)
   if (length(oa_nums) != length(oa_indivs)) {
     stop("Length of oa vecs does not match")
   }
-  if (length(oa_nums) == length(unique(gps$tag_local_identifier)) && prop_found != 1) {
+  if (length(oa_nums) == length(unique(gps$individual_local_identifier)) && prop_found != 1) {
     stop("All individuals are included in oa_nums, but not all indivs found the carcass. Something's wrong!")
   }
   
-  ami <- seq_along(oa_nums)
+  ami <- seq_along(oa_nums) # for the dynamic networks
   
   # Infer carcass placement timestamp from first row
   if(!is.null(carcass_data)){
@@ -1690,16 +1234,16 @@ prepare_nbda_data <- function(gps,
     first_row <- gps[1, ]
     carcass_placement_time <- first_row$timestamp - dhours(as.numeric(first_row$time_since_carcass))
     carcass_placement_date <- as.Date(carcass_placement_time)
-  }
+  } #NNN change this to incorporate the original records of the carcass instead.
   
   gps_data_cumulative <- map(first_sightings$timestamp, function(ts) {
-    day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts))
-    gps %>% filter(timestamp >= day_start, timestamp <= ts)
+    day_start <- as.POSIXct(paste0(as.Date(ts), " 00:00:00"), tz = tz(ts)) # NNN double check that time zones get treated correctly here--pasting might mess things up. # NNN actually should convert everything to Israel time instead of changing carcasses to UTC, because that way we can use biologically meaningful cutoffs like this one and not have to convert them. 
+    gps %>% dplyr::filter(timestamp >= day_start, timestamp <= ts)
   })
   
   # Dynamic hour-range GPS segments per individual
   gps_data_dynamic_hour_ranges <- list()
-  for (range in n_hours_gps_dynamic) {
+  for (range in n_hours_gps_dynamic) { # c(-720, -24)
     if (length(range) != 2 || range[1] > range[2]) {
       stop("Each element of n_hours_gps_dynamic must be a length-2 numeric vector where the first number <= second.")
     }
@@ -1708,37 +1252,18 @@ prepare_nbda_data <- function(gps,
     start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
     end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
     var_name <- sprintf("gps_data_dynamic_hours_%s_%s", start_label, end_label)
-
+    
     gps_data_list <- map(first_sightings$timestamp, function(ts) {
       start_time <- ts + lubridate::dhours(as.numeric(start_offset))
       end_time <- ts + lubridate::dhours(as.numeric(end_offset))
       gps %>% filter(timestamp >= start_time, timestamp <= end_time)
     })
-
+    
     gps_data_dynamic_hour_ranges[[var_name]] <- gps_data_list
   }
   
-  # Static hour-range GPS segments (shared across individuals)
-  gps_data_static_hour_ranges <- list()
-  for (range in n_hours_gps_static) {
-    if (length(range) != 2 || range[1] > range[2]) {
-      stop("Each element of n_hours_gps_static must be a length-2 numeric vector where the first number <= second.")
-    }
-    start_offset <- range[1]
-    end_offset <- range[2]
-    start_label <- ifelse(start_offset < 0, paste0("n", sprintf("%03d", abs(start_offset))), sprintf("%03d", start_offset))
-    end_label <- ifelse(end_offset < 0, paste0("n", sprintf("%03d", abs(end_offset))), sprintf("%03d", end_offset))
-    var_name <- sprintf("gps_data_static_hours_%s_%s", start_label, end_label)
-    
-    start_time <- carcass_placement_time + dhours(as.numeric(start_offset))
-    end_time <- carcass_placement_time + dhours(as.numeric(end_offset))
-    gps_data <- gps %>% filter(timestamp >= start_time, timestamp <= end_time)
-    
-    gps_data_static_hour_ranges[[var_name]] <- gps_data
-  }
-  
   if(identify_seeds){
-    seeds_vec <- as.numeric(all_indivs_sorted %in% seeds)
+    seeds_vec <- as.numeric(all_indivs_sorted %in% seeds) # we've already created the seeds vector previously; this is just converting it to 0s and 1s, which is what NBDA needs.
   }else{
     seeds_vec <- NULL
   }
@@ -1755,18 +1280,23 @@ prepare_nbda_data <- function(gps,
     oa_nums = oa_nums,
     ami = ami,
     gps_data_cumulative = gps_data_cumulative,
-    #gps_data_sameday = gps_data_sameday,
     seeds_vec = seeds_vec
   )
   
-  final_list <- c(base_list, gps_data_dynamic_hour_ranges, gps_data_static_hour_ranges)
+  if(age_ilv){
+    next_list <- c(base_list, 
+                   "age_ilv_matrix" = list(age_ilv_matrix))
+  }else{next_list <- base_list}
+  
+  final_list <- c(next_list, 
+                  gps_data_dynamic_hour_ranges)
   return(final_list)
 }
 
 
 make_assMatrix <- function(input) {
   # Case 1: Single data frame (static)
-  if (is.data.frame(input)) {
+  if (is.data.frame(input)) { # (bookkeeping--formatting it exactly as NBDA will expect it)
     mat <- as.matrix(input)
     n_indivs <- nrow(mat)
     assMatrix <- array(
@@ -1781,7 +1311,7 @@ make_assMatrix <- function(input) {
     return(assMatrix)
   }
   
-  # Case 2: List
+  # Case 2: List (dynamic)
   if (!is.list(input)) stop("Input must be a data frame or a list of data frames.")
   if (length(input) == 0) stop("Input list is empty.")
   
@@ -1790,7 +1320,7 @@ make_assMatrix <- function(input) {
   rownames_ref <- rownames(input[[1]])
   colnames_ref <- colnames(input[[1]])
   
-  for (i in seq_along(input)) {
+  for (i in seq_along(input)) { # for each network in the dynamic network list
     df <- input[[i]]
     if (!is.data.frame(df)) stop(paste("Element", i, "is not a data frame."))
     if (!all(dim(df) == dims)) stop(paste("Element", i, "has different dimensions."))
@@ -1798,11 +1328,12 @@ make_assMatrix <- function(input) {
     if (!all(colnames(df) == colnames_ref)) stop(paste("Column names mismatch in element", i))
   }
   
-  mat_list <- lapply(input, as.matrix)
+  mat_list <- lapply(input, as.matrix) # convert each element to a matrix
   n_indivs <- dims[1]
   
   if (length(input) == 1) {
-    # Static case: single matrix wrapped in list
+    # Static case: single matrix wrapped in list 
+    # edge case--in case you requested a dynamic network but there was only one individual that ever found the carcass, so you end up with a list of length 1. Will be one level down, as opposed to a top-level dataframe not included in a list (static case from above)
     assMatrix <- array(
       data = mat_list[[1]],
       dim = c(n_indivs, n_indivs, 1),
@@ -1817,7 +1348,7 @@ make_assMatrix <- function(input) {
     n_time <- length(mat_list)
     assMatrix <- array(
       data = unlist(mat_list),
-      dim = c(n_indivs, n_indivs, 1, n_time),
+      dim = c(n_indivs, n_indivs, 1, n_time), # NNN check--why is there a 1 here and what do the dimensions mean?
       dimnames = list(
         rownames_ref,
         colnames_ref,
@@ -1839,7 +1370,7 @@ timeconvert <- function(carcs_list, old_datetime = "datetime", new_datetime = "d
   return(out)
 }
 
-nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_list){
+nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_list, age_ilv = T){
   out <- purrr::map2(.x = list, .y = carcass_data_list, ~{
     prepare_nbda_data(gps = .x,
                       identify_seeds = seeds,
@@ -1848,7 +1379,375 @@ nb_shortcut <- function(list, ddf, dds, gps_spd, stmh, stb, seeds, carcass_data_
                       gps_spd = gps_spd,
                       n_hours_gps_static = list(c(-720, -24)),
                       sighting_time_max_hours = stmh,
-                      carcass_data = .y)
+                      carcass_data = .y,
+                      age_ilv = age_ilv)
   })
   return(out)
+}
+
+# XXX START HERE--THIS IS ANNOYING!!
+remove_periods <- function(ww_file, dataset){
+  toremove <- readxl::read_excel(ww_file, sheet = "periods_to_remove") %>%
+    dplyr::filter(remove_end >= min(dataset$timestamp))
+  if(!(any(toremove$Nili_id %in% dataset$Nili_id))){
+    message("No Nili_ids from the periods_to_remove sheet are present in the dataset. No periods to remove.")
+    return(dataset)
+  }else{
+    toremove_long <- toremove %>%
+      dplyr::mutate(date_il = purrr::map2(remove_start, remove_end, seq, by = "day")) %>%
+      dplyr::select(Nili_id, date_il) %>%
+      tidyr::unnest(date_il) %>% dplyr::mutate(remove = T, date_il = as.Date(date_il))
+    joined <- dplyr::left_join(dataset, toremove_long, by = c("Nili_id", "date_il"))
+    dataset <- joined %>% dplyr::filter(is.na(remove)) %>% dplyr::select(-remove)
+    return(dataset)
+  }
+}
+
+get_roosts <- function(dat, id){
+  roosts <- map(dat, ~vultureUtils::get_roosts_df(df = .x, id = id), 
+                .progress = T)
+  roosts <- roosts %>%
+    map(., ~st_as_sf(.x, crs = "WGS84", 
+                     coords = c("location_long", "location_lat"), 
+                     remove = F), .progress = T)
+  return(roosts)
+}
+
+NEW_get_roosts <- function(dat, id, ts = "timestamp_il", tz = "Israel"){
+  roosts <- purrr::map(dat, ~NEW_get_roosts_df(df = .x, id = id, timestamp = ts, timestamp_tz = tz))
+  roosts <- roosts %>%
+    purrr::map(., ~st_as_sf(.x, crs = "WGS84", 
+                            coords = c("location_long", "location_lat"), 
+                            remove = F), .progress = T)
+  return(roosts)
+}
+
+get_roosting <- function(roosts, id){
+  roosting <- map(roosts, ~{
+    vultureUtils::getRoostEdges(.x, mode = "distance", 
+                                distThreshold = 500,
+                                return = "both", 
+                                latCol = "location_lat", 
+                                longCol = "location_long", 
+                                idCol = id, 
+                                dateCol = "roost_date")
+  }, .progress = T)
+  return(roosting)
+}
+
+NEW_get_roosts_df <- function(df, id = "local_identifier", timestamp = "timestamp", 
+                              x = "location_long", y = "location_lat", ground_speed = "ground_speed", 
+                              speed_units = "m/s", buffer = 1, twilight = 61, morning_hours = c(0:12), 
+                              night_hours = c(13:23), quiet = F,
+                              timestamp_tz = "UTC") 
+{
+  if (!quiet) {
+    cat("\nFinding roosts... this may take a while if your dataset is large.\n")
+    start <- Sys.time()
+  }
+  checkmate::assertDataFrame(df)
+  checkmate::assertCharacter(id, len = 1)
+  checkmate::assertSubset(id, names(df))
+  checkmate::assertCharacter(timestamp, len = 1)
+  checkmate::assertSubset(timestamp, names(df))
+  checkmate::assertCharacter(x, len = 1)
+  checkmate::assertSubset(x, names(df))
+  checkmate::assertCharacter(y, len = 1)
+  checkmate::assertSubset(y, names(df))
+  checkmate::assertCharacter(ground_speed, len = 1)
+  checkmate::assertSubset(ground_speed, names(df))
+  checkmate::assertCharacter(speed_units, len = 1)
+  checkmate::assertSubset(speed_units, c("m/s", "km/h"))
+  checkmate::assertNumeric(buffer, len = 1)
+  checkmate::assertNumeric(twilight, len = 1)
+  checkmate::assertNumeric(morning_hours, upper = 24, lower = 0)
+  checkmate::assertNumeric(night_hours, upper = 24, lower = 0)
+  checkmate::assertNumeric(df[[x]])
+  checkmate::assertNumeric(df[[y]])
+  checkmate::assertNumeric(df[[ground_speed]])
+  if ("sf" %in% class(df)) {
+    df <- df %>% sf::st_drop_geometry()
+  }
+  twilight_secs <- twilight * 60
+  if (speed_units == "km/h") {
+    df <- df %>% dplyr::mutate(`:=`({
+      {
+        ground_speed
+      }
+    }, round(.data[[ground_speed]]/3.6, 3)))
+  }
+  
+  # XXX--this is bad because it assumes a particular format, but whatever.
+  df[[timestamp]] <- as.POSIXct(df[[timestamp]], format = "%Y-%m-%d %H:%M:%S", 
+                                tz = timestamp_tz)
+  
+  if (sum(is.na(df[[timestamp]])) > 0) {
+    stop("Timestamp needs to be defined as.POSIXct (%Y-%m-%d %H:%M:%S)")
+  }
+  df$date <- as.Date(df[[timestamp]], tz = timestamp_tz) # this is going to be the date in the specified/local time zone
+  indivs <- df %>% dplyr::group_by(.data[[id]]) %>% dplyr::group_split(.keep = T)
+  roosts <- purrr::map(indivs, ~{
+    temp.id <- unique(.x[[id]]) 
+    id.df <- .x %>% dplyr::group_by(date) %>% 
+      dplyr::arrange({{timestamp}}) %>%
+      dplyr::mutate(row_id = dplyr::case_when(dplyr::row_number() == 
+                                                1 ~ "first", dplyr::row_number() == max(dplyr::row_number()) ~ 
+                                                "last"), hour = lubridate::hour(.data[[timestamp]])) %>% 
+      dplyr::filter(row_id %in% c("first", "last")) %>% # only including the first and last point per date
+      dplyr::ungroup() %>% 
+      dplyr::mutate(day_diff = round(difftime(dplyr::lead(date), date, units = "days")))
+    
+    matrix <- as.matrix(id.df[, c(x, y)]) # matrix of locations
+    leadMatrix <- as.matrix(cbind(dplyr::lead(id.df[[x]]), 
+                                  dplyr::lead(id.df[[y]]))) # matrix of locations for the next point
+    distances <- geosphere::distGeo(p1 = matrix, p2 = leadMatrix) * 
+      0.001 %>% round(., 2) # getting the distance between the first and last point, which ends up being 0 because the values are really small and we're rounding to 2 digits
+    id.df$dist_km <- distances
+    id.df$dist_km[id.df$day_diff != 1] <- NA # set to NA if this point is on the same day as the following point or if it's more than 1 day different
+    
+    data <- id.df %>% dplyr::select(date, "lat" = {{y}}, "lon" = {{x}}) %>% as.data.frame() # the line after this was unnecessarily re-creating the date column so I fixed it.
+    # data <- data.frame(date = as.Date(id.df[[timestamp]], tz = timestamp_tz), 
+    #                    lat = id.df[[y]], lon = id.df[[x]]) 
+    id.df$sunrise <- suncalc::getSunlightTimes(data = data, 
+                                               keep = c("sunrise"), tz = timestamp_tz)$sunrise
+    id.df$sunset <- suncalc::getSunlightTimes(data = data, 
+                                              keep = c("sunset"), tz = timestamp_tz)$sunset
+    id.df$sunrise_twilight <- id.df$sunrise + twilight_secs
+    id.df$sunset_twilight <- id.df$sunset - twilight_secs
+    id.df <- id.df %>% dplyr::mutate(daylight = ifelse(.data[[timestamp]] >= 
+                                                         sunrise_twilight & .data[[timestamp]] <= sunset_twilight, 
+                                                       "day", "night"))
+    id.df <- id.df %>% 
+      dplyr::mutate(is_roost = dplyr::case_when(row_id == "last" & daylight == "night" & hour %in% 
+                                                  night_hours & ({{ground_speed}} <= 4 | is.na({{ground_speed}})) ~ 1, 
+                                                row_id == "first" & daylight == "night" & 
+                                                  hour %in% morning_hours & ({{ground_speed}} <= 4 | is.na({{ground_speed}})) ~ 1, 
+                                                dist_km <= buffer ~ 1), # because of the NA insertion that we did earlier, this effectively means "if the point is NOT on the same day as the next point, and it's <= 1km from the following morning's point, then call it a roost"
+                    roost_date = dplyr::case_when(is_roost == 1 & row_id == "last" ~ date, 
+                                                  is_roost == 1 & row_id == "first" ~ date-days(1))#,
+                    # roost_date = as.Date(roost_date) # why was this necessary? This should already be a date. And this function is dangerous because it puts it back to UTC.
+      )
+    temp.id.roosts <- dplyr::filter(id.df, is_roost == 1)
+    temp.id.roosts <- temp.id.roosts %>% dplyr::group_by(roost_date) %>% 
+      dplyr::arrange({
+        {
+          timestamp
+        }
+      }) %>% dplyr::filter(dplyr::row_number() == 1) %>%  # if there are multiple roosts per roost date, take the first one
+      dplyr::ungroup() %>% dplyr::select(-c("row_id", 
+                                            "hour"))
+    temp.id.roosts <- temp.id.roosts %>% dplyr::select({
+      {
+        id
+      }
+    }, date, roost_date, sunrise, sunset, sunrise_twilight, 
+    sunset_twilight, daylight, is_roost, location_lat, 
+    location_long)
+    return(temp.id.roosts)
+  }) %>% purrr::list_rbind()
+  if (!quiet) {
+    end <- Sys.time()
+    duration <- difftime(end, start, units = "secs")
+    cat(paste0("Roost computation completed in ", duration, 
+               " seconds."))
+  }
+  roosts <- roosts %>% dplyr::select({
+    {
+      id
+    }
+  }, date, roost_date, sunrise, sunset, sunrise_twilight, sunset_twilight, 
+  daylight, is_roost, location_lat, location_long)
+  return(roosts)
+}
+
+# tar_load(stn_gps_forroosts)
+# test <- stn_gps_forroosts[[1]]
+# glimpse(test)
+# newroosts_test <- NEW_get_roosts_df(test, id = "individual_local_identifier", timestamp = "timestamp_il", x = "location_long", y = "location_lat", timestamp_tz = "Israel")
+# oldroosts_test <- get_roosts_df(test, id = "individual_local_identifier")
+# dim(newroosts_test)
+# dim(oldroosts_test)
+# new <- sf::st_as_sf(newroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
+# old <- sf::st_as_sf(oldroosts_test, coords = c("location_long", "location_lat"), crs = "WGS84")
+# mapview(new, col.regions = "blue")+ mapview(old, col.regions = "red")
+
+fix_names_ages <- function(gps_combined, ww_file){
+  ww <- read_excel(ww_file, sheet = "all gps tags")
+  # pull out just the names columns, nothing else, and remove any duplicates
+  ww_tojoin <- ww %>% dplyr::select(Nili_id, Movebank_id, birth_year) %>% distinct() 
+  
+  # Prepare for join: are there any individuals in the `local_identifier` column of `joined0` that don't appear in the `Movebank_id` column of `ww_tojoin`?
+  problems <- gps_combined %>% filter(!(individual_local_identifier %in% ww_tojoin$Movebank_id)) %>% pull(individual_local_identifier) %>% unique()
+  
+  # problems # check this against the who's who and try to make changes. The only problem is E60w.
+  out <- gps_combined %>%
+    left_join(ww_tojoin, by = c("individual_local_identifier" = "Movebank_id"))
+  
+  out <- out %>%
+    mutate(Nili_id = case_when(is.na(Nili_id) & individual_local_identifier == "E60w" ~ "gili", .default = Nili_id),
+           birth_year = case_when(individual_local_identifier == "E60w" ~ ww$birth_year[ww$Nili_id == "gili"], .default = birth_year))
+  
+  out <- out %>%
+    mutate(age_2022 = 2022-birth_year,
+           age_2023 = 2023-birth_year,
+           age_2024 = 2024-birth_year)
+  
+  return(out)
+}
+
+get_leftroost <- function(ordered_df, threshold){
+  checkmate::assert_data_frame(ordered_df)
+  checkmate::assert_subset("in_a_roost", names(ordered_df))
+  checkmate::assert_numeric(threshold)
+  n <- nrow(ordered_df)
+  rle_obj <- rle(as.numeric(ordered_df$in_a_roost))
+  first_seq_out <- min(which(rle_obj$lengths >= threshold & rle_obj$values == 0))
+  if(!is.infinite(first_seq_out)){
+    first_point_out <- sum(rle_obj$lengths[1:(first_seq_out-1)])+1
+    if(first_point_out > n){
+      first_point_out <- NA
+    }
+  }else{
+    first_point_out <- NA
+  }
+  return(first_point_out)
+}
+
+get_trajectories_sync_pair <- function(sync, trajs){
+  outs <- vector(mode = "list", length = nrow(sync))
+  for(i in 1:nrow(sync)){
+    pair <- unlist(sync[i, c("ID1", "ID2")])
+    date <- sync$date_il[i]
+    trajs_pair <- dplyr::filter(trajs, individual_local_identifier %in% pair & date_il == date)
+
+    outs[[i]] <- trajs_pair %>%
+      dplyr::group_by(timestamp_il) %>%
+      dplyr::filter(n() == 2) %>%
+      dplyr::group_modify(~ {
+        tibble(
+          id1 = .x$individual_local_identifier[1],
+          id2 = .x$individual_local_identifier[2],
+          flight1 = .x$flight[1],
+          flight2 = .x$flight[2],
+          distance_m = as.numeric(sf::st_distance(.x$geometry[1],
+                                              .x$geometry[2]))
+        )
+      }) %>%
+      ungroup()
+   cat("done with ", i, "/", nrow(sync), "\n")
+  }
+  return(outs)
+}
+
+get_plot_data <- function(event_data){
+  out <- event_data %>%
+    filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+    group_by(trial) %>%
+    arrange(time, .by_group = TRUE) %>%
+    mutate(
+      cum_prop = row_number() / n(),
+      type = "observed"
+    ) %>%
+    select(trial, time, cum_prop, type) %>%
+    ungroup()
+  
+  # add in 0,0 starting point
+  plot_data_obs <- bind_rows(
+    out,
+    out %>%
+      distinct(trial) %>%
+      mutate(time = 0, cum_prop = 0, type = "observed")
+  ) %>%
+    arrange(trial, time)
+  return(plot_data_obs)
+}
+get_plot_data_ppc <- function(fit, data_list){
+  draws_df <- as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = F))
+  ppc_long <- draws_df %>%
+    select(starts_with("acquisition_time[")) %>%
+    pivot_longer(
+      cols = everything(),
+      names_to = c("trial", "ind"),
+      names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+      values_to = "time"
+    ) %>%
+    mutate(
+      trial = as.integer(trial),
+      ind = as.integer(ind),
+      draw = rep(1:(nrow(draws_df)), 
+                 each = length(unique(.$trial)) * length(unique(.$ind)))
+    )
+  # thin for plotting
+  sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+  ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+  
+  # build cumulative curves per draw
+  plot_data_ppc <- ppc_long %>%
+    group_by(draw, trial, time) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(draw, trial) %>%
+    arrange(time) %>%
+    mutate(cum_prop = cumsum(n) / data_list$Q)
+  
+  # add in 0,0 starting point
+  out <- bind_rows(
+    plot_data_ppc,
+    plot_data_ppc %>%
+      distinct(trial, draw) %>%
+      mutate(time = 0, cum_prop = 0, type = "ppc")
+  ) %>%
+    arrange(trial, time)
+  return(out)
+}
+
+get_seeds <- function(gps, ddf, dds, gps_spd){
+  gps %>%
+    filter(time_since_carcass >= -time_window,
+           time_since_carcass <= 0,
+           (ground_speed > gps_spd & dist_to_carcass <= ddf) |
+             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
+    distinct(individual_local_identifier) %>%
+    pull(individual_local_identifier) %>%
+    as.character()
+}
+
+get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
+  first_sightings <- gps %>%
+    filter(time_since_carcass >= 0 & time_since_carcass <= stmh) %>%
+    filter((ground_speed > gps_spd & dist_to_carcass <= ddf) |
+             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
+    group_by(individual_local_identifier) %>%
+    arrange(time_since_carcass, timestamp) %>%
+    slice(1) %>%
+    ungroup() %>%
+    arrange(time_since_carcass) %>%
+    filter(!(individual_local_identifier %in% seeds))
+  return(first_sightings)
+}
+
+format_event_data <- function(first_sightings, seeds, all_indivs_sorted){
+  event_data <- first_sightings %>%
+    st_drop_geometry() %>%
+    dplyr::mutate(trial = carc_id, t_end = max(timestamp_il)) %>%
+    dplyr::select(individual_local_identifier, trial, time_since_carcass, t_end) %>%
+    mutate(time = as.numeric(time_since_carcass, units = "secs")) %>%
+    rename("id" = individual_local_identifier) %>%
+    mutate(t_end = max(time)) %>%
+    select(id, trial, time, t_end)
+  
+  #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
+  # add the seeds back in (pre-trained demonstrators)
+  event_data <- bind_rows(data.frame(id = seeds, trial = carc_id, t_end = max(event_data$time), time = 0),
+                          event_data)
+  
+  #If an individual never learned during the observation period, set its value tend+1. These will be treated as right-censored individuals in the likelihood calculation.
+  # okay so for these, we need to figure out if there are any individuals in the gps dataset that don't appear in the first sightings.
+  never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
+  t_end <- event_data$t_end[1]
+  event_data <- bind_rows(event_data,
+                          data.frame(id = never_learned, trial = carc_id, t_end = t_end, time = t_end + 1)) %>%
+    arrange(time, id) %>%
+    mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
+  
+  return(event_data)
 }

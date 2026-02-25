@@ -113,8 +113,8 @@ for(i in 1:length(cids_stn)){
   plots_stn[[i]] <- plt
 }
 names(plots_stn) <- cids_stn
-write_rds(plots_stn, file = here("data/plots_stn.RDS"))
-plots_stn <- readRDS(here("data/plots_stn.RDS"))
+write_rds(plots_stn, file = here("data/created/arrival_plots/plots_stn.RDS"))
+plots_stn <- readRDS(here("data/created/arrival_plots/plots_stn.RDS"))
 
 plots_wild_valid <- vector(mode = "list", length = length(cids_wild_valid))
 for(i in 1:length(cids_wild_valid)){
@@ -135,8 +135,8 @@ for(i in 1:length(cids_wild_valid)){
 }
 
 names(plots_wild_valid) <- cids_wild_valid
-write_rds(plots_wild_valid, file = here("data/plots_wild_valid.RDS"))
-plots_wild_valid <- readRDS(here("data/plots_wild_valid.RDS"))
+write_rds(plots_wild_valid, file = here("data/created/arrival_plots/plots_wild_valid.RDS"))
+plots_wild_valid <- readRDS(here("data/created/arrival_plots/plots_wild_valid.RDS"))
 
 stats <- all_gps_data %>%
   arrange(timestamp) %>%
@@ -182,3 +182,7 @@ plots_stn[[39]]
 plots_wild_valid[[1]] # a lot of peaks here just as a matter of course--does this indicate that the carcass was there, or just that this is a common place to fly over and we need to do a comparison with a non-carcass area?
 
 # For the purposes of just the wild ones alone, let's back up 24 hours. Which means I need to add 24 hours onto the beginning of the gps data [edit 7/20: added 30 days to the beginning of each year's data for the sake of being able to get networks for NBDA, so that's all well and good.]
+
+wild_carcasses <- wild_carcasses %>%
+  mutate(year = factor(year))
+mapview(wild_carcasses, zcol = "year")
