@@ -1700,13 +1700,12 @@ get_plot_data_ppc <- function(fit, data_list){
   return(out)
 }
 
-get_seeds <- function(gps, ddf, dds, gps_spd){
+get_seeds <- function(gps, ddf, dds, gps_spd, time_col){
   gps %>%
-    filter(time_since_carcass >= -time_window,
-           time_since_carcass <= 0,
-           (ground_speed > gps_spd & dist_to_carcass <= ddf) |
-             (ground_speed <= gps_spd & dist_to_carcass <= dds)) %>%
-    distinct(individual_local_identifier) %>%
+    filter(.data[[time_col]] >= -time_window &
+           .data[[time_col]] <= 0 & 
+           ((ground_speed > gps_spd & dist_to_carcass <= ddf) |
+             (ground_speed <= gps_spd & dist_to_carcass <= dds))) %>%
     pull(individual_local_identifier) %>%
     as.character()
 }
@@ -1725,12 +1724,12 @@ get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
   return(first_sightings)
 }
 
-format_event_data <- function(first_sightings, seeds, all_indivs_sorted){
+format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_col = "daytime_since_carcass"){
   event_data <- first_sightings %>%
     st_drop_geometry() %>%
-    dplyr::mutate(trial = carc_id, t_end = max(timestamp_il)) %>%
-    dplyr::select(individual_local_identifier, trial, time_since_carcass, t_end) %>%
-    mutate(time = as.numeric(time_since_carcass, units = "secs")) %>%
+    dplyr::mutate(trial = carc_id) %>%
+    dplyr::select(individual_local_identifier, trial, all_of(time_col)) %>%
+    mutate(time = as.numeric(.data[[time_col]])*60*60) %>%
     rename("id" = individual_local_identifier) %>%
     mutate(t_end = max(time)) %>%
     select(id, trial, time, t_end)
@@ -1745,7 +1744,10 @@ format_event_data <- function(first_sightings, seeds, all_indivs_sorted){
   never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
   t_end <- event_data$t_end[1]
   event_data <- bind_rows(event_data,
-                          data.frame(id = never_learned, trial = carc_id, t_end = t_end, time = t_end + 1)) %>%
+                          data.frame(id = never_learned, 
+                                     trial = carc_id, 
+                                     t_end = t_end, 
+                                     time = t_end + 1)) %>%
     arrange(time, id) %>%
     mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
   

@@ -30,8 +30,7 @@ gps <- left_join(gps, suntimes)
 test_daylight <- gps %>% filter(timestamp_il >= sunrise & timestamp_il <= sunset)
 # table(gps$daylight)
 # table(test_daylight$daylight) # sweet, we only have daylight, and it's the same number as before, which means this worked.
-gps <- test_daylight %>%
-  filter(time_since_carcass >= 0)
+gps <- test_daylight
 
 night_df <- suntimes %>%
   filter(date_il >= lubridate::date(event_time)) %>% # IMPORTANT!! only stuff since the carcass date; otherwise these numbers will be wrong.
@@ -43,7 +42,8 @@ night_df <- suntimes %>%
 
 gps <- gps %>%
   left_join(select(night_df, date_il, cumul_night_hrs), by = "date_il") %>%
-  mutate(daytime_since_carcass = as.numeric(time_since_carcass)-cumul_night_hrs) %>%
+  mutate(daytime_since_carcass = case_when(time_since_carcass >= 0 ~ as.numeric(time_since_carcass)-cumul_night_hrs,
+                                           .default = NA)) %>%
   arrange(timestamp_il)
 
 gps %>%
@@ -59,13 +59,11 @@ gps %>%
   scale_color_manual(name = "Type", values = c("dodgerblue2", "black"))+
   labs(y = "Hours since carcass", x = "Time", title = "Two ways to measure time since carcass")+
   NULL
-  
-# XXX START HERE--MAKE THIS INTO A FUNCTION, THEN RE-RUN MODELS WITH NEW EVENT TIMES
-  
-  
+
 carc_id <- carc$carcID
 gps$year <- lubridate::year(gps$date_il)
 gps$ground_speed <- as.numeric(gps$ground_speed)
+gps$time_since_carcass <- as.numeric(gps$time_since_carcass)
 
 # Identify seed individuals if needed
 tar_load(stb_mins) # number of minutes before that is defined as seeds
@@ -75,25 +73,22 @@ stb_mins # 30 mins
 seeds <- character(0)
 time_window <- stb_mins / 60
 
-seeds <- get_seeds(gps, ddf, dds, gps_spd)
+seeds <- get_seeds(gps, ddf, dds, gps_spd, time_col = "time_since_carcass") # still using time_since_carcass since it goes back farther than daytime_since_carcass.
 seeds # these are the names of the seed individuals
 
-# Adjust times to remove nights
-
-
 # Get first sightings
-first_sightings <- get_first_sightings(gps, sighting_time_max_hours, gps_spd, ddf, dds, seeds)
-
-
 all_indivs_sorted <- sort(unique(as.character(gps$individual_local_identifier)))
 
+gps_diffusion <- gps %>% filter(time_since_carcass >= 0)
+first_sightings <- get_first_sightings(gps_diffusion, sighting_time_max_hours, gps_spd, ddf, dds, seeds)
+
 # Now we have the event data; time to format it the way that STbayes needs.
-event_data <- format_event_data(first_sightings, seeds, all_indivs_sorted)
+event_data <- format_event_data(first_sightings, seeds, all_indivs_sorted, time_col = "daytime_since_carcass")
 tar_load(hours_after_carcass)
 
-gps_fornetwork <- gps %>%
+gps_fornetwork <- gps_diffusion %>%
   filter(timestamp_il %in% carc$date:(carc$date + lubridate::hours(hours_after_carcass))) %>%
-  mutate(time = as.numeric(time_since_carcass, units = "secs")) %>% # this will now correspond to the numeric times in test_event_data.
+  mutate(time = as.numeric(daytime_since_carcass)*60*60) %>% # this will now correspond to the numeric times in test_event_data.
   filter(time >= 0)
 
 # "if the user’s observation period included 10 events and the dataset does contain censored individuals, they should supply edge weights from 11 networks in total, where time=1 should contain the network representing the period from [t0,te1), time=2 represents [te1,te2), and time=11 represents from [te10,tend]. NB: If there are censored individuals, the end of the observation period should necessarily be larger than the time of the final event (event_data$t_end > max(event_data$time)."
@@ -140,7 +135,7 @@ networks_long <- map(dynamic_networks_fixed, ~{
     mutate(trial = carc_id)
   return(out)
 })
-networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time")
+networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
 write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic.RDS")
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic.RDS")
 
@@ -150,8 +145,8 @@ networks_long_cumul <- map(dynamic_networks_cumul_fixed, ~{
     mutate(trial = carc_id)
   return(out)
 })
-networks_long_dynamic_cumul <- purrr::list_rbind(networks_long_cumul, names_to = "time")
-write_rds(networks_long_dynamic_cumul, file = "data/created/newtorks_long_dynamic_cumul.RDS")
+networks_long_dynamic_cumul <- purrr::list_rbind(networks_long_cumul, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
+write_rds(networks_long_dynamic_cumul, file = "data/created/networks_long_dynamic_cumul.RDS")
 networks_long_dynamic_cumul <- readRDS("data/created/networks_long_dynamic_cumul.RDS")
 
 # Network must contain all individuals
@@ -172,26 +167,26 @@ data_list_cumul <- import_user_STb(event_data = event_data,
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
 model_full_dynamic_cumul <- generate_STb_model(data_list_cumul, gq = T, est_acqTime = T)
 
-# fit_dynamic <- fit_STb(data_list,
-#                     model_full_dynamic,
-#                     parallel_chains = 3,
-#                     chains = 3,
-#                     cores = 3,
-#                     iter = 500,
-#                     refresh=50)
-# STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic")
-fit_dynamic <- readRDS('data/cmdstan_saves/dynamic.rds') 
+fit_dynamic <- fit_STb(data_list,
+                    model_full_dynamic,
+                    parallel_chains = 3,
+                    chains = 3,
+                    cores = 3,
+                    iter = 250,
+                    refresh=50)
+STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight")
+fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight.rds') 
 
-# fit_dynamic_cumul <- fit_STb(data_list_cumul,
-#                        model_full_dynamic_cumul,
-#                        parallel_chains = 3,
-#                        chains = 3,
-#                        cores = 3,
-#                        iter = 500,
-#                        refresh=50)
-# 
-# STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul")
-fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul.rds') 
+fit_dynamic_cumul <- fit_STb(data_list_cumul,
+                       model_full_dynamic_cumul,
+                       parallel_chains = 3,
+                       chains = 3,
+                       cores = 3,
+                       iter = 250,
+                       refresh=50)
+
+STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul_daylight")
+fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul_daylight.rds') 
 
 STb_summary(fit_dynamic, digits = 3)
 STb_summary(fit_dynamic_cumul, digits = 3)
