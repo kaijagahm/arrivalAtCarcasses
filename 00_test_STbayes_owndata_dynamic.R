@@ -9,7 +9,6 @@ library(sf)
 lapply(list.files("R", full.names = TRUE), source) 
 # using just one carcass as an example
 tar_load(gps_spd)
-tar_load(stmh)
 sighting_time_max_hours <- 72
 tar_load(data_cumul_wt_3) # this is a list of nbdaData objects
 nbda_data <- data_cumul_wt_3[[4]] # carcass 4417687, which is the 4th element of the 3rd list of 10, so element 24 of stn_carcs
@@ -46,19 +45,19 @@ gps <- gps %>%
                                            .default = NA)) %>%
   arrange(timestamp_il)
 
-gps %>%
-  st_drop_geometry() %>%
-  mutate(across(contains("_since_carcass"), as.numeric)) %>%
-  pivot_longer(cols = c("time_since_carcass", "daytime_since_carcass"), names_to = "type", values_to = "hours") %>%
-  select(timestamp_il, type, hours) %>%
-  mutate(type = str_remove(type, "_since_carcass")) %>%
-  mutate(type = case_when(type == "time" ~ "real time", .default = type)) %>%
-  ggplot(aes(x = timestamp_il, y = hours, color = type))+
-  geom_point()+
-  theme_minimal()+
-  scale_color_manual(name = "Type", values = c("dodgerblue2", "black"))+
-  labs(y = "Hours since carcass", x = "Time", title = "Two ways to measure time since carcass")+
-  NULL
+# gps %>%
+#   st_drop_geometry() %>%
+#   mutate(across(contains("_since_carcass"), as.numeric)) %>%
+#   pivot_longer(cols = c("time_since_carcass", "daytime_since_carcass"), names_to = "type", values_to = "hours") %>%
+#   select(timestamp_il, type, hours) %>%
+#   mutate(type = str_remove(type, "_since_carcass")) %>%
+#   mutate(type = case_when(type == "time" ~ "real time", .default = type)) %>%
+#   ggplot(aes(x = timestamp_il, y = hours, color = type))+
+#   geom_point()+
+#   theme_minimal()+
+#   scale_color_manual(name = "Type", values = c("dodgerblue2", "black"))+
+#   labs(y = "Hours since carcass", x = "Time", title = "Two ways to measure time since carcass")+
+#   NULL
 
 carc_id <- carc$carcID
 gps$year <- lubridate::year(gps$date_il)
@@ -92,43 +91,60 @@ gps_fornetwork <- gps_diffusion %>%
   filter(time >= 0)
 
 # "if the user’s observation period included 10 events and the dataset does contain censored individuals, they should supply edge weights from 11 networks in total, where time=1 should contain the network representing the period from [t0,te1), time=2 represents [te1,te2), and time=11 represents from [te10,tend]. NB: If there are censored individuals, the end of the observation period should necessarily be larger than the time of the final event (event_data$t_end > max(event_data$time)."
+# So, we have 62 events, which means we should be supplying 63 networks
 # Note: it does NOT say what to do if there are seed individuals... I assume I don't provide a network for those, since they're set to 0, so the first one will just be from 0 through te1? (e1 = event 1)
 # Also, what they're saying about the end of the observation period seems to contradict how they said to encode the censored individuals (i.e. set them to tend+1)
 
 cutpoints <- unique(event_data$time)
-sort(unique(cut(gps_fornetwork$time, breaks = cutpoints))) # these look right!
+bins <- sort(unique(cut(gps_fornetwork$time, breaks = cutpoints))) # these look right!
+length(bins) # 61, which is less than 63, but that must be because some of the bins are missing data.
 gps_fornetwork$network <- cut(gps_fornetwork$time, breaks = cutpoints)
-length(unique(gps_fornetwork$network))
-network_intervals <- sort(unique(gps_fornetwork$network))
+length(levels(gps_fornetwork$network)) # good, there are 63 bins.
+gps_fornetwork <- gps_fornetwork %>%
+  filter(!is.na(network)) # remove NAs (after the diffusion period)
+missing_intervals <- levels(gps_fornetwork$network)[!(levels(gps_fornetwork$network) %in% gps_fornetwork$network)]
+to_add <- data.frame(network = missing_intervals)
+gps_fornetwork <- bind_rows(gps_fornetwork, to_add)
 
 gps_list <- gps_fornetwork %>% arrange(network) %>% group_split(network, .keep = TRUE)
+length(gps_list) == length(levels(bins)) # yay!
 # now we need to split cumulative by day
 # test <- event_data %>% left_join(select(first_sightings, individual_local_identifier, date_il), by = c("id" = "individual_local_identifier"))
 # test$network <- cut(test$time, breaks = cutpoints)
 # gps_fornetwork <- left_join(gps_fornetwork, select(st_drop_geometry(test), date_il, network), by = "network")
-gps_list_cumulative <- gps_fornetwork %>%
-  arrange(date_il, network) %>%
-  group_split(date_il) %>%
-  map(function(day_df) {
-    
-    # get unique group_idx in the order they appear within the day
-    groups <- unique(day_df$network)
-    
-    map(seq_along(groups), function(i) {
-      day_df %>%
-        filter(network %in% groups[1:i])
-    })
-    
-  }) %>%
-  flatten()
+
+# XXX CAN'T FIGURE OUT HOW TO DO THE CUMULATIVE ONE CORRECTLY--COMMENTING OUT FOR NOW (2026-02-27)
+# gps_list_cumulative <- gps_fornetwork %>%
+#   arrange(date_il, network) %>%
+#   group_split(date_il) %>%
+#   map(function(day_df) {
+#     
+#     # get unique group_idx in the order they appear within the day
+#     groups <- unique(day_df$network)
+#     
+#     map(seq_along(groups), function(i) {
+#       day_df %>%
+#         filter(network %in% groups[1:i])
+#     })
+#     
+#   }) %>%
+#   flatten()
 
 tar_load(rp)
+gps_list <- map(gps_list, ~{
+  if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
+    return(.x[0,])
+  }else{
+    return(.x)
+  }
+})
+
 dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
 dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
-
-dynamic_networks_cumul <- map(gps_list_cumulative, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
-dynamic_networks_cumul_fixed <- fix_nets(nets = dynamic_networks_cumul, indivs = all_indivs_sorted)
-
+# 
+# dynamic_networks_cumul <- map(gps_list_cumulative, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# dynamic_networks_cumul_fixed <- fix_nets(nets = dynamic_networks_cumul, indivs = all_indivs_sorted)
+#
 networks_long <- map(dynamic_networks_fixed, ~{
   out <- .x %>% rownames_to_column(var = "focal") %>%
     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
@@ -136,17 +152,17 @@ networks_long <- map(dynamic_networks_fixed, ~{
   return(out)
 })
 networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
-write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic.RDS")
+# write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic.RDS")
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic.RDS")
 
-networks_long_cumul <- map(dynamic_networks_cumul_fixed, ~{
-  out <- .x %>% rownames_to_column(var = "focal") %>%
-    pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
-    mutate(trial = carc_id)
-  return(out)
-})
-networks_long_dynamic_cumul <- purrr::list_rbind(networks_long_cumul, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
-write_rds(networks_long_dynamic_cumul, file = "data/created/networks_long_dynamic_cumul.RDS")
+# networks_long_cumul <- map(dynamic_networks_cumul_fixed, ~{
+#   out <- .x %>% rownames_to_column(var = "focal") %>%
+#     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+#     mutate(trial = carc_id)
+#   return(out)
+# })
+# networks_long_dynamic_cumul <- purrr::list_rbind(networks_long_cumul, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
+# write_rds(networks_long_dynamic_cumul, file = "data/created/networks_long_dynamic_cumul.RDS")
 networks_long_dynamic_cumul <- readRDS("data/created/networks_long_dynamic_cumul.RDS")
 
 # Network must contain all individuals
@@ -154,42 +170,145 @@ networks_long_dynamic_cumul <- readRDS("data/created/networks_long_dynamic_cumul
 all(sort(unique(c(networks_long_dynamic$focal, networks_long_dynamic$other))) == all_indivs_sorted) #TRUE
 all(sort(unique(c(networks_long_dynamic_cumul$focal, networks_long_dynamic_cumul$other))) == all_indivs_sorted) #TRUE
 
+# ILVs --------------------------------------------------------------------
+## AGE
+# This carcass is from 2023, and age is not time-varying within this diffusion
+age_ilv <- gps %>%
+  st_drop_geometry() %>%
+  select(individual_local_identifier, age_2023) %>%
+  distinct() %>%
+  mutate(age_2023_norm = scale(age_2023, center = TRUE, scale = TRUE)[,1]) # both scaling and centering. I'm not 100% sure this is right
+
+## DISTANCE FROM CARCASS
+# "For example, the value of dist_from_resource at time=1 should reflect the average distance of the individual to the resource from the start of the observation period to the first event."
+# In the sample, they assume that the data are normally distributed. Mine aren't.
+dists_dyn <- map(gps_list, ~{
+  step1 <- .x %>% 
+    st_drop_geometry() %>%
+    arrange(individual_local_identifier, time_since_carcass) %>%
+    group_by(individual_local_identifier) %>%
+    summarize(mean_dist_to_carcass = mean(dist_to_carcass))
+  missing <- all_indivs_sorted[!(all_indivs_sorted %in% step1$individual_local_identifier)]
+  missing_df <- data.frame(individual_local_identifier = missing, mean_dist_to_carcass = NA) # keeping the values missing so we can scale, but adding the indivs
+  step2 <- bind_rows(step1, missing_df) %>%
+    filter(!is.na(individual_local_identifier))
+  return(step2)
+}) %>% purrr::list_rbind(names_to = "time") %>%
+  mutate(mean_dist_to_carcass_norm = scale(log(mean_dist_to_carcass), center = T, scale = T)[,1],
+         replace_na(mean_dist_to_carcass_norm, 0)) # distance is log-transformed (to make it more normal) AND scaled/centered. Yuck!
+
+# dists_dyn_cumul <- map(gps_list_cumulative, ~{
+#   .x %>% 
+#     st_drop_geometry() %>%
+#     arrange(individual_local_identifier, time_since_carcass) %>%
+#     group_by(individual_local_identifier) %>%
+#     summarize(mean_dist_to_carcass = mean(dist_to_carcass))
+# }) %>% purrr::list_rbind(names_to = "time") %>%
+#   mutate(mean_dist_to_carcass_norm = scale(mean_dist_to_carcass, center = TRUE, scale = TRUE)[,1])
+
+#Time-varying ILVs
+#Below we add distance from resource as a time-varying ILV. Similar to dynamic networks, these need to be summarized per inter-event interval. For example, the value of dist_from_resource at time=1 should reflect the average distance of the individual to the resource from the start of the observation period to the first event.
+
+## PROPORTION INFORMED ROOSTMATES
+prop_informed <- readRDS("data/created/prop_informed.RDS")
+# now, this is going on a per-date schedule. Need to go on a per-time-period schedule. So I need to match the sightings to dates.
+# the problem is that some of the time periods contain multiple dates:
+dates <- gps_fornetwork %>%
+  mutate(network = factor(network, levels = bins)) %>%
+  st_drop_geometry() %>%
+  select(network, date_il) %>%
+  arrange(network, desc(date_il)) %>%
+  distinct() %>%
+  group_by(network) %>%
+  slice(1) # Using most recent (later) date for now.
+
+informed_list <- map(dates$date_il, ~{
+  prop_informed %>% filter(roost_date == .x-lubridate::days(1))
+})
+informed <- purrr::list_rbind(informed_list, names_to = "time") %>%
+  select(time, "id" = ID1, n_roostmates, prop_informed) %>%
+  mutate(n_roostmates = replace_na(n_roostmates, 0),
+         prop_informed = replace_na(prop_informed, 0)) %>%
+  mutate(prop_informed_norm = scale(prop_informed, scale = T, center = T)[,1])
+
+# informed_list_cumul <- map(dates_list_cumul, ~{
+#   prop_informed %>% filter(roost_date == .x-lubridate::days(1))})
+# informed_cumul <- purrr::list_rbind(informed_list_cumul, names_to = "time") %>%
+#   select(time, "id" = ID1, n_roostmates, prop_informed)
+
+## Combine all the ILVs
+# This is for the constant ILVs (age). We will also need time-varying ILVs separately
+ILV_c <- age_ilv %>%
+  rename("id" = individual_local_identifier,
+         age = age_2023_norm) %>%
+  select(id, age) %>%
+  mutate(age = replace_na(age, 0)) # set unknown ages to the mean
+
+ILV_tv <- dists_dyn %>%
+  select("id" = individual_local_identifier,
+         time, mean_dist_to_carcass_norm) %>%
+  left_join(informed, by = c("id", "time")) %>%
+  mutate(trial = carc_id) %>%
+  select(trial, id, time, mean_dist_to_carcass_norm, prop_informed_norm) %>%
+  mutate(across(c("mean_dist_to_carcass_norm", "prop_informed_norm"), ~replace_na(.x, 0)))
+
+ILV_tv %>% ggplot(aes(x = prop_informed_norm))+geom_histogram()+facet_wrap(~factor(time)) # the distributions of prop_informed_norm are really weird; I wonder if instead I should have this be categorical (most, some, few) or something...
+
+# ILV_tv_cumul <- dists_dyn_cumul %>%
+#   select("id" = individual_local_identifier,
+#          time, mean_dist_to_carcass_norm) %>%
+#   left_join(informed_cumul, by = c("id", "time")) %>%
+#   mutate(trial = carc_id,
+#          across(c("n_roostmates", "prop_informed"), ~replace_na(.x, 0)))
+
+# Data lists --------------------------------------------------------------
+#We need to explicitly tell STbayes which variables are additive (acting independently on intrinsic or social rates) and multiplicative (same effect estimated for intrinsic and social rates). Below, I have specified age as acting independently on the intrinsic and social rate, sex as acting only on the social rate, and weight as a multiplicative effect. Two betas will be estimated for age, and a single beta will be estimated for sex and weight.
+
 data_list <- import_user_STb(event_data = event_data, 
                              networks = networks_long_dynamic,
-                             network_type = "undirected") # this provides really helpful confirmatory checks
-data_list_cumul <- import_user_STb(event_data = event_data, 
-                                   networks = networks_long_dynamic_cumul,
-                                   network_type = "undirected")
+                             network_type = "undirected",
+                             ILV_c = ILV_c,
+                             ILV_tv = ILV_tv,
+                             ILVi = c("age", "mean_dist_to_carcass_norm", "prop_informed_norm"),
+                             ILVs = c("age", "prop_informed_norm")) 
+
+# data_list_cumul <- import_user_STb(event_data = event_data, 
+#                                    networks = networks_long_dynamic_cumul,
+#                                    network_type = "undirected",
+#                                    ILV_c = ILV_c,
+#                                    ILV_tv = ILV_tv_cumul,
+#                                    ILVi = c("age", "mean_dist_to_carcass_norm", "prop_informed"),
+#                                    ILVs = c("age", "prop_informed"))
 
 # "If you were making a multi-network model, you could add as many columns as you want."
 # good to know for later!
 
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
-model_full_dynamic_cumul <- generate_STb_model(data_list_cumul, gq = T, est_acqTime = T)
+# model_full_dynamic_cumul <- generate_STb_model(data_list_cumul, gq = T, est_acqTime = T)
 
 fit_dynamic <- fit_STb(data_list,
-                    model_full_dynamic,
-                    parallel_chains = 3,
-                    chains = 3,
-                    cores = 3,
-                    iter = 500,
-                    refresh=50)
-STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight")
-fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight.rds') 
-
-fit_dynamic_cumul <- fit_STb(data_list_cumul,
-                       model_full_dynamic_cumul,
+                       model_full_dynamic,
                        parallel_chains = 3,
                        chains = 3,
                        cores = 3,
                        iter = 500,
                        refresh=50)
-
-STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul_daylight")
-fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul_daylight.rds') 
+STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs")
+fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs.rds') 
+# 
+# fit_dynamic_cumul <- fit_STb(data_list_cumul,
+#                              model_full_dynamic_cumul,
+#                              parallel_chains = 3,
+#                              chains = 3,
+#                              cores = 3,
+#                              iter = 500,
+#                              refresh=50)
+# 
+# STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul_daylight_ilvs")
+# fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul_daylight_ilvs.rds') 
 
 STb_summary(fit_dynamic, digits = 3)
-STb_summary(fit_dynamic_cumul, digits = 3) # these social transmission percentages are way lower. I wonder what the plots look like.
+STb_summary(fit_dynamic_cumul, digits = 3)
 
 plot_data_obs <- get_plot_data(event_data)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
