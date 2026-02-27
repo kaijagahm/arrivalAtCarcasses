@@ -859,7 +859,7 @@ list(
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
   })),
-  tar_target(missing_intervals, purrr::map(gps_fornetwork, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
+  tar_target(missing_intervals, purrr::map(gps_fornetwork2, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add, purrr::map(missing_intervals, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3, purrr::map2(gps_fornetwork2, to_add, ~{
     if(!is.null(.x) & nrow(.y) > 0){
@@ -889,5 +889,13 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dn6, purrr::map(gps_list_fixed[51:60], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6))
+  tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6)),
+  
+  tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
+  
+  tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
+    out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
+  }), names_to = "time"), trial = .y$carcID[1])))#,
+  
+# ILVs are going to get more complicated here
 )
