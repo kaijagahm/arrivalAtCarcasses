@@ -555,7 +555,7 @@ get_roosts_weighted <- function(dates){
 
 get_fl_weighted <- function(dat, dist, rp, spd){
   if(is.data.frame(dat)){
-    if(nrow(dat) > 0){
+    if(nrow(dat) > 1){
       self_edges <- data.frame(ID1 = sort(unique(dat$individual_local_identifier)),
                                ID2 = sort(unique(dat$individual_local_identifier)),
                                sri = 0)
@@ -586,6 +586,8 @@ get_fl_weighted <- function(dat, dist, rp, spd){
         as.data.frame() # because apparently we can't set row names on a tibble anymore, ugh
       # NNN check igraph to see if there's a function to convert edgelists to adjacency matrices. Maybe simpler and deals with edge cases.
       row.names(out) <- out$ID1 # doing this because it makes indexing easier later
+    }else if(nrow(dat) == 1){
+      out <- "one row only"
     }else{
       out <- "blank"
     }
@@ -1619,7 +1621,7 @@ get_trajectories_sync_pair <- function(sync, trajs){
     pair <- unlist(sync[i, c("ID1", "ID2")])
     date <- sync$date_il[i]
     trajs_pair <- dplyr::filter(trajs, individual_local_identifier %in% pair & date_il == date)
-
+    
     outs[[i]] <- trajs_pair %>%
       dplyr::group_by(timestamp_il) %>%
       dplyr::filter(n() == 2) %>%
@@ -1630,11 +1632,11 @@ get_trajectories_sync_pair <- function(sync, trajs){
           flight1 = .x$flight[1],
           flight2 = .x$flight[2],
           distance_m = as.numeric(sf::st_distance(.x$geometry[1],
-                                              .x$geometry[2]))
+                                                  .x$geometry[2]))
         )
       }) %>%
       ungroup()
-   cat("done with ", i, "/", nrow(sync), "\n")
+    cat("done with ", i, "/", nrow(sync), "\n")
   }
   return(outs)
 }
@@ -1700,14 +1702,16 @@ get_plot_data_ppc <- function(fit, data_list){
   return(out)
 }
 
-get_seeds <- function(gps, ddf, dds, gps_spd, time_col){
+get_seeds <- function(gps, ddf, dds, gps_spd, time_col, stb_mins){
+  time_window_hrs <- stb_mins/60
   gps %>%
-    filter(.data[[time_col]] >= -time_window &
-           .data[[time_col]] <= 0 & 
-           ((ground_speed > gps_spd & dist_to_carcass <= ddf) |
-             (ground_speed <= gps_spd & dist_to_carcass <= dds))) %>%
+    filter(.data[[time_col]] >= -time_window_hrs &
+             .data[[time_col]] <= 0 & 
+             ((ground_speed > gps_spd & dist_to_carcass <= ddf) |
+                (ground_speed <= gps_spd & dist_to_carcass <= dds))) %>%
     pull(individual_local_identifier) %>%
-    as.character()
+    as.character() %>%
+    unique()
 }
 
 get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
@@ -1724,10 +1728,10 @@ get_first_sightings <- function(gps, stmh, gps_spd, ddf, dds, seeds){
   return(first_sightings)
 }
 
-format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_col = "daytime_since_carcass"){
+format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_col = "daytime_since_carcass", carc){
   event_data <- first_sightings %>%
     st_drop_geometry() %>%
-    dplyr::mutate(trial = carc_id) %>%
+    dplyr::mutate(trial = carc$carcID[1]) %>%
     dplyr::select(individual_local_identifier, trial, all_of(time_col)) %>%
     mutate(time = as.numeric(.data[[time_col]])*60*60) %>%
     rename("id" = individual_local_identifier) %>%
@@ -1736,20 +1740,47 @@ format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_co
   
   #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
   # add the seeds back in (pre-trained demonstrators)
-  event_data <- bind_rows(data.frame(id = seeds, trial = carc_id, t_end = max(event_data$time), time = 0),
-                          event_data)
+  if(length(seeds) > 0){
+    event_data <- bind_rows(data.frame(id = seeds, trial = carc$carcID[1], t_end = max(event_data$time), time = 0),
+                            event_data)
+  }
   
   #If an individual never learned during the observation period, set its value tend+1. These will be treated as right-censored individuals in the likelihood calculation.
   # okay so for these, we need to figure out if there are any individuals in the gps dataset that don't appear in the first sightings.
   never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
-  t_end <- event_data$t_end[1]
-  event_data <- bind_rows(event_data,
-                          data.frame(id = never_learned, 
-                                     trial = carc_id, 
-                                     t_end = t_end, 
-                                     time = t_end + 1)) %>%
+  if(length(never_learned) > 0){
+    t_end <- event_data$t_end[1]
+    event_data <- bind_rows(event_data,
+                            data.frame(id = never_learned, 
+                                       trial = carc$carcID[1], 
+                                       t_end = t_end, 
+                                       time = t_end + 1))
+  }
+  event_data <- event_data %>%
     arrange(time, id) %>%
     mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
   
   return(event_data)
+}
+
+get_daylight_hours <- function(gps, carc){
+  suntimes <- suncalc::getSunlightTimes(date = sort(unique(gps$date_il)), lat = 31.434306, lon = 34.991889, keep = c("sunrise", "sunset"), tz = "Israel") %>% 
+    dplyr::select("date_il" = date, sunrise, sunset)
+  
+  gps <- dplyr::left_join(gps, suntimes, by = "date_il")
+  gps <- gps %>% dplyr::filter(timestamp_il >= sunrise & timestamp_il <= sunset)
+  
+  night_df <- suntimes %>%
+    dplyr::filter(date_il >= lubridate::date(carc$date)) %>% # only stuff since the carcass
+    dplyr::mutate(prev_sunset = dplyr::lag(sunset),
+                  night_hrs = as.numeric(difftime(sunrise, prev_sunset, units = "hours")),
+                  cumul_night_hrs = cumsum(ifelse(is.na(night_hrs), 0, night_hrs)) + night_hrs*0,
+                  cumul_night_hrs = tidyr::replace_na(cumul_night_hrs, 0))
+  
+  gps <- gps %>%
+    dplyr::left_join(dplyr::select(night_df, date_il, cumul_night_hrs), by = "date_il") %>%
+    dplyr::mutate(daytime_since_carcass = dplyr::case_when(time_since_carcass >= 0 ~ as.numeric(time_since_carcass)-cumul_night_hrs,
+                                                           .default = NA)) %>%
+    dplyr::arrange(timestamp_il)
+  return(gps)
 }

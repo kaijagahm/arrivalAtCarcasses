@@ -617,12 +617,37 @@ sync_departures_df|stem|fc5b46eef09cb7dd|9473af0d23dd188e|86d381ec7437a7bc|-2091
 sync_departures_list|stem|e9129fa8a484b664|f6e3b1375a649d0e|bfc0872741c38d87|-349634241||t20499.2597231889s|s94817b|94817|rds|local|vector|||0.047||
 roost_mats_same_whichroost|stem|833cde04461c5623|2b48f23a3a853140|cb4736c879a6060f|-1593649894||t20500.9631430988s|s2086149b|2086149|rds|local|vector|||6.625||
 interpolated_10min|stem|4183243479c102b8|5d9977196ccb6f1c|429470e6cf3e5457|595591220||t20500.9870419987s|s65151277b|65151277|rds|local|vector|||223.828||
+interpolated_tidied|stem|b2e66cddf2980a23|4fb39b74ad7316b8|d20cf3c382823994|-1336905500||t20500.9885232501s|s36969139b|36969139|rds|local|vector|||7.156||
+after_departure|stem|3f99034ab6a29232|a376002bdd096cc4|2f4d2805211410e4|-828275600||t20500.9888136362s|s23755747b|23755747|rds|local|vector|||3.594||
+after_departure_interp_only|stem|14187ffc9bf058af|7383e0f6184f252c|555e08b263d9e3f0|1737218327||t20500.9889984581s|s14207106b|14207106|rds|local|vector|||1.015||
+trajectories_sync_list_2022|stem|0e1c82b962fd7808|14317378e5ce1ed1|fe0113f5e96ca5cd|1273850593||t20501.1552634803s|s4291329b|4291329|rds|local|vector|||14358.828||
+trajectories_sync_list_2023|stem|cfc0b198f30d66bb|3773cb9dad60a010|fe0113f5e96ca5cd|-1157925281||t20501.2743931961s|s3137113b|3137113|rds|local|vector|||10286.484||
+trajectories_sync_list_2024|stem|ea344cabf8475536|8d09e598adddaeb7|fe0113f5e96ca5cd|-532278354||t20501.3649643804s|s2064783b|2064783|rds|local|vector|||7819.734||
+trajectories_sync_2022|stem|35c87b5677296ebc|8fd2eafb4532cf79|d98aa4863693acd7|-829857210||t20501.3649997552s|s3701079b|3701079|rds|local|vector|||0.359||
+trajectories_sync_2023|stem|b9564d1e8799c8ea|07fd0906a92d085a|c74fbe0a0f8bfda8|-132757574||t20501.365021277s|s2708652b|2708652|rds|local|vector|||0.156||
+trajectories_sync_2024|stem|ae2d12636310e4ef|5e373f17f6fda64e|0bae0e0fe3d1601b|-1621018311||t20501.3650344576s|s1725505b|1725505|rds|local|vector|||0.109||
+trajectories_sync|stem|482951ba5c04da85|036b571a98e2ffc0|9074a70b628b8837|-1434952517||t20501.3651221133s|s8298288b|8298288|rds|local|vector|||1.516||
+gps_withdaylight|stem|d3619a3fb0a2fc69|f6dc959e5ce6927b|6a5caa86b1066d17|-758782748||t20511.8154308867s|s594932027b|594932027|rds|local|vector|||143.015||
+gps_diffusion|stem|c27f27cff234e633|3ddb0f2f73f5457b|fd463f73668e4ca6|-713443007||t20511.8189473934s|s78460204b|78460204|rds|local|vector|||2.969||
+gps_fornetwork|stem|6ccc414ccbb62c3d|a77d55c7d586e15c|c33febe7b42edd8b|-411160688||t20511.819460936s|s52109853b|52109853|rds|local|vector|||8.5||
+all_indivs_sorted|stem|bde6d900cf11d162|4a55125b2423d844|fd463f73668e4ca6|-1926175322||t20511.8221508558s|s1500b|1500|rds|local|vector|||0.359||
+seeds|stem|1f9fed29eb90127e|977838d1e7d1704d|8fbc167510d03712|1612348557||t20511.8340309994s|s500b|500|rds|local|vector|||1.547||
+first_sightings|stem|10d70cda9a1e28b0|7271308458d555d6|cc07972fded9586b|-334107783||t20511.834295275s|s260419b|260419|rds|local|vector|||11.438||
+missing_intervals|stem|828ee764f1d269b6|dbb474192bef2b44|80a7637b55ae3c55|1624228665||t20511.8343826101s|s53b|53|rds|local|vector|||0||
+to_add|stem|77937a4def0a74ae|153233048b636a40|cf8aa7ef4ea4b0e4|2075596605||t20511.8343874905s|s158b|158|rds|local|vector|||0.015||
+event_data|stem|9fa68527ef346451|254f82699226dd2b|22a22b39540621c3|938148962||t20511.8377850344s|s13711b|13711|rds|local|vector|||2.171|There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. There was 1 warning in `mutate()`. i In argument: `t_end = max(time)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf. no non-missing arguments to max; returning -Inf. There were 2 warnings in `mutate()`. The first warning was: i In argument: `across(c(time, t_end), as.integer)`. Caused by warning: ! NAs introduced by coercion to integer range i Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+cutpoints|stem|69b64b79bc7f3797|72e766cb5f9bb9b2|ae15c5b571ac30ae|-957850335||t20511.837786342s|s4678b|4678|rds|local|vector|||0||
+gps_fornetwork2|stem|db2a7b14fa5546cd|59542c372a6cbdd5|6eeb267c6c4f4fac|1909468971||t20511.8444779338s|s35253675b|35253675|rds|local|vector|||1.735||
+gps_fornetwork3|stem|db2a7b14fa5546cd|80e9f856f2231db1|95d55de7f60debbb|-1953134473||t20511.8497786195s|s35253675b|35253675|rds|local|vector|||0.016||
+gps_list|stem|9a98e68ca74f5010|3ee3b49dbbd586af|aea76ad571f1dffa|-1121732886||t20511.8501272859s|s44274196b|44274196|rds|local|vector|||7.281||
+gps_list_fixed|stem|b94a639d08e4d318|c79513812636369a|04b763c7e7b1efd0|-56761101||t20511.8503927345s|s44274209b|44274209|rds|local|vector|||0.031||
 rotate_data_table|function|8ff0c7c0e298c44a
 convertsf|function|896ad86c2c3887a5
 join_inpa_ornitela|function|0f5e0af9a7c3bf40
 get_model_cis|function|7bf7b23cf6bb4f3a
 get_modelset|function|7a9a489799eb83de
 get_flight|function|b8057d62535b401b
+get_plot_data_ppc|function|64790948f5c5f03e
 update_cis_dfs|function|563b72fb2dfe22f2
 get_new_movement_vars|function|3ee7c964a84f3f05
 bind_cis|function|4268666a8b997418
@@ -671,6 +696,7 @@ get_leftroost|function|ddf31243847ab87c
 find_spatially_connected_points|function|e202ca3ce69d33ff
 get_firsts|function|ad6319a793f06e9d
 get_cc|function|cff31d67764fbb1b
+format_event_data|function|ca4694d8d77c7c4d
 calcSRI_new|function|5407c57074403dbb
 transform_datetimes|function|f544daba49d91f68
 getmodstats|function|06d0b868b595a688
@@ -699,6 +725,7 @@ remove_periods|function|3b70c8a47640a4ca
 compile_areas|function|f51258254a38c148
 exclude_incomplete_bouts|function|285e53585f0e6375
 get_full|function|cdfb0e61819501ac
+get_seeds|function|9d0101c1d3a86a53
 get_firsts_see|function|4739628a9fe2b014
 get_space_use_pca|function|efcffb85f2309281
 theme_abs_2023|function|2f26a37b95ea92c4
@@ -717,6 +744,7 @@ get_space_use|function|86777cbfdd6829f6
 get_lowerlimits|function|cfe2899ca0d355df
 get_has_sightings|function|254f0b6d703309d8
 get_metrics_summary|function|c0528d5a3aa70a6a
+get_plot_data|function|50b15b646b867998
 prepare_times|function|b4d11362c73d7ad7
 get_inpa|function|fa4957082a2b0d54
 getfeeding|function|7cd1850d91dd997b
@@ -736,9 +764,10 @@ get_wild_carcasses|function|03f437cfc609aad1
 flip_devices|function|c3a312a8c104857a
 get_loginObject|function|3d0444bbc27ce24f
 get_graphs|function|9002a3516b133ac1
-get_merged|function|a48afaea911af2eb
 mod_trycatch|function|fd89cff39d467555
+get_merged|function|a48afaea911af2eb
 assign_time_dist|function|bf1fa419675df4c4
+get_daylight_hours|function|752cbee32af4a29d
 get_years|function|b64546004099cfdb
 get_gps_all|function|03274a4cbb66ba7d
 attach_age_sex|function|d5b0d68b5283f64a
@@ -748,6 +777,7 @@ get_gps_forbouts_indivs|function|1215c0967c5a3074
 get_list_element|function|fa3246c603c03305
 std_dists|function|7655cfbbfbae7acb
 get_akde_centroids|function|37a669ba2a6e8bae
+get_first_sightings|function|4639d2c9838f3bdb
 nbdaModSum|function|54f71aa808eb8788
 get_solveprops_list|function|0bcc02b7f83263ed
 get_ilvs_lists|function|dbc5058c170ab71a
@@ -765,19 +795,16 @@ get_metrics_wrapped|function|45149e195e91da01
 get_metrics_wrapped_1season|function|79e5c9c980f51698
 prepare_dataset|function|8c0ebe7fe2c9aeae
 get_clusters_from_data|function|1cb2606df5778ff2
-getEdges_new|function|043cddb7bf06e945
+getEdges_new|function|2d3d42cdceb12eb5
 caldev|function|c5b4f7878dbcfcbf
-get_fl_weighted|function|a5afd2bbb1192bc7
-get_fl_bin|function|cdc445250168c5d9
-get_fl_wt_list|function|fe9d8f7cd4cf7712
-get_fl_bin_list|function|0b66f2d67575a7a7
-interpolated_tidied|stem|b2e66cddf2980a23|4fb39b74ad7316b8|d20cf3c382823994|-1336905500||t20500.9885232501s|s36969139b|36969139|rds|local|vector|||7.156||
-after_departure|stem|3f99034ab6a29232|a376002bdd096cc4|2f4d2805211410e4|-828275600||t20500.9888136362s|s23755747b|23755747|rds|local|vector|||3.594||
-after_departure_interp_only|stem|14187ffc9bf058af|7383e0f6184f252c|555e08b263d9e3f0|1737218327||t20500.9889984581s|s14207106b|14207106|rds|local|vector|||1.015||
-trajectories_sync_list_2022|stem|0e1c82b962fd7808|14317378e5ce1ed1|fe0113f5e96ca5cd|1273850593||t20501.1552634803s|s4291329b|4291329|rds|local|vector|||14358.828||
-trajectories_sync_list_2023|stem|cfc0b198f30d66bb|3773cb9dad60a010|fe0113f5e96ca5cd|-1157925281||t20501.2743931961s|s3137113b|3137113|rds|local|vector|||10286.484||
-trajectories_sync_list_2024|stem|ea344cabf8475536|8d09e598adddaeb7|fe0113f5e96ca5cd|-532278354||t20501.3649643804s|s2064783b|2064783|rds|local|vector|||7819.734||
-trajectories_sync_2022|stem|35c87b5677296ebc|8fd2eafb4532cf79|d98aa4863693acd7|-829857210||t20501.3649997552s|s3701079b|3701079|rds|local|vector|||0.359||
-trajectories_sync_2023|stem|b9564d1e8799c8ea|07fd0906a92d085a|c74fbe0a0f8bfda8|-132757574||t20501.365021277s|s2708652b|2708652|rds|local|vector|||0.156||
-trajectories_sync_2024|stem|ae2d12636310e4ef|5e373f17f6fda64e|0bae0e0fe3d1601b|-1621018311||t20501.3650344576s|s1725505b|1725505|rds|local|vector|||0.109||
-trajectories_sync|stem|482951ba5c04da85|036b571a98e2ffc0|9074a70b628b8837|-1434952517||t20501.3651221133s|s8298288b|8298288|rds|local|vector|||1.516||
+get_fl_weighted|function|ae1fc292919c8978
+get_fl_bin|function|20c01d64143a18d8
+get_fl_wt_list|function|0efe2bb9cd2fdd12
+get_fl_bin_list|function|4628e125dc1bec5a
+dn2|stem|48a0abddc703cae0|049b2e5b02b221a0|e4205d5fd718445e|-482706226||t20511.8762510823s|s122913b|122913|rds|local|vector|||266.172|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dn5|stem|747e9f8624452327|33ad64ce47bb3ecd|e4205d5fd718445e|-2123613402||t20511.8766487046s|s120754b|120754|rds|local|vector|||300.172|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dn1|stem|9acacdafcea50137|fc37868a029b5252|e4205d5fd718445e|708962305||t20511.8779287951s|s196971b|196971|rds|local|vector|||410.813|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dn3|stem|3dd4a8faf04acd1c|204f087750236ef1|e4205d5fd718445e|1255354672||t20511.8786629646s|s219589b|219589|rds|local|vector|||475.094|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dn6|stem|00abddfd5d9980d9|5a883d7f7ead11ea|e4205d5fd718445e|1593157456||t20511.8788029073s|s216481b|216481|rds|local|vector|||486.375|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dn4|stem|25db0d9b7cf283d4|b65e9c9445bc4249|e4205d5fd718445e|1655654401||t20511.8801008904s|s253907b|253907|rds|local|vector|||598.844|After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.. After filtering, no data remains.|
+dynamic_networks|stem|e8ea9fcf929b120f|313dd17aea637333|488a4c3582b7770a|-357886002||t20511.880116794s|s1127637b|1127637|rds|local|vector|||0||
