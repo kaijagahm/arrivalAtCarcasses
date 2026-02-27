@@ -172,7 +172,7 @@ fit_dynamic <- fit_STb(data_list,
                     parallel_chains = 3,
                     chains = 3,
                     cores = 3,
-                    iter = 250,
+                    iter = 500,
                     refresh=50)
 STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight.rds') 
@@ -182,14 +182,14 @@ fit_dynamic_cumul <- fit_STb(data_list_cumul,
                        parallel_chains = 3,
                        chains = 3,
                        cores = 3,
-                       iter = 250,
+                       iter = 500,
                        refresh=50)
 
 STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul_daylight")
 fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul_daylight.rds') 
 
 STb_summary(fit_dynamic, digits = 3)
-STb_summary(fit_dynamic_cumul, digits = 3)
+STb_summary(fit_dynamic_cumul, digits = 3) # these social transmission percentages are way lower. I wonder what the plots look like.
 
 plot_data_obs <- get_plot_data(event_data)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
@@ -204,7 +204,7 @@ ggplot() +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (sequential)") +
-  theme_minimal()
+  theme_minimal() # maybe a marginally better fit?? still not great, though.
 
 ggplot() +
   geom_line(data = plot_data_ppc_cumul, 
@@ -213,4 +213,4 @@ ggplot() +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (cumulative within days)") +
-  theme_minimal()
+  theme_minimal() # this one is the best yet, but it's still pretty far off. We can see that the fits are getting better, and it's definitely better with daylight only vs. night. But the fit starts to get bad basically right after the first day, which really indicates that something is happening at the roosts, I think.
