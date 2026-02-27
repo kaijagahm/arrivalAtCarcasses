@@ -214,3 +214,9 @@ ggplot() +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (cumulative within days)") +
   theme_minimal() # this one is the best yet, but it's still pretty far off. We can see that the fits are getting better, and it's definitely better with daylight only vs. night. But the fit starts to get bad basically right after the first day, which really indicates that something is happening at the roosts, I think.
+
+# XXX 2026-02-26 evening 
+# Next steps:
+# - Find informed status for each individual in the entire dataset over time (I think I already calculated this somewhere?). Figure out where everyone roosted the night before (get roost data). I think I already have this as well. Assign the roost data to roost polygons. Get a data frame with ID, night, informed, and polygon. Calculate, per individuals: number of roostmates, number of informed roostmates, proportion informed roostmates. Optional: Do this again but for a 500m distance instead of polygons.
+# - Add distance to roost as a time-varying ILV. I think this needs to change on the same timescale as the dynamic networks (check that this is the case). Take the dataset, cut for each network. Group by individual and take the centroid of its points (does this make sense?) as well as the starting point.
+# - Add age ILV to the dynamic models too. The static models are useful for testing, but not much else.
