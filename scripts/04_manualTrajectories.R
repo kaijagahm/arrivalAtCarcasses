@@ -15,7 +15,7 @@ tar_load(stations)
 
 # Choose one to test
 carc <- stn_carcs[[24]] # 4417687, 2023-03-22
-carc2 <- stn_carcs[[25]] 
+carc2 <- stn_carcs[[27]] # 4422323, 2023-03-24
 carc3 <- stn_carcs[[26]] 
 
 gps <- stn_gps_30days[[24]] %>% 
@@ -28,7 +28,7 @@ gps <- stn_gps_30days[[24]] %>%
   select(ground_speed, heading, height_above_msl, timestamp, tag_id, individual_id, individual_local_identifier, nick_name, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
   mutate(year = lubridate::year(carc$date))
 
-gps2 <- stn_gps_30days[[25]] %>% 
+gps2 <- stn_gps_30days[[27]] %>% 
   mutate(timestamp_il = lubridate::with_tz(timestamp, tz = 
                                              "Israel")) %>%
   filter(timestamp_il >= carc$datetime_il) %>% # only timestamps after the carcass
@@ -103,6 +103,9 @@ vulture_lines3 <- gps_mt3 %>%
 
 
 all(st_is_valid(vulture_lines)) # check that all are valid
+all(st_is_valid(vulture_lines2)) # check that all are valid
+all(st_is_valid(vulture_lines3)) # check that all are valid
+
 
 # ggplot() +
 #   geom_sf(data = ne_coastline(returnclass = "sf", 50)) +
@@ -178,7 +181,7 @@ sightings3 <- bind_cols(all_indivs3, sighted_dayzero3, sighted_dayone3, sighted_
 # Now time to get roostmates
 tar_load(roosts_stn)
 roosts_test <- roosts_stn[[24]]
-roosts_test2 <- roosts_stn[[25]]
+roosts_test2 <- roosts_stn[[27]]
 roosts_test3 <- roosts_stn[[26]]
 roosts_list <- roosts_test %>% arrange(individual_local_identifier, roost_date) %>% group_split(roost_date)
 roosts_list2 <- roosts_test2 %>% arrange(individual_local_identifier, roost_date) %>% group_split(roost_date)

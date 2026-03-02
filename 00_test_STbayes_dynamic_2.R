@@ -9,17 +9,17 @@ library(sf)
 lapply(list.files("R", full.names = TRUE), source) 
 # using just one carcass as an example
 tar_load(gps_spd)
-sighting_time_max_hours <- 72
+tar_load(hours_after_carcass)
 tar_load(data_cumul_wt_3) # this is a list of nbdaData objects
-nbda_data <- data_cumul_wt_3[[5]] # carcass 4420101, which is the 5th element of the 3rd list of 10, so element 25 of stn_carcs
+nbda_data <- data_cumul_wt_3[[7]] # carcass 4422323 , which is the 7th element of the 3rd list of 10, so element 27 of stn_carcs
 
 tar_load(stn_carcs)
-carc <- stn_carcs[21:30][[5]]
+carc <- stn_carcs[[27]]
 event_time <- carc$datetime_il
 
 # Saving gps data as temp file because it takes too long otherwise.
 # tar_load(stn_gps_30days)
-# gps <- stn_gps_30days[21:30][[5]] # the gps data that we will use for this carcass
+# gps <- stn_gps_30days[[27]] # the gps data that we will use for this carcass
 # write_rds(gps, "data/created/gps_for_STbayes_2.RDS")
 gps <- readRDS("data/created/gps_for_STbayes_2.RDS")
 
@@ -38,13 +38,13 @@ night_df <- suntimes %>%
          cumul_night_hrs = cumsum(ifelse(is.na(night_hrs), 0, night_hrs)) + night_hrs*0,
          cumul_night_hrs = replace_na(cumul_night_hrs, 0))
 
-# XXX START HERE--THIS PART ISN'T WORKING!!
 gps <- gps %>%
   left_join(select(night_df, date_il, cumul_night_hrs), by = "date_il") %>%
   mutate(cumul_night_hrs = replace_na(cumul_night_hrs, 0)) %>% # not sure if this will help but maybe
   mutate(daytime_since_carcass = case_when(time_since_carcass >= 0 ~ as.numeric(time_since_carcass)-cumul_night_hrs,
                                            .default = NA)) %>%
   arrange(timestamp_il)
+table(gps$date_il, gps$cumul_night_hrs) # should show a stepped pattern beginning with the date of the carcass. Looks good.
 
 # gps %>%
 #   st_drop_geometry() %>%
@@ -87,7 +87,7 @@ event_data <- format_event_data(first_sightings, seeds, all_indivs_sorted, time_
 tar_load(hours_after_carcass)
 
 gps_fornetwork <- gps_diffusion %>%
-  filter(timestamp_il %in% carc$date:(carc$date + lubridate::hours(hours_after_carcass))) %>%
+  filter(time_since_carcass >= 0 & time_since_carcass <= as.numeric(hours_after_carcass)) %>%
   mutate(time = as.numeric(daytime_since_carcass)*60*60) %>% # this will now correspond to the numeric times in test_event_data.
   filter(time >= 0)
 
@@ -97,20 +97,26 @@ gps_fornetwork <- gps_diffusion %>%
 # Also, what they're saying about the end of the observation period seems to contradict how they said to encode the censored individuals (i.e. set them to tend+1)
 
 cutpoints <- unique(event_data$time)
+cutpoints <- c(0, cutpoints)
+length(cutpoints) # need 34 cutpoints so we can have 33 bins so we can define 32 events plus censored indivs.
 bins <- sort(unique(cut(gps_fornetwork$time, breaks = cutpoints))) # these look right!
-length(bins) # 61, which is less than 63, but that must be because some of the bins are missing data.
+length(bins) # 32. # XXX GO BACK TO FIRST diffusion AND CHECK THIS TOO!!!
 gps_fornetwork$network <- cut(gps_fornetwork$time, breaks = cutpoints)
-length(levels(gps_fornetwork$network)) # good, there are 63 bins.
+lvls <- levels(gps_fornetwork$network)
+length(lvls) # good, there are 33 bins (corresponding to 32 events plus censored individuals)
 gps_fornetwork <- gps_fornetwork %>%
   filter(!is.na(network)) # remove NAs (after the diffusion period)
 missing_intervals <- levels(gps_fornetwork$network)[!(levels(gps_fornetwork$network) %in% gps_fornetwork$network)]
-to_add <- data.frame(network = missing_intervals)
+to_add <- data.frame(network = missing_intervals, date_il = ) # XXX NEED TO FIGURE OUT A WAY TO ADD A DATE SO THAT WHEN WE LATER SPLIT BY THIS WE DON'T LOSE IT. Yikes this is so buggy. #2026-03-02
 if(nrow(to_add) > 0){
   gps_fornetwork <- bind_rows(gps_fornetwork, to_add)
 }
+gps_fornetwork <- gps_fornetwork %>%
+  mutate(network = factor(network, levels = lvls)) %>%
+  arrange(time_since_carcass)
 
 gps_list <- gps_fornetwork %>% arrange(network) %>% group_split(network, .keep = TRUE)
-length(gps_list) == length(levels(bins)) # yay!
+length(gps_list) == length(lvls) # yay!
 # now we need to split cumulative by day
 # test <- event_data %>% left_join(select(first_sightings, individual_local_identifier, date_il), by = c("id" = "individual_local_identifier"))
 # test$network <- cut(test$time, breaks = cutpoints)
@@ -155,7 +161,7 @@ networks_long <- map(dynamic_networks_fixed, ~{
   return(out)
 })
 networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
-#write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_2.RDS")
+write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_2.RDS")
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_2.RDS")
 
 # networks_long_cumul <- map(dynamic_networks_cumul_fixed, ~{
@@ -198,7 +204,7 @@ dists_dyn <- map(gps_list, ~{
   return(step2)
 }) %>% purrr::list_rbind(names_to = "time") %>%
   mutate(mean_dist_to_carcass_norm = scale(log(mean_dist_to_carcass), center = T, scale = T)[,1],
-         replace_na(mean_dist_to_carcass_norm, 0)) # distance is log-transformed (to make it more normal) AND scaled/centered. Yuck!
+         mean_dist_to_carcass_norm = replace_na(mean_dist_to_carcass_norm, 0)) # distance is log-transformed (to make it more normal) AND scaled/centered. Yuck!
 
 # dists_dyn_cumul <- map(gps_list_cumulative, ~{
 #   .x %>% 
@@ -217,7 +223,7 @@ prop_informed2 <- readRDS("data/created/prop_informed2.RDS")
 # now, this is going on a per-date schedule. Need to go on a per-time-period schedule. So I need to match the sightings to dates.
 # the problem is that some of the time periods contain multiple dates:
 dates <- gps_fornetwork %>%
-  mutate(network = factor(network, levels = bins)) %>%
+  mutate(network = factor(network, levels = lvls)) %>%
   st_drop_geometry() %>%
   select(network, date_il) %>%
   arrange(network, desc(date_il)) %>%
