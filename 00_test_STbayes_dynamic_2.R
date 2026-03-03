@@ -110,8 +110,8 @@ missing_intervals <- levels(gps_fornetwork$network)[!(levels(gps_fornetwork$netw
 # need to add a date for the missing intervals so the later code will work
 missing_intervals_lower <- as.numeric(str_extract(missing_intervals, "(?<=\\()[0-9]+"))
 missing_intervals_upper <- as.numeric(str_extract(missing_intervals, "(?<=\\,)[0-9]+(?=\\])"))
-dates_before <- as.Date(unlist(purrr::map(missing_intervals_lower, ~{ gps_fornetwork %>% filter(time < missing_intervals_lower[i]) %>% arrange(timestamp_il) %>% pull(date_il) %>% max()})))
-dates_after <- as.Date(unlist(purrr::map(missing_intervals_upper, ~{ gps_fornetwork %>% filter(time > missing_intervals_upper[i]) %>% arrange(timestamp_il) %>% pull(date_il) %>% min()})))
+dates_before <- as.Date(unlist(purrr::map(missing_intervals_lower, ~{gps_fornetwork %>% filter(time < .x) %>% arrange(timestamp_il) %>% pull(date_il) %>% max()})))
+dates_after <- as.Date(unlist(purrr::map(missing_intervals_upper, ~{gps_fornetwork %>% filter(time > .x) %>% arrange(timestamp_il) %>% pull(date_il) %>% min()})))
 
 # I think for now I'm just going to take the date before
 to_add <- data.frame(network = missing_intervals, date_il = dates_before) # this is super buggy and i need to return to it!
