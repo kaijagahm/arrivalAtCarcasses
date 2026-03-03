@@ -352,5 +352,3 @@ all3 <- bind_rows(prop_informed3, filler3) %>%
 write_rds(all, file = "data/created/prop_informed.RDS")
 write_rds(all2, file = "data/created/prop_informed2.RDS")
 write_rds(all3, file = "data/created/prop_informed3.RDS")
-
-# XXX START HERE--GO BACK TO THE BAYESIAN SCRIPT

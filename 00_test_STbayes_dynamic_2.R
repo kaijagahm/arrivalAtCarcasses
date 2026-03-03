@@ -314,25 +314,65 @@ fit_dynamic <- fit_STb(data_list,
                        refresh=50)
 STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs2")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs2.rds') 
-# 
-# fit_dynamic_cumul <- fit_STb(data_list_cumul,
-#                              model_full_dynamic_cumul,
-#                              parallel_chains = 3,
-#                              chains = 3,
-#                              cores = 3,
-#                              iter = 500,
-#                              refresh=50)
-# 
-# STb_save(fit_dynamic_cumul, output_dir = "data/cmdstan_saves", name="dynamic_cumul_daylight_ilvs")
-# fit_dynamic_cumul <- readRDS('data/cmdstan_saves/dynamic_cumul_daylight_ilvs.rds') 
 
-STb_summary(fit_dynamic, digits = 3)
-STb_summary(fit_dynamic_cumul, digits = 3)
+model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
+asocial_fit = fit_STb(data_list,
+                      model_asoc,
+                      parallel_chains =3,
+                      chains =3,
+                      cores = 3,
+                      iter = 500,
+                      refresh=50)
+STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc2")
+asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc2.rds') 
+
+loo_output <- STb_compare(fit_dynamic, asocial_fit, method="loo-psis")
+comparison_df <- as.data.frame(loo_output$comparison)
+comparison_df$model <- rownames(comparison_df)
+ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
+  geom_point(size = 3) + #elpd_diff
+  geom_errorbar(aes(ymin = elpd_diff - se_diff, 
+                    ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
+  coord_flip() +
+  labs(x = "Model", y = "ELPD Difference", title = "Model Comparison") +
+  theme_minimal()
+
+# PSIS-LOO is an approximation of LOO, and observations with pareto-k diagnostic values >.7 may indicate that the approximation is unreliable. The function above will warn you if that is the case, and you can visually inspect these diagnostics like so:
+pareto_df = as.data.frame(loo_output$pareto_diagnostics)
+ggplot(pareto_df, aes(x=observation, y=pareto_k, color=model))+
+  geom_point() +
+  scale_color_viridis_d(begin=0.2, end=0.7)+
+  geom_hline(yintercept = 0.7, linetype="dashed", color="orange")+
+  geom_hline(yintercept = 1, linetype="dashed", color="red")+
+  labs(x="Observation", y="Pareto-k value", title="Pareto-k diagnostics")+
+  theme_minimal()
+
+# SUMMARIES
+summ <- STb_summary(fit_dynamic, digits = 3)
+
+summ %>% filter(grepl("beta_", Parameter)) %>%
+  select(Parameter, Median, CI_Lower, CI_Upper) %>%
+  mutate(type = str_extract(Parameter, "ILVs|ILVi"),
+         type = case_when(type == "ILVi" ~ "Effect on intrinsic rate",
+                          type == "ILVs" ~ "Effect on social rate",
+                          .default = type)) %>%
+  mutate(param = str_remove(Parameter, "beta_"),
+         param = str_remove(param, "ILVi_"),
+         param = str_remove(param, "ILVs_"),
+         param = str_remove(param, "_norm")) %>%
+  ggplot(aes(x = param, y = Median))+
+  geom_point()+
+  geom_segment(aes(x = param, xend = param, y = CI_Lower, yend = CI_Upper))+
+  coord_flip()+
+  theme_minimal()+
+  facet_wrap(~type, ncol = 1, scale = "free_y")+
+  geom_hline(aes(yintercept = 0), linetype = 2)+
+  labs(subtitle = "(95% CIs)",
+       title = "Individual-level variables",
+       x = "Parameter")
 
 plot_data_obs <- get_plot_data(event_data)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
-plot_data_ppc_cumul <- get_plot_data_ppc(fit = fit_dynamic_cumul, data_list = data_list_cumul)
-
 
 # plot it
 ggplot() +
@@ -342,19 +382,6 @@ ggplot() +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (sequential)") +
-  theme_minimal() # maybe a marginally better fit?? still not great, though.
+  theme_minimal()
 
-ggplot() +
-  geom_line(data = plot_data_ppc_cumul, 
-            aes(x = time, y = cum_prop, 
-                group = interaction(draw, trial)), alpha = .1) +
-  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
-  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
-       title = "Dynamic network (cumulative within days)") +
-  theme_minimal() # this one is the best yet, but it's still pretty far off. We can see that the fits are getting better, and it's definitely better with daylight only vs. night. But the fit starts to get bad basically right after the first day, which really indicates that something is happening at the roosts, I think.
 
-# XXX 2026-02-26 evening 
-# Next steps:
-# - Find informed status for each individual in the entire dataset over time (I think I already calculated this somewhere?). Figure out where everyone roosted the night before (get roost data). I think I already have this as well. Assign the roost data to roost polygons. Get a data frame with ID, night, informed, and polygon. Calculate, per individuals: number of roostmates, number of informed roostmates, proportion informed roostmates. Optional: Do this again but for a 500m distance instead of polygons.
-# - Add distance to roost as a time-varying ILV. I think this needs to change on the same timescale as the dynamic networks (check that this is the case). Take the dataset, cut for each network. Group by individual and take the centroid of its points (does this make sense?) as well as the starting point.
-# - Add age ILV to the dynamic models too. The static models are useful for testing, but not much else.
