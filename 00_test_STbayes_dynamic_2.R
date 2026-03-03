@@ -107,7 +107,15 @@ length(lvls) # good, there are 33 bins (corresponding to 32 events plus censored
 gps_fornetwork <- gps_fornetwork %>%
   filter(!is.na(network)) # remove NAs (after the diffusion period)
 missing_intervals <- levels(gps_fornetwork$network)[!(levels(gps_fornetwork$network) %in% gps_fornetwork$network)]
-to_add <- data.frame(network = missing_intervals, date_il = ) # XXX NEED TO FIGURE OUT A WAY TO ADD A DATE SO THAT WHEN WE LATER SPLIT BY THIS WE DON'T LOSE IT. Yikes this is so buggy. #2026-03-02
+# need to add a date for the missing intervals so the later code will work
+missing_intervals_lower <- as.numeric(str_extract(missing_intervals, "(?<=\\()[0-9]+"))
+missing_intervals_upper <- as.numeric(str_extract(missing_intervals, "(?<=\\,)[0-9]+(?=\\])"))
+dates_before <- as.Date(unlist(purrr::map(missing_intervals_lower, ~{ gps_fornetwork %>% filter(time < missing_intervals_lower[i]) %>% arrange(timestamp_il) %>% pull(date_il) %>% max()})))
+dates_after <- as.Date(unlist(purrr::map(missing_intervals_upper, ~{ gps_fornetwork %>% filter(time > missing_intervals_upper[i]) %>% arrange(timestamp_il) %>% pull(date_il) %>% min()})))
+
+# I think for now I'm just going to take the date before
+to_add <- data.frame(network = missing_intervals, date_il = dates_before) # this is super buggy and i need to return to it!
+
 if(nrow(to_add) > 0){
   gps_fornetwork <- bind_rows(gps_fornetwork, to_add)
 }
@@ -150,6 +158,7 @@ gps_list <- map(gps_list, ~{
 
 dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
 dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
+map(dynamic_networks_fixed, dim)
 # 
 # dynamic_networks_cumul <- map(gps_list_cumulative, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
 # dynamic_networks_cumul_fixed <- fix_nets(nets = dynamic_networks_cumul, indivs = all_indivs_sorted)
@@ -239,6 +248,7 @@ informed <- purrr::list_rbind(informed_list, names_to = "time") %>%
   mutate(n_roostmates = replace_na(n_roostmates, 0),
          prop_informed = replace_na(prop_informed, 0)) %>%
   mutate(prop_informed_norm = scale(prop_informed, scale = T, center = T)[,1])
+# new problem: we seem to have no information for anyone on 3/26, whereas we do have information for them on 3/25. Why?
 
 # informed_list_cumul <- map(dates_list_cumul, ~{
 #   prop_informed %>% filter(roost_date == .x-lubridate::days(1))})

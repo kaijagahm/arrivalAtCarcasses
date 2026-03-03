@@ -31,22 +31,22 @@ gps <- stn_gps_30days[[24]] %>%
 gps2 <- stn_gps_30days[[27]] %>% 
   mutate(timestamp_il = lubridate::with_tz(timestamp, tz = 
                                              "Israel")) %>%
-  filter(timestamp_il >= carc$datetime_il) %>% # only timestamps after the carcass
+  filter(timestamp_il >= carc2$datetime_il) %>% # only timestamps after the carcass
   mutate(date_il = lubridate::date(timestamp_il),
-         day = as.numeric(difftime(date_il, lubridate::date(carc$datetime_il), units = "days"))) %>% # make a date index
+         day = as.numeric(difftime(date_il, lubridate::date(carc2$datetime_il), units = "days"))) %>% # make a date index
   arrange(timestamp_il) %>%
   select(ground_speed, heading, height_above_msl, timestamp, tag_id, individual_id, individual_local_identifier, nick_name, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
-  mutate(year = lubridate::year(carc$date))
+  mutate(year = lubridate::year(carc2$date))
 
 gps3 <- stn_gps_30days[[26]] %>% 
   mutate(timestamp_il = lubridate::with_tz(timestamp, tz = 
                                              "Israel")) %>%
-  filter(timestamp_il >= carc$datetime_il) %>% # only timestamps after the carcass
+  filter(timestamp_il >= carc3$datetime_il) %>% # only timestamps after the carcass
   mutate(date_il = lubridate::date(timestamp_il),
-         day = as.numeric(difftime(date_il, lubridate::date(carc$datetime_il), units = "days"))) %>% # make a date index
+         day = as.numeric(difftime(date_il, lubridate::date(carc3$datetime_il), units = "days"))) %>% # make a date index
   arrange(timestamp_il) %>%
   select(ground_speed, heading, height_above_msl, timestamp, tag_id, individual_id, individual_local_identifier, nick_name, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
-  mutate(year = lubridate::year(carc$date))
+  mutate(year = lubridate::year(carc3$date))
 
 gps_mt <- gps %>%
   mutate(id = paste(individual_local_identifier, day, sep = "_")) %>%
@@ -139,7 +139,7 @@ dayfour2 <- vulture_lines2 %>% filter(day == 4)
 
 dayzero3 <- vulture_lines3 %>% filter(day == 0)
 dayone3 <- vulture_lines3 %>% filter(day == 1)
-daytwo3 <- vulture_lines3 %>% filter(day == 3)
+daytwo3 <- vulture_lines3 %>% filter(day == 2)
 daythree3 <- vulture_lines3 %>% filter(day == 3)
 dayfour3 <- vulture_lines3 %>% filter(day == 4)
 
@@ -238,40 +238,51 @@ together <- left_join(mutate(together, roost_date = lubridate::ymd(roost_date)),
          ID1 != ID2) %>% # remove self edges
   select(-value)
 
-together2 <- left_join(mutate(together2, roost_date = lubridate::ymd(roost_date)), days_shifted, by = "roost_date") %>%
+together2 <- left_join(mutate(together2, roost_date = lubridate::ymd(roost_date)), days_shifted2, by = "roost_date") %>%
   rename("ID2" = "name") %>%
   filter(value == TRUE, # only keep indivs that roosted together
          ID1 != ID2) %>% # remove self edges
   select(-value)
 
-together3 <- left_join(mutate(together3, roost_date = lubridate::ymd(roost_date)), days_shifted, by = "roost_date") %>%
+together3 <- left_join(mutate(together3, roost_date = lubridate::ymd(roost_date)), days_shifted3, by = "roost_date") %>%
   rename("ID2" = "name") %>%
   filter(value == TRUE, # only keep indivs that roosted together
          ID1 != ID2) %>% # remove self edges
   select(-value)
 
-sightings_long <- sightings %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% mutate(day = as.numeric(str_remove(day, "s"))) %>%
+sightings_long <- sightings %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% 
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE)) %>%
+  mutate(day = as.numeric(str_remove(day, "s"))) %>%
   arrange(id, day) %>%
   group_by(id) %>% 
   mutate(sighted_ever = cumsum(sighted_that_day) > 0) %>%
   ungroup()
 
-sightings_long2 <- sightings2 %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% mutate(day = as.numeric(str_remove(day, "s"))) %>%
+sightings_long2 <- sightings2 %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% 
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE)) %>%
+  mutate(day = as.numeric(str_remove(day, "s"))) %>%
   arrange(id, day) %>%
   group_by(id) %>% 
   mutate(sighted_ever = cumsum(sighted_that_day) > 0) %>%
   ungroup()
 
-sightings_long3 <- sightings3 %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% mutate(day = as.numeric(str_remove(day, "s"))) %>%
+sightings_long3 <- sightings3 %>% pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted_that_day") %>% 
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE)) %>%
+  mutate(day = as.numeric(str_remove(day, "s"))) %>%
   arrange(id, day) %>%
   group_by(id) %>% 
   mutate(sighted_ever = cumsum(sighted_that_day) > 0) %>%
   ungroup()
 
-
-together <- left_join(together, sightings_long, by = c("ID2" = "id", "day"))
-together2 <- left_join(together2, sightings_long2, by = c("ID2" = "id", "day"))
-together3 <- left_join(together3, sightings_long3, by = c("ID2" = "id", "day"))
+together <- left_join(together, sightings_long, by = c("ID2" = "id", "day")) %>%
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE),
+         sighted_ever = replace_na(sighted_ever, FALSE))
+together2 <- left_join(together2, sightings_long2, by = c("ID2" = "id", "day")) %>%
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE),
+         sighted_ever = replace_na(sighted_ever, FALSE))
+together3 <- left_join(together3, sightings_long3, by = c("ID2" = "id", "day")) %>%
+  mutate(sighted_that_day = replace_na(sighted_that_day, FALSE),
+         sighted_ever = replace_na(sighted_ever, FALSE))
 
 # Let's focus only on informed roostmates (sighted_ever), assuming vultures' memories can last 4 days, which I think they can.
 together <- together %>%
@@ -326,18 +337,20 @@ all <- bind_rows(prop_informed, filler) %>%
   slice(1) %>%
   mutate(across(c("n_roostmates", "n_informed", "prop_informed"), ~replace_na(.x, 0)))
 
-all2 <- bind_rows(prop_informed2, filler) %>%
+all2 <- bind_rows(prop_informed2, filler2) %>%
   arrange(roost_date, ID1) %>%
   group_by(roost_date, ID1) %>%
   slice(1) %>%
   mutate(across(c("n_roostmates", "n_informed", "prop_informed"), ~replace_na(.x, 0)))
 
-all3 <- bind_rows(prop_informed3, filler) %>%
+all3 <- bind_rows(prop_informed3, filler3) %>%
   arrange(roost_date, ID1) %>%
   group_by(roost_date, ID1) %>%
   slice(1) %>%
   mutate(across(c("n_roostmates", "n_informed", "prop_informed"), ~replace_na(.x, 0)))
   
-write_rds(prop_informed, file = "data/created/prop_informed.RDS")
-write_rds(prop_informed2, file = "data/created/prop_informed2.RDS")
-write_rds(prop_informed3, file = "data/created/prop_informed3.RDS")
+write_rds(all, file = "data/created/prop_informed.RDS")
+write_rds(all2, file = "data/created/prop_informed2.RDS")
+write_rds(all3, file = "data/created/prop_informed3.RDS")
+
+# XXX START HERE--GO BACK TO THE BAYESIAN SCRIPT
