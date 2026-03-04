@@ -383,3 +383,12 @@ ggplot() +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (sequential)") +
   theme_minimal()
+
+# What about the rest of the summary?
+summ %>%
+  filter(Parameter == "percent_ST[1]") %>%
+  ggplot(aes(x = Parameter, y = Median))+
+  geom_point()+
+  geom_segment(aes(x = Parameter, xend = Parameter, y = CI_Lower, yend = CI_Upper))+
+  theme_minimal()+
+  geom_hline(aes(yintercept = 0), color = "black", linetype = 2) # this isn't a very interesting plot--maybe put them together

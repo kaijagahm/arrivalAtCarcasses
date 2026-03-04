@@ -383,5 +383,3 @@ ggplot() +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Dynamic network (sequential)") +
   theme_minimal()
-
-
