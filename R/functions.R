@@ -1735,7 +1735,7 @@ format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_co
     dplyr::select(individual_local_identifier, trial, all_of(time_col)) %>%
     mutate(time = as.numeric(.data[[time_col]])*60*60) %>%
     rename("id" = individual_local_identifier) %>%
-    mutate(t_end = max(time)) %>%
+    mutate(t_end = max(time)) %>% # XXX START HERE WITH CONVERSION BETWEEN HOURS_SINCE_CARCASS AND TIME!! NEED TO SET MAX(TIME) AS SOMETHING ELSE
     select(id, trial, time, t_end)
   
   #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
@@ -1750,6 +1750,42 @@ format_event_data <- function(first_sightings, seeds, all_indivs_sorted, time_co
   never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
   if(length(never_learned) > 0){
     t_end <- event_data$t_end[1]
+    event_data <- bind_rows(event_data,
+                            data.frame(id = never_learned, 
+                                       trial = carc$carcID[1], 
+                                       t_end = t_end, 
+                                       time = t_end + 1))
+  }
+  event_data <- event_data %>%
+    arrange(time, id) %>%
+    mutate(across(c(time, t_end), as.integer)) # should be INTEGER, not NUMERIC, so the code will work properly
+  
+  return(event_data)
+}
+
+format_event_data_new <- function(first_sightings, seeds, all_indivs_sorted, time_col = "daytime_since_carcass", carc, gps_fornetwork){
+  t_end <- max(gps_fornetwork$time)
+  
+  event_data <- first_sightings %>%
+    st_drop_geometry() %>%
+    dplyr::mutate(trial = carc$carcID[1]) %>%
+    dplyr::select(individual_local_identifier, trial, all_of(time_col)) %>%
+    mutate(time = as.numeric(.data[[time_col]])*60*60) %>%
+    rename("id" = individual_local_identifier) %>%
+    mutate(t_end = t_end) %>% 
+    select(id, trial, time, t_end)
+  
+  #time: Integer or float values indicating the time (TADA) or order (OADA) in which the individual was recorded as first informed/knowledgable. If an individual had the event occur prior to the start of the observation period (e.g. pre-trained demonstrator), set as 0. These left censored individuals will not contribute to the likelihood calculation. 
+  # add the seeds back in (pre-trained demonstrators)
+  if(length(seeds) > 0){
+    event_data <- bind_rows(data.frame(id = seeds, trial = carc$carcID[1], t_end = t_end, time = 0),
+                            event_data)
+  }
+  
+  #If an individual never learned during the observation period, set its value tend+1. These will be treated as right-censored individuals in the likelihood calculation.
+  # okay so for these, we need to figure out if there are any individuals in the gps dataset that don't appear in the first sightings.
+  never_learned <- all_indivs_sorted[!(all_indivs_sorted %in% event_data$id)]
+  if(length(never_learned) > 0){
     event_data <- bind_rows(event_data,
                             data.frame(id = never_learned, 
                                        trial = carc$carcID[1], 
