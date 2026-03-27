@@ -9,27 +9,25 @@ library(sf)
 library(mapview)
 
 # Load in the carcass data
-tar_load(carcasses_audited) # will need to go back to the original data to see the names of the management regions--apparently they are all supposed to be provisioned approximately equally, but aren't, according to Reznikov et al.
+tar_load(all_carcasses) # will need to go back to the original data to see the names of the management regions--apparently they are all supposed to be provisioned approximately equally, but aren't, according to Reznikov et al.
 tar_load(bbox_south_big)
-carcasses_south <- st_crop(carcasses_audited, bbox_south_big)
+carcasses_south <- st_crop(all_carcasses, bbox_south_big)
 
 # Simplify--keeping only dates, not datetimes, because sometimes there are multiple carcasses placed very close to each other in time
 carcs <- carcasses_south %>%
-  select(carcID, date, time, datetime, datetime_il, long, lat, stationName, carcassWeight, geometry, X, Y)
+  select(carcID, carcType, date, time, datetime, datetime_il, long, lat, stationName, carcassWeight, geometry, X, Y)
 
 carcs_simple <- carcasses_south %>%
-  select(date, stationName) %>%
-  st_drop_geometry() %>%
+  select(carcType, date, stationName, year) %>%
   distinct()
 dim(carcs)
 dim(carcs_simple)
-nrow(carcs)-nrow(carcs_simple) # 95 instances of two carcasses being placed at the same station on the same day
 
 stn <- carcs_simple %>%
   filter(!is.na(stationName))
 dim(stn)
 
-# Look at a plot of the carcass frequencies over time
+# Station carcass frequencies over time
 stn %>%
   ggplot(aes(x = date, y = stationName))+
   geom_point(alpha = 0.5)+
@@ -43,7 +41,6 @@ stn %>%
 tar_load(minmax_dates)
 stn %>%
   filter((date >= minmax_dates[[1]] & date <= minmax_dates[[2]]) | (date >= minmax_dates[[3]] & date <= minmax_dates[[4]]) | (date >= minmax_dates[[5]] & date <= minmax_dates[[6]])) %>%
-  mutate(year = lubridate::year(date)) %>%
   ggplot(aes(x = date, y = stationName, color = stationName))+
   geom_point(size = 3, alpha = 0.75)+
   theme_bw()+
@@ -52,6 +49,13 @@ stn %>%
         panel.grid.minor.x = element_blank(),
         legend.position = "none")+
   labs(y = "Feeding station", x = "Date")
+
+# Wild carcasses
+wild <- carcs_simple %>%
+  filter(carcType == "wild")
+
+mapview(wild, zcol = "year")
+yearlist <- purrr::map(group_split(wild, year), sf::st_as_sf)
 
 # Calculations for the whole period
 # Intervals
@@ -117,7 +121,7 @@ sd_log_intervals_last6mos <- rep(NA, nrow(carcs_focal))
 for(i in 1:nrow(carcs_focal)){
   current_date <- carcs_focal$date[i]
   current_stn <- carcs_focal$stationName[i]
-  prev_6mos <- carcasses_audited %>%
+  prev_6mos <- all_carcasses %>%
     filter(date >= (current_date-months(6)) & date <= current_date,
            stationName == current_stn)
   # prev_6mos_area <- prev_6mos[st_intersects(prev_6mos, carcs_buffered[i,], sparse = F)[,1],]
@@ -425,16 +429,15 @@ source(here("R/functions.R"))
 
 # Load carcass data
 tar_load(all_carcasses)
-tar_load(carcasses_audited)
 # get all stn carcasses
-carcasses_audited <- carcasses_audited %>%
+all_carcasses <- all_carcasses %>%
   select(carcID, date, long, lat, geometry, X, Y, carcassWeight) %>%
   mutate(carcType = "stn")
 # get all carcasses for the three hf windows, including both wild and stn
 all_carcasses <- all_carcasses %>%
   select(carcID, date, long, lat, geometry, X, Y, carcType, nBouts, nIndivs, carcassWeight)
 # add on all the carcasses from the other times besides the hf windows
-all_carcasses <- bind_rows(all_carcasses %>% mutate(source = "ac"), carcasses_audited %>% mutate(source = "ca")) 
+all_carcasses <- bind_rows(all_carcasses %>% mutate(source = "ac"), all_carcasses %>% mutate(source = "ca")) 
 # deduplicate, defaulting to all_carcasses
 all_carcasses <- all_carcasses %>%
   arrange(carcID, source) %>%

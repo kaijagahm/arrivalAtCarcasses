@@ -157,21 +157,21 @@ gps_list <- map(gps_list, ~{
   }
 })
 
-dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
-dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
-map(dynamic_networks_fixed, dim)
-# 
-# dynamic_networks_cumul <- map(gps_list_cumulative, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
-# dynamic_networks_cumul_fixed <- fix_nets(nets = dynamic_networks_cumul, indivs = all_indivs_sorted)
-#
-networks_long <- map(dynamic_networks_fixed, ~{
-  out <- .x %>% rownames_to_column(var = "focal") %>%
-    pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
-    mutate(trial = carc_id)
-  return(out)
-})
-networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
-write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_3.RDS")
+# dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
+# map(dynamic_networks_fixed, dim)
+# # 
+# # dynamic_networks_cumul <- map(gps_list_cumulative, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# # dynamic_networks_cumul_fixed <- fix_nets(nets = dynamic_networks_cumul, indivs = all_indivs_sorted)
+# #
+# networks_long <- map(dynamic_networks_fixed, ~{
+#   out <- .x %>% rownames_to_column(var = "focal") %>%
+#     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+#     mutate(trial = carc_id)
+#   return(out)
+# })
+# networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
+# write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_3.RDS")
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_3.RDS")
 
 # networks_long_cumul <- map(dynamic_networks_cumul_fixed, ~{
@@ -291,6 +291,7 @@ data_list <- import_user_STb(event_data = event_data,
                              ILV_tv = ILV_tv,
                              ILVi = c("age", "mean_dist_to_carcass_norm", "prop_informed_norm"),
                              ILVs = c("age", "prop_informed_norm")) 
+write_rds(data_list, file="data/data_lists/dynamic_daylight_ilvs3.RDS")
 
 # data_list_cumul <- import_user_STb(event_data = event_data, 
 #                                    networks = networks_long_dynamic_cumul,
@@ -305,6 +306,7 @@ data_list <- import_user_STb(event_data = event_data,
 
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
 # model_full_dynamic_cumul <- generate_STb_model(data_list_cumul, gq = T, est_acqTime = T)
+write(model_full_dynamic, file="data/stan_models/dynamic_daylight_ilvs3.stan")
 
 fit_dynamic <- fit_STb(data_list,
                        model_full_dynamic,
@@ -335,7 +337,7 @@ ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_errorbar(aes(ymin = elpd_diff - se_diff, 
                     ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
   coord_flip() +
-  labs(x = "Model", y = "ELPD Difference", title = "Model Comparison") +
+  labs(x = "Model", y = "ELPD Difference", title = "Carcass 3") +
   theme_minimal()
 
 # PSIS-LOO is an approximation of LOO, and observations with pareto-k diagnostic values >.7 may indicate that the approximation is unreliable. The function above will warn you if that is the case, and you can visually inspect these diagnostics like so:
@@ -369,6 +371,7 @@ summ %>% filter(grepl("beta_", Parameter)) %>%
   facet_wrap(~type, ncol = 1, scale = "free_y")+
   geom_hline(aes(yintercept = 0), linetype = 2)+
   labs(subtitle = "(95% CIs)",
+       caption = "Carcass 3",
        title = "Individual-level variables",
        x = "Parameter")
 
@@ -382,5 +385,13 @@ ggplot() +
                 group = interaction(draw, trial)), alpha = .1) +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
-       title = "Dynamic network (sequential)") +
+       title = "Carcass 3") +
   theme_minimal()
+
+# Graph
+library(ggraph)
+library(tidygraph)
+
+plots <- purrr::map(networks_long, ~{
+  .x %>% filter(flight_sri > 0) %>% ggraph()+geom_node_point()+geom_edge_link() + geom_node_text(aes(label = name))+theme_void()
+})
