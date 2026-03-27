@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph")#,
-  #controller = crew_controller_local(workers = 3)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph"),
+  controller = crew_controller_local(workers = 6)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -835,6 +835,67 @@ list(
   tar_target(trajectories_sync_2023, purrr::list_rbind(trajectories_sync_list_2023)),
   tar_target(trajectories_sync_2024, purrr::list_rbind(trajectories_sync_list_2024)),
   
-  tar_target(trajectories_sync, mutate(purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year"), date_il = lubridate::date(timestamp_il)))
-
+  tar_target(trajectories_sync, mutate(purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year"), date_il = lubridate::date(timestamp_il))),
+  
+  # stBayes: dynamic
+  ## stn
+  tar_target(gps_withdaylight, purrr::map2(stn_gps_30days, stn_carcs, ~get_daylight_hours(.x, .y))),
+  
+  tar_target(seeds, purrr::map(gps_withdaylight, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),# still using time_since_carcass since it goes back farther than daytime_since_carcass.
+  
+  tar_target(all_indivs_sorted, purrr::map(gps_withdaylight, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  
+  tar_target(gps_diffusion, purrr::map(gps_withdaylight, ~dplyr::filter(.x, time_since_carcass >- 0))),
+  tar_target(first_sightings, purrr::map2(gps_diffusion, seeds, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(event_data, purrr::pmap(list(first_sightings, seeds, all_indivs_sorted, stn_carcs),
+                                     ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)
+  )),
+  tar_target(gps_fornetwork, purrr::map2(gps_diffusion, stn_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
+  
+  tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
+  tar_target(bins, purrr::map2(gps_fornetwork, cutpoints, ~{sort(unique(cut(.x$time, breaks = .y)))})),
+  tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints, ~{
+    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
+      out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
+      return(out)}
+  })),
+  tar_target(missing_intervals, purrr::map(gps_fornetwork2, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
+  tar_target(to_add, purrr::map(missing_intervals, ~data.frame(network = .x))),
+  tar_target(gps_fornetwork3, purrr::map2(gps_fornetwork2, to_add, ~{
+    if(!is.null(.x) & nrow(.y) > 0){
+      return(dplyr::bind_rows(.x, .y))
+    }else if(!is.null(.x) & nrow(.y) == 0){
+      return(.x)
+    }else{NULL}})),
+  tar_target(gps_list, purrr::map(gps_fornetwork3, ~{
+    if(!is.null(.x)){
+      dplyr::group_split(dplyr::arrange(.x, network), network, .keep = T)}else{NULL}
+  })),
+  tar_target(gps_list_fixed, purrr::map(gps_list, ~purrr::map(.x, ~{
+    if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
+      return(.x[0,])}else if(is.null(.x)){
+        return(NULL)}else{
+          return(.x)}
+  }))),
+  tar_target(dn1, purrr::map(gps_list_fixed[1:10], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn2, purrr::map(gps_list_fixed[11:20], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn3, purrr::map(gps_list_fixed[21:30], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn4, purrr::map(gps_list_fixed[31:40], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn5, purrr::map(gps_list_fixed[41:50], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn6, purrr::map(gps_list_fixed[51:60], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6)),
+  
+  tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
+  
+  tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
+    out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
+  }), names_to = "time"), trial = .y$carcID[1])))#,
+  
+# ILVs are going to get more complicated here
 )

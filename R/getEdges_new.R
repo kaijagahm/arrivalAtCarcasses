@@ -168,6 +168,9 @@ getEdges_new <- function(dataset,
       if(quiet){
         ###EDGES AND SRI, QUIET
         #suppress warnings while computing edges and SRI, returning a list of edges+sri
+        if(nrow(allPairs_focalPeriod) == 0){
+          out <- NULL
+        }
         out <- suppressMessages(suppressWarnings(spaceTimeGroups_new(dataset = filteredData,
                                                                      denom = dataset_denominator,
                                                                      distThreshold = distThreshold,
