@@ -42,16 +42,6 @@ length(cutpoints_day1) # need 23 cutpoints so we can have 22 bins so we can defi
 # 2. Make co-flight networks --------------------------------------------------------
 gps_list <- gps_fornetwork %>% arrange(network) %>% group_split(network, .keep = TRUE)
 gps_list_day1 <- gps_fornetwork_day1 %>% arrange(network) %>% group_split(network, .keep = TRUE)
-gps_list_1hr <- map(cutpoints[2:length(cutpoints)], ~{
-  onehourbefore <- .x-3600
-  dat <- gps_fornetwork %>% filter(time >= onehourbefore & time <= .x)
-  return(dat)
-})
-gps_list_1hr_day1 <- map(cutpoints_day1[2:length(cutpoints_day1)], ~{
-  onehourbefore <- .x-3600
-  dat <- gps_fornetwork_day1 %>% filter(time >= onehourbefore & time <= .x)
-  return(dat)
-})
 
 gps_list <- map(gps_list, ~{
   if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
@@ -63,8 +53,6 @@ gps_list_day1 <- map(gps_list_day1, ~{
 
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_fixed.RDS")
 networks_long_dynamic_day1 <- readRDS("data/created/networks_long_dynamic_fixed_day1.RDS")
-networks_long_dynamic_1hr <- readRDS("data/created/networks_long_dynamic_fixed_1hr.RDS")
-networks_long_dynamic_day1_1hr <- readRDS("data/created/networks_long_dynamic_fixed_day1_1hr.RDS")
 
 # 4.1. Make and save network plots --------------------------------------------
 get_plots <- function(networksdf){
@@ -86,19 +74,11 @@ get_plots <- function(networksdf){
 }
 plots_all <- get_plots(networks_long_dynamic)
 plots_day1 <- get_plots(networks_long_dynamic_day1)
-plots_all_1hr <- get_plots(networks_long_dynamic_1hr)
-plots_day1_1hr <- get_plots(networks_long_dynamic_day1_1hr)
 # walk2(plots_all, seq_along(plots_all), ~{
 #   ggsave(filename = paste0("fig/dynamic_flight_networks/all/plot_", .y, ".png"),
 #          plot = .x, width = 4, height = 4, dpi = 300)})
 # walk2(plots_day1, seq_along(plots_all), ~{
 #   ggsave(filename = paste0("fig/dynamic_flight_networks/day1/plot_", .y, ".png"),
-#          plot = .x, width = 4, height = 4, dpi = 300)})
-# walk2(plots_all_1hr, seq_along(plots_all_1hr), ~{
-#   ggsave(filename = paste0("fig/dynamic_flight_networks/all_1hr/plot_", .y, ".png"),
-#          plot = .x, width = 4, height = 4, dpi = 300)})
-# walk2(plots_day1_1hr, seq_along(plots_day1_1hr), ~{
-#   ggsave(filename = paste0("fig/dynamic_flight_networks/day1_1hr/plot_", .y, ".png"),
 #          plot = .x, width = 4, height = 4, dpi = 300)})
 
 # 3. Read in ILVs ---------------------------------------------------------
@@ -112,25 +92,19 @@ ILV_tv_day1 <- readRDS("data/created/ILV_tv_1_day1.RDS")
 datalist_orig <- readRDS("data/data_lists/dynamic_daylight_ilvs1_fixed.RDS")
 datalist_distsq <- readRDS("data/data_lists/dynamic_daylight_ilvs1_fixed_sq.RDS")
 datalist_day1 <- readRDS("data/data_lists/dynamic_daylight_ilvs1_fixed_day1.RDS")
-datalist_1hr <- readRDS("data/data_lists/dynamic_daylight_ilvs1_fixed_1hr.RDS")
-datalist_day1_1hr <- readRDS("data/data_lists/dynamic_daylight_ilvs1_fixed_day1_1hr.RDS")
 
 ## Models
 mod_orig <- generate_STb_model(datalist_orig)
 mod_distsq <- generate_STb_model(datalist_distsq)
 mod_day1 <- generate_STb_model(datalist_day1)
 mod_day1_comp <- generate_STb_model(datalist_day1, transmission_func="freqdep_f")
-model_1hr <- generate_STb_model(datalist_1hr)
-model_day1_1hr <- generate_STb_model(datalist_day1_1hr)
 
 # 5. Examine model results -----------------------------------------
 ## Models
 fit_orig <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed.rds') 
 fit_distsq <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_sq.rds') 
 fit_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1.rds') 
-fit_day1_comp <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_comp.rds') 
-fit_1hr <- readRDS("data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_1hr.rds")
-fit_day1_1hr <- readRDS("data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_1hr.rds")
+fit_day1_comp <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_comp.rds')
 
 ## Asocial models
 asoc_orig <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
@@ -142,8 +116,6 @@ summ <- STb_summary(fit_orig, digits = 3)
 summ_sq <- STb_summary(fit_distsq, digits = 3)
 summ_day1 <- STb_summary(fit_day1, digits = 3)
 summ_day1_comp <- STb_summary(fit_day1_comp, digits = 3)
-summ_1hr <- STb_summary(fit_1hr, digits = 3)
-summ_day1_1hr <- STb_summary(fit_day1_1hr, digits = 3)
 
 get_ilv_results <- function(summ, title = ""){
   plt <- summ %>% filter(grepl("beta_", Parameter)) %>%
@@ -173,8 +145,6 @@ get_ilv_results(summ, "Orig")
 get_ilv_results(summ_sq, "Distsq")
 get_ilv_results(summ_day1, "Day1")
 get_ilv_results(summ_day1_comp, "Day1_comp")
-get_ilv_results(summ_1hr, "1hr")
-get_ilv_results(summ_day1_1hr, "Day1_1hr")
 
 plot_data_obs <- get_plot_data(event_data)
 plot_data_obs_day1 <- get_plot_data(event_data_day1)
@@ -183,8 +153,6 @@ ppc_orig <- get_plot_data_ppc(fit = fit_orig, data_list = datalist_orig)
 ppc_distsq <- get_plot_data_ppc(fit = fit_distsq, data_list = datalist_distsq)
 ppc_day1 <- get_plot_data_ppc(fit = fit_day1, data_list = datalist_day1)
 ppc_day1_comp <- get_plot_data_ppc(fit = fit_day1_comp, data_list = datalist_day1)
-ppc_1hr <- get_plot_data_ppc(fit = fit_1hr, data_list = datalist_1hr)
-ppc_day1_1hr <- get_plot_data_ppc(fit = fit_day1_1hr, data_list = datalist_day1_1hr)
 
 ppc_asoc <- get_plot_data_ppc(fit = asoc_orig, data_list = datalist_orig)
 
@@ -205,5 +173,3 @@ plotppc(ppc_orig, plot_data_obs, "Orig")
 plotppc(ppc_distsq, plot_data_obs, "Distsq")
 plotppc(ppc_day1, plot_data_obs_day1, "Day1")
 plotppc(ppc_day1_comp, plot_data_obs_day1, "Day1_comp")
-plotppc(ppc_1hr, plot_data_obs, "1hr")
-plotppc(ppc_day1_1hr, plot_data_obs_day1, "Day1_1hr")
