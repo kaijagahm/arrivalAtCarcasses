@@ -5,6 +5,7 @@ library(targets)
 library(mapview)
 library(ggraph)
 library(tidygraph)
+library(posterior)
 lapply(list.files("R", full.names = TRUE), source) 
 
 # 1. Read in GPS and other data --------------------------------------------------------
@@ -87,18 +88,18 @@ plots_all <- get_plots(networks_long_dynamic)
 plots_day1 <- get_plots(networks_long_dynamic_day1)
 plots_all_1hr <- get_plots(networks_long_dynamic_1hr)
 plots_day1_1hr <- get_plots(networks_long_dynamic_day1_1hr)
-walk2(plots_all, seq_along(plots_all), ~{
-  ggsave(filename = paste0("fig/dynamic_flight_networks/all/plot_", .y, ".png"),
-         plot = .x, width = 4, height = 4, dpi = 300)})
-walk2(plots_day1, seq_along(plots_all), ~{
-  ggsave(filename = paste0("fig/dynamic_flight_networks/day1/plot_", .y, ".png"),
-         plot = .x, width = 4, height = 4, dpi = 300)})
-walk2(plots_all_1hr, seq_along(plots_all_1hr), ~{
-  ggsave(filename = paste0("fig/dynamic_flight_networks/all_1hr/plot_", .y, ".png"),
-         plot = .x, width = 4, height = 4, dpi = 300)})
-walk2(plots_day1_1hr, seq_along(plots_day1_1hr), ~{
-  ggsave(filename = paste0("fig/dynamic_flight_networks/day1_1hr/plot_", .y, ".png"),
-         plot = .x, width = 4, height = 4, dpi = 300)})
+# walk2(plots_all, seq_along(plots_all), ~{
+#   ggsave(filename = paste0("fig/dynamic_flight_networks/all/plot_", .y, ".png"),
+#          plot = .x, width = 4, height = 4, dpi = 300)})
+# walk2(plots_day1, seq_along(plots_all), ~{
+#   ggsave(filename = paste0("fig/dynamic_flight_networks/day1/plot_", .y, ".png"),
+#          plot = .x, width = 4, height = 4, dpi = 300)})
+# walk2(plots_all_1hr, seq_along(plots_all_1hr), ~{
+#   ggsave(filename = paste0("fig/dynamic_flight_networks/all_1hr/plot_", .y, ".png"),
+#          plot = .x, width = 4, height = 4, dpi = 300)})
+# walk2(plots_day1_1hr, seq_along(plots_day1_1hr), ~{
+#   ggsave(filename = paste0("fig/dynamic_flight_networks/day1_1hr/plot_", .y, ".png"),
+#          plot = .x, width = 4, height = 4, dpi = 300)})
 
 # 3. Read in ILVs ---------------------------------------------------------
 ILV_c <- readRDS("data/created/ILV_c_1.RDS")
@@ -132,7 +133,7 @@ fit_1hr <- readRDS("data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_1hr.rds")
 fit_day1_1hr <- readRDS("data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_1hr.rds")
 
 ## Asocial models
-# asoc_orig <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
+asoc_orig <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
 # asoc_distsq <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed_sq.rds') 
 # asoc_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed_day1.rds') 
 
@@ -185,6 +186,8 @@ ppc_day1_comp <- get_plot_data_ppc(fit = fit_day1_comp, data_list = datalist_day
 ppc_1hr <- get_plot_data_ppc(fit = fit_1hr, data_list = datalist_1hr)
 ppc_day1_1hr <- get_plot_data_ppc(fit = fit_day1_1hr, data_list = datalist_day1_1hr)
 
+ppc_asoc <- get_plot_data_ppc(fit = asoc_orig, data_list = datalist_orig)
+
 plotppc <- function(ppc, obs, title){
   plt <- ggplot() +
     geom_line(data = ppc, 
@@ -197,6 +200,7 @@ plotppc <- function(ppc, obs, title){
   return(plt)
 } ## utility function
 
+plotppc(ppc_asoc, plot_data_obs, "Asoc")
 plotppc(ppc_orig, plot_data_obs, "Orig")
 plotppc(ppc_distsq, plot_data_obs, "Distsq")
 plotppc(ppc_day1, plot_data_obs_day1, "Day1")
