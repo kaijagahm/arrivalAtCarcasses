@@ -161,6 +161,18 @@ gps_fornetwork_day1 <- gps_fornetwork_day1 %>%
   mutate(network = factor(network, levels = lvls_day1)) %>%
   arrange(time_since_carcass)
 
+# 3/31 addition: let's try the last hour before each timepoint
+gps_list_1hr <- map(cutpoints[2:length(cutpoints)], ~{
+  onehourbefore <- .x-3600
+  dat <- gps_fornetwork %>% filter(time >= onehourbefore & time <= .x)
+  return(dat)
+})
+gps_list_1hr_day1 <- map(cutpoints_day1[2:length(cutpoints_day1)], ~{
+  onehourbefore <- .x-3600
+  dat <- gps_fornetwork_day1 %>% filter(time >= onehourbefore & time <= .x)
+  return(dat)
+})
+
 gps_list <- gps_fornetwork %>% arrange(network) %>% group_split(network, .keep = TRUE)
 gps_list_day1 <- gps_fornetwork_day1 %>% arrange(network) %>% group_split(network, .keep = TRUE)
 length(gps_list) == length(lvls) # yay!
@@ -185,8 +197,12 @@ gps_list_day1 <- map(gps_list_day1, ~{
 
 # dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
 # dynamic_networks_day1 <- map(gps_list_day1, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# dynamic_networks_1hr <- map(gps_list_1hr, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# dynamic_networks_1hr_day1 <- map(gps_list_1hr_day1, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
 # dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
 # dynamic_networks_fixed_day1 <- fix_nets(nets = dynamic_networks_day1, indivs = all_indivs_sorted_day1)
+# dynamic_networks_fixed_1hr <- fix_nets(nets = dynamic_networks_1hr, indivs = all_indivs_sorted)
+# dynamic_networks_fixed_1hr_day1 <- fix_nets(nets = dynamic_networks_1hr_day1, indivs = all_indivs_sorted_day1)
 # map(dynamic_networks_fixed, dim)
 # map(dynamic_networks_fixed_day1, dim)
 # 
@@ -203,19 +219,37 @@ gps_list_day1 <- map(gps_list_day1, ~{
 #   return(out)
 # })
 # 
+# networks_long_1hr <- map(dynamic_networks_fixed_1hr, ~{
+#   out <- .x %>% rownames_to_column(var = "focal") %>%
+#     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+#     mutate(trial = carc_id)
+#   return(out)
+# })
+# networks_long_day1_1hr <- map(dynamic_networks_fixed_1hr_day1, ~{
+#   out <- .x %>% rownames_to_column(var = "focal") %>%
+#     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+#     mutate(trial = carc_id)
+#   return(out)
+# })
+# 
 # networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
 # networks_long_dynamic_day1 <- purrr::list_rbind(networks_long_day1, names_to = "time")
+# networks_long_dynamic_1hr <- purrr::list_rbind(networks_long_1hr, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
+# networks_long_dynamic_day1_1hr <- purrr::list_rbind(networks_long_day1_1hr, names_to = "time")
 # write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_fixed.RDS")
 # write_rds(networks_long_dynamic_day1, file = "data/created/networks_long_dynamic_fixed_day1.RDS")
+# write_rds(networks_long_dynamic_1hr, file = "data/created/networks_long_dynamic_fixed_1hr.RDS")
+# write_rds(networks_long_dynamic_day1_1hr, file = "data/created/networks_long_dynamic_fixed_day1_1hr.RDS")
 
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_fixed.RDS")
 networks_long_dynamic_day1 <- readRDS("data/created/networks_long_dynamic_fixed_day1.RDS")
+networks_long_dynamic_1hr <- readRDS("data/created/networks_long_dynamic_fixed_1hr.RDS")
+networks_long_dynamic_day1_1hr <- readRDS("data/created/networks_long_dynamic_fixed_day1_1hr.RDS")
 
 # Network must contain all individuals
 # "The networks dataframe is used as the reference for all unique IDs, thus each ID must be included at least once in either the focal or other column. If a dyad is absent, their connection is assumed to be zero."
 all(sort(unique(c(networks_long_dynamic$focal, networks_long_dynamic$other))) == all_indivs_sorted) #TRUE
 all(sort(unique(c(networks_long_dynamic_day1$focal, networks_long_dynamic_day1$other))) == all_indivs_sorted_day1) #TRUE
-
 
 # ILVs --------------------------------------------------------------------
 ## AGE
@@ -327,10 +361,10 @@ ILV_tv_day1 <- dists_dyn_day1 %>%
   mutate(trial = carc_id) %>%
   select(trial, id, time, mean_dist_to_carcass_norm, mean_dist_to_carcass_squared_norm#, 
          #prop_informed_norm
-         ) %>%
+  ) %>%
   mutate(across(c("mean_dist_to_carcass_norm", "mean_dist_to_carcass_squared_norm"#,
                   #"prop_informed_norm"
-                  ), ~replace_na(.x, 0)))
+  ), ~replace_na(.x, 0)))
 
 ILV_tv %>% ggplot(aes(x = prop_informed_norm))+geom_histogram()+facet_wrap(~factor(time)) # the distributions of prop_informed_norm are really weird; I wonder if instead I should have this be categorical (most, some, few) or something...
 
@@ -347,22 +381,40 @@ data_list <- import_user_STb(event_data = event_data,
 write_rds(data_list, file="data/data_lists/dynamic_daylight_ilvs1_fixed.RDS")
 
 data_list_sq <- import_user_STb(event_data = event_data, 
-                             networks = networks_long_dynamic,
-                             network_type = "undirected",
-                             ILV_c = ILV_c,
-                             ILV_tv = ILV_tv,
-                             ILVi = c("age", "mean_dist_to_carcass_squared_norm", "prop_informed_norm"),
-                             ILVs = c("age", "prop_informed_norm")) 
+                                networks = networks_long_dynamic,
+                                network_type = "undirected",
+                                ILV_c = ILV_c,
+                                ILV_tv = ILV_tv,
+                                ILVi = c("age", "mean_dist_to_carcass_squared_norm", "prop_informed_norm"),
+                                ILVs = c("age", "prop_informed_norm")) 
 write_rds(data_list_sq, file="data/data_lists/dynamic_daylight_ilvs1_fixed_sq.RDS")
 
 data_list_day1 <- import_user_STb(event_data = event_data_day1, 
-                             networks = networks_long_dynamic_day1,
-                             network_type = "undirected",
-                             ILV_c = ILV_c_day1,
-                             ILV_tv = ILV_tv_day1,
-                             ILVi = c("age", "mean_dist_to_carcass_squared_norm"),
-                             ILVs = c("age")) 
+                                  networks = networks_long_dynamic_day1,
+                                  network_type = "undirected",
+                                  ILV_c = ILV_c_day1,
+                                  ILV_tv = ILV_tv_day1,
+                                  ILVi = c("age", "mean_dist_to_carcass_squared_norm"),
+                                  ILVs = c("age")) 
 write_rds(data_list_day1, file="data/data_lists/dynamic_daylight_ilvs1_fixed_day1.RDS")
+
+data_list_1hr <- import_user_STb(event_data = event_data, 
+                             networks = networks_long_dynamic_1hr,
+                             network_type = "undirected",
+                             ILV_c = ILV_c,
+                             ILV_tv = ILV_tv,
+                             ILVi = c("age", "mean_dist_to_carcass_norm", "prop_informed_norm"),
+                             ILVs = c("age", "prop_informed_norm")) 
+write_rds(data_list_1hr, file="data/data_lists/dynamic_daylight_ilvs1_fixed_1hr.RDS")
+
+data_list_day1_1hr <- import_user_STb(event_data = event_data_day1, 
+                                  networks = networks_long_dynamic_day1_1hr,
+                                  network_type = "undirected",
+                                  ILV_c = ILV_c_day1,
+                                  ILV_tv = ILV_tv_day1,
+                                  ILVi = c("age", "mean_dist_to_carcass_squared_norm"),
+                                  ILVs = c("age")) 
+write_rds(data_list_day1_1hr, file="data/data_lists/dynamic_daylight_ilvs1_fixed_day1_1hr.RDS")
 
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
 write(model_full_dynamic, file="data/stan_models/dynamic_daylight_ilvs1_fixed.stan")
@@ -376,6 +428,11 @@ write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fix
 model_full_dynamic_day1_comp <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T, transmission_func="freqdep_f")
 write(model_full_dynamic_day1_comp, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1_comp.stan")
 
+model_full_dynamic_1hr <- generate_STb_model(data_list_1hr, gq = T, est_acqTime = T)
+write(model_full_dynamic_1hr, file="data/stan_models/dynamic_daylight_ilvs1_fixed_1hr.stan")
+
+model_full_dynamic_day1_1hr <- generate_STb_model(data_list_day1_1hr, gq = T, est_acqTime = T)
+write(model_full_dynamic_day1_1hr, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1_1hr.stan")
 # fit_dynamic <- fit_STb(data_list,
 #                        model_full_dynamic,
 #                        parallel_chains = 3,
@@ -415,6 +472,26 @@ fit_dynamic_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day
 #                             refresh=50)
 # STb_save(fit_dynamic_day1_comp, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_day1_comp")
 fit_dynamic_day1_comp <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_comp.rds') 
+
+fit_dynamic_1hr <- fit_STb(data_list_1hr,
+                       model_full_dynamic_1hr,
+                       parallel_chains = 3,
+                       chains = 3,
+                       cores = 3,
+                       iter = 500,
+                       refresh=50)
+STb_save(fit_dynamic_1hr, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_1hr")
+fit_dynamic_1hr <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_1hr.rds') 
+
+fit_dynamic_day1_1hr <- fit_STb(data_list_day1_1hr,
+                            model_full_dynamic_day1_1hr,
+                            parallel_chains = 3,
+                            chains = 3,
+                            cores = 3,
+                            iter = 500,
+                            refresh=50)
+STb_save(fit_dynamic_day1_1hr, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_day1_1hr")
+fit_dynamic_day1_1hr <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_1hr.rds') 
 
 model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
 # asocial_fit = fit_STb(data_list,
@@ -634,6 +711,7 @@ plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
 plot_data_ppc_sq <- get_plot_data_ppc(fit = fit_dynamic_sq, data_list = data_list_sq)
 plot_data_ppc_day1 <- get_plot_data_ppc(fit = fit_dynamic_day1, data_list = data_list_day1)
 plot_data_ppc_day1_comp <- get_plot_data_ppc(fit = fit_dynamic_day1_comp, data_list = data_list_day1)
+plot_data_ppc_day1_1hr <- get_plot_data_ppc(fit = fit_dynamic_day1_1hr, data_list = data_list_day1_1hr)
 
 # plot it
 ggplot() +
@@ -671,4 +749,13 @@ ggplot() +
   geom_line(data = plot_data_obs_day1, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Carc 1, Day 1, dist sq, no roostmates ILV,\ncomplex transmission") +
+  theme_minimal()
+
+ggplot() +
+  geom_line(data = plot_data_ppc_day1_1hr, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs_day1, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
+       title = "Day 1, 1hr") +
   theme_minimal()
