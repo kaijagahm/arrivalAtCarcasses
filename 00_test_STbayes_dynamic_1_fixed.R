@@ -504,14 +504,14 @@ write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fix
 model_full_dynamic_day1_comp <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T, transmission_func="freqdep_f")
 write(model_full_dynamic_day1_comp, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1_comp.stan")
 
-# fit_dynamic <- fit_STb(data_list,
-#                        model_full_dynamic,
-#                        parallel_chains = 3,
-#                        chains = 3,
-#                        cores = 3,
-#                        iter = 500,
-#                        refresh=50)
-# STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
+fit_dynamic <- fit_STb(data_list,
+                       model_full_dynamic,
+                       parallel_chains = 3,
+                       chains = 3,
+                       cores = 3,
+                       iter = 500,
+                       refresh=50)
+STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed.rds') 
 
 fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
@@ -524,25 +524,15 @@ fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
 STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens")
 fit_dynamic_norightcens <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_norightcens.rds')
 
-fit_dynamic_norightcens_renorm <- fit_STb(data_list_norightcens_renorm,
-                                   model_full_dynamic_norightcens_renorm,
-                                   parallel_chains = 3,
-                                   chains = 3,
-                                   cores = 3,
-                                   iter = 500,
-                                   refresh=50)
-STb_save(fit_dynamic_norightcens_renorm, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens_renorm")
+# fit_dynamic_norightcens_renorm <- fit_STb(data_list_norightcens_renorm,
+#                                    model_full_dynamic_norightcens_renorm,
+#                                    parallel_chains = 3,
+#                                    chains = 3,
+#                                    cores = 3,
+#                                    iter = 500,
+#                                    refresh=50)
+# STb_save(fit_dynamic_norightcens_renorm, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens_renorm")
 fit_dynamic_norightcens_renorm <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_norightcens_renorm.rds')
-
-# fit_dynamic_sq <- fit_STb(data_list_sq,
-#                        model_full_dynamic_sq,
-#                        parallel_chains = 3,
-#                        chains = 3,
-#                        cores = 3,
-#                        iter = 500,
-#                        refresh=50)
-# STb_save(fit_dynamic_sq, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_sq")
-fit_dynamic_sq <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_sq.rds') 
 
 # fit_dynamic_day1 <- fit_STb(data_list_day1,
 #                        model_full_dynamic_day1,
@@ -575,17 +565,6 @@ model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acq
 # STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed")
 asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
 
-# model_asoc_sq = generate_STb_model(data_list_sq, model_type="asocial", gq = T, est_acqTime = T)
-# asocial_fit_sq = fit_STb(data_list_sq,
-#                       model_asoc_sq,
-#                       parallel_chains =3,
-#                       chains =3,
-#                       cores = 3,
-#                       iter = 500,
-#                       refresh=50)
-# STb_save(asocial_fit_sq, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed_sq")
-asocial_fit_sq <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed_sq.rds') 
-
 # model_asoc_day1 = generate_STb_model(data_list_day1, model_type="asocial", gq = T, est_acqTime = T)
 # asocial_fit_day1 = fit_STb(data_list_day1,
 #                       model_asoc_day1,
@@ -598,17 +577,14 @@ asocial_fit_sq <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed_
 asocial_fit_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed_day1.rds') 
 
 loo_output <- STb_compare(fit_dynamic, asocial_fit, method="loo-psis")
-loo_output_sq <- STb_compare(fit_dynamic_sq, asocial_fit_sq, method="loo-psis")
 loo_output_day1 <- STb_compare(fit_dynamic_day1, asocial_fit_day1, method="loo-psis")
 loo_output_day1_comp <- STb_compare(fit_dynamic_day1_comp, asocial_fit_day1, method="loo-psis")
 
 comparison_df <- as.data.frame(loo_output$comparison)
-comparison_df_sq <- as.data.frame(loo_output_sq$comparison)
 comparison_df_day1 <- as.data.frame(loo_output_day1$comparison)
 comparison_df_day1_comp <- as.data.frame(loo_output_day1_comp$comparison)
 
 comparison_df$model <- rownames(comparison_df)
-comparison_df_sq$model <- rownames(comparison_df_sq)
 comparison_df_day1$model <- rownames(comparison_df_day1)
 comparison_df_day1_comp$model <- rownames(comparison_df_day1_comp)
 
@@ -619,14 +595,6 @@ ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   coord_flip() +
   labs(x = "Model", y = "ELPD Difference", title = "Carcass 1 ('fixed')") +
   theme_minimal()
-
-ggplot(comparison_df_sq, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
-  geom_point(size = 3) + #elpd_diff
-  geom_errorbar(aes(ymin = elpd_diff - se_diff, 
-                    ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
-  coord_flip() +
-  labs(x = "Model", y = "ELPD Difference", title = "Carcass 1 ('fixed')") +
-  theme_minimal() # looks fine
 
 ggplot(comparison_df_day1, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_point(size = 3) + #elpd_diff
@@ -646,7 +614,6 @@ ggplot(comparison_df_day1_comp, aes(x = reorder(model, elpd_diff), y = elpd_diff
 
 # PSIS-LOO is an approximation of LOO, and observations with pareto-k diagnostic values >.7 may indicate that the approximation is unreliable. The function above will warn you if that is the case, and you can visually inspect these diagnostics like so:
 pareto_df = as.data.frame(loo_output$pareto_diagnostics)
-pareto_df_sq = as.data.frame(loo_output_sq$pareto_diagnostics)
 pareto_df_day1 = as.data.frame(loo_output_day1$pareto_diagnostics)
 pareto_df_day1_comp = as.data.frame(loo_output_day1_comp$pareto_diagnostics)
 
@@ -657,14 +624,6 @@ ggplot(pareto_df, aes(x=observation, y=pareto_k, color=model))+
   geom_hline(yintercept = 1, linetype="dashed", color="red")+
   labs(x="Observation", y="Pareto-k value", title="Pareto-k diagnostics")+
   theme_minimal() # a few high--not great. Worse than squared.
-
-ggplot(pareto_df_sq, aes(x=observation, y=pareto_k, color=model))+
-  geom_point() +
-  scale_color_viridis_d(begin=0.2, end=0.7)+
-  geom_hline(yintercept = 0.7, linetype="dashed", color="orange")+
-  geom_hline(yintercept = 1, linetype="dashed", color="red")+
-  labs(x="Observation", y="Pareto-k value", title="Pareto-k diagnostics")+
-  theme_minimal() # a bit not-great but not terrible either.
 
 ggplot(pareto_df_day1, aes(x=observation, y=pareto_k, color=model))+
   geom_point() +
@@ -684,10 +643,10 @@ ggplot(pareto_df_day1_comp, aes(x=observation, y=pareto_k, color=model))+
 
 # SUMMARIES
 summ <- STb_summary(fit_dynamic, digits = 3)
-summ_sq <- STb_summary(fit_dynamic_sq, digits = 3)
 summ_day1 <- STb_summary(fit_dynamic_day1, digits = 3)
 summ_day1_comp <- STb_summary(fit_dynamic_day1_comp, digits = 3)
 summ_norightcens <- STb_summary(fit_dynamic_norightcens, digits = 3)
+summ_norightcens_renorm <- STb_summary(fit_dynamic_norightcens_renorm, digits = 3)
 
 summ %>% filter(grepl("beta_", Parameter)) %>%
   select(Parameter, Median, CI_Lower, CI_Upper) %>%
@@ -710,28 +669,6 @@ summ %>% filter(grepl("beta_", Parameter)) %>%
        caption = "Carcass 1 ('fixed')",
        title = "Individual-level variables",
        x = "Parameter") # so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
-
-summ_sq %>% filter(grepl("beta_", Parameter)) %>%
-  select(Parameter, Median, CI_Lower, CI_Upper) %>%
-  mutate(type = str_extract(Parameter, "ILVs|ILVi"),
-         type = case_when(type == "ILVi" ~ "Effect on intrinsic rate",
-                          type == "ILVs" ~ "Effect on social rate",
-                          .default = type)) %>%
-  mutate(param = str_remove(Parameter, "beta_"),
-         param = str_remove(param, "ILVi_"),
-         param = str_remove(param, "ILVs_"),
-         param = str_remove(param, "_norm")) %>%
-  ggplot(aes(x = param, y = Median))+
-  geom_point()+
-  geom_segment(aes(x = param, xend = param, y = CI_Lower, yend = CI_Upper))+
-  coord_flip()+
-  theme_minimal()+
-  facet_wrap(~type, ncol = 1, scale = "free_y")+
-  geom_hline(aes(yintercept = 0), linetype = 2)+
-  labs(subtitle = "(95% CIs)",
-       caption = "Carcass 1 ('fixed')",
-       title = "Individual-level variables",
-       x = "Parameter") # interesting that once we square the distance parameter, it removes the effect entirely
 
 summ_day1 %>% filter(grepl("beta_", Parameter)) %>%
   select(Parameter, Median, CI_Lower, CI_Upper) %>%
@@ -782,7 +719,7 @@ plot_data_obs_norightcens <- get_plot_data(event_data_nocensored)
 plot_data_obs_day1 <- get_plot_data(event_data_day1)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
 plot_data_ppc_norightcens <- get_plot_data_ppc(fit = fit_dynamic_norightcens, data_list = data_list_norightcens)
-plot_data_ppc_sq <- get_plot_data_ppc(fit = fit_dynamic_sq, data_list = data_list_sq)
+plot_data_ppc_norightcens_renorm <- get_plot_data_ppc(fit = fit_dynamic_norightcens_renorm, data_list = data_list_norightcens_renorm)
 plot_data_ppc_day1 <- get_plot_data_ppc(fit = fit_dynamic_day1, data_list = data_list_day1)
 plot_data_ppc_day1_comp <- get_plot_data_ppc(fit = fit_dynamic_day1_comp, data_list = data_list_day1)
 
@@ -794,7 +731,7 @@ ggplot() +
                 group = interaction(draw, trial)), alpha = .1) +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
-       title = "Carcass 1 ('fixed')") +
+       title = "Original") +
   theme_minimal()
 
 ggplot() +
@@ -807,14 +744,13 @@ ggplot() +
   theme_minimal()
 
 ggplot() +
-  geom_line(data = plot_data_ppc_sq, 
+  geom_line(data = plot_data_ppc_norightcens_renorm, 
             aes(x = time, y = cum_prop, 
                 group = interaction(draw, trial)), alpha = .1) +
-  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  geom_line(data = plot_data_obs_norightcens, aes(x = time, y = cum_prop), linewidth = 1) +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
-       title = "Carc 1, dist sq, roostmates ILV fixed") +
+       title = "No right-censored indivs") +
   theme_minimal()
-
 
 ggplot() +
   geom_line(data = plot_data_ppc_day1, 
@@ -833,3 +769,56 @@ ggplot() +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Carc 1, Day 1, dist sq, no roostmates ILV,\ncomplex transmission") +
   theme_minimal()
+
+# Renaming models and resaving them for Michael ---------------------------
+# event_data
+# event_data_nocensored
+# networks_long_dynamic
+nets <- networks_long_dynamic
+# networks_long_dynamic_norightcens
+nets_nocensored <- networks_long_dynamic_norightcens
+# networks_long_dynamic_norightcens_renorm
+nets_nocensored_renorm <- networks_long_dynamic_norightcens_renorm
+# ILV_c
+# ILV_c_norightcens
+ILV_c_nocensored <- ILV_c_norightcens
+# ILV_tv
+# ILV_tv_norightcens
+ILV_tv_nocensored <- ILV_tv_norightcens
+# data_list
+# data_list_norightcens
+data_list_nocensored <- data_list_norightcens
+# data_list_norightcens_renorm
+data_list_nocensored_renorm <- data_list_norightcens_renorm
+# model_full_dynamic
+mod <- model_full_dynamic
+# model_full_dynamic_norightcens
+mod_nocensored <- model_full_dynamic_norightcens
+# model_full_dynamic_norightcens_renorm
+mod_nocensored_renorm <- model_full_dynamic_norightcens_renorm
+# fit_dynamic
+fit <- fit_dynamic
+# fit_dynamic_norightcens
+fit_nocensored <- fit_dynamic_norightcens
+# fit_dynamic_norightcens_renorm
+fit_nocensored_renorm <- fit_dynamic_norightcens_renorm
+
+
+write_rds(event_data, file = "data/forMichael_2026-04-01/event_data.RDS")
+write_rds(event_data_nocensored, "data/forMichael_2026-04-01/event_data_nocensored.RDS")
+write_rds(nets, "data/forMichael_2026-04-01/nets.RDS")
+write_rds(nets_nocensored, "data/forMichael_2026-04-01/nets_nocensored.RDS")
+write_rds(nets_nocensored_renorm, "data/forMichael_2026-04-01/nets_nocensored_renorm.RDS")
+write_rds(ILV_c, "data/forMichael_2026-04-01/ILV_c.RDS")
+write_rds(ILV_c_nocensored, "data/forMichael_2026-04-01/ILV_c_nocensored.RDS")
+write_rds(ILV_tv, "data/forMichael_2026-04-01/ILV_tv.RDS")
+write_rds(ILV_tv_nocensored, "data/forMichael_2026-04-01/ILV_tv_nocensored.RDS")
+write_rds(data_list, "data/forMichael_2026-04-01/data_list.RDS")
+write_rds(data_list_nocensored, "data/forMichael_2026-04-01/data_list_nocensored.RDS")
+write_rds(data_list_nocensored_renorm, "data/forMichael_2026-04-01/data_list_nocensored_renorm.RDS")
+write_rds(mod, "data/forMichael_2026-04-01/mod.RDS")
+write_rds(mod_nocensored, "data/forMichael_2026-04-01/mod_nocensored.RDS")
+write_rds(mod_nocensored_renorm, "data/forMichael_2026-04-01/mod_nocensored_renorm.RDS")
+write_rds(fit, "data/forMichael_2026-04-01/fit.RDS")
+write_rds(fit_nocensored, "data/forMichael_2026-04-01/fit_nocensored.RDS")
+write_rds(fit_nocensored_renorm, "data/forMichael_2026-04-01/fit_nocensored_renorm.RDS")
