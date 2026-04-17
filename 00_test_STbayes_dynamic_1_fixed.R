@@ -266,9 +266,6 @@ gps_list_day1 <- map(gps_list_day1, ~{
 
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_fixed.RDS")
 networks_long_dynamic_norightcens <- readRDS("data/created/networks_long_dynamic_fixed_norightcens.RDS")
-networks_long_dynamic_norightcens_renorm <- networks_long_dynamic_norightcens %>%
-  mutate(renorm = (flight_sri - min(flight_sri))/(max(flight_sri)-min(flight_sri))) %>%
-  select(-flight_sri) %>% rename("flight_sri" = renorm)
 networks_long_dynamic_day1 <- readRDS("data/created/networks_long_dynamic_fixed_day1.RDS")
 
 # Network must contain all individuals
@@ -459,24 +456,6 @@ data_list_norightcens <- import_user_STb(event_data = event_data_nocensored,
                                          ILVs = c("age", "prop_informed_norm")) 
 write_rds(data_list_norightcens, file="data/data_lists/dynamic_daylight_ilvs1_fixed_norightcens.RDS")
 
-data_list_norightcens_renorm <- import_user_STb(event_data = event_data_nocensored, 
-                                         networks = networks_long_dynamic_norightcens_renorm,
-                                         network_type = "undirected",
-                                         ILV_c = ILV_c_norightcens,
-                                         ILV_tv = ILV_tv_norightcens,
-                                         ILVi = c("age", "mean_dist_to_carcass_norm", "prop_informed_norm"),
-                                         ILVs = c("age", "prop_informed_norm")) 
-write_rds(data_list_norightcens_renorm, file="data/data_lists/dynamic_daylight_ilvs1_fixed_norightcens_renorm.RDS")
-
-data_list_sq <- import_user_STb(event_data = event_data, 
-                                networks = networks_long_dynamic,
-                                network_type = "undirected",
-                                ILV_c = ILV_c,
-                                ILV_tv = ILV_tv,
-                                ILVi = c("age", "mean_dist_to_carcass_squared_norm", "prop_informed_norm"),
-                                ILVs = c("age", "prop_informed_norm")) 
-write_rds(data_list_sq, file="data/data_lists/dynamic_daylight_ilvs1_fixed_sq.RDS")
-
 data_list_day1 <- import_user_STb(event_data = event_data_day1, 
                                   networks = networks_long_dynamic_day1,
                                   network_type = "undirected",
@@ -491,12 +470,6 @@ write(model_full_dynamic, file="data/stan_models/dynamic_daylight_ilvs1_fixed.st
 
 model_full_dynamic_norightcens <- generate_STb_model(data_list_norightcens, gq = T, est_acqTime = T)
 write(model_full_dynamic_norightcens, file="data/stan_models/dynamic_daylight_ilvs1_fixed_norightcens.stan")
-
-model_full_dynamic_norightcens_renorm <- generate_STb_model(data_list_norightcens_renorm, gq = T, est_acqTime = T)
-write(model_full_dynamic_norightcens_renorm, file="data/stan_models/dynamic_daylight_ilvs1_fixed_norightcens_renorm.stan")
-
-model_full_dynamic_sq <- generate_STb_model(data_list_sq, gq = T, est_acqTime = T)
-write(model_full_dynamic_sq, file="data/stan_models/dynamic_daylight_ilvs1_fixed_sq.stan")
 
 model_full_dynamic_day1 <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T)
 write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1.stan")
@@ -524,16 +497,6 @@ fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
 STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens")
 fit_dynamic_norightcens <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_norightcens.rds')
 
-# fit_dynamic_norightcens_renorm <- fit_STb(data_list_norightcens_renorm,
-#                                    model_full_dynamic_norightcens_renorm,
-#                                    parallel_chains = 3,
-#                                    chains = 3,
-#                                    cores = 3,
-#                                    iter = 500,
-#                                    refresh=50)
-# STb_save(fit_dynamic_norightcens_renorm, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens_renorm")
-fit_dynamic_norightcens_renorm <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_norightcens_renorm.rds')
-
 # fit_dynamic_day1 <- fit_STb(data_list_day1,
 #                        model_full_dynamic_day1,
 #                        parallel_chains = 3,
@@ -555,14 +518,14 @@ fit_dynamic_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day
 fit_dynamic_day1_comp <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_comp.rds') 
 
 model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
-# asocial_fit = fit_STb(data_list,
-#                       model_asoc,
-#                       parallel_chains =3,
-#                       chains =3,
-#                       cores = 3,
-#                       iter = 500,
-#                       refresh=50)
-# STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed")
+asocial_fit = fit_STb(data_list,
+                      model_asoc,
+                      parallel_chains =3,
+                      chains =3,
+                      cores = 3,
+                      iter = 500,
+                      refresh=50)
+STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed")
 asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
 
 # model_asoc_day1 = generate_STb_model(data_list_day1, model_type="asocial", gq = T, est_acqTime = T)
@@ -646,7 +609,6 @@ summ <- STb_summary(fit_dynamic, digits = 3)
 summ_day1 <- STb_summary(fit_dynamic_day1, digits = 3)
 summ_day1_comp <- STb_summary(fit_dynamic_day1_comp, digits = 3)
 summ_norightcens <- STb_summary(fit_dynamic_norightcens, digits = 3)
-summ_norightcens_renorm <- STb_summary(fit_dynamic_norightcens_renorm, digits = 3)
 
 summ %>% filter(grepl("beta_", Parameter)) %>%
   select(Parameter, Median, CI_Lower, CI_Upper) %>%
@@ -719,7 +681,6 @@ plot_data_obs_norightcens <- get_plot_data(event_data_nocensored)
 plot_data_obs_day1 <- get_plot_data(event_data_day1)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
 plot_data_ppc_norightcens <- get_plot_data_ppc(fit = fit_dynamic_norightcens, data_list = data_list_norightcens)
-plot_data_ppc_norightcens_renorm <- get_plot_data_ppc(fit = fit_dynamic_norightcens_renorm, data_list = data_list_norightcens_renorm)
 plot_data_ppc_day1 <- get_plot_data_ppc(fit = fit_dynamic_day1, data_list = data_list_day1)
 plot_data_ppc_day1_comp <- get_plot_data_ppc(fit = fit_dynamic_day1_comp, data_list = data_list_day1)
 
@@ -736,15 +697,6 @@ ggplot() +
 
 ggplot() +
   geom_line(data = plot_data_ppc_norightcens, 
-            aes(x = time, y = cum_prop, 
-                group = interaction(draw, trial)), alpha = .1) +
-  geom_line(data = plot_data_obs_norightcens, aes(x = time, y = cum_prop), linewidth = 1) +
-  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
-       title = "No right-censored indivs") +
-  theme_minimal()
-
-ggplot() +
-  geom_line(data = plot_data_ppc_norightcens_renorm, 
             aes(x = time, y = cum_prop, 
                 group = interaction(draw, trial)), alpha = .1) +
   geom_line(data = plot_data_obs_norightcens, aes(x = time, y = cum_prop), linewidth = 1) +
@@ -777,8 +729,6 @@ ggplot() +
 nets <- networks_long_dynamic
 # networks_long_dynamic_norightcens
 nets_nocensored <- networks_long_dynamic_norightcens
-# networks_long_dynamic_norightcens_renorm
-nets_nocensored_renorm <- networks_long_dynamic_norightcens_renorm
 # ILV_c
 # ILV_c_norightcens
 ILV_c_nocensored <- ILV_c_norightcens
@@ -788,37 +738,27 @@ ILV_tv_nocensored <- ILV_tv_norightcens
 # data_list
 # data_list_norightcens
 data_list_nocensored <- data_list_norightcens
-# data_list_norightcens_renorm
-data_list_nocensored_renorm <- data_list_norightcens_renorm
 # model_full_dynamic
 mod <- model_full_dynamic
 # model_full_dynamic_norightcens
 mod_nocensored <- model_full_dynamic_norightcens
-# model_full_dynamic_norightcens_renorm
-mod_nocensored_renorm <- model_full_dynamic_norightcens_renorm
 # fit_dynamic
 fit <- fit_dynamic
 # fit_dynamic_norightcens
 fit_nocensored <- fit_dynamic_norightcens
-# fit_dynamic_norightcens_renorm
-fit_nocensored_renorm <- fit_dynamic_norightcens_renorm
 
 
 write_rds(event_data, file = "data/forMichael_2026-04-01/event_data.RDS")
 write_rds(event_data_nocensored, "data/forMichael_2026-04-01/event_data_nocensored.RDS")
 write_rds(nets, "data/forMichael_2026-04-01/nets.RDS")
 write_rds(nets_nocensored, "data/forMichael_2026-04-01/nets_nocensored.RDS")
-write_rds(nets_nocensored_renorm, "data/forMichael_2026-04-01/nets_nocensored_renorm.RDS")
 write_rds(ILV_c, "data/forMichael_2026-04-01/ILV_c.RDS")
 write_rds(ILV_c_nocensored, "data/forMichael_2026-04-01/ILV_c_nocensored.RDS")
 write_rds(ILV_tv, "data/forMichael_2026-04-01/ILV_tv.RDS")
 write_rds(ILV_tv_nocensored, "data/forMichael_2026-04-01/ILV_tv_nocensored.RDS")
 write_rds(data_list, "data/forMichael_2026-04-01/data_list.RDS")
 write_rds(data_list_nocensored, "data/forMichael_2026-04-01/data_list_nocensored.RDS")
-write_rds(data_list_nocensored_renorm, "data/forMichael_2026-04-01/data_list_nocensored_renorm.RDS")
 write_rds(mod, "data/forMichael_2026-04-01/mod.RDS")
 write_rds(mod_nocensored, "data/forMichael_2026-04-01/mod_nocensored.RDS")
-write_rds(mod_nocensored_renorm, "data/forMichael_2026-04-01/mod_nocensored_renorm.RDS")
 write_rds(fit, "data/forMichael_2026-04-01/fit.RDS")
 write_rds(fit_nocensored, "data/forMichael_2026-04-01/fit_nocensored.RDS")
-write_rds(fit_nocensored_renorm, "data/forMichael_2026-04-01/fit_nocensored_renorm.RDS")
