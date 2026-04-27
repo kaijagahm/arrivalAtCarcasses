@@ -47,7 +47,10 @@ stn %>%
   facet_wrap(~year, scales = "free_x")+
   theme(panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
-        legend.position = "none")+
+        legend.position = "none",
+        text = element_text(size = 18),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 12))+
   labs(y = "Feeding station", x = "Date")
 
 # Wild carcasses
@@ -98,11 +101,13 @@ stn_summ <- stn %>%
 stn_summ %>%
   filter(n() > 4) %>%
   ggplot(aes(x = stationName, y = sd))+
-  geom_point()
+  geom_point()+
+  theme_minimal()
 
 stn_summ %>%
   ggplot(aes(x = n, y = sd))+
-  geom_point() # there's a clear relationship between number of carcasses and sd (interval length)
+  geom_point()+ # there's a clear relationship between number of carcasses and sd (interval length)
+  theme_minimal()
 
 # Probably what's relevant is only the 6-month period before each carcass.
 
@@ -118,6 +123,7 @@ mean_intervals_last6mos <- rep(NA, nrow(carcs_focal))
 mean_log_intervals_last6mos <- rep(NA, nrow(carcs_focal))
 sd_intervals_last6mos <- rep(NA, nrow(carcs_focal))
 sd_log_intervals_last6mos <- rep(NA, nrow(carcs_focal))
+var_intervals_last6mos <- rep(NA, nrow(carcs_focal))
 for(i in 1:nrow(carcs_focal)){
   current_date <- carcs_focal$date[i]
   current_stn <- carcs_focal$stationName[i]
@@ -132,6 +138,7 @@ for(i in 1:nrow(carcs_focal)){
   mean_interval <- mean(intervals, na.rm = T)
   mean_log_interval <- mean(log(intervals), na.rm = T)
   sd_interval <- sd(intervals, na.rm = T)
+  var_interval <- var(intervals, na.rm = T)
   sd_log_interval <- sd(log(intervals), na.rm = T)
   # deposited_dates_area <- sort(unique(prev_6mos_area$date))
   # active_dates <- sort(unique(c(prev_6mos$date, prev_6mos$date + days(1), prev_6mos$date + days(2))))
@@ -140,6 +147,7 @@ for(i in 1:nrow(carcs_focal)){
   n_deposited_dates_last6mos[i] <- n_deposited_dates
   mean_intervals_last6mos[i] <- mean_interval
   sd_intervals_last6mos[i] <- sd_interval
+  var_intervals_last6mos[i] <- var_interval
   mean_log_intervals_last6mos[i] <- mean_log_interval
   sd_log_intervals_last6mos[i] <- sd_log_interval
 }
@@ -150,45 +158,42 @@ carcs_focal$n_deposited_dates_last6mos <- n_deposited_dates_last6mos
 carcs_focal$mean_interval_last6mos <- mean_intervals_last6mos
 carcs_focal$mean_log_interval_last6mos <- mean_log_intervals_last6mos
 carcs_focal$sd_interval_last6mos <- sd_intervals_last6mos
+carcs_focal$var_interval_last6mos <- var_intervals_last6mos
 carcs_focal$sd_log_interval_last6mos <- sd_log_intervals_last6mos
 
+carcs_focal %>%
+  ggplot(aes(x = stn_days_last6mos*100, fill = stationName))+
+  geom_histogram(bins = 15)+
+  theme(legend.position = "bottom")+ # proportion of days that have carcasses
+  theme_minimal()+
+  labs(y = "Carcasses", x = "% days w/carcass @ station, last 6 mos", fill = "Station name")+
+  theme(text = element_text(size = 18))
 
 carcs_focal %>%
-  ggplot(aes(x = stn_days_last6mos, y = n_deposited_dates_last6mos, col = stationName))+
-  geom_point() # makes sense that this is exactly linear
-
-carcs_focal %>%
-  ggplot(aes(x = stn_days_last6mos, fill = stationName))+
+  ggplot(aes(x = var_interval_last6mos, fill = stationName))+
   geom_histogram()+
-  theme(legend.position = "bottom") # for proportion of days with carcasses, we have a bi or trimodal distribution, just by number of days there were carcasses placed in the last 6 months.
-
-carcs_focal %>%
-  ggplot(aes(x = sd_interval_last6mos, fill = stationName))+
-  geom_histogram()+
-  theme(legend.position = "bottom") # sd of interval doesn't get us nice groupings like proportion did.
+  theme(legend.position = "bottom")+ # var of interval doesn't get us nice groupings like proportion did.
+  theme_minimal()
 
 # does it even make sense to take the standard deviation of log-transformed intervals?
 carcs_focal %>%
   ggplot(aes(x = sd_log_interval_last6mos, fill = stationName))+
   geom_histogram()+
-  theme(legend.position = "bottom") 
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
 
 carcs_focal %>%
   ggplot(aes(x = mean_interval_last6mos, y = sd_interval_last6mos, col = stationName, size = n_deposited_dates_last6mos))+
-  geom_point()+
+  geom_point(pch = 1)+
   theme_minimal()+
   theme(legend.position = "bottom")
 
 carcs_focal %>%
   ggplot(aes(x = mean_log_interval_last6mos, y = sd_log_interval_last6mos, col = stationName, size = n_deposited_dates_last6mos))+
-  geom_point()+
+  geom_point(pch = 1)+
   theme_minimal()+
   theme(legend.position = "bottom")
-
-
-
-
-
 
 
 
@@ -435,7 +440,7 @@ all_carcasses <- all_carcasses %>%
   mutate(carcType = "stn")
 # get all carcasses for the three hf windows, including both wild and stn
 all_carcasses <- all_carcasses %>%
-  select(carcID, date, long, lat, geometry, X, Y, carcType, nBouts, nIndivs, carcassWeight)
+  select(carcID, date, long, lat, geometry, X, Y, carcType, carcassWeight)
 # add on all the carcasses from the other times besides the hf windows
 all_carcasses <- bind_rows(all_carcasses %>% mutate(source = "ac"), all_carcasses %>% mutate(source = "ca")) 
 # deduplicate, defaulting to all_carcasses

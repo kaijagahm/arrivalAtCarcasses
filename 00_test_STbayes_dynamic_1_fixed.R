@@ -435,6 +435,49 @@ ILV_tv_day1 <- dists_dyn_day1 %>%
                   #"prop_informed_norm"
   ), ~replace_na(.x, 0)))
 
+# Visualize ILVs
+# Age histogram
+age_ilv %>%
+  ggplot(aes(x = age_2023))+
+  geom_histogram(bins = 15, fill = "gray30", color = "gray50")+
+  theme_minimal()+
+  labs(y = "# vultures",
+       x = "Age (years)")+
+  theme(text = element_text(size = 18))
+
+# Age vs. time to discover
+event_data %>% left_join(age_ilv, by = c("id" = "individual_local_identifier")) %>%
+  filter(time < t_end) %>%
+  ggplot(aes(x = age_2023, y = time))+
+  geom_point(pch = 1)+
+  theme_minimal()+
+  geom_smooth(method = "lm")
+
+# Proportion of informed roostmates
+prop_informed %>%
+  ggplot(aes(x = roost_date, y = prop_informed, group = ID1))+
+  geom_point(pch = 1, alpha = 0.5)+
+  geom_path(alpha = 0.5)+
+  theme_minimal()
+
+prop_informed %>%
+  ggplot(aes(x = factor(roost_date), y = prop_informed))+
+  geom_violin()+
+  geom_jitter(pch = 1, alpha = 0.2, width = 0.1, height = 0.01)
+
+prop_informed %>%
+  mutate(day = case_when(roost_date == "2023-03-21" ~ "Day 1",
+                         roost_date == "2023-03-22" ~ "Day 2",
+                         roost_date == "2023-03-23" ~ "Day 3",
+                         .default = NA)) %>%
+  filter(!is.na(day)) %>%
+  ggplot(aes(x = prop_informed))+
+  geom_histogram(bins = 15, fill = "gray30", color = "gray50")+
+  theme_minimal()+
+  facet_wrap(~day, ncol = 1)+
+  labs(y = "# vultures", x = "Prop. roostmates informed")+
+  theme(text = element_text(size = 18))
+
 # Data lists --------------------------------------------------------------
 #We need to explicitly tell STbayes which variables are additive (acting independently on intrinsic or social rates) and multiplicative (same effect estimated for intrinsic and social rates). Below, I have specified age as acting independently on the intrinsic and social rate, sex as acting only on the social rate, and weight as a multiplicative effect. Two betas will be estimated for age, and a single beta will be estimated for sex and weight.
 
@@ -477,24 +520,24 @@ write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fix
 model_full_dynamic_day1_comp <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T, transmission_func="freqdep_f")
 write(model_full_dynamic_day1_comp, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1_comp.stan")
 
-fit_dynamic <- fit_STb(data_list,
-                       model_full_dynamic,
-                       parallel_chains = 3,
-                       chains = 3,
-                       cores = 3,
-                       iter = 500,
-                       refresh=50)
-STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
+# fit_dynamic <- fit_STb(data_list,
+#                        model_full_dynamic,
+#                        parallel_chains = 3,
+#                        chains = 3,
+#                        cores = 3,
+#                        iter = 500,
+#                        refresh=50)
+# STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed.rds') 
 
-fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
-                                   model_full_dynamic_norightcens,
-                                   parallel_chains = 3,
-                                   chains = 3,
-                                   cores = 3,
-                                   iter = 500,
-                                   refresh=50)
-STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens")
+# fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
+#                                    model_full_dynamic_norightcens,
+#                                    parallel_chains = 3,
+#                                    chains = 3,
+#                                    cores = 3,
+#                                    iter = 500,
+#                                    refresh=50)
+# STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_norightcens")
 fit_dynamic_norightcens <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_norightcens.rds')
 
 # fit_dynamic_day1 <- fit_STb(data_list_day1,
@@ -517,15 +560,15 @@ fit_dynamic_day1 <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day
 # STb_save(fit_dynamic_day1_comp, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed_day1_comp")
 fit_dynamic_day1_comp <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed_day1_comp.rds') 
 
-model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
-asocial_fit = fit_STb(data_list,
-                      model_asoc,
-                      parallel_chains =3,
-                      chains =3,
-                      cores = 3,
-                      iter = 500,
-                      refresh=50)
-STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed")
+# model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
+# asocial_fit = fit_STb(data_list,
+#                       model_asoc,
+#                       parallel_chains =3,
+#                       chains =3,
+#                       cores = 3,
+#                       iter = 500,
+#                       refresh=50)
+# STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc1_fixed")
 asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc1_fixed.rds') 
 
 # model_asoc_day1 = generate_STb_model(data_list_day1, model_type="asocial", gq = T, est_acqTime = T)
@@ -556,8 +599,9 @@ ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_errorbar(aes(ymin = elpd_diff - se_diff, 
                     ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
   coord_flip() +
-  labs(x = "Model", y = "ELPD Difference", title = "Carcass 1 ('fixed')") +
-  theme_minimal()
+  labs(x = "Model", y = "ELPD Difference", title = "Carcass 1 (4417687)") +
+  theme_minimal()+
+  theme(text = element_text(size = 18))
 
 ggplot(comparison_df_day1, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_point(size = 3) + #elpd_diff
@@ -627,10 +671,9 @@ summ %>% filter(grepl("beta_", Parameter)) %>%
   theme_minimal()+
   facet_wrap(~type, ncol = 1, scale = "free_y")+
   geom_hline(aes(yintercept = 0), linetype = 2)+
-  labs(subtitle = "(95% CIs)",
-       caption = "Carcass 1 ('fixed')",
-       title = "Individual-level variables",
-       x = "Parameter") # so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
+  labs(caption = "Carcass 1 (4417687). 95% CIs for ILVs.",
+       x = "Parameter")+
+  theme(text = element_text(size = 18))
 
 summ_day1 %>% filter(grepl("beta_", Parameter)) %>%
   select(Parameter, Median, CI_Lower, CI_Upper) %>%

@@ -344,35 +344,35 @@ write(model_full_dynamic, file="data/stan_models/model_3_fixed.stan")
 model_full_dynamic_norightcens <- generate_STb_model(data_list_norightcens, gq = T, est_acqTime = T)
 write(model_full_dynamic_norightcens, file="data/stan_models/model_3_fixed_norightcens.stan")
 
-fit_dynamic <- fit_STb(data_list,
-                       model_full_dynamic,
-                       parallel_chains = 3,
-                       chains = 3,
-                       cores = 3,
-                       iter = 500,
-                       refresh=50)
-STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs3_fixed")
+# fit_dynamic <- fit_STb(data_list,
+#                        model_full_dynamic,
+#                        parallel_chains = 3,
+#                        chains = 3,
+#                        cores = 3,
+#                        iter = 500,
+#                        refresh=50)
+# STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs3_fixed")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs3_fixed.rds') 
-
-fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
-                                   model_full_dynamic_norightcens,
-                                   parallel_chains = 3,
-                                   chains = 3,
-                                   cores = 3,
-                                   iter = 500,
-                                   refresh=50)
-STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs3_fixed_norightcens")
+# 
+# fit_dynamic_norightcens <- fit_STb(data_list_norightcens,
+#                                    model_full_dynamic_norightcens,
+#                                    parallel_chains = 3,
+#                                    chains = 3,
+#                                    cores = 3,
+#                                    iter = 500,
+#                                    refresh=50)
+# STb_save(fit_dynamic_norightcens, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs3_fixed_norightcens")
 fit_dynamic_norightcens <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs3_fixed_norightcens.rds')
 
 model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acqTime = T)
-asocial_fit = fit_STb(data_list,
-                      model_asoc,
-                      parallel_chains =3,
-                      chains =3,
-                      cores = 3,
-                      iter = 500,
-                      refresh=50)
-STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc3_fixed")
+# asocial_fit = fit_STb(data_list,
+#                       model_asoc,
+#                       parallel_chains =3,
+#                       chains =3,
+#                       cores = 3,
+#                       iter = 500,
+#                       refresh=50)
+# STb_save(asocial_fit, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs_asoc3_fixed")
 asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc3_fixed.rds') 
 
 loo_output <- STb_compare(fit_dynamic, asocial_fit, method="loo-psis")
@@ -386,8 +386,18 @@ ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_errorbar(aes(ymin = elpd_diff - se_diff, 
                     ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
   coord_flip() +
-  labs(x = "Model", y = "ELPD Difference", title = "Carcass 3 ('fixed')") +
-  theme_minimal()
+  labs(x = "Model", y = "ELPD Difference", title = "Carcass 3 (4420641)") +
+  theme_minimal()+
+  theme(text = element_text(size = 18))
+
+ggplot(comparison_df, aes(x = 1, y = elpd_diff, color = model)) +
+  geom_point(size = 4) + #elpd_diff
+  geom_errorbar(aes(ymin = elpd_diff - se_diff, 
+                    ymax = elpd_diff + se_diff), width = 0.1, linewidth = 2) + #SE of elpd diff
+  labs(x = "Model", y = "ELPD Difference", title = "Carcass 3 (4420641)") +
+  theme_minimal()+
+  theme(text = element_text(size = 18))+
+  coord_flip()
 
 # PSIS-LOO is an approximation of LOO, and observations with pareto-k diagnostic values >.7 may indicate that the approximation is unreliable. The function above will warn you if that is the case, and you can visually inspect these diagnostics like so:
 pareto_df = as.data.frame(loo_output$pareto_diagnostics)
@@ -422,9 +432,9 @@ summ %>% filter(grepl("beta_", Parameter)) %>%
   facet_wrap(~type, ncol = 1, scale = "free_y")+
   geom_hline(aes(yintercept = 0), linetype = 2)+
   labs(subtitle = "(95% CIs)",
-       caption = "Carcass 1 ('fixed')",
-       title = "Individual-level variables",
-       x = "Parameter") # so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
+       caption = "Carcass 3 ('fixed')",
+       x = "Parameter")+
+  theme(text = element_text(size = 18))# so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
 
 plot_data_obs <- get_plot_data(event_data)
 plot_data_obs_norightcens <- get_plot_data(event_data_nocensored)
