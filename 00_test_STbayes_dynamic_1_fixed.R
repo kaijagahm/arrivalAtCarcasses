@@ -390,6 +390,10 @@ data_list <- import_user_STb(event_data = event_data,
                              ILVs = c("age", "prop_informed_norm")) 
 write_rds(data_list, file="data/data_lists/dynamic_daylight_ilvs1_fixed.RDS")
 
+data_list_simple <- import_user_STb(event_data = event_data, 
+                             networks = networks_long_dynamic) 
+write_rds(data_list_simple, file="data/data_lists/data_list_simple.RDS")
+
 data_list_day1 <- import_user_STb(event_data = event_data_day1, 
                                   networks = networks_long_dynamic_day1,
                                   network_type = "undirected",
@@ -401,6 +405,12 @@ write_rds(data_list_day1, file="data/data_lists/dynamic_daylight_ilvs1_fixed_day
 
 model_full_dynamic <- generate_STb_model(data_list, gq = T, est_acqTime = T)
 write(model_full_dynamic, file="data/stan_models/dynamic_daylight_ilvs1_fixed.stan")
+
+model_simple <- generate_STb_model(data_list_simple, gq = T, est_acqTime = T)
+write(model_simple, file="data/stan_models/model_simple.stan")
+
+model_1_weibull <- generate_STb_model(data_list, gq = T, est_acqTime = T, intrinsic_rate = "weibull")
+write(model_1_weibull, file="data/stan_models/model_1_weibull.stan")
 
 model_full_dynamic_day1 <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T)
 write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1.stan")
@@ -417,6 +427,106 @@ write(model_full_dynamic_day1_comp, file="data/stan_models/dynamic_daylight_ilvs
 #                        refresh=50)
 # STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed.rds') 
+
+fit_simple <- fit_STb(data_list_simple,
+                       model_simple)
+STb_save(fit_simple, output_dir = "data/cmdstan_saves", name="fit_simple")
+fit_simple <- readRDS('data/cmdstan_saves/fit_simple.rds') 
+
+# create cumulative count of events
+plot_data_obs <- event_data %>%
+  filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+  group_by(trial) %>%
+  arrange(time, .by_group = TRUE) %>%
+  mutate(
+    cum_prop = row_number() / n_trial, # this denominator needs to be the number of individuals per trial
+    type = "observed"
+  ) %>%
+  select(trial, time, cum_prop, type) %>%
+  ungroup()
+
+# add in 0,0 starting point
+plot_data_obs <- bind_rows(
+  plot_data_obs,
+  plot_data_obs %>%
+    distinct(trial) %>%
+    mutate(time = 0, cum_prop = 0, type = "observed")
+) %>%
+  arrange(trial, time)
+
+# extract draws of predicted acqtime
+draws_df <- as_draws_df(fit_simple$draws(variables = "acquisition_time", inc_warmup = FALSE))
+
+# pivot longer
+ppc_long <- draws_df %>%
+  select(starts_with("acquisition_time[")) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = c("trial", "ind"),
+    names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+    values_to = "time"
+  ) %>%
+  mutate(
+    trial = as.integer(trial),
+    ind = as.integer(ind),
+    draw = rep(1:(nrow(draws_df)),
+               each = length(unique(.$trial)) * length(unique(.$ind))
+    )
+  )
+
+
+# thin sample for plotting
+sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+
+# build cumulative curves per draw
+# same as before, we need a way to reference the number of individuals in each trial
+ppc_long <- ppc_long %>%
+  group_by(draw, trial) %>%
+  mutate(n_trial = n())
+summary(ppc_long)
+# we also need to remove individuals predicted as censored
+ppc_long <- ppc_long %>%
+  filter(time > -1)
+# create cumulative curves
+plot_data_ppc <- ppc_long %>%
+  group_by(draw, trial, time) %>%
+  summarise(n = n(), n_trial = first(n_trial), .groups = "drop") %>%
+  group_by(draw, trial) %>%
+  arrange(time) %>%
+  mutate(cum_prop = cumsum(n) / n_trial)
+
+# add in 0,0 starting point
+plot_data_ppc <- bind_rows(
+  plot_data_ppc,
+  plot_data_ppc %>%
+    distinct(trial, draw) %>%
+    mutate(time = 0, cum_prop = 0, type = "ppc")
+) %>%
+  arrange(trial, time)
+
+# plot it
+ggplot() +
+  geom_line(
+    data = plot_data_ppc,
+    aes(
+      x = time, y = cum_prop,
+      group = interaction(draw, trial)
+    ), alpha = .1
+  ) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial") +
+  theme_minimal()
+
+fit_weibull <- fit_STb(data_list,
+                       model_1_weibull,
+                       parallel_chains = 3,
+                       chains = 3,
+                       cores = 3,
+                       iter = 500,
+                       refresh=50)
+STb_save(fit_weibull, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_weibull")
+fit_weibull <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_weibull.rds') 
 
 # fit_dynamic_day1 <- fit_STb(data_list_day1,
 #                        model_full_dynamic_day1,
@@ -528,6 +638,8 @@ ggplot(pareto_df_day1_comp, aes(x=observation, y=pareto_k, color=model))+
 
 # SUMMARIES
 summ <- STb_summary(fit_dynamic, digits = 3)
+summ_simple <- STb_summary(fit_simple, digits = 3)
+summ_weibull <- STb_summary(fit_weibull, digits = 3)
 summ_day1 <- STb_summary(fit_dynamic_day1, digits = 3)
 summ_day1_comp <- STb_summary(fit_dynamic_day1_comp, digits = 3)
 
@@ -599,13 +711,33 @@ summ_day1_comp %>% filter(grepl("beta_", Parameter)) %>%
 plot_data_obs <- get_plot_data(event_data)
 plot_data_obs_day1 <- get_plot_data(event_data_day1)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
+plot_data_ppc_simple <- get_plot_data_ppc(fit = fit_simple, data_list = data_list_simple)
 plot_data_ppc_day1 <- get_plot_data_ppc(fit = fit_dynamic_day1, data_list = data_list_day1)
 plot_data_ppc_day1_comp <- get_plot_data_ppc(fit = fit_dynamic_day1_comp, data_list = data_list_day1)
-
+plot_data_ppc_weibull <- get_plot_data_ppc(fit = fit_weibull, data_list = data_list)
 
 # plot it
 ggplot() +
   geom_line(data = plot_data_ppc, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
+       title = "Original") +
+  theme_minimal()
+
+ggplot() +
+  geom_line(data = plot_data_ppc_simple, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
+       title = "Original") +
+  theme_minimal()
+
+# plot it
+ggplot() +
+  geom_line(data = plot_data_ppc_weibull, 
             aes(x = time, y = cum_prop, 
                 group = interaction(draw, trial)), alpha = .1) +
   geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +

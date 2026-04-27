@@ -123,19 +123,19 @@ gps_list <- map(gps_list, ~{
   }
 })
 
-dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
-dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
-map(dynamic_networks_fixed, dim)
-
-networks_long <- map(dynamic_networks_fixed, ~{
-  out <- .x %>% rownames_to_column(var = "focal") %>%
-    pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
-    mutate(trial = carc_id)
-  return(out)
-})
-
-networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
-write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_3_fixed.RDS")
+# dynamic_networks <- map(gps_list, ~get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd))
+# dynamic_networks_fixed <- fix_nets(nets = dynamic_networks, indivs = all_indivs_sorted)
+# map(dynamic_networks_fixed, dim)
+# 
+# networks_long <- map(dynamic_networks_fixed, ~{
+#   out <- .x %>% rownames_to_column(var = "focal") %>%
+#     pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri") %>%
+#     mutate(trial = carc_id)
+#   return(out)
+# })
+# 
+# networks_long_dynamic <- purrr::list_rbind(networks_long, names_to = "time") # this creates a numeric column for "time", which is how stbayes wants it--sequential integer values, not group names.
+# write_rds(networks_long_dynamic, file = "data/created/networks_long_dynamic_3_fixed.RDS")
 
 networks_long_dynamic <- readRDS("data/created/networks_long_dynamic_3_fixed.RDS")
 
@@ -269,8 +269,12 @@ model_asoc = generate_STb_model(data_list, model_type="asocial", gq = T, est_acq
 asocial_fit <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs_asoc3_fixed.rds') 
 
 loo_output <- STb_compare(fit_dynamic, asocial_fit, method="loo-psis")
+loo_output_weibull <- STb_compare(fit_weibull, asocial_fit, method = "loo-psis")
 comparison_df <- as.data.frame(loo_output$comparison)
+comparison_df_weibull <- as.data.frame(loo_output_weibull$comparison)
 comparison_df$model <- rownames(comparison_df)
+comparison_df_weibull$model <- rownames(comparison_df_weibull)
+
 
 ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   geom_point(size = 3) + #elpd_diff
@@ -281,8 +285,18 @@ ggplot(comparison_df, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
   theme_minimal()+
   theme(text = element_text(size = 18))
 
+ggplot(comparison_df_weibull, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
+  geom_point(size = 3) + #elpd_diff
+  geom_errorbar(aes(ymin = elpd_diff - se_diff, 
+                    ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
+  coord_flip() +
+  labs(x = "Model", y = "ELPD Difference", title = "Carcass 3 (4420641)") +
+  theme_minimal()+
+  theme(text = element_text(size = 18))
+
 # PSIS-LOO is an approximation of LOO, and observations with pareto-k diagnostic values >.7 may indicate that the approximation is unreliable. The function above will warn you if that is the case, and you can visually inspect these diagnostics like so:
 pareto_df = as.data.frame(loo_output$pareto_diagnostics)
+pareto_df_weibull <- as.data.frame(loo_output_weibull$pareto_diagnostics)
 
 ggplot(pareto_df, aes(x=observation, y=pareto_k, color=model))+
   geom_point() +
@@ -292,8 +306,17 @@ ggplot(pareto_df, aes(x=observation, y=pareto_k, color=model))+
   labs(x="Observation", y="Pareto-k value", title="Pareto-k diagnostics")+
   theme_minimal() # looks nice
 
+ggplot(pareto_df_weibull, aes(x=observation, y=pareto_k, color=model))+
+  geom_point() +
+  scale_color_viridis_d(begin=0.2, end=0.7)+
+  geom_hline(yintercept = 0.7, linetype="dashed", color="orange")+
+  geom_hline(yintercept = 1, linetype="dashed", color="red")+
+  labs(x="Observation", y="Pareto-k value", title="Pareto-k diagnostics")+
+  theme_minimal() # also looks nice
+
 # SUMMARIES
 summ <- STb_summary(fit_dynamic, digits = 3)
+summ_weibull <- STb_summary(fit_weibull, digits = 3)
 
 summ %>% filter(grepl("beta_", Parameter)) %>%
   select(Parameter, Median, CI_Lower, CI_Upper) %>%
@@ -317,8 +340,31 @@ summ %>% filter(grepl("beta_", Parameter)) %>%
        x = "Parameter")+
   theme(text = element_text(size = 18))# so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
 
+summ_weibull %>% filter(grepl("beta_", Parameter)) %>%
+  select(Parameter, Median, CI_Lower, CI_Upper) %>%
+  mutate(type = str_extract(Parameter, "ILVs|ILVi"),
+         type = case_when(type == "ILVi" ~ "Effect on intrinsic rate",
+                          type == "ILVs" ~ "Effect on social rate",
+                          .default = type)) %>%
+  mutate(param = str_remove(Parameter, "beta_"),
+         param = str_remove(param, "ILVi_"),
+         param = str_remove(param, "ILVs_"),
+         param = str_remove(param, "_norm")) %>%
+  ggplot(aes(x = param, y = Median))+
+  geom_point()+
+  geom_segment(aes(x = param, xend = param, y = CI_Lower, yend = CI_Upper))+
+  coord_flip()+
+  theme_minimal()+
+  facet_wrap(~type, ncol = 1, scale = "free_y")+
+  geom_hline(aes(yintercept = 0), linetype = 2)+
+  labs(subtitle = "(95% CIs)",
+       caption = "Carcass 3 ('fixed')",
+       x = "Parameter")+
+  theme(text = element_text(size = 18))# so, mean dist has a huge impact in this model, but when we square it, its impact goes away almost entirely. Why?
+
 plot_data_obs <- get_plot_data(event_data)
 plot_data_ppc <- get_plot_data_ppc(fit = fit_dynamic, data_list = data_list)
+plot_data_ppc_weibull <- get_plot_data_ppc(fit = fit_weibull, data_list = data_list)
 
 # plot it
 ggplot() +
@@ -329,3 +375,13 @@ ggplot() +
   labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
        title = "Original") +
   theme_minimal()
+
+ggplot() +
+  geom_line(data = plot_data_ppc_weibull, 
+            aes(x = time, y = cum_prop, 
+                group = interaction(draw, trial)), alpha = .1) +
+  geom_line(data = plot_data_obs, aes(x = time, y = cum_prop), linewidth = 1) +
+  labs(x = "Time", y = "Cumulative proportion informed", color = "Trial",
+       title = "Original") +
+  theme_minimal()
+

@@ -5,7 +5,7 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph"),
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph", "STbayes"),
   controller = crew_controller_local(workers = 6)
 )
 
@@ -641,46 +641,46 @@ list(
   tar_target(nd10_wild, nb_shortcut(wild_gps_30days[91:100], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[91:100], age_ilv = T)),
   tar_target(nd11_wild, nb_shortcut(wild_gps_30days[101:112], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[101:112], age_ilv = T)),
   
-  # Flight networks
-  ## Flight networks--Cumulative (stn)
-  tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  
-  tar_target(fl_wt_cumulative_1, purrr::map2(fl_wt_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_2, purrr::map2(fl_wt_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_3, purrr::map2(fl_wt_cumulative_3_prelim, nd3, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_4, purrr::map2(fl_wt_cumulative_4_prelim, nd4, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_5, purrr::map2(fl_wt_cumulative_5_prelim, nd5, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_6, purrr::map2(fl_wt_cumulative_6_prelim, nd6, ~fix_nets(.x, .y$all_indivs_sorted))),
-  
-  ## Flight networks--Cumulative (wild)
-  tar_target(fl_wt_cumulative_1_prelim_wild, purrr::map(nd1_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_2_prelim_wild, purrr::map(nd2_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_3_prelim_wild, purrr::map(nd3_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_4_prelim_wild, purrr::map(nd4_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_5_prelim_wild, purrr::map(nd5_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_6_prelim_wild, purrr::map(nd6_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_7_prelim_wild, purrr::map(nd7_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_8_prelim_wild, purrr::map(nd8_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_9_prelim_wild, purrr::map(nd9_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_10_prelim_wild, purrr::map(nd10_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_11_prelim_wild, purrr::map(nd11_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  
-  tar_target(fl_wt_cumulative_1_wild, purrr::map2(fl_wt_cumulative_1_prelim_wild, nd1_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_2_wild, purrr::map2(fl_wt_cumulative_2_prelim_wild, nd2_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_3_wild, purrr::map2(fl_wt_cumulative_3_prelim_wild, nd3_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_4_wild, purrr::map2(fl_wt_cumulative_4_prelim_wild, nd4_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_5_wild, purrr::map2(fl_wt_cumulative_5_prelim_wild, nd5_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_6_wild, purrr::map2(fl_wt_cumulative_6_prelim_wild, nd6_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_7_wild, purrr::map2(fl_wt_cumulative_7_prelim_wild, nd7_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_8_wild, purrr::map2(fl_wt_cumulative_8_prelim_wild, nd8_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_9_wild, purrr::map2(fl_wt_cumulative_9_prelim_wild, nd9_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_10_wild, purrr::map2(fl_wt_cumulative_10_prelim_wild, nd10_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_11_wild, purrr::map2(fl_wt_cumulative_11_prelim_wild, nd11_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # # Flight networks
+  # ## Flight networks--Cumulative (stn)
+  # tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # 
+  # tar_target(fl_wt_cumulative_1, purrr::map2(fl_wt_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_2, purrr::map2(fl_wt_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_3, purrr::map2(fl_wt_cumulative_3_prelim, nd3, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_4, purrr::map2(fl_wt_cumulative_4_prelim, nd4, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_5, purrr::map2(fl_wt_cumulative_5_prelim, nd5, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_6, purrr::map2(fl_wt_cumulative_6_prelim, nd6, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # 
+  # ## Flight networks--Cumulative (wild)
+  # tar_target(fl_wt_cumulative_1_prelim_wild, purrr::map(nd1_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_2_prelim_wild, purrr::map(nd2_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_3_prelim_wild, purrr::map(nd3_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_4_prelim_wild, purrr::map(nd4_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_5_prelim_wild, purrr::map(nd5_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_6_prelim_wild, purrr::map(nd6_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_7_prelim_wild, purrr::map(nd7_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_8_prelim_wild, purrr::map(nd8_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_9_prelim_wild, purrr::map(nd9_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_10_prelim_wild, purrr::map(nd10_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # tar_target(fl_wt_cumulative_11_prelim_wild, purrr::map(nd11_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
+  # 
+  # tar_target(fl_wt_cumulative_1_wild, purrr::map2(fl_wt_cumulative_1_prelim_wild, nd1_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_2_wild, purrr::map2(fl_wt_cumulative_2_prelim_wild, nd2_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_3_wild, purrr::map2(fl_wt_cumulative_3_prelim_wild, nd3_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_4_wild, purrr::map2(fl_wt_cumulative_4_prelim_wild, nd4_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_5_wild, purrr::map2(fl_wt_cumulative_5_prelim_wild, nd5_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_6_wild, purrr::map2(fl_wt_cumulative_6_prelim_wild, nd6_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_7_wild, purrr::map2(fl_wt_cumulative_7_prelim_wild, nd7_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_8_wild, purrr::map2(fl_wt_cumulative_8_prelim_wild, nd8_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_9_wild, purrr::map2(fl_wt_cumulative_9_prelim_wild, nd9_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_10_wild, purrr::map2(fl_wt_cumulative_10_prelim_wild, nd10_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
+  # tar_target(fl_wt_cumulative_11_wild, purrr::map2(fl_wt_cumulative_11_prelim_wild, nd11_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
   
   # Prepare data for NBDA
   ### Prepare data for NBDA--Cumulative (stn)--Weighted--seeds
@@ -853,8 +853,10 @@ list(
   tar_target(gps_fornetwork, purrr::map2(gps_diffusion, stn_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
-  tar_target(bins, purrr::map2(gps_fornetwork, cutpoints, ~{sort(unique(cut(.x$time, breaks = .y)))})),
-  tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints, ~{
+  tar_target(cutpoints2, purrr::map(cutpoints, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  # tar_target(bins, purrr::map2(gps_fornetwork, cutpoints2, ~{sort(unique(cut(.x$time, breaks = .y)))})),
+  
+  tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints2, ~{
     if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
@@ -862,7 +864,7 @@ list(
   tar_target(missing_intervals, purrr::map(gps_fornetwork2, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add, purrr::map(missing_intervals, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3, purrr::map2(gps_fornetwork2, to_add, ~{
-    if(!is.null(.x) & nrow(.y) > 0){
+    if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
       return(dplyr::bind_rows(.x, .y))
     }else if(!is.null(.x) & nrow(.y) == 0){
       return(.x)
@@ -895,7 +897,35 @@ list(
   
   tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
-  }), names_to = "time"), trial = .y$carcID[1])))#,
+  }), names_to = "time"), trial = .y$carcID[1]))),
   
-# ILVs are going to get more complicated here
+  tar_target(data_lists, purrr::map2(event_data, networks_long_dynamic, ~{
+    if(nrow(.y) > 0){
+    STbayes::import_user_STb(event_data = .x, networks = .y, network_type = "undirected")}else{NULL}})),
+  
+  tar_target(models_simple, purrr::map(data_lists, ~{
+    if(!is.null(.x)){
+    STbayes::generate_STb_model(.x, gq = T, est_acqTime = T)}else{NULL}})),
+  
+  tar_target(fits_simple_1, purrr::map2(data_lists[1:6], models_simple[1:6], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_2, purrr::map2(data_lists[7:12], models_simple[7:12], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_3, purrr::map2(data_lists[13:18], models_simple[13:18], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_4, purrr::map2(data_lists[19:24], models_simple[19:24], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_5, purrr::map2(data_lists[25:30], models_simple[25:30], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_6, purrr::map2(data_lists[31:26], models_simple[31:36], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_7, purrr::map2(data_lists[37:42], models_simple[37:42], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_8, purrr::map2(data_lists[43:48], models_simple[43:48], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_9, purrr::map2(data_lists[49:54], models_simple[49:54], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple_10, purrr::map2(data_lists[55:60], models_simple[55:60], ~{
+    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
+  tar_target(fits_simple, c(fits_simple_1, fits_simple_2, fits_simple_3, fits_simple_4, fits_simple_5, fits_simple_6, fits_simple_7, fits_simple_8, fits_simple_9, fits_simple_10))
 )
