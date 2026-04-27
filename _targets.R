@@ -845,7 +845,7 @@ list(
   
   tar_target(all_indivs_sorted, purrr::map(gps_withdaylight, ~sort(unique(as.character(.x$individual_local_identifier))))),
   
-  tar_target(gps_diffusion, purrr::map(gps_withdaylight, ~dplyr::filter(.x, time_since_carcass >- 0))),
+  tar_target(gps_diffusion, purrr::map(gps_withdaylight, ~dplyr::filter(.x, time_since_carcass >= 0))),
   tar_target(first_sightings, purrr::map2(gps_diffusion, seeds, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
   tar_target(event_data, purrr::pmap(list(first_sightings, seeds, all_indivs_sorted, stn_carcs),
                                      ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)

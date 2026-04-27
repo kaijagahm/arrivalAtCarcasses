@@ -298,6 +298,7 @@ together3 <- together3 %>%
   rename("informed" = sighted_ever)
 
 prop_informed <- together %>%
+  mutate(informed = case_when(day == 0 ~ F, .default = informed)) %>% # removing any "informed" indivs on day 1
   group_by(roost_date, ID1) %>%
   summarize(n_roostmates = length(unique(ID2)),
             n_informed = sum(informed),
@@ -305,6 +306,7 @@ prop_informed <- together %>%
   ungroup()
 
 prop_informed2 <- together2 %>%
+  mutate(informed = case_when(day == 0 ~ F, .default = informed)) %>% # removing any "informed" indivs on day 1
   group_by(roost_date, ID1) %>%
   summarize(n_roostmates = length(unique(ID2)),
             n_informed = sum(informed),
@@ -312,6 +314,7 @@ prop_informed2 <- together2 %>%
   ungroup()
 
 prop_informed3 <- together3 %>%
+  mutate(informed = case_when(day == 0 ~ F, .default = informed)) %>% # removing any "informed" indivs on day 1
   group_by(roost_date, ID1) %>%
   summarize(n_roostmates = length(unique(ID2)),
             n_informed = sum(informed),

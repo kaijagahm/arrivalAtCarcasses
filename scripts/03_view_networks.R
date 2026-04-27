@@ -133,16 +133,18 @@ plot_network_fixed <- function(graph, layout_tbl, title = NULL) {
   return(plot)
 }
 
-for(diffusion in 29:length(graphs)){
+for(diffusion in c(24, 27, 26)){
   cat("starting diffusion #", diffusion, " of ", length(graphs), "\n")
   layout <- layouts[[diffusion]]
   if(!is.null(layout)){
     carcID <- carcIDs[diffusion]
     gs <- map2(graphs[[diffusion]], 1:length(graphs[[diffusion]]), 
                ~plot_network_fixed(.x, layout_tbl = layout, title = paste0(carcID, ", network", .y)))
-    walk2(gs, str_pad(as.character(1:length(gs)), width = 3, side = "left", pad = "0"), ~ggsave(.x, filename = paste0("fig/cumulative_flight_networks/stn/carcID_", carcID, "_graph", .y, ".png"), width = 6, height = 6))
+    walk2(gs, str_pad(as.character(1:length(gs)), width = 3, side = "left", pad = "0"), ~ggsave(.x, filename = paste0("fig/dynamic_flight_networks/all/carcID_", carcID, "_graph", .y, ".png"), width = 6, height = 6))
   }else{
     next
   }
   cat(100*round(diffusion/length(graphs), 3), "% complete\n")
 }
+
+# Mapping the carcasses
