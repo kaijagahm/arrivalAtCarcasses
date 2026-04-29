@@ -418,14 +418,14 @@ write(model_full_dynamic_day1, file="data/stan_models/dynamic_daylight_ilvs1_fix
 model_full_dynamic_day1_comp <- generate_STb_model(data_list_day1, gq = T, est_acqTime = T, transmission_func="freqdep_f")
 write(model_full_dynamic_day1_comp, file="data/stan_models/dynamic_daylight_ilvs1_fixed_day1_comp.stan")
 
-# fit_dynamic <- fit_STb(data_list,
-#                        model_full_dynamic,
-#                        parallel_chains = 3,
-#                        chains = 3,
-#                        cores = 3,
-#                        iter = 500,
-#                        refresh=50)
-# STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
+fit_dynamic <- fit_STb(data_list,
+                       model_full_dynamic,
+                       parallel_chains = 3,
+                       chains = 3,
+                       cores = 3,
+                       iter = 500,
+                       refresh=50)
+STb_save(fit_dynamic, output_dir = "data/cmdstan_saves", name="dynamic_daylight_ilvs1_fixed")
 fit_dynamic <- readRDS('data/cmdstan_saves/dynamic_daylight_ilvs1_fixed.rds') 
 
 fit_simple <- fit_STb(data_list_simple,

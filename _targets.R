@@ -6,7 +6,7 @@ library(crew)
 tar_option_set(
   error = "null",
   packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph", "STbayes"),
-  controller = crew_controller_local(workers = 6)
+  controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -684,53 +684,53 @@ list(
   
   # Prepare data for NBDA
   ### Prepare data for NBDA--Cumulative (stn)--Weighted--seeds
-  tar_target(data_cumul_wt_1, purrr::map2(nd1, fl_wt_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_2, purrr::map2(nd2, fl_wt_cumulative_2, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_3, purrr::map2(nd3, fl_wt_cumulative_3, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_4, purrr::map2(nd4, fl_wt_cumulative_4, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_5, purrr::map2(nd5, fl_wt_cumulative_5, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_6, purrr::map2(nd6, fl_wt_cumulative_6, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_1, purrr::map2(nd1, fl_wt_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_2, purrr::map2(nd2, fl_wt_cumulative_2, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_3, purrr::map2(nd3, fl_wt_cumulative_3, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_4, purrr::map2(nd4, fl_wt_cumulative_4, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_5, purrr::map2(nd5, fl_wt_cumulative_5, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_6, purrr::map2(nd6, fl_wt_cumulative_6, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # 
+  # ### Prepare data for NBDA--Cumulative (wild)--Weighted--seeds
+  # tar_target(data_cumul_wt_1_wild, purrr::map2(nd1_wild, fl_wt_cumulative_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_2_wild, purrr::map2(nd2_wild, fl_wt_cumulative_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_3_wild, purrr::map2(nd3_wild, fl_wt_cumulative_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_4_wild, purrr::map2(nd4_wild, fl_wt_cumulative_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_5_wild, purrr::map2(nd5_wild, fl_wt_cumulative_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # tar_target(data_cumul_wt_6_wild, purrr::map2(nd6_wild, fl_wt_cumulative_6_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
+  #   nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
+  #            orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
+  # 
+  # ## NBDA models
+  # ### Cumulative, weighted (stn)
+  # tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
+  # 
+  # tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
   
-  ### Prepare data for NBDA--Cumulative (wild)--Weighted--seeds
-  tar_target(data_cumul_wt_1_wild, purrr::map2(nd1_wild, fl_wt_cumulative_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_2_wild, purrr::map2(nd2_wild, fl_wt_cumulative_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_3_wild, purrr::map2(nd3_wild, fl_wt_cumulative_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_4_wild, purrr::map2(nd4_wild, fl_wt_cumulative_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_5_wild, purrr::map2(nd5_wild, fl_wt_cumulative_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_6_wild, purrr::map2(nd6_wild, fl_wt_cumulative_6_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  
-  ## NBDA models
-  ### Cumulative, weighted (stn)
-  tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  
-  tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
-  
-  tar_target(stats, purrr::list_rbind(list(stats_cumul_wt
-  ))),
+  # tar_target(stats, purrr::list_rbind(list(stats_cumul_wt
+  # ))),
   
   ## Number of individuals involved in each diffusion
   tar_target(ns, purrr::list_rbind(purrr::map(c(nd1, nd2, nd3, nd4, nd5, nd6), ~{as.data.frame(t(unlist(.x[1:4])))}))),
@@ -902,30 +902,40 @@ list(
   tar_target(data_lists, purrr::map2(event_data, networks_long_dynamic, ~{
     if(nrow(.y) > 0){
     STbayes::import_user_STb(event_data = .x, networks = .y, network_type = "undirected")}else{NULL}})),
-  
-  tar_target(models_simple, purrr::map(data_lists, ~{
-    if(!is.null(.x)){
-    STbayes::generate_STb_model(.x, gq = T, est_acqTime = T)}else{NULL}})),
-  
-  tar_target(fits_simple_1, purrr::map2(data_lists[1:6], models_simple[1:6], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_2, purrr::map2(data_lists[7:12], models_simple[7:12], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_3, purrr::map2(data_lists[13:18], models_simple[13:18], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_4, purrr::map2(data_lists[19:24], models_simple[19:24], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_5, purrr::map2(data_lists[25:30], models_simple[25:30], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_6, purrr::map2(data_lists[31:26], models_simple[31:36], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_7, purrr::map2(data_lists[37:42], models_simple[37:42], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_8, purrr::map2(data_lists[43:48], models_simple[43:48], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_9, purrr::map2(data_lists[49:54], models_simple[49:54], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple_10, purrr::map2(data_lists[55:60], models_simple[55:60], ~{
-    if(!is.null(.x)){STbayes::fit_STb(.x, .y, iter = 1000)}else{NULL}})),
-  tar_target(fits_simple, c(fits_simple_1, fits_simple_2, fits_simple_3, fits_simple_4, fits_simple_5, fits_simple_6, fits_simple_7, fits_simple_8, fits_simple_9, fits_simple_10))
+
+  # Fit simple models
+  tar_target(o1, purrr::map2(event_data[1:2], data_lists[1:2], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o2, purrr::map2(event_data[3:4], data_lists[3:4], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o3, purrr::map2(event_data[5:6], data_lists[5:6], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o4, purrr::map2(event_data[7:8], data_lists[7:8], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o5, purrr::map2(event_data[9:10], data_lists[9:10], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o6, purrr::map2(event_data[11:12], data_lists[11:12], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o7, purrr::map2(event_data[13:14], data_lists[13:14], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o8, purrr::map2(event_data[15:16], data_lists[15:16], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o9, purrr::map2(event_data[17:18], data_lists[17:18], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o10, purrr::map2(event_data[19:20], data_lists[19:20], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o11, purrr::map2(event_data[21:22], data_lists[21:22], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o12, purrr::map2(event_data[23:24], data_lists[23:24], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o13, purrr::map2(event_data[25:26], data_lists[25:26], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o14, purrr::map2(event_data[27:28], data_lists[27:28], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o15, purrr::map2(event_data[29:30], data_lists[29:30], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o16, purrr::map2(event_data[31:32], data_lists[31:32], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o17, purrr::map2(event_data[33:34], data_lists[33:34], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o18, purrr::map2(event_data[35:36], data_lists[35:36], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o19, purrr::map2(event_data[37:38], data_lists[37:38], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o20, purrr::map2(event_data[39:40], data_lists[39:40], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o21, purrr::map2(event_data[41:42], data_lists[41:42], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o22, purrr::map2(event_data[43:44], data_lists[43:44], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o23, purrr::map2(event_data[45:46], data_lists[45:46], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o24, purrr::map2(event_data[47:48], data_lists[47:48], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o25, purrr::map2(event_data[49:50], data_lists[49:50], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o26, purrr::map2(event_data[51:52], data_lists[51:52], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o27, purrr::map2(event_data[53:54], data_lists[53:54], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o28, purrr::map2(event_data[55:56], data_lists[55:56], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o29, purrr::map2(event_data[57:58], data_lists[57:58], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(o30, purrr::map2(event_data[59:60], data_lists[59:60], ~get_summs_curves(.x, .y, it = 1000))),
+  tar_target(oo, c(o1, o2, o3, o4, o5, o6, o7, o8, o9, o10)),
+  tar_target(ooo, c(o11, o12, o13, o14, o15, o16, o17, o18, o19, o20)),
+  tar_target(oooo, c(o21, o22, o23, o24, o25, o26, o27, o28, o29, o30)),
+  tar_target(os, c(oo, ooo, oooo))
 )
