@@ -7,6 +7,7 @@ library(targets)
 library(here)
 library(sf)
 library(mapview)
+library(ggspatial)
 
 # Load in the carcass data
 tar_load(all_carcasses) # will need to go back to the original data to see the names of the management regions--apparently they are all supposed to be provisioned approximately equally, but aren't, according to Reznikov et al.
@@ -64,7 +65,7 @@ stn <- stn %>%
 # A simpler measure--how likely is there to be food there? Considering 6-month period before each carcass, how many of the dates in that period were active at that station?
 tar_load(stn_carcs)
 carcs_focal <- sf::st_as_sf(purrr::list_rbind(stn_carcs))
-carcs_buffered <-  st_buffer(carcs_focal, 4000)
+carcs_buffered <-  st_buffer(carcs_simple, 4000) # 4km radius
 
 stn_days_last6mos <- rep(NA, nrow(carcs_focal))
 # area_days_last6mos <- rep(NA, nrow(carcs_focal))
@@ -120,3 +121,95 @@ carcs_focal %>%
   theme(text = element_text(size = 18))
 
 write_rds(carcs_focal, file = "data/created/carcs_focal.RDS")
+
+# Defining predictability by % days with carcass present within a 4km radius
+mapview(carcs_buffered, zcol = "carcType") # we can clearly see there are some hotspots/areas of overlap.
+
+carcs_buffered <- carcs_buffered %>%
+  mutate(end_date = date+lubridate::days(3)) %>%
+  glimpse()
+
+predictability_results <- carcs_buffered %>%
+  mutate(
+    # 1. Define the 6-month window
+    window_start = date - lubridate::days(180),
+    window_end = date - lubridate::days(1) # Up to the day before start
+  ) %>%
+  rowwise() %>%
+  mutate(prop_days_covered = {
+    # 2. Identify spatial neighbors (including itself, or exclude if needed)
+    # We use st_intersects to find any polygon that touches our current geometry
+    neighbor_indices <- sf::st_intersects(geometry, carcs_buffered)[[1]]
+    neighbors <- carcs_buffered[neighbor_indices, ]
+    
+    # 3. Filter neighbors to only those that overlap our 6-month window
+    # Calculation: Interval [A, B] overlaps [C, D] if A <= D and B >= C
+    overlapping_neighbors <- neighbors %>%
+      filter(date <= window_end & end_date >= window_start)
+    
+    if (nrow(overlapping_neighbors) == 0) {
+      0
+    } else {
+      # 4. Calculate unique days covered
+      # Clip neighbor dates to the window boundaries
+      covered_days <- overlapping_neighbors %>%
+        mutate(
+          clipped_start = pmax(date, window_start),
+          clipped_end = pmin(end_date, window_end)
+        ) %>%
+        # Generate a sequence of days for every overlapping interval
+        mutate(days_seq = map2(clipped_start, clipped_end, ~seq(.x, .y, by = "day"))) %>%
+        pull(days_seq) %>%
+        flatten() %>%
+        unique()
+      
+      # Calculate proportion
+      total_window_days <- as.numeric(window_end - window_start) + 1
+      length(covered_days) / total_window_days
+    }
+  }) %>%
+  ungroup()
+
+predictability_results %>%
+  mutate(carcType = case_when(carcType == "stn" ~ "SFS",
+                              carcType == "wild" ~ "Non-SFS",
+                              .default = NA)) %>%
+  ggplot(aes(x = factor(year), y = prop_days_covered, fill = carcType))+
+  geom_boxplot(outlier.shape = NA, position = position_dodge(width = 0.75), alpha = 0.2)+
+  geom_point(aes(color = carcType, x = factor(year)), position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.2), pch = 1, alpha = 0.7, size = 3)+
+  labs(y = "Predictability",
+       x = "Year", fill = "Carcass type", color = "Carcass type",
+       caption = "Predictability: % days in last 6mos with at least 1 active carcass within 4km.\nActive carcass: within 3 days of placement/discovery")+
+  theme_minimal()+
+  scale_fill_manual(values = c("darkorange3", "olivedrab3"))+
+  scale_color_manual(values = c("darkorange3", "olivedrab3"))+
+  theme(text = element_text(size = 18),
+        plot.caption = element_text(size = 14))
+
+predictability_results %>%
+  mutate(carcType = case_when(carcType == "stn" ~ "SFS",
+                              carcType == "wild" ~ "Non-SFS",
+                              .default = NA)) %>%
+  ggplot(aes(x = prop_days_covered, fill = carcType, color = carcType))+
+  geom_density(alpha = 0.2)+
+  labs(x = "Predictability", y = "Density",
+       fill = "Carcass type", color = "Carcass type",
+       caption = "Predictability: % days in last 6mos with at least 1 active carcass within 4km.\nActive carcass: within 3 days of placement/discovery")+
+  theme_minimal()+
+  scale_fill_manual(values = c("darkorange3", "olivedrab3"))+
+  scale_color_manual(values = c("darkorange3", "olivedrab3"))+
+  theme(text = element_text(size = 18),
+        plot.caption = element_text(size = 14))
+
+predictability_results %>%
+  mutate("Predictability" = prop_days_covered) %>%
+  mutate(carcType = case_when(carcType == "stn" ~ "SFS",
+                              carcType == "wild" ~ "Non-SFS",
+                              .default = NA)) %>%
+  ggplot()+
+  annotation_map_tile(zoom = 9, type = "cartolight")+
+  geom_sf(aes(fill = Predictability, color = Predictability), alpha = 0.4)+
+  scale_fill_viridis_c()+
+  scale_color_viridis_c()+
+  theme_minimal()+
+  theme(text = element_text(size = 18))
