@@ -1,4 +1,4 @@
-# Testing stBayes
+# Testing stBayes on wild carcasses
 
 library(STbayes)
 library(ggplot2)
@@ -10,11 +10,10 @@ lapply(list.files("R", full.names = TRUE), source)
 # using just one carcass as an example
 tar_load(gps_spd)
 tar_load(hours_after_carcass)
-tar_load(data_cumul_wt_3) # this is a list of nbdaData objects
-nbda_data <- data_cumul_wt_3[[4]] # carcass 4417687, which is the 4th element of the 3rd list of 10, so element 24 of stn_carcs
 
-tar_load(stn_carcs)
-carc <- stn_carcs[[24]]
+tar_load(wild_carcs)
+tar_load(wild_gps_30days)
+carc <- wild_carcs[[10]] # random guess; who knows if this one is going to work well.
 event_time <- carc$datetime_il
 event_date <- lubridate::date(event_time)
 
