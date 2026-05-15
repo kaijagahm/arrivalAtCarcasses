@@ -1940,3 +1940,17 @@ get_summs_curves <- function(ed, dl, it = 1000){
     return(NULL)
   }
 }
+
+arrange_roost_nets <- function(r, ind, rt){
+  e <- getRoostEdges(r, mode = "distance", distThreshold = rt, idCol = "individual_local_identifier", return = "edges") %>% select(-distance) %>%
+    mutate(roost_together = 1)
+  dates <- unique(e$date)
+  df <- expand_grid("ID1" = ind, "ID2" = ind)
+  toadd <- map(dates, ~mutate(df, date = .x)) %>% purrr::list_rbind() %>% mutate(roost_together = 0)
+  all <- bind_rows(e, toadd) %>%
+    arrange(date, ID1, ID2, desc(roost_together)) %>%
+    group_by(date, ID1, ID2) %>%
+    slice(1) %>%
+    rename("focal" = ID1, "other" = ID2)
+  return(all)
+}

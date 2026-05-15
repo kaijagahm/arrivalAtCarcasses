@@ -7,7 +7,7 @@ library(STbayes)
 library(sf)
 plan(multisession, workers = 30)
 handlers(global = TRUE)
-nit <- 500
+nit <- 1000
 
 # Get data
 tar_load(event_data)
@@ -75,6 +75,8 @@ asocial_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_a
 ### Station
 social_mods_noILVs <- purrr::map(data_lists_noILVs, get_social)
 social_mods_DistI <- purrr::map(data_lists_DistI, get_social)
+## test complex transmission for a few
+social_mods_DistI_complex_test <- purrr::map(data_lists_DistI[1:3], ~STbayes::generate_STb_model(.x, gq = T, est_acqTime = T, transmission_func = "freqdep_f"))
 social_mods_DistIS <- purrr::map(data_lists_DistIS, get_social)
 social_mods_DistI_AgeIS <- purrr::map(data_lists_DistI_AgeIS, get_social)
 social_mods_DistIS_AgeIS <- purrr::map(data_lists_DistIS_AgeIS, get_social)
@@ -88,37 +90,39 @@ social_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_so
 
 # Fit models --------------------------------------------------------------
 ## Station
-# # Fit and save social
-# social_fits_noILVs <- with_progress(furrr::future_map2(social_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(social_fits_noILVs, 1:length(social_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "social", type = "station")})
-# 
-# social_fits_DistI <- with_progress(furrr::future_map2(social_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(social_fits_DistI, 1:length(social_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "social", type = "station")})
-# 
-# social_fits_DistIS <- with_progress(furrr::future_map2(social_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(social_fits_DistIS, 1:length(social_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "social", type = "station")})
-# 
-# social_fits_DistI_AgeIS <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(social_fits_DistI_AgeIS, 1:length(social_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "social", type = "station")})
-# 
-# social_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(social_fits_DistIS_AgeIS, 1:length(social_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "social", type = "station")})
+# Fit and save social
+social_fits_noILVs <- with_progress(furrr::future_map2(social_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_noILVs, 1:length(social_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "social", type = "station")})
 
-# # Fit and save asocial
-# asocial_fits_noILVs <- with_progress(furrr::future_map2(asocial_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(asocial_fits_noILVs, 1:length(asocial_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "station")})
-# 
-# asocial_fits_DistI <- with_progress(furrr::future_map2(asocial_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(asocial_fits_DistI, 1:length(asocial_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "station")})
-# 
-# asocial_fits_DistIS <- with_progress(furrr::future_map2(asocial_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(asocial_fits_DistIS, 1:length(asocial_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "station")})
-# 
-# asocial_fits_DistI_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(asocial_fits_DistI_AgeIS, 1:length(asocial_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "station")})
-# 
-# asocial_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-# walk2(asocial_fits_DistIS_AgeIS, 1:length(asocial_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "station")})
+social_fits_DistI <- with_progress(furrr::future_map2(social_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistI, 1:length(social_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "social", type = "station")})
+social_fits_DistI_compl <- with_progress(furrr::future_map2(social_mods_DistI_complex_test, data_lists_DistI[1:3], ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistI_compl, 1:length(social_fits_DistI_compl), ~{savefit(.x, .y, folder = "DistI", prefix = "social_complex_", type = "station")})
+
+social_fits_DistIS <- with_progress(furrr::future_map2(social_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistIS, 1:length(social_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "social", type = "station")})
+
+social_fits_DistI_AgeIS <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistI_AgeIS, 1:length(social_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "social", type = "station")})
+
+social_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistIS_AgeIS, 1:length(social_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "social", type = "station")})
+
+# Fit and save asocial
+asocial_fits_noILVs <- with_progress(furrr::future_map2(asocial_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(asocial_fits_noILVs, 1:length(asocial_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "station")})
+
+asocial_fits_DistI <- with_progress(furrr::future_map2(asocial_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(asocial_fits_DistI, 1:length(asocial_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "station")})
+
+asocial_fits_DistIS <- with_progress(furrr::future_map2(asocial_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(asocial_fits_DistIS, 1:length(asocial_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "station")})
+
+asocial_fits_DistI_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(asocial_fits_DistI_AgeIS, 1:length(asocial_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "station")})
+
+asocial_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(asocial_fits_DistIS_AgeIS, 1:length(asocial_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "station")})
 
 ## Wild
 # Fit and save social
@@ -153,20 +157,21 @@ walk2(asocial_fits_DistI_AgeIS_wild, 1:length(asocial_fits_DistI_AgeIS_wild), ~{
 asocial_fits_DistIS_AgeIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS_wild, data_lists_DistIS_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(asocial_fits_DistIS_AgeIS_wild, 1:length(asocial_fits_DistIS_AgeIS_wild), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "wild")})
 
-# Get filenames
-# ## Station social
-# soc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_social")
-# soc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social")
-# soc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_social")
-# soc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_social")
-# soc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_social")
-# 
-# ## Station asocial
-# asoc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_asocial")
-# asoc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_asocial")
-# asoc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_asocial")
-# asoc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_asocial")
-# asoc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_asocial")
+#Get filenames
+## Station social
+soc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_social")
+soc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social")
+soc_filenames_DistI_compl <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social_complex_")
+soc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_social")
+soc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_social")
+soc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_social")
+
+## Station asocial
+asoc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_asocial")
+asoc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_asocial")
+asoc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_asocial")
+asoc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_asocial")
+asoc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_asocial")
 
 ## Wild social
 soc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_social")
@@ -552,8 +557,8 @@ walk2(curveplots_DistI_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data
 walk2(curveplots_DistIS_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_AgeIS/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 
 
-draws_df <- posterior::as_draws_df(social_fits_DistI_wild[[1]]$draws(variables = "acquisition_time", inc_warmup = FALSE))
 
+# Model output evaluation and inter-model comparisons ---------------------
 # Comparison between each model and its asocial equivalent
 comps_noILVs <- map2(social_fits_noILVs, asocial_fits_noILVs, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("noILVs", "noILVs_asoc"), method = "loo-psis")}else{NULL}})
 

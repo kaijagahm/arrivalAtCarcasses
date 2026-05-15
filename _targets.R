@@ -738,7 +738,6 @@ list(
   
   tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
   tar_target(cutpoints2, purrr::map(cutpoints, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
-  # tar_target(bins, purrr::map2(gps_fornetwork, cutpoints2, ~{sort(unique(cut(.x$time, breaks = .y)))})),
   
   tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints2, ~{
     if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
@@ -777,11 +776,116 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6)),
   
+  tar_target(roost_threshold, 500),
+  tar_target(nr1, purrr::map2(roosts_stn[1:10], all_indivs_sorted[1:10], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr2, purrr::map2(roosts_stn[11:20], all_indivs_sorted[11:20], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr3, purrr::map2(roosts_stn[21:30], all_indivs_sorted[21:30], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr4, purrr::map2(roosts_stn[31:40], all_indivs_sorted[31:40], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr5, purrr::map2(roosts_stn[41:50], all_indivs_sorted[41:50], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6, purrr::map2(roosts_stn[51:60], all_indivs_sorted[51:60], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(networks_long_roost_1, c(nr1, nr2, nr3, nr4, nr5, nr6)),
+  
+  tar_target(networks_long_roost_2, purrr::map2(networks_long_roost_1, map_dbl(stn_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  
+  tar_target(equivalence_tables, purrr::map(first_sightings, ~{
+    if(nrow(.x) > 0){
+      .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
+        mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_fixed, purrr::pmap(list("ed" = event_data, "gd" = gps_diffusion, "et" = equivalence_tables), function(ed, gd, et){
+    if(!is.null(et)){
+      t_last <- min(ed$time[ed$time > ed$t_end])/60/60
+      idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
+      final_datetime <- gd$timestamp_il[idx]
+      final_date <- lubridate::date(final_datetime)
+      final_roost_date <- final_date - lubridate::days(1)
+      et_fixed <- et %>% add_row(date = final_date, time = max(et$time)+1, roost_date = final_roost_date)
+      return(et_fixed)
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_wild, purrr::map(first_sightings_wild, ~{
+    if(nrow(.x) > 0){
+      .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
+        mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_fixed_wild, purrr::pmap(list("ed" = event_data_wild, "gd" = gps_diffusion_wild, "et" = equivalence_tables_wild), function(ed, gd, et){
+    if(!is.null(et)){
+      t_last <- min(ed$time[ed$time > ed$t_end])/60/60
+      idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
+      final_datetime <- gd$timestamp_il[idx]
+      final_date <- lubridate::date(final_datetime)
+      final_roost_date <- final_date - lubridate::days(1)
+      et_fixed <- et %>% add_row(date = final_date, time = max(et$time)+1, roost_date = final_roost_date)
+      return(et_fixed)
+    }else{NULL}
+  })),
+  
+  
+  # Break roost nets into a list by date and set names accordingly.
+  tar_target(net_lists_1, purrr::map(networks_long_roost_2, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists_1_wild, purrr::map(networks_long_roost_2_wild, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists, purrr::map(net_lists_1, ~{
+    names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
+    return(.x)
+  })),
+  tar_target(net_lists_wild, purrr::map(net_lists_1_wild, ~{
+    names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
+    return(.x)
+    })),
+  tar_target(roostlong, purrr::map2(equivalence_tables_fixed, net_lists, ~{
+    if(!is.null(.x) & !is.null(.y)){
+      newlist <- vector(mode = "list", length = nrow(.x))
+      for(i in 1:nrow(.x)){
+        date <- as.character(.x$roost_date[i])
+        newlist[[i]] <- .y[[date]]
+      }
+      out <- purrr::list_rbind(newlist, names_to = "time")
+      return(out)
+    }else{NULL}
+  })),
+  tar_target(roostlong_wild, purrr::map2(equivalence_tables_fixed_wild, net_lists_wild, ~{
+    if(!is.null(.x) & !is.null(.y)){
+      newlist <- vector(mode = "list", length = nrow(.x))
+      for(i in 1:nrow(.x)){
+        date <- as.character(.x$roost_date[i])
+        newlist[[i]] <- .y[[date]]
+      }
+      out <- purrr::list_rbind(newlist, names_to = "time")
+      return(out)
+    }else{NULL}
+  })),
+  
+  tar_target(nr1_wild, purrr::map2(roosts_wild[1:18], all_indivs_sorted_wild[1:18], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr2_wild, purrr::map2(roosts_wild[19:37], all_indivs_sorted_wild[19:37], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr3_wild, purrr::map2(roosts_wild[38:56], all_indivs_sorted_wild[38:56], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr4_wild, purrr::map2(roosts_wild[57:75], all_indivs_sorted_wild[57:75], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr5_wild, purrr::map2(roosts_wild[76:94], all_indivs_sorted_wild[76:94], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6_wild, purrr::map2(roosts_wild[95:112], all_indivs_sorted_wild[95:112], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(networks_long_roost_1_wild, c(nr1_wild, nr2_wild, nr3_wild, nr4_wild, nr5_wild, nr6_wild)),
+  
+  tar_target(networks_long_roost_2_wild, purrr::map2(networks_long_roost_1_wild, map_dbl(wild_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  
   tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
   
   tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
   }), names_to = "time"), trial = .y$carcID[1]))),
+  
+  tar_target(networks_long_combined, purrr::map2(networks_long_dynamic, roostlong, ~{
+    if(!is.null(.y)){
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial"))
+    }else{NULL}
+  })),
+  tar_target(networks_long_combined_wild, purrr::map2(networks_long_dynamic_wild, roostlong_wild, ~{
+    if(!is.null(.y)){
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial"))
+    }else{NULL}
+  })),
   
   tar_target(data_lists_noILVs, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic), function(ev, nld){
     if(nrow(nld) > 0){
