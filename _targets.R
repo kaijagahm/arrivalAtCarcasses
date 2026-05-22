@@ -5,8 +5,8 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph"),
-  controller = crew_controller_local(workers = 6)
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph", "STbayes"),
+  controller = crew_controller_local(workers = 10)
 )
 
 lapply(list.files("R", full.names = TRUE), source) 
@@ -502,10 +502,10 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bo_stations, 750), # NNN don't have good justification for this
   tar_target(hours_after_carcass, 72),
-  tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_nocliffs, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
-                                           carcasses = carcasses_focal,
-                                           dist = dist_bo_stations,
-                                           hours_after = hours_after_carcass)),
+  # tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_nocliffs, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
+  #                                          carcasses = carcasses_focal,
+  #                                          dist = dist_bo_stations,
+  #                                          hours_after = hours_after_carcass)),
   tar_target(station_bo, get_station_bouts(bouts = feeding_bo_nocliffs, stations = stations, dist = dist_bo_stations)),
   tar_target(non_station_bo, filter(feeding_bo_nocliffs, !(boutID %in% station_bo$boutID))),
   
@@ -540,8 +540,8 @@ list(
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
-  tar_target(days_before, 1),
-  tar_target(days_before_wild, 3),
+  # tar_target(days_before, 1),
+  # tar_target(days_before_wild, 3),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_south, filter(all_carcasses, Y < jerusalem_northing_36n)),
   ## 2. Separate stn and wild
@@ -568,7 +568,7 @@ list(
   
   # Data cleaning -----------------------------------------------------------
   tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
-  tar_target(ww, readxl::read_excel(ww_file, sheet = "all gps tags")),
+  # tar_target(ww, readxl::read_excel(ww_file, sheet = "all gps tags")),
   ## Remove dates before/after the deploy period
   tar_target(removed_beforeafter_deploy, process_deployments(ww_file,
                                                              fixed_names_ages,
@@ -618,122 +618,6 @@ list(
   
   tar_target(roosts_stn, c(roosts_stn_1, roosts_stn_2, roosts_stn_3, roosts_stn_4, roosts_stn_5, roosts_stn_6)),
   tar_target(roosts_wild, c(roosts_wild_1, roosts_wild_2, roosts_wild_3, roosts_wild_4, roosts_wild_5)),
-  
-  # Prepare NBDA data
-  ## Prepare NBDA data--stn carcs
-  tar_target(nd1, nb_shortcut(stn_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[1:10], age_ilv = T)),
-  tar_target(nd2, nb_shortcut(stn_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[11:20], age_ilv = T)),
-  tar_target(nd3, nb_shortcut(stn_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[21:30], age_ilv = T)),
-  tar_target(nd4, nb_shortcut(stn_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[31:40], age_ilv = T)),
-  tar_target(nd5, nb_shortcut(stn_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[41:50], age_ilv = T)),
-  tar_target(nd6, nb_shortcut(stn_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = stn_carcs[51:60], age_ilv = T)),
-  
-  ## Prepare NBDA data--wild carcs
-  tar_target(nd1_wild, nb_shortcut(wild_gps_30days[1:10], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[1:10], age_ilv = T)),
-  tar_target(nd2_wild, nb_shortcut(wild_gps_30days[11:20], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[11:20], age_ilv = T)),
-  tar_target(nd3_wild, nb_shortcut(wild_gps_30days[21:30], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[21:30], age_ilv = T)),
-  tar_target(nd4_wild, nb_shortcut(wild_gps_30days[31:40], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[31:40], age_ilv = T)),
-  tar_target(nd5_wild, nb_shortcut(wild_gps_30days[41:50], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[41:50], age_ilv = T)),
-  tar_target(nd6_wild, nb_shortcut(wild_gps_30days[51:60], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[51:60], age_ilv = T)),
-  tar_target(nd7_wild, nb_shortcut(wild_gps_30days[61:70], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[61:70], age_ilv = T)),
-  tar_target(nd8_wild, nb_shortcut(wild_gps_30days[71:80], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[71:80], age_ilv = T)),
-  tar_target(nd9_wild, nb_shortcut(wild_gps_30days[81:90], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[81:90], age_ilv = T)),
-  tar_target(nd10_wild, nb_shortcut(wild_gps_30days[91:100], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[91:100], age_ilv = T)),
-  tar_target(nd11_wild, nb_shortcut(wild_gps_30days[101:112], ddf, dds, gps_spd, hours_after_carcass, stb_mins, seeds = T, carcass_data_list = wild_carcs[101:112], age_ilv = T)),
-  
-  # Flight networks
-  ## Flight networks--Cumulative (stn)
-  tar_target(fl_wt_cumulative_1_prelim, purrr::map(nd1, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_2_prelim, purrr::map(nd2, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_3_prelim, purrr::map(nd3, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_4_prelim, purrr::map(nd4, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_5_prelim, purrr::map(nd5, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_6_prelim, purrr::map(nd6, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  
-  tar_target(fl_wt_cumulative_1, purrr::map2(fl_wt_cumulative_1_prelim, nd1, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_2, purrr::map2(fl_wt_cumulative_2_prelim, nd2, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_3, purrr::map2(fl_wt_cumulative_3_prelim, nd3, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_4, purrr::map2(fl_wt_cumulative_4_prelim, nd4, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_5, purrr::map2(fl_wt_cumulative_5_prelim, nd5, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_6, purrr::map2(fl_wt_cumulative_6_prelim, nd6, ~fix_nets(.x, .y$all_indivs_sorted))),
-  
-  ## Flight networks--Cumulative (wild)
-  tar_target(fl_wt_cumulative_1_prelim_wild, purrr::map(nd1_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_2_prelim_wild, purrr::map(nd2_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_3_prelim_wild, purrr::map(nd3_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_4_prelim_wild, purrr::map(nd4_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_5_prelim_wild, purrr::map(nd5_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_6_prelim_wild, purrr::map(nd6_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_7_prelim_wild, purrr::map(nd7_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_8_prelim_wild, purrr::map(nd8_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_9_prelim_wild, purrr::map(nd9_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_10_prelim_wild, purrr::map(nd10_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  tar_target(fl_wt_cumulative_11_prelim_wild, purrr::map(nd11_wild, ~{purrr::map(.x$gps_data_cumulative, ~get_fl_weighted(.x, dist = ddf, rp = rp, spd = gps_spd))})),
-  
-  tar_target(fl_wt_cumulative_1_wild, purrr::map2(fl_wt_cumulative_1_prelim_wild, nd1_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_2_wild, purrr::map2(fl_wt_cumulative_2_prelim_wild, nd2_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_3_wild, purrr::map2(fl_wt_cumulative_3_prelim_wild, nd3_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_4_wild, purrr::map2(fl_wt_cumulative_4_prelim_wild, nd4_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_5_wild, purrr::map2(fl_wt_cumulative_5_prelim_wild, nd5_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_6_wild, purrr::map2(fl_wt_cumulative_6_prelim_wild, nd6_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_7_wild, purrr::map2(fl_wt_cumulative_7_prelim_wild, nd7_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_8_wild, purrr::map2(fl_wt_cumulative_8_prelim_wild, nd8_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_9_wild, purrr::map2(fl_wt_cumulative_9_prelim_wild, nd9_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_10_wild, purrr::map2(fl_wt_cumulative_10_prelim_wild, nd10_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  tar_target(fl_wt_cumulative_11_wild, purrr::map2(fl_wt_cumulative_11_prelim_wild, nd11_wild, ~fix_nets(.x, .y$all_indivs_sorted))),
-  
-  # Prepare data for NBDA
-  ### Prepare data for NBDA--Cumulative (stn)--Weighted--seeds
-  tar_target(data_cumul_wt_1, purrr::map2(nd1, fl_wt_cumulative_1, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_2, purrr::map2(nd2, fl_wt_cumulative_2, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_3, purrr::map2(nd3, fl_wt_cumulative_3, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_4, purrr::map2(nd4, fl_wt_cumulative_4, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_5, purrr::map2(nd5, fl_wt_cumulative_5, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_6, purrr::map2(nd6, fl_wt_cumulative_6, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  
-  ### Prepare data for NBDA--Cumulative (wild)--Weighted--seeds
-  tar_target(data_cumul_wt_1_wild, purrr::map2(nd1_wild, fl_wt_cumulative_1_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_2_wild, purrr::map2(nd2_wild, fl_wt_cumulative_2_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_3_wild, purrr::map2(nd3_wild, fl_wt_cumulative_3_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_4_wild, purrr::map2(nd4_wild, fl_wt_cumulative_4_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_5_wild, purrr::map2(nd5_wild, fl_wt_cumulative_5_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  tar_target(data_cumul_wt_6_wild, purrr::map2(nd6_wild, fl_wt_cumulative_6_wild, ~{if(!is.null(.y) & length(.x$oa_nums) > 1){
-    nbdaData(.x$carcID, assMatrix = make_assMatrix(.y),
-             orderAcq = .x$oa_nums, demons = .x$seeds_vec)}else{NULL}})),
-  
-  ## NBDA models
-  ### Cumulative, weighted (stn)
-  tar_target(mods_cumul_wt, purrr::map(c(data_cumul_wt_1, data_cumul_wt_2, data_cumul_wt_3, data_cumul_wt_4, data_cumul_wt_5, data_cumul_wt_6), ~{tryCatch(oadaFit(.x, type = "social"), error = function(e) NULL)})),
-  
-  tar_target(stats_cumul_wt, mutate(purrr::list_rbind(map(mods_cumul_wt, getmodstats)), type = "cumul", binwt = "wt", seeds = T, carcID = purrr::map_dbl(stn_carcs, "carcID"))),
-  
-  tar_target(stats, purrr::list_rbind(list(stats_cumul_wt
-  ))),
-  
-  ## Number of individuals involved in each diffusion
-  tar_target(ns, purrr::list_rbind(purrr::map(c(nd1, nd2, nd3, nd4, nd5, nd6), ~{as.data.frame(t(unlist(.x[1:4])))}))),
   
   # Manual calculation of co-departures from roosts and following
   tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))),
@@ -853,8 +737,9 @@ list(
   tar_target(gps_fornetwork, purrr::map2(gps_diffusion, stn_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
-  tar_target(bins, purrr::map2(gps_fornetwork, cutpoints, ~{sort(unique(cut(.x$time, breaks = .y)))})),
-  tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints, ~{
+  tar_target(cutpoints2, purrr::map(cutpoints, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  
+  tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints2, ~{
     if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
@@ -862,7 +747,7 @@ list(
   tar_target(missing_intervals, purrr::map(gps_fornetwork2, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add, purrr::map(missing_intervals, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3, purrr::map2(gps_fornetwork2, to_add, ~{
-    if(!is.null(.x) & nrow(.y) > 0){
+    if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
       return(dplyr::bind_rows(.x, .y))
     }else if(!is.null(.x) & nrow(.y) == 0){
       return(.x)
@@ -891,11 +776,554 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6)),
   
+  tar_target(roost_threshold, 500),
+  tar_target(nr1, purrr::map2(roosts_stn[1:10], all_indivs_sorted[1:10], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr2, purrr::map2(roosts_stn[11:20], all_indivs_sorted[11:20], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr3, purrr::map2(roosts_stn[21:30], all_indivs_sorted[21:30], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr4, purrr::map2(roosts_stn[31:40], all_indivs_sorted[31:40], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr5, purrr::map2(roosts_stn[41:50], all_indivs_sorted[41:50], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6, purrr::map2(roosts_stn[51:60], all_indivs_sorted[51:60], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(networks_long_roost_1, c(nr1, nr2, nr3, nr4, nr5, nr6)),
+  
+  tar_target(networks_long_roost_2, purrr::map2(networks_long_roost_1, map_dbl(stn_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  
+  tar_target(equivalence_tables, purrr::map(first_sightings, ~{
+    if(nrow(.x) > 0){
+      .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
+        mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_fixed, purrr::pmap(list("ed" = event_data, "gd" = gps_diffusion, "et" = equivalence_tables), function(ed, gd, et){
+    if(!is.null(et)){
+      t_last <- min(ed$time[ed$time > ed$t_end])/60/60
+      idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
+      final_datetime <- gd$timestamp_il[idx]
+      final_date <- lubridate::date(final_datetime)
+      final_roost_date <- final_date - lubridate::days(1)
+      et_fixed <- et %>% add_row(date = final_date, time = max(et$time)+1, roost_date = final_roost_date)
+      return(et_fixed)
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_wild, purrr::map(first_sightings_wild, ~{
+    if(nrow(.x) > 0){
+      .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
+        mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_fixed_wild, purrr::pmap(list("ed" = event_data_wild, "gd" = gps_diffusion_wild, "et" = equivalence_tables_wild), function(ed, gd, et){
+    if(!is.null(et)){
+      t_last <- min(ed$time[ed$time > ed$t_end])/60/60
+      idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
+      final_datetime <- gd$timestamp_il[idx]
+      final_date <- lubridate::date(final_datetime)
+      final_roost_date <- final_date - lubridate::days(1)
+      et_fixed <- et %>% add_row(date = final_date, time = max(et$time)+1, roost_date = final_roost_date)
+      return(et_fixed)
+    }else{NULL}
+  })),
+  
+  
+  # Break roost nets into a list by date and set names accordingly.
+  tar_target(net_lists_1, purrr::map(networks_long_roost_2, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists_1_wild, purrr::map(networks_long_roost_2_wild, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists, purrr::map(net_lists_1, ~{
+    names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
+    return(.x)
+  })),
+  tar_target(net_lists_wild, purrr::map(net_lists_1_wild, ~{
+    names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
+    return(.x)
+    })),
+  tar_target(roostlong, purrr::map2(equivalence_tables_fixed, net_lists, ~{
+    if(!is.null(.x) & !is.null(.y)){
+      newlist <- vector(mode = "list", length = nrow(.x))
+      for(i in 1:nrow(.x)){
+        date <- as.character(.x$roost_date[i])
+        newlist[[i]] <- .y[[date]]
+      }
+      out <- purrr::list_rbind(newlist, names_to = "time")
+      return(out)
+    }else{NULL}
+  })),
+  tar_target(roostlong_wild, purrr::map2(equivalence_tables_fixed_wild, net_lists_wild, ~{
+    if(!is.null(.x) & !is.null(.y)){
+      newlist <- vector(mode = "list", length = nrow(.x))
+      for(i in 1:nrow(.x)){
+        date <- as.character(.x$roost_date[i])
+        newlist[[i]] <- .y[[date]]
+      }
+      out <- purrr::list_rbind(newlist, names_to = "time")
+      return(out)
+    }else{NULL}
+  })),
+  
+  tar_target(nr1_wild, purrr::map2(roosts_wild[1:18], all_indivs_sorted_wild[1:18], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr2_wild, purrr::map2(roosts_wild[19:37], all_indivs_sorted_wild[19:37], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr3_wild, purrr::map2(roosts_wild[38:56], all_indivs_sorted_wild[38:56], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr4_wild, purrr::map2(roosts_wild[57:75], all_indivs_sorted_wild[57:75], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr5_wild, purrr::map2(roosts_wild[76:94], all_indivs_sorted_wild[76:94], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6_wild, purrr::map2(roosts_wild[95:112], all_indivs_sorted_wild[95:112], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(networks_long_roost_1_wild, c(nr1_wild, nr2_wild, nr3_wild, nr4_wild, nr5_wild, nr6_wild)),
+  
+  tar_target(networks_long_roost_2_wild, purrr::map2(networks_long_roost_1_wild, map_dbl(wild_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  
   tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
   
   tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
-  }), names_to = "time"), trial = .y$carcID[1])))#,
+  }), names_to = "time"), trial = .y$carcID[1]))),
   
-# ILVs are going to get more complicated here
+  tar_target(networks_long_combined, purrr::map2(networks_long_dynamic, roostlong, ~{
+    if(!is.null(.y)){
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial")) %>%
+        mutate(flight_sri_scaled = flight_sri/max(flight_sri)) %>% # scaling to a 0-1 scale
+        select(-flight_sri)
+    }else{.x}
+  })),
+  tar_target(networks_long_combined_wild, purrr::map2(networks_long_dynamic_wild, roostlong_wild, ~{
+    if(!is.null(.y)){
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial")) %>%
+        mutate(flight_sri_scaled = flight_sri/max(flight_sri)) %>%
+        select(-flight_sri)
+    }else{.x}
+  })),
+  
+  tar_target(data_lists_noILVs, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected")}else{NULL}})),
+  
+  tar_target(data_lists_noILVs_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected")}else{NULL}})),
+  
+  tar_target(data_lists_DistI, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_AgeIS, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_AgeIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_AgeIS, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_AgeIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+  
+  # ILVs
+  tar_target(age_ilv, purrr::pmap(list("gd" = gps_diffusion, "sc" = stn_carcs, "ais" = all_indivs_sorted), function(gd, sc, ais){
+    yr <- sc$year
+    col_to_select <- paste0("age_", yr)
+    out <- gd %>% st_drop_geometry() %>%
+      dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
+      dplyr::distinct() %>%
+      dplyr::rename("age_continuous" = col_to_select) %>%
+      dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
+                                               .default = age_continuous)) %>%
+      dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
+                                                age_continuous > 0 & age_continuous < 5 ~ "sub",
+                                                age_continuous >= 5 ~ "adult",
+                                                .default = NA))
+    missing <- ais[!(ais %in% out$individual_local_identifier)]
+    toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
+    out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
+    return(out)
+  })),
+  
+  tar_target(dists_dyn, purrr::map2(gps_list_fixed, all_indivs_sorted, ~{ # Added ~ here
+    ais <- .y
+    if(length(.x) != 0){
+      # Inner map
+      res <- purrr::map(.x, ~{
+        step1 <- .x %>%
+          sf::st_drop_geometry() %>%
+          dplyr::arrange(individual_local_identifier, time_since_carcass) %>%
+          dplyr::group_by(individual_local_identifier) %>%
+          dplyr::summarize(mean_dist_to_carcass = mean(dist_to_carcass, na.rm = TRUE))
+        
+        missing <- ais[!(ais %in% step1$individual_local_identifier)]
+        
+        # Use NA_real_ to match the numeric type of mean_dist_to_carcass
+        missing_df <- data.frame(
+          individual_local_identifier = missing, 
+          mean_dist_to_carcass = NA_real_ 
+        )
+        
+        step2 <- dplyr::bind_rows(step1, missing_df) %>%
+          dplyr::filter(!is.na(individual_local_identifier))
+        
+        return(step2)
+      }) %>% 
+        purrr::list_rbind(names_to = "time") %>%
+        dplyr::mutate(
+          # Use as.vector to strip matrix attributes from scale()
+          mean_dist_to_carcass_norm = as.vector(scale(log(mean_dist_to_carcass), center = TRUE, scale = TRUE)),
+          mean_dist_to_carcass_norm = tidyr::replace_na(mean_dist_to_carcass_norm, 0) # Added tidyr::
+        )
+      return(res) # Ensure the result of the mutate chain is returned
+      
+    }else{
+      return(NULL)
+    }
+  })
+  ),
+  
+  tar_target(ILV_c, purrr::map(age_ilv, ~{
+    .x %>% dplyr::rename("id" = individual_local_identifier,
+                  "age" = age_categorical) %>%
+      dplyr::select(id, age)
+  })),
+  
+  tar_target(ILV_tv, purrr::map2(dists_dyn, purrr::map_dbl(stn_carcs, "carcID"), ~{
+    if(!is.null(.x)){
+      .x %>% dplyr::select("id" = individual_local_identifier,
+                           time, mean_dist_to_carcass_norm) %>%
+        dplyr::mutate(trial = .y) %>%
+        dplyr::select(trial, id, time, mean_dist_to_carcass_norm) %>%
+        mutate(mean_dist_to_carcass_norm = replace_na(mean_dist_to_carcass_norm, 0))
+    }else{return(NULL)}
+  })),
+  
+  ## wild
+  tar_target(gps_withdaylight_wild_1, purrr::map2(wild_gps_30days[1:14], wild_carcs[1:14], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_2, purrr::map2(wild_gps_30days[15:28], wild_carcs[15:28], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_3, purrr::map2(wild_gps_30days[29:43], wild_carcs[29:43], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_4, purrr::map2(wild_gps_30days[44:58], wild_carcs[44:58], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_5, purrr::map2(wild_gps_30days[59:73], wild_carcs[59:73], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_6, purrr::map2(wild_gps_30days[74:88], wild_carcs[74:88], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_7, purrr::map2(wild_gps_30days[89:103], wild_carcs[89:103], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:112], wild_carcs[104:112], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(seeds_wild_1, purrr::map(gps_withdaylight_wild_1, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_2, purrr::map(gps_withdaylight_wild_2, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_3, purrr::map(gps_withdaylight_wild_3, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_4, purrr::map(gps_withdaylight_wild_4, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_5, purrr::map(gps_withdaylight_wild_5, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_6, purrr::map(gps_withdaylight_wild_6, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_7, purrr::map(gps_withdaylight_wild_7, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild_8, purrr::map(gps_withdaylight_wild_8, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
+  tar_target(seeds_wild, c(seeds_wild_1, seeds_wild_2, seeds_wild_3, seeds_wild_4, seeds_wild_5, seeds_wild_6, seeds_wild_7, seeds_wild_8)),
+  tar_target(all_indivs_sorted_wild_1, purrr::map(gps_withdaylight_wild_1, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_2, purrr::map(gps_withdaylight_wild_2,~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_3, purrr::map(gps_withdaylight_wild_3, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_4, purrr::map(gps_withdaylight_wild_4, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_5, purrr::map(gps_withdaylight_wild_5, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_6, purrr::map(gps_withdaylight_wild_6, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_7, purrr::map(gps_withdaylight_wild_7, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild_8, purrr::map(gps_withdaylight_wild_8, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_wild, c(all_indivs_sorted_wild_1, all_indivs_sorted_wild_2, all_indivs_sorted_wild_3, all_indivs_sorted_wild_4, all_indivs_sorted_wild_5, all_indivs_sorted_wild_6, all_indivs_sorted_wild_7, all_indivs_sorted_wild_8)),
+  tar_target(gps_diffusion_wild_1, purrr::map(gps_withdaylight_wild_1, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_2, purrr::map(gps_withdaylight_wild_2, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_3, purrr::map(gps_withdaylight_wild_3, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_4, purrr::map(gps_withdaylight_wild_4, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_5, purrr::map(gps_withdaylight_wild_5, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_6, purrr::map(gps_withdaylight_wild_6, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_7, purrr::map(gps_withdaylight_wild_7, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild_8, purrr::map(gps_withdaylight_wild_8, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_wild, c(gps_diffusion_wild_1, gps_diffusion_wild_2, gps_diffusion_wild_3, gps_diffusion_wild_4, gps_diffusion_wild_5, gps_diffusion_wild_6, gps_diffusion_wild_7, gps_diffusion_wild_8)),
+  tar_target(first_sightings_wild_1, purrr::map2(gps_diffusion_wild_1, seeds_wild_1, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_2, purrr::map2(gps_diffusion_wild_2, seeds_wild_2, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_3, purrr::map2(gps_diffusion_wild_3, seeds_wild_3, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_4, purrr::map2(gps_diffusion_wild_4, seeds_wild_4, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_5, purrr::map2(gps_diffusion_wild_5, seeds_wild_5, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_6, purrr::map2(gps_diffusion_wild_6, seeds_wild_6, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_7, purrr::map2(gps_diffusion_wild_7, seeds_wild_7, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild_8, purrr::map2(gps_diffusion_wild_8, seeds_wild_8, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_wild, c(first_sightings_wild_1, first_sightings_wild_2, first_sightings_wild_3, first_sightings_wild_4, first_sightings_wild_5, first_sightings_wild_6, first_sightings_wild_7, first_sightings_wild_8)),
+  tar_target(event_data_wild, purrr::pmap(list(first_sightings_wild, seeds_wild, all_indivs_sorted_wild, wild_carcs), ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)
+  )),
+  tar_target(gps_fornetwork_wild, purrr::map2(gps_diffusion_wild, wild_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
+
+  tar_target(cutpoints_wild, purrr::map(event_data_wild, ~unique(.x$time))),
+  tar_target(cutpoints2_wild, purrr::map(cutpoints_wild, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  tar_target(bins_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{sort(unique(cut(.x$time, breaks = .y)))})),
+
+  tar_target(gps_fornetwork2_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{
+    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
+      out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
+      return(out)}
+  })),
+  tar_target(missing_intervals_wild, purrr::map(gps_fornetwork2_wild, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
+  tar_target(to_add_wild, purrr::map(missing_intervals_wild, ~data.frame(network = .x))),
+  tar_target(gps_fornetwork3_wild, purrr::map2(gps_fornetwork2_wild, to_add_wild, ~{
+    if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
+      return(dplyr::bind_rows(.x, .y))
+    }else if(!is.null(.x) & nrow(.y) == 0){
+      return(.x)
+    }else{NULL}})),
+  tar_target(gps_list_wild, purrr::map(gps_fornetwork3_wild, ~{
+    if(!is.null(.x)){
+      dplyr::group_split(dplyr::arrange(.x, network), network, .keep = T)}else{NULL}
+  })),
+  tar_target(gps_list_fixed_wild, purrr::map(gps_list_wild, ~purrr::map(.x, ~{
+    if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
+      return(.x[0,])}else if(is.null(.x)){
+        return(NULL)}else{
+          return(.x)}
+  }))),
+  tar_target(dn1_wild, purrr::map(gps_list_fixed_wild[1:10], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn2_wild, purrr::map(gps_list_fixed_wild[11:20], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn3_wild, purrr::map(gps_list_fixed_wild[21:30], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn4_wild, purrr::map(gps_list_fixed_wild[31:40], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn5_wild, purrr::map(gps_list_fixed_wild[41:50], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn6_wild, purrr::map(gps_list_fixed_wild[51:60], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn7_wild, purrr::map(gps_list_fixed_wild[61:70], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn8_wild, purrr::map(gps_list_fixed_wild[71:80], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn9_wild, purrr::map(gps_list_fixed_wild[81:90], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn10_wild, purrr::map(gps_list_fixed_wild[91:100], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn11_wild, purrr::map(gps_list_fixed_wild[101:110], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn12_wild, purrr::map(gps_list_fixed_wild[111:112], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild, dn12_wild)),
+
+  tar_target(dynamic_networks_fixed_wild, purrr::map2(dynamic_networks_wild, all_indivs_sorted_wild, ~fix_nets(.x, indivs = .y))),
+
+  tar_target(networks_long_dynamic_wild, purrr::map2(dynamic_networks_fixed_wild, wild_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
+    out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
+  }), names_to = "time"), trial = .y$carcID[1]))),
+
+  tar_target(data_lists_noILVs_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected")}else{NULL}})),
+  
+  tar_target(data_lists_noILVs_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected")}else{NULL}})),
+
+  tar_target(data_lists_DistI_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+
+  tar_target(data_lists_DistI_AgeIS_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_AgeIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+
+  tar_target(data_lists_DistIS_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+
+  tar_target(data_lists_DistIS_AgeIS_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_AgeIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+
+  # ILVs
+  tar_target(age_ilv_wild, purrr::pmap(list("gd" = gps_diffusion_wild, "sc" = wild_carcs, "ais" = all_indivs_sorted_wild), function(gd, sc, ais){
+    yr <- sc$year
+    col_to_select <- paste0("age_", yr)
+    out <- gd %>% st_drop_geometry() %>%
+      dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
+      dplyr::distinct() %>%
+      dplyr::rename("age_continuous" = col_to_select) %>%
+      dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
+                                               .default = age_continuous)) %>%
+      dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
+                                                age_continuous > 0 & age_continuous < 5 ~ "sub",
+                                                age_continuous >= 5 ~ "adult",
+                                                .default = NA))
+    missing <- ais[!(ais %in% out$individual_local_identifier)]
+    toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
+    out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
+    return(out)
+  })),
+
+  tar_target(dists_dyn_wild, purrr::map2(gps_list_fixed_wild, all_indivs_sorted_wild, ~{ # Added ~ here
+    ais <- .y
+    if(length(.x) != 0){
+      # Inner map
+      res <- purrr::map(.x, ~{
+        step1 <- .x %>%
+          sf::st_drop_geometry() %>%
+          dplyr::arrange(individual_local_identifier, time_since_carcass) %>%
+          dplyr::group_by(individual_local_identifier) %>%
+          dplyr::summarize(mean_dist_to_carcass = mean(dist_to_carcass, na.rm = TRUE))
+
+        missing <- ais[!(ais %in% step1$individual_local_identifier)]
+
+        # Use NA_real_ to match the numeric type of mean_dist_to_carcass
+        missing_df <- data.frame(
+          individual_local_identifier = missing,
+          mean_dist_to_carcass = NA_real_
+        )
+
+        step2 <- dplyr::bind_rows(step1, missing_df) %>%
+          dplyr::filter(!is.na(individual_local_identifier))
+
+        return(step2)
+      }) %>%
+        purrr::list_rbind(names_to = "time") %>%
+        dplyr::mutate(
+          # Use as.vector to strip matrix attributes from scale()
+          mean_dist_to_carcass_norm = as.vector(scale(log(mean_dist_to_carcass), center = TRUE, scale = TRUE)),
+          mean_dist_to_carcass_norm = tidyr::replace_na(mean_dist_to_carcass_norm, 0) # Added tidyr::
+        )
+      return(res) # Ensure the result of the mutate chain is returned
+
+    }else{
+      return(NULL)
+    }
+  })
+  ),
+
+  tar_target(ILV_c_wild, purrr::map(age_ilv_wild, ~{
+    .x %>% dplyr::rename("id" = individual_local_identifier,
+                         "age" = age_categorical) %>%
+      dplyr::select(id, age)
+  })),
+
+  tar_target(ILV_tv_wild, purrr::map2(dists_dyn_wild, purrr::map_dbl(wild_carcs, "carcID"), ~{
+    if(!is.null(.x)){
+      .x %>% dplyr::select("id" = individual_local_identifier,
+                           time, mean_dist_to_carcass_norm) %>%
+        dplyr::mutate(trial = .y) %>%
+        dplyr::select(trial, id, time, mean_dist_to_carcass_norm) %>%
+        mutate(mean_dist_to_carcass_norm = replace_na(mean_dist_to_carcass_norm, 0))
+    }else{return(NULL)}
+  }))
 )

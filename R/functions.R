@@ -1664,16 +1664,16 @@ get_plot_data <- function(event_data){
   return(plot_data_obs)
 }
 get_plot_data_ppc <- function(fit, data_list){
-  draws_df <- as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = F))
+  draws_df <- posterior::as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = F))
   ppc_long <- draws_df %>%
-    select(starts_with("acquisition_time[")) %>%
-    pivot_longer(
+    dplyr::select(starts_with("acquisition_time[")) %>%
+    tidyr::pivot_longer(
       cols = everything(),
       names_to = c("trial", "ind"),
       names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
       values_to = "time"
     ) %>%
-    mutate(
+    dplyr::mutate(
       trial = as.integer(trial),
       ind = as.integer(ind),
       draw = rep(1:(nrow(draws_df)), 
@@ -1681,24 +1681,24 @@ get_plot_data_ppc <- function(fit, data_list){
     )
   # thin for plotting
   sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
-  ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+  ppc_long <- ppc_long %>% dplyr::filter(draw %in% sample_idx)
   
   # build cumulative curves per draw
   plot_data_ppc <- ppc_long %>%
-    group_by(draw, trial, time) %>%
-    summarise(n = n(), .groups = "drop") %>%
-    group_by(draw, trial) %>%
-    arrange(time) %>%
-    mutate(cum_prop = cumsum(n) / data_list$Q)
+    dplyr::group_by(draw, trial, time) %>%
+    dplyr::summarise(n = n(), .groups = "drop") %>%
+    dplyr::group_by(draw, trial) %>%
+    dplyr::arrange(time) %>%
+    dplyr::mutate(cum_prop = cumsum(n) / data_list$Q)
   
   # add in 0,0 starting point
-  out <- bind_rows(
+  out <- dplyr::bind_rows(
     plot_data_ppc,
     plot_data_ppc %>%
-      distinct(trial, draw) %>%
-      mutate(time = 0, cum_prop = 0, type = "ppc")
+      dplyr::distinct(trial, draw) %>%
+      dplyr::mutate(time = 0, cum_prop = 0, type = "ppc")
   ) %>%
-    arrange(trial, time)
+    dplyr::arrange(trial, time)
   return(out)
 }
 
@@ -1819,4 +1819,138 @@ get_daylight_hours <- function(gps, carc){
                                                            .default = NA)) %>%
     dplyr::arrange(timestamp_il)
   return(gps)
+}
+
+
+get_asocial <- function(ed, dl, it = 1000){
+  if(!is.null(dl)){
+    mod <- STbayes::generate_STb_model(dl, gq = T, est_acqTime = T, model_type = "asocial")
+    asocial_fit <- fit_STb(dl, mod, iter = it)
+  }else{
+    mod <- NULL
+    asocial_fit <- NULL
+  }
+  return(list("mod" = mod, "fit" = asocial_fit))
+}
+
+get_summs_curves <- function(ed, dl, it = 1000){
+  if(!is.null(dl)){
+    # Generate asocial model
+    mod <- STbayes::generate_STb_model(dl, gq = T, est_acqTime = T, model_type = "asocial")
+    # Fit asocial model
+    asocial_fit <- fit_STb(dl, mod, iter = it)
+    
+    # Generate the model
+    mod <- STbayes::generate_STb_model(dl, gq = T, est_acqTime = T)
+    # Fit the  model
+    fit <- STbayes::fit_STb(dl, mod, iter = it)
+    
+    # compare social vs. asocial model
+    loo_output <- STb_compare(fit, asocial_fit, method="loo-psis")
+    comparison_df <- as.data.frame(loo_output$comparison)
+    comparison_df$model <- rownames(comparison_df)
+    
+    pareto_df <- as.data.frame(loo_output$pareto_diagnostics)
+    
+    
+    
+    
+    
+    
+    # Get the summary
+    summ <- STbayes::STb_summary(fit)
+    # Get the ppc curves
+    # create cumulative count of events
+    ed <- ed %>%
+      group_by(trial) %>%
+      mutate(n_trial = n())
+    
+    plot_data_obs <- ed %>%
+      filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+      group_by(trial) %>%
+      arrange(time, .by_group = TRUE) %>%
+      mutate(
+        cum_prop = row_number() / n_trial, # this denominator needs to be the number of individuals per trial
+        type = "observed"
+      ) %>%
+      select(trial, time, cum_prop, type) %>%
+      ungroup()
+    
+    # add in 0,0 starting point
+    plot_data_obs <- bind_rows(
+      plot_data_obs,
+      plot_data_obs %>%
+        distinct(trial) %>%
+        mutate(time = 0, cum_prop = 0, type = "observed")
+    ) %>%
+      arrange(trial, time)
+    
+    # extract draws of predicted acqtime
+    draws_df <- posterior::as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
+    
+    # pivot longer
+    ppc_long <- draws_df %>%
+      select(starts_with("acquisition_time[")) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = c("trial", "ind"),
+        names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+        values_to = "time"
+      ) %>%
+      mutate(
+        trial = as.integer(trial),
+        ind = as.integer(ind),
+        draw = rep(1:(nrow(draws_df)),
+                   each = length(unique(.$trial)) * length(unique(.$ind))
+        )
+      )
+    
+    
+    # thin sample for plotting
+    sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+    ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+    
+    # build cumulative curves per draw
+    # same as before, we need a way to reference the number of individuals in each trial
+    ppc_long <- ppc_long %>%
+      group_by(draw, trial) %>%
+      mutate(n_trial = n())
+    summary(ppc_long)
+    # we also need to remove individuals predicted as censored
+    ppc_long <- ppc_long %>%
+      filter(time > -1)
+    # create cumulative curves
+    plot_data_ppc <- ppc_long %>%
+      group_by(draw, trial, time) %>%
+      summarise(n = n(), n_trial = first(n_trial), .groups = "drop") %>%
+      group_by(draw, trial) %>%
+      arrange(time) %>%
+      mutate(cum_prop = cumsum(n) / n_trial)
+    
+    # add in 0,0 starting point
+    plot_data_ppc <- bind_rows(
+      plot_data_ppc,
+      plot_data_ppc %>%
+        distinct(trial, draw) %>%
+        mutate(time = 0, cum_prop = 0, type = "ppc")
+    ) %>%
+      arrange(trial, time)
+    return(list("obs" = plot_data_obs, "pred" = plot_data_ppc, "summ" = summ, "asoc_comparison" = comparison_df, "pareto_df" = pareto_df))
+  }else{
+    return(NULL)
+  }
+}
+
+arrange_roost_nets <- function(r, ind, rt){
+  e <- getRoostEdges(r, mode = "distance", distThreshold = rt, idCol = "individual_local_identifier", return = "edges") %>% select(-distance) %>%
+    mutate(roost_together = 1)
+  dates <- unique(e$date)
+  df <- expand_grid("ID1" = ind, "ID2" = ind)
+  toadd <- map(dates, ~mutate(df, date = .x)) %>% purrr::list_rbind() %>% mutate(roost_together = 0)
+  all <- bind_rows(e, toadd) %>%
+    arrange(date, ID1, ID2, desc(roost_together)) %>%
+    group_by(date, ID1, ID2) %>%
+    slice(1) %>%
+    rename("focal" = ID1, "other" = ID2)
+  return(all)
 }
