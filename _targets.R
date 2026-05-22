@@ -502,10 +502,10 @@ list(
   ## Match bouts to carcasses
   tar_target(dist_bo_stations, 750), # NNN don't have good justification for this
   tar_target(hours_after_carcass, 72),
-  tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_nocliffs, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
-                                           carcasses = carcasses_focal,
-                                           dist = dist_bo_stations,
-                                           hours_after = hours_after_carcass)),
+  # tar_target(carcass_bo, get_carcass_bouts(bouts = feeding_bo_nocliffs, # NNN look into which stations are 142m apart. # looks like Tzaror_trap and Tzaror_mount, which I think we will end up merging into the same one anyway.
+  #                                          carcasses = carcasses_focal,
+  #                                          dist = dist_bo_stations,
+  #                                          hours_after = hours_after_carcass)),
   tar_target(station_bo, get_station_bouts(bouts = feeding_bo_nocliffs, stations = stations, dist = dist_bo_stations)),
   tar_target(non_station_bo, filter(feeding_bo_nocliffs, !(boutID %in% station_bo$boutID))),
   
@@ -540,8 +540,8 @@ list(
   ## Dynamic NBDA testing
   ## 0. Define parameters
   tar_target(days_after, 3),
-  tar_target(days_before, 1),
-  tar_target(days_before_wild, 3),
+  # tar_target(days_before, 1),
+  # tar_target(days_before_wild, 3),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_south, filter(all_carcasses, Y < jerusalem_northing_36n)),
   ## 2. Separate stn and wild
@@ -568,7 +568,7 @@ list(
   
   # Data cleaning -----------------------------------------------------------
   tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
-  tar_target(ww, readxl::read_excel(ww_file, sheet = "all gps tags")),
+  # tar_target(ww, readxl::read_excel(ww_file, sheet = "all gps tags")),
   ## Remove dates before/after the deploy period
   tar_target(removed_beforeafter_deploy, process_deployments(ww_file,
                                                              fixed_names_ages,
@@ -878,16 +878,26 @@ list(
   
   tar_target(networks_long_combined, purrr::map2(networks_long_dynamic, roostlong, ~{
     if(!is.null(.y)){
-      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial"))
-    }else{NULL}
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial")) %>%
+        mutate(flight_sri_scaled = flight_sri/max(flight_sri)) %>% # scaling to a 0-1 scale
+        select(-flight_sri)
+    }else{.x}
   })),
   tar_target(networks_long_combined_wild, purrr::map2(networks_long_dynamic_wild, roostlong_wild, ~{
     if(!is.null(.y)){
-      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial"))
-    }else{NULL}
+      left_join(.x, dplyr::select(.y, -date), by = c("time", "focal", "other", "trial")) %>%
+        mutate(flight_sri_scaled = flight_sri/max(flight_sri)) %>%
+        select(-flight_sri)
+    }else{.x}
   })),
   
   tar_target(data_lists_noILVs, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected")}else{NULL}})),
+  
+  tar_target(data_lists_noILVs_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined), function(ev, nld){
     if(nrow(nld) > 0){
       STbayes::import_user_STb(event_data = ev, 
                                networks = nld, 
@@ -902,7 +912,26 @@ list(
                                ILV_tv = ilvtv,
                                ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
   
+  tar_target(data_lists_DistI_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
   tar_target(data_lists_DistI_AgeIS, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_AgeIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
     if(nrow(nld) > 0){
       STbayes::import_user_STb(event_data = ev, 
                                networks = nld, 
@@ -922,7 +951,27 @@ list(
                                ILVi = c("mean_dist_to_carcass_norm"),
                                ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
   
+  tar_target(data_lists_DistIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
   tar_target(data_lists_DistIS_AgeIS, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev, 
+                               networks = nld, 
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_AgeIS_2nets, purrr::pmap(list("ev" = event_data, "nld" = networks_long_combined, "ilvc" = ILV_c, "ilvtv" = ILV_tv), function(ev, nld, ilvc, ilvtv){
     if(nrow(nld) > 0){
       STbayes::import_user_STb(event_data = ev, 
                                networks = nld, 
@@ -1015,7 +1064,6 @@ list(
   tar_target(gps_withdaylight_wild_6, purrr::map2(wild_gps_30days[74:88], wild_carcs[74:88], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_7, purrr::map2(wild_gps_30days[89:103], wild_carcs[89:103], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:112], wild_carcs[104:112], ~get_daylight_hours(.x, .y), .progress = T)),
-  # tar_target(gps_withdaylight_wild, c(gps_withdaylight_wild_1, gps_withdaylight_wild_2, gps_withdaylight_wild_3, gps_withdaylight_wild_4, gps_withdaylight_wild_5, gps_withdaylight_wild_6, gps_withdaylight_wild_7, gps_withdaylight_wild_8)),
   tar_target(seeds_wild_1, purrr::map(gps_withdaylight_wild_1, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_2, purrr::map(gps_withdaylight_wild_2, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_3, purrr::map(gps_withdaylight_wild_3, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
@@ -1120,6 +1168,12 @@ list(
       STbayes::import_user_STb(event_data = ev,
                                networks = nld,
                                network_type = "undirected")}else{NULL}})),
+  
+  tar_target(data_lists_noILVs_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild), function(ev, nld){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected")}else{NULL}})),
 
   tar_target(data_lists_DistI_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
     if(nrow(nld) > 0){
@@ -1129,8 +1183,27 @@ list(
                                ILV_c = ilvc,
                                ILV_tv = ilvtv,
                                ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"))}else{NULL}})),
 
   tar_target(data_lists_DistI_AgeIS_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("age", "mean_dist_to_carcass_norm"),
+                               ILVs = c("age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistI_AgeIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
     if(nrow(nld) > 0){
       STbayes::import_user_STb(event_data = ev,
                                networks = nld,
@@ -1149,8 +1222,28 @@ list(
                                ILV_tv = ilvtv,
                                ILVi = c("mean_dist_to_carcass_norm"),
                                ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm"),
+                               ILVs = c("mean_dist_to_carcass_norm"))}else{NULL}})),
 
   tar_target(data_lists_DistIS_AgeIS_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_dynamic_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
+    if(nrow(nld) > 0){
+      STbayes::import_user_STb(event_data = ev,
+                               networks = nld,
+                               network_type = "undirected",
+                               ILV_c = ilvc,
+                               ILV_tv = ilvtv,
+                               ILVi = c("mean_dist_to_carcass_norm", "age"),
+                               ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
+  
+  tar_target(data_lists_DistIS_AgeIS_2nets_wild, purrr::pmap(list("ev" = event_data_wild, "nld" = networks_long_combined_wild, "ilvc" = ILV_c_wild, "ilvtv" = ILV_tv_wild), function(ev, nld, ilvc, ilvtv){
     if(nrow(nld) > 0){
       STbayes::import_user_STb(event_data = ev,
                                networks = nld,

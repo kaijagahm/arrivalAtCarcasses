@@ -767,7 +767,9 @@ net_lists|stem|0fac1160e603e0c6|7c9c7c46df4b0e9a|615dbc30d2fb053f|-1574577910||t
 equivalence_tables_fixed_wild|stem|ac85f998a1bed4fb|17d5dd52266a6064|c5ffb37bf2393c36|836275040||t20588.8960790676s|s2923b|2923|rds|local|vector|||0.625||
 roostlong|stem|e00026b26e577a10|79b149acca04934a|47819177dce909a6|-1705264698||t20588.9040248767s|s7060974b|7060974|rds|local|vector|||6.203||
 roostlong_wild|stem|8f3a3c425537ae6d|ad28eec325ff284b|d901187e6ee648d9|-2043098400||t20588.9047890681s|s7450183b|7450183|rds|local|vector|||4.969||
-networks_long_combined|stem|8178da621b51e4b4|9a5a69bd6b3cb364|c5ab935ffbe6e08b|-2079153853||t20588.913490322s|s7331743b|7331743|rds|local|vector|||13.328||
+networks_long_combined|stem|2275aa0bbe5676e8|9b26d6f8a652ad39|c5ab935ffbe6e08b|-2079153853||t20592.89500917s|s7260763b|7260763|rds|local|vector|||14.078||
+networks_long_combined_wild|stem|979a3cc3863bf024|e95fad0b874d02cf|e84875a448bf0b1c|1901561587||t20592.8950121683s|s8072727b|8072727|rds|local|vector|||14.562||
+data_lists_noILVs_2nets|stem|ef33824d2679cba0|6cc3e6528102a5b7|361a254dcae8f897|2045245075||t20592.8963394773s|s1624966b|1624966|rds|local|vector|||93.312||
 rotate_data_table|function|8ff0c7c0e298c44a
 convertsf|function|896ad86c2c3887a5
 join_inpa_ornitela|function|0f5e0af9a7c3bf40
@@ -932,4 +934,12 @@ get_fl_weighted|function|ae1fc292919c8978
 get_fl_bin|function|20c01d64143a18d8
 get_fl_wt_list|function|0efe2bb9cd2fdd12
 get_fl_bin_list|function|4628e125dc1bec5a
-networks_long_combined_wild|stem|7be59eb8a069daaf|e87acb99b930cb14|e84875a448bf0b1c|1901561587||t20588.9147252922s|s8139371b|8139371|rds|local|vector|||13.687||
+data_lists_noILVs_2nets_wild|stem|error|99fc506b4e15a9bb|1e311cfe68aa8a12|1586628505||t20592.910343464s||0|null|local|vector|||57.797||i In index: 64. Caused by error in `if (min(A_array) < 0) ...`: ! missing value where TRUE/FALSE needed
+data_lists_DistIS_AgeIS_2nets_wild|stem|error|d696bbef265a07c2|41c2e01c05579a12|-172791052||t20592.9104007757s||0|null|local|vector|||61.953||i In index: 64. Caused by error in `if (min(A_array) < 0) ...`: ! missing value where TRUE/FALSE needed
+data_lists_DistIS_2nets_wild|stem|error|563bd9dcc43f5d6d|41c2e01c05579a12|-1919617748||t20592.9104079002s||0|null|local|vector|||61.718||i In index: 64. Caused by error in `if (min(A_array) < 0) ...`: ! missing value where TRUE/FALSE needed
+data_lists_DistI_AgeIS_2nets_wild|stem|error|5c97cda0c5900200|41c2e01c05579a12|-1614897041||t20592.9104167108s||0|null|local|vector|||62.047||i In index: 64. Caused by error in `if (min(A_array) < 0) ...`: ! missing value where TRUE/FALSE needed
+data_lists_DistI_2nets_wild|stem|error|9cd74ea8129b6dd8|41c2e01c05579a12|1433489028||t20592.9104215359s||0|null|local|vector|||62.922||i In index: 64. Caused by error in `if (min(A_array) < 0) ...`: ! missing value where TRUE/FALSE needed
+data_lists_DistIS_2nets|stem|0262fd0b320b8494|4b1ec586e7b6c20b|16576b48fe7d4a14|959138993||t20592.9108954102s|s2504399b|2504399|rds|local|vector|||101.688||
+data_lists_DistIS_AgeIS_2nets|stem|f343e95cc9e3afc1|f641abc2da85d62b|16576b48fe7d4a14|-249821970||t20592.9109052254s|s2504736b|2504736|rds|local|vector|||102.079||
+data_lists_DistI_AgeIS_2nets|stem|8d48fd69bd0f8e94|ff259aa02a9395a4|16576b48fe7d4a14|1626689785||t20592.9109197496s|s2504726b|2504726|rds|local|vector|||103.14||
+data_lists_DistI_2nets|stem|58e0009218e88f05|854c7846f6a228b6|16576b48fe7d4a14|-150370776||t20592.9109379896s|s2504398b|2504398|rds|local|vector|||104.719||
