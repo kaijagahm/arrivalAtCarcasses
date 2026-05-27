@@ -7,13 +7,16 @@ tar_load(sync_departures_df)
 tar_load(after_departure_interp_only)
 
 adios <- purrr::map(after_departure_interp_only, ~{
-  out <- .x %>% group_by(individual_local_identifier, date_il) %>%
-    mutate(displacement = c(st_distance(
-      !!!syms(attr(., "sf_column")),
-      (!!!syms(attr(., "sf_column")))[row_number() == 1]
-    )))
-  return(out)
-})
+  df <- .x
+  df %>%
+    group_by(individual_local_identifier, date_il) %>%
+    mutate(displacement = {
+      pts <- st_geometry(df)[cur_group_rows()]
+      as.numeric(st_distance(pts, pts[1]))  # [1] not [[1]] to keep geometry
+    }) %>%
+    ungroup()
+}, .progress = T)
+
 max_displs <- setNames(purrr::map(adios, ~{
   .x %>% st_drop_geometry() %>% group_by(individual_local_identifier, date_il) %>%
     summarize(max_displacement_m = max(displacement, na.rm = T)) %>%
@@ -81,4 +84,70 @@ joined_daylight %>%
        title = "In-flight separation after sync. departure",
        subtitle = "After sync departure from same roost (<10min)",
        caption = "Each line is a co-departing dyad.\nExcluded distances > 100km for visual clarity.\nOnly timepoints when both individuals were in flight are shown.\nOnly dates/dyads when both indivs flew >= 15km.")
+
+# Now we need to get arrivals to the carcass.
+tar_load(gps_diffusion)
+tar_load(gps_diffusion_wild)
+tar_load(ddf)
+tar_load(dds)
+tar_load(gps_spd)
+
+gd <- map(gps_diffusion, ~select(.x, individual_local_identifier, carcID, timestamp_il, dist_to_carcass, time_since_carcass, daytime_since_carcass, ground_speed))
+gdw <- map(gps_diffusion_wild, ~select(.x, individual_local_identifier, carcID, timestamp_il, dist_to_carcass, time_since_carcass, daytime_since_carcass, ground_speed))
+
+glimpse(gdw[[1]])
+
+sightings <- purrr::list_rbind(gd) %>% bind_rows(purrr::list_rbind(gdw)) %>%
+  arrange(individual_local_identifier, timestamp_il, carcID) %>%
+  filter((ground_speed <= gps_spd & dist_to_carcass <= dds)|(ground_speed > gps_spd & dist_to_carcass <= ddf)) %>%
+  rename("id" = individual_local_identifier)
+
+# I think I'm way overthinking this.
+# Did the dyad start at the same roost on the same morning? (have from previous part)
+# Did they both arrive at the same carcass on the same day? (calculating now)
+first_daily_sightings <- sightings %>%
+  arrange(timestamp_il) %>%
+  group_by("date_il" = lubridate::date(timestamp_il), id, carcID) %>%
+  slice(1) %>% # earliest arrival at each carcass on each day
+  ungroup() %>%
+  arrange(date_il, carcID)
+
+result <- first_daily_sightings %>%
+  group_by(carcID, date_il) %>%
+  reframe(
+    pairs = {
+      ids <- id
+      times <- timestamp_il
+      dates <- date_il
+      if (length(ids) < 2) {
+        tibble(id1 = character(), id2 = character(), timediff = as.difftime(numeric(0), units = "secs"))
+      } else {
+        combos <- combn(seq_along(ids), 2)
+        tibble(
+          id1 = ids[combos[1,]],
+          id2 = ids[combos[2,]],
+          timediff = abs(difftime(times[combos[2,]], times[combos[1,]], units = "secs"))
+        )
+      }
+    }
+  ) %>%
+  unnest(pairs) %>%
+  mutate(dyad = paste(id1, id2, date_il, sep = "_"))
+
+# Then look at whether their trajectories meet the criteria of following. (calculated above; just need to filter)
+
+# Structure list by carcass ("for each carcass...")
+# Get all dyads that left the same roost together and traveled at least 15km that day?
+# How many of them stayed within following distance?
+
+result <- result %>%
+  arrange(carcID, date_il) %>%
+  group_by(carcID, date_il) %>%
+  mutate(dyads_carc_date = length(unique(dyad)))
+
+# I'm getting stuck here so I'm going to stop.
+# Need to figure out exactly what to measure.
+# Possible sticking points: what if they go to multiple carcasses on the same day? Do we only care about the one they visited first after the roost?
   
+
+
