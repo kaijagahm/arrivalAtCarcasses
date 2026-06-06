@@ -5,18 +5,20 @@ library(progressr)
 library(tidyverse)
 library(STbayes)
 library(sf)
-plan(multisession, workers = 30)
+library(loo)
+library(posterior)
+plan(multisession, workers = 15)
 handlers(global = TRUE)
 nit <- 500
 
 # Get data
 tar_load(event_data)
 tar_load(event_data_wild)
-tar_load(data_lists_noILVs)
-tar_load(data_lists_DistI)
-tar_load(data_lists_DistIS)
-tar_load(data_lists_DistI_AgeIS)
-tar_load(data_lists_DistIS_AgeIS)
+# tar_load(data_lists_noILVs)
+# tar_load(data_lists_DistI)
+# tar_load(data_lists_DistIS)
+# tar_load(data_lists_DistI_AgeIS)
+# tar_load(data_lists_DistIS_AgeIS)
 
 tar_load(data_lists_noILVs_2nets)
 tar_load(data_lists_DistI_2nets)
@@ -24,17 +26,17 @@ tar_load(data_lists_DistIS_2nets)
 tar_load(data_lists_DistI_AgeIS_2nets)
 tar_load(data_lists_DistIS_AgeIS_2nets)
 
-tar_load(data_lists_noILVs_wild)
-tar_load(data_lists_DistI_wild)
-tar_load(data_lists_DistIS_wild)
-tar_load(data_lists_DistI_AgeIS_wild)
-tar_load(data_lists_DistIS_AgeIS_wild)
+# tar_load(data_lists_noILVs_wild)
+# tar_load(data_lists_DistI_wild)
+# tar_load(data_lists_DistIS_wild)
+# tar_load(data_lists_DistI_AgeIS_wild)
+# tar_load(data_lists_DistIS_AgeIS_wild)
 
-# tar_load(data_lists_noILVs_2nets_wild)
-# tar_load(data_lists_DistI_2nets_wild)
-# tar_load(data_lists_DistIS_2nets_wild)
-# tar_load(data_lists_DistI_AgeIS_2nets_wild)
-# tar_load(data_lists_DistIS_AgeIS_2nets_wild)
+tar_load(data_lists_noILVs_2nets_wild)
+tar_load(data_lists_DistI_2nets_wild)
+tar_load(data_lists_DistIS_2nets_wild)
+tar_load(data_lists_DistI_AgeIS_2nets_wild)
+tar_load(data_lists_DistIS_AgeIS_2nets_wild)
 
 tar_load(stn_carcs)
 tar_load(wild_carcs)
@@ -70,35 +72,35 @@ savefit <- function(fit, idx, folder, prefix, type){
 }
 
 # Create model objects ----------------------------------------------------
-# Asocial station, flight only
-asocial_mods_noILVs <- purrr::map(data_lists_noILVs, get_asocial)
-asocial_mods_DistI <- purrr::map(data_lists_DistI, get_asocial)
-asocial_mods_DistIS <- purrr::map(data_lists_DistIS, get_asocial)
-asocial_mods_DistI_AgeIS <- purrr::map(data_lists_DistI_AgeIS, get_asocial)
-asocial_mods_DistIS_AgeIS <- purrr::map(data_lists_DistIS_AgeIS, get_asocial)
-
-# Asocial wild, flight only
-asocial_mods_noILVs_wild <- purrr::map(data_lists_noILVs_wild, get_asocial)
-asocial_mods_DistI_wild <- purrr::map(data_lists_DistI_wild, get_asocial)
-asocial_mods_DistIS_wild <- purrr::map(data_lists_DistIS_wild, get_asocial)
-asocial_mods_DistI_AgeIS_wild <- purrr::map(data_lists_DistI_AgeIS_wild, get_asocial)
-asocial_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_asocial)
-
-# Social station, flight only
-social_mods_noILVs <- purrr::map(data_lists_noILVs, get_social)
-social_mods_DistI <- purrr::map(data_lists_DistI, get_social)
-## test complex transmission for a few
-social_mods_DistI_complex_test <- purrr::map(data_lists_DistI[1:3], ~STbayes::generate_STb_model(.x, gq = T, est_acqTime = T, transmission_func = "freqdep_f"))
-social_mods_DistIS <- purrr::map(data_lists_DistIS, get_social)
-social_mods_DistI_AgeIS <- purrr::map(data_lists_DistI_AgeIS, get_social)
-social_mods_DistIS_AgeIS <- purrr::map(data_lists_DistIS_AgeIS, get_social)
-
-# Social wild, flight only
-social_mods_noILVs_wild <- purrr::map(data_lists_noILVs_wild, get_social)
-social_mods_DistI_wild <- purrr::map(data_lists_DistI_wild, get_social)
-social_mods_DistIS_wild <- purrr::map(data_lists_DistIS_wild, get_social)
-social_mods_DistI_AgeIS_wild <- purrr::map(data_lists_DistI_AgeIS_wild, get_social)
-social_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_social)
+# # Asocial station, flight only
+# asocial_mods_noILVs <- purrr::map(data_lists_noILVs, get_asocial)
+# asocial_mods_DistI <- purrr::map(data_lists_DistI, get_asocial)
+# asocial_mods_DistIS <- purrr::map(data_lists_DistIS, get_asocial)
+# asocial_mods_DistI_AgeIS <- purrr::map(data_lists_DistI_AgeIS, get_asocial)
+# asocial_mods_DistIS_AgeIS <- purrr::map(data_lists_DistIS_AgeIS, get_asocial)
+# 
+# # Asocial wild, flight only
+# asocial_mods_noILVs_wild <- purrr::map(data_lists_noILVs_wild, get_asocial)
+# asocial_mods_DistI_wild <- purrr::map(data_lists_DistI_wild, get_asocial)
+# asocial_mods_DistIS_wild <- purrr::map(data_lists_DistIS_wild, get_asocial)
+# asocial_mods_DistI_AgeIS_wild <- purrr::map(data_lists_DistI_AgeIS_wild, get_asocial)
+# asocial_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_asocial)
+# 
+# # Social station, flight only
+# social_mods_noILVs <- purrr::map(data_lists_noILVs, get_social)
+# social_mods_DistI <- purrr::map(data_lists_DistI, get_social)
+# ## test complex transmission for a few
+# social_mods_DistI_complex_test <- purrr::map(data_lists_DistI[1:3], ~STbayes::generate_STb_model(.x, gq = T, est_acqTime = T, transmission_func = "freqdep_f"))
+# social_mods_DistIS <- purrr::map(data_lists_DistIS, get_social)
+# social_mods_DistI_AgeIS <- purrr::map(data_lists_DistI_AgeIS, get_social)
+# social_mods_DistIS_AgeIS <- purrr::map(data_lists_DistIS_AgeIS, get_social)
+# 
+# # Social wild, flight only
+# social_mods_noILVs_wild <- purrr::map(data_lists_noILVs_wild, get_social)
+# social_mods_DistI_wild <- purrr::map(data_lists_DistI_wild, get_social)
+# social_mods_DistIS_wild <- purrr::map(data_lists_DistIS_wild, get_social)
+# social_mods_DistI_AgeIS_wild <- purrr::map(data_lists_DistI_AgeIS_wild, get_social)
+# social_mods_DistIS_AgeIS_wild <- purrr::map(data_lists_DistIS_AgeIS_wild, get_social)
 
 # Asocial station, 2nets
 asocial_mods_noILVs_2nets <- purrr::map(data_lists_noILVs_2nets, get_asocial)
@@ -132,94 +134,120 @@ social_mods_DistIS_AgeIS_2nets_wild <- purrr::map(data_lists_DistIS_AgeIS_2nets_
 
 # Fit models --------------------------------------------------------------
 ## Station
+
 # Fit and save social
-social_fits_noILVs <- with_progress(furrr::future_map2(social_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_noILVs, 1:length(social_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "social", type = "station")})
+# social_fits_noILVs <- with_progress(furrr::future_map2(social_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_noILVs, 1:length(social_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "social", type = "station")})
 
 social_fits_noILVs_2nets <- with_progress(furrr::future_map2(social_mods_noILVs_2nets, data_lists_noILVs_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_noILVs_2nets, 1:length(social_fits_noILVs_2nets), ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "social", type = "station")})
 
-social_fits_DistI <- with_progress(furrr::future_map2(social_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_DistI, 1:length(social_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "social", type = "station")})
+# social_fits_DistI <- with_progress(furrr::future_map2(social_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_DistI, 1:length(social_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "social", type = "station")})
+
+# three sample ones--testing weibull XXX 
+# weibull_mods_test <- purrr::map(data_lists_DistI[c(24, 28, 35)], ~generate_STb_model(.x, gq = T, est_acqTime = T, intrinsic_rate = "weibull"))
+# social_fits_DistI_weibull <- map2(weibull_mods_test, data_lists_DistI[c(24, 28, 35)], ~fit_STb(.y, .x, n_iter = nit), .progress = T)
+# 
+# 
+# walk2(social_fits_DistI_weibull, 1:length(social_fits_DistI_weibull), ~{savefit(.x, .y, folder = "DistI_weibull", prefix = "social", type = "station")})
+#########
 
 social_fits_DistI_2nets <- with_progress(furrr::future_map2(social_mods_DistI_2nets, data_lists_DistI_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistI_2nets, 1:length(social_fits_DistI_2nets), ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "social", type = "station")})
 
-social_fits_DistI_compl <- with_progress(furrr::future_map2(social_mods_DistI_complex_test, data_lists_DistI[1:3], ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_DistI_compl, 1:length(social_fits_DistI_compl), ~{savefit(.x, .y, folder = "DistI", prefix = "social_complex_", type = "station")})
+# social_fits_DistI_compl <- with_progress(furrr::future_map2(social_mods_DistI_complex_test, data_lists_DistI[1:3], ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_DistI_compl, 1:length(social_fits_DistI_compl), ~{savefit(.x, .y, folder = "DistI", prefix = "social_complex_", type = "station")})
 
-social_fits_DistIS <- with_progress(furrr::future_map2(social_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_DistIS, 1:length(social_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "social", type = "station")})
+# social_fits_DistIS <- with_progress(furrr::future_map2(social_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_DistIS, 1:length(social_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "social", type = "station")})
 
 social_fits_DistIS_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_2nets, data_lists_DistIS_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistIS_2nets, 1:length(social_fits_DistIS_2nets), ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "social", type = "station")})
 
-social_fits_DistI_AgeIS <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_DistI_AgeIS, 1:length(social_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "social", type = "station")})
+# social_fits_DistI_AgeIS <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_DistI_AgeIS, 1:length(social_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "social", type = "station")})
 
 social_fits_DistI_AgeIS_2nets <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_2nets, data_lists_DistI_AgeIS_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistI_AgeIS_2nets, 1:length(social_fits_DistI_AgeIS_2nets), ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "station")})
 
-social_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(social_fits_DistIS_AgeIS, 1:length(social_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "social", type = "station")})
+# social_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(social_fits_DistIS_AgeIS, 1:length(social_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "social", type = "station")})
 
 social_fits_DistIS_AgeIS_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_2nets, data_lists_DistIS_AgeIS_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistIS_AgeIS_2nets, 1:length(social_fits_DistIS_AgeIS_2nets), ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "social", type = "station")})
 
 # Fit and save asocial
-asocial_fits_noILVs <- with_progress(furrr::future_map2(asocial_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_noILVs, 1:length(asocial_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "station")})
-
-asocial_fits_DistI <- with_progress(furrr::future_map2(asocial_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistI, 1:length(asocial_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "station")})
-
-asocial_fits_DistIS <- with_progress(furrr::future_map2(asocial_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistIS, 1:length(asocial_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "station")})
-
-asocial_fits_DistI_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistI_AgeIS, 1:length(asocial_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "station")})
-
-asocial_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistIS_AgeIS, 1:length(asocial_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "station")})
+# asocial_fits_noILVs <- with_progress(furrr::future_map2(asocial_mods_noILVs, data_lists_noILVs, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_noILVs, 1:length(asocial_fits_noILVs), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "station")})
+# 
+# asocial_fits_DistI <- with_progress(furrr::future_map2(asocial_mods_DistI, data_lists_DistI, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistI, 1:length(asocial_fits_DistI), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "station")})
+# 
+# asocial_fits_DistIS <- with_progress(furrr::future_map2(asocial_mods_DistIS, data_lists_DistIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistIS, 1:length(asocial_fits_DistIS), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "station")})
+# 
+# asocial_fits_DistI_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS, data_lists_DistI_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistI_AgeIS, 1:length(asocial_fits_DistI_AgeIS), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "station")})
+# 
+# asocial_fits_DistIS_AgeIS <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS, data_lists_DistIS_AgeIS, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistIS_AgeIS, 1:length(asocial_fits_DistIS_AgeIS), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "station")})
 
 ## Wild
 # Fit and save social
 social_fits_noILVs_wild <- with_progress(furrr::future_map2(social_mods_noILVs_wild, data_lists_noILVs_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_noILVs_wild, 1:length(social_fits_noILVs_wild), ~{savefit(.x, .y, folder = "NoILVs", prefix = "social", type = "wild")})
 
+social_fits_noILVs_wild_2nets <- with_progress(furrr::future_map2(social_mods_noILVs_wild_2nets, data_lists_noILVs_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_noILVs_wild_2nets, 1:length(social_fits_noILVs_wild_2nets), ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "social", type = "wild")})
+
+
 social_fits_DistI_wild <- with_progress(furrr::future_map2(social_mods_DistI_wild, data_lists_DistI_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistI_wild, 1:length(social_fits_DistI_wild), ~{savefit(.x, .y, folder = "DistI", prefix = "social", type = "wild")})
+
+social_fits_DistI_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistI_wild_2nets, data_lists_DistI_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistI_wild_2nets, 1:length(social_fits_DistI_wild_2nets), ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "social", type = "wild")})
 
 social_fits_DistIS_wild <- with_progress(furrr::future_map2(social_mods_DistIS_wild, data_lists_DistIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistIS_wild, 1:length(social_fits_DistIS_wild), ~{savefit(.x, .y, folder = "DistIS", prefix = "social", type = "wild")})
 
+social_fits_DistIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_wild_2nets, data_lists_DistIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistIS_wild_2nets, 1:length(social_fits_DistIS_wild_2nets), ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "social", type = "wild")})
+
 social_fits_DistI_AgeIS_wild <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_wild, data_lists_DistI_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistI_AgeIS_wild, 1:length(social_fits_DistI_AgeIS_wild), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "social", type = "wild")})
+
+social_fits_DistI_AgeIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_wild_2nets, data_lists_DistI_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistI_AgeIS_wild_2nets, 1:length(social_fits_DistI_AgeIS_wild_2nets), ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "wild")})
 
 social_fits_DistIS_AgeIS_wild <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_wild, data_lists_DistIS_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
 walk2(social_fits_DistIS_AgeIS_wild, 1:length(social_fits_DistIS_AgeIS_wild), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "social", type = "wild")})
 
+social_fits_DistIS_AgeIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_wild_2nets, data_lists_DistIS_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+walk2(social_fits_DistIS_AgeIS_wild_2nets, 1:length(social_fits_DistIS_AgeIS_wild_2nets), ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "social", type = "wild")})
+
 # Fit and save asocial
-asocial_fits_noILVs_wild <- with_progress(furrr::future_map2(asocial_mods_noILVs_wild, data_lists_noILVs_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_noILVs_wild, 1:length(asocial_fits_noILVs_wild), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "wild")})
-
-asocial_fits_DistI_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_wild, data_lists_DistI_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistI_wild, 1:length(asocial_fits_DistI_wild), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "wild")})
-
-asocial_fits_DistIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_wild, data_lists_DistIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistIS_wild, 1:length(asocial_fits_DistIS_wild), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "wild")})
-
-asocial_fits_DistI_AgeIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS_wild, data_lists_DistI_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistI_AgeIS_wild, 1:length(asocial_fits_DistI_AgeIS_wild), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "wild")})
-
-asocial_fits_DistIS_AgeIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS_wild, data_lists_DistIS_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-walk2(asocial_fits_DistIS_AgeIS_wild, 1:length(asocial_fits_DistIS_AgeIS_wild), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "wild")})
+# asocial_fits_noILVs_wild <- with_progress(furrr::future_map2(asocial_mods_noILVs_wild, data_lists_noILVs_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_noILVs_wild, 1:length(asocial_fits_noILVs_wild), ~{savefit(.x, .y, folder = "NoILVs", prefix = "asocial", type = "wild")})
+# 
+# asocial_fits_DistI_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_wild, data_lists_DistI_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistI_wild, 1:length(asocial_fits_DistI_wild), ~{savefit(.x, .y, folder = "DistI", prefix = "asocial", type = "wild")})
+# 
+# asocial_fits_DistIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_wild, data_lists_DistIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistIS_wild, 1:length(asocial_fits_DistIS_wild), ~{savefit(.x, .y, folder = "DistIS", prefix = "asocial", type = "wild")})
+# 
+# asocial_fits_DistI_AgeIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS_wild, data_lists_DistI_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistI_AgeIS_wild, 1:length(asocial_fits_DistI_AgeIS_wild), ~{savefit(.x, .y, folder = "DistI_AgeIS", prefix = "asocial", type = "wild")})
+# 
+# asocial_fits_DistIS_AgeIS_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS_wild, data_lists_DistIS_AgeIS_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+# walk2(asocial_fits_DistIS_AgeIS_wild, 1:length(asocial_fits_DistIS_AgeIS_wild), ~{savefit(.x, .y, folder = "DistIS_AgeIS", prefix = "asocial", type = "wild")})
 
 #Get filenames
 ## Station social
 soc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_social")
 soc_filenames_noILVs_2nets <- list.files(path = "data/saved_fits/station/NoILVs_2nets/", pattern = "fit_social")
-soc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social")
+soc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social_[0-9]+")
+soc_filenames_DistI_weibull <- list.files(path = "data/saved_fits/station/DistI_weibull/", pattern = "fit_social")
 soc_filenames_DistI_2nets <- list.files(path = "data/saved_fits/station/DistI_2nets/", pattern = "fit_social")
 soc_filenames_DistI_compl <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social_complex_")
 soc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_social")
@@ -230,31 +258,37 @@ soc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_
 soc_filenames_DistIS_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_2nets/", pattern = "fit_social")
 
 ## Station asocial
-asoc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_asocial")
-asoc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_asocial")
-asoc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_asocial")
-asoc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_asocial")
-asoc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_asocial")
+# asoc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_asocial")
+# asoc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_asocial")
+# asoc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_asocial")
+# asoc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_asocial")
+# asoc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_asocial")
 
 ## Wild social
 soc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_social")
+soc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_social")
 soc_filenames_DistI_wild <- list.files(path = "data/saved_fits/wild/DistI/", pattern = "fit_social")
+soc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_social")
 soc_filenames_DistIS_wild <- list.files(path = "data/saved_fits/wild/DistIS/", pattern = "fit_social")
+soc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_social")
 soc_filenames_DistI_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistI_AgeIS/", pattern = "fit_social")
+soc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_social")
 soc_filenames_DistIS_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS/", pattern = "fit_social")
+soc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_social")
 
 ## Wild asocial
-asoc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_asocial")
-asoc_filenames_DistI_wild <- list.files(path = "data/saved_fits/wild/DistI/", pattern = "fit_asocial")
-asoc_filenames_DistIS_wild <- list.files(path = "data/saved_fits/wild/DistIS/", pattern = "fit_asocial")
-asoc_filenames_DistI_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistI_AgeIS/", pattern = "fit_asocial")
-asoc_filenames_DistIS_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS/", pattern = "fit_asocial")
+# asoc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_asocial")
+# asoc_filenames_DistI_wild <- list.files(path = "data/saved_fits/wild/DistI/", pattern = "fit_asocial")
+# asoc_filenames_DistIS_wild <- list.files(path = "data/saved_fits/wild/DistIS/", pattern = "fit_asocial")
+# asoc_filenames_DistI_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistI_AgeIS/", pattern = "fit_asocial")
+# asoc_filenames_DistIS_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS/", pattern = "fit_asocial")
 
 # Read in fits
 ## Station social
 social_fits_noILVs <- map(soc_filenames_noILVs, ~readRDS(paste0("data/saved_fits/station/NoILVs/", .x)))
 social_fits_noILVs_2nets <- map(soc_filenames_noILVs_2nets, ~readRDS(paste0("data/saved_fits/station/NoILVs_2nets/", .x)))
 social_fits_DistI <- map(soc_filenames_DistI, ~readRDS(paste0("data/saved_fits/station/DistI/", .x)))
+social_fits_DistI_weibull <- map(soc_filenames_DistI_weibull, ~readRDS(paste0("data/saved_fits/station/DistI_weibull/", .x)))
 social_fits_DistI_2nets <- map(soc_filenames_DistI_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_2nets/", .x)))
 social_fits_DistIS <- map(soc_filenames_DistIS, ~readRDS(paste0("data/saved_fits/station/DistIS/", .x)))
 social_fits_DistIS_2nets <- map(soc_filenames_DistIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_2nets/", .x)))
@@ -264,23 +298,30 @@ social_fits_DistIS_AgeIS <- map(soc_filenames_DistIS_AgeIS, ~readRDS(paste0("dat
 social_fits_DistIS_AgeIS_2nets <- map(soc_filenames_DistIS_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS_2nets/", .x)))
 
 ## Station asocial
-asocial_fits_noILVs <- map(asoc_filenames_noILVs, ~readRDS(paste0("data/saved_fits/station/NoILVs/", .x)))
-asocial_fits_DistI <- map(asoc_filenames_DistI, ~readRDS(paste0("data/saved_fits/station/DistI/", .x)))
-asocial_fits_DistIS <- map(asoc_filenames_DistIS, ~readRDS(paste0("data/saved_fits/station/DistIS/", .x)))
-asocial_fits_DistI_AgeIS <- map(asoc_filenames_DistI_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS/", .x)))
-asocial_fits_DistIS_AgeIS <- map(asoc_filenames_DistIS_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS/", .x)))
+# asocial_fits_noILVs <- map(asoc_filenames_noILVs, ~readRDS(paste0("data/saved_fits/station/NoILVs/", .x)))
+# asocial_fits_DistI <- map(asoc_filenames_DistI, ~readRDS(paste0("data/saved_fits/station/DistI/", .x)))
+# asocial_fits_DistIS <- map(asoc_filenames_DistIS, ~readRDS(paste0("data/saved_fits/station/DistIS/", .x)))
+# asocial_fits_DistI_AgeIS <- map(asoc_filenames_DistI_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS/", .x)))
+# asocial_fits_DistIS_AgeIS <- map(asoc_filenames_DistIS_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS/", .x)))
 
+## Wild social
 social_fits_noILVs_wild <- map(soc_filenames_noILVs_wild, ~readRDS(paste0("data/saved_fits/wild/NoILVs/", .x)))
+social_fits_noILVs_wild_2nets <- map(soc_filenames_noILVs_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/NoILVs_2nets/", .x)))
 social_fits_DistI_wild <- map(soc_filenames_DistI_wild, ~readRDS(paste0("data/saved_fits/wild/DistI/", .x)))
+social_fits_DistI_wild_2nets <- map(soc_filenames_DistI_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_2nets/", .x)))
 social_fits_DistIS_wild <- map(soc_filenames_DistIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS/", .x)))
+social_fits_DistIS_wild_2nets <- map(soc_filenames_DistIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_2nets/", .x)))
 social_fits_DistI_AgeIS_wild <- map(soc_filenames_DistI_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS/", .x)))
+social_fits_DistI_AgeIS_wild_2nets <- map(soc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))
 social_fits_DistIS_AgeIS_wild <- map(soc_filenames_DistIS_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS/", .x)))
+social_fits_DistIS_AgeIS_wild_2nets <- map(soc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))
 
-asocial_fits_noILVs_wild <- map(asoc_filenames_noILVs_wild, ~readRDS(paste0("data/saved_fits/wild/NoILVs/", .x)))
-asocial_fits_DistI_wild <- map(asoc_filenames_DistI_wild, ~readRDS(paste0("data/saved_fits/wild/DistI/", .x)))
-asocial_fits_DistIS_wild <- map(asoc_filenames_DistIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS/", .x)))
-asocial_fits_DistI_AgeIS_wild <- map(asoc_filenames_DistI_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS/", .x)))
-asocial_fits_DistIS_AgeIS_wild <- map(asoc_filenames_DistIS_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS/", .x)))
+## Wild asocial
+# asocial_fits_noILVs_wild <- map(asoc_filenames_noILVs_wild, ~readRDS(paste0("data/saved_fits/wild/NoILVs/", .x)))
+# asocial_fits_DistI_wild <- map(asoc_filenames_DistI_wild, ~readRDS(paste0("data/saved_fits/wild/DistI/", .x)))
+# asocial_fits_DistIS_wild <- map(asoc_filenames_DistIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS/", .x)))
+# asocial_fits_DistI_AgeIS_wild <- map(asoc_filenames_DistI_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS/", .x)))
+# asocial_fits_DistIS_AgeIS_wild <- map(asoc_filenames_DistIS_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS/", .x)))
 
 # Inspect Rhat values (wild)
 summs_noILVs_wild <- map(social_fits_noILVs_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
@@ -425,6 +466,75 @@ comps_dfs <- map(comps, ~as.data.frame(.x$comparison))
 comps_dfs_wild <- map(comps_wild, ~as.data.frame(.x$comparison))
 comps_dfs <- map(comps_dfs, ~{.x$model <- rownames(.x);return(.x)})
 comps_dfs_wild <- map(comps_dfs_wild, ~{.x$model <- rownames(.x);return(.x)})
+
+# Examining which are the most common orders
+names(comps_dfs) <- map_dbl(stn_carcs, "carcID")
+names(comps_dfs_wild) <- map_dbl(wild_carcs, "carcID")
+comps_dfs_df <- purrr::list_rbind(comps_dfs, names_to = "carcID")
+comps_dfs_wild_df <- purrr::list_rbind(comps_dfs_wild, names_to = "carcID")
+rownames(comps_dfs_df) <- NULL
+rownames(comps_dfs_wild_df) <- NULL
+
+comps_dfs_df <- comps_dfs_df %>%
+  arrange(carcID, desc(elpd_diff)) %>%
+  group_by(carcID) %>%
+  mutate(idx = 1:n())
+
+comps_dfs_wild_df <- comps_dfs_wild_df %>%
+  arrange(carcID, desc(elpd_diff)) %>%
+  group_by(carcID) %>%
+  mutate(idx = 1:n())
+
+comps_dfs_df %>%
+  ggplot(aes(x = carcID, y = log(abs(elpd_diff)), col = factor(model)))+
+  geom_point()+
+  coord_flip()+ # noILVs is consistently the worst, but there isn't much/any pattern in terms of which one is the best.
+  theme_minimal()
+
+comps_dfs_wild_df %>%
+  ggplot(aes(x = carcID, y = log(abs(elpd_diff)), col = factor(model)))+
+  geom_point()+
+  coord_flip()+ # similar story with wild. noILVs is almost always the worst, but at the top there's not a single consistent pattern.
+  theme_minimal()
+
+# Note that this doesn't take into account which ones are actually different from each other. Let's see if we can do that.
+
+topmods_stn <- comps_dfs_df %>%
+  filter(elpd_diff + se_diff >= 0)
+topmods_wild <- comps_dfs_wild_df %>%
+  filter(elpd_diff + se_diff >= 0)
+
+topmods_stn %>%
+  group_by(model) %>%
+  summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(stn_carcs)) %>%
+  arrange(desc(in_top_mods.prop_carcs)) %>%
+  ggplot(aes(x = factor(model, levels = model), y = in_top_mods.prop_carcs, fill = factor(model)))+
+  geom_col()+
+  theme_minimal()+
+  theme(text = element_text(size = 18),
+        legend.position = "none")+
+  labs(y = "In top mods? (Prop. carcs)",
+       x = "Model",
+       title = "Stn")+
+  scale_y_continuous(limits = c(0, 1))
+
+topmods_wild %>%
+  group_by(model) %>%
+  summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(wild_carcs)) %>%
+  arrange(desc(in_top_mods.prop_carcs)) %>%
+  ggplot(aes(x = factor(model, levels = model), y = in_top_mods.prop_carcs, fill = factor(model)))+
+  geom_col()+
+  theme_minimal()+
+  theme(text = element_text(size = 18),
+        legend.position = "none")+
+  labs(y = "In top mods? (Prop. carcs)",
+       x = "Model",
+       title = "Wild")+
+  scale_y_continuous(limits = c(0, 1))
+
+# In neither case is there one model formulation that is consistently one of the top models.
+
+# Making model comparison plots
 comps_plots <- map(comps_dfs, ~{
   if(nrow(.x) > 0){
     p <- ggplot(.x, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
@@ -458,6 +568,142 @@ comps_plots_wild <- map(comps_dfs_wild, ~{
 comps_plots
 comps_plots_wild
 
+# Are the coefficients similar across different models?
+coefs_withinfo_stn <- summs %>%
+  left_join(data.frame(carcID = map_dbl(stn_carcs, "carcID"), idx = 1:length(stn_carcs)), by = "idx") %>%
+  mutate(carcID = as.character(carcID)) %>%
+  left_join(select(topmods_stn, carcID, model) %>%
+              mutate(in_topmods = T), by = c("model", "carcID")) %>%
+  mutate(in_topmods = replace_na(in_topmods, F))
+
+coefs_withinfo_wild <- summs_wild %>%
+  left_join(data.frame(carcID = map_dbl(wild_carcs, "carcID"), idx = 1:length(wild_carcs)), by = "idx") %>%
+  mutate(carcID = as.character(carcID)) %>%
+  left_join(select(topmods_wild, carcID, model) %>%
+              mutate(in_topmods = T), by = c("model", "carcID")) %>%
+  mutate(in_topmods = replace_na(in_topmods, F))
+
+coefs_withinfo_stn %>%
+  filter(idx == 1) %>%
+  ggplot(aes(x = Parameter, color = factor(model), y = Median))+
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, linewidth = in_topmods), position = position_dodge(width = 0.5), width = 0, alpha = 0.8)+
+  geom_point(aes(size = in_topmods), position = position_dodge(width = 0.5), pch = 1)+
+  theme_minimal()+
+  coord_flip()+
+  labs(y = "Estimate", x = "Parameter", color = "Model",
+       size = "Top model?", linewidth = "Top model?",
+       title = map_dbl(stn_carcs, "carcID")[1])+ 
+  scale_linewidth_manual(values = c(0.5, 1.5))+
+  scale_size_manual(values = c(1, 3))
+
+# Some observations just from this one:
+# 1. The coefficient estimates don't change much between models.
+# 2. Estimating different ILVs does seem to affect the confidence level of the s estimates, without making much difference at all to the percent_ST estimate or the other estimates.
+# 3. Maybe that's just because these are on such different scales? Let's look at the same one without s included, since it's arbitrary:
+
+coefs_withinfo_stn %>%
+  filter(idx == 1, Parameter != "s") %>%
+  ggplot(aes(x = Parameter, color = factor(model), y = Median))+
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, linewidth = in_topmods), position = position_dodge(width = 0.5), width = 0, alpha = 0.8)+
+  geom_point(aes(size = in_topmods), position = position_dodge(width = 0.5), pch = 1)+
+  theme_minimal()+
+  coord_flip()+
+  labs(y = "Estimate", x = "Parameter", color = "Model",
+       size = "Top model?", linewidth = "Top model?",
+       title = map_dbl(stn_carcs, "carcID")[1])+ 
+  scale_linewidth_manual(values = c(0.5, 1.5))+
+  scale_size_manual(values = c(1, 3)) # this is much more informative.
+
+# What about percent_ST only?
+coefs_withinfo_stn %>%
+  filter(idx == 1, Parameter == "percent_ST[1]") %>%
+  ggplot(aes(x = Parameter, color = factor(model), y = Median))+
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, linewidth = in_topmods), position = position_dodge(width = 0.5), width = 0, alpha = 0.8)+
+  geom_point(aes(size = in_topmods), position = position_dodge(width = 0.5), pch = 1)+
+  theme_minimal()+
+  coord_flip()+
+  labs(y = "Estimate", x = "Parameter", color = "Model",
+       size = "Top model?", linewidth = "Top model?",
+       title = map_dbl(stn_carcs, "carcID")[1])+ 
+  scale_linewidth_manual(values = c(0.5, 1.5))+
+  scale_size_manual(values = c(1, 3)) # okay yeah the estimates of %ST don't change.
+
+# Let's do this for the rest of them.
+model_levels <- c("DistI", "DistI_AgeIS", "DistIS", "DistIS_AgeIS", "noILVs")
+model_colors <- c(
+  "DistI"        = "#E41A1C",
+  "DistI_AgeIS"  = "#377EB8",
+  "DistIS"       = "#4DAF4A",
+  "DistIS_AgeIS" = "#FF7F00",
+  "noILVs"       = "#984EA3"
+)
+
+shared_scales <- list(
+  scale_color_manual(values = model_colors, limits = model_levels),
+  scale_linewidth_manual(values = c(0.5, 1.5), limits = c(FALSE, TRUE)),
+  scale_size_manual(values = c(1, 3), limits = c(FALSE, TRUE))
+)
+
+plot_betas <- function(df, i, carcs){
+  df %>%
+    mutate(model = factor(model, levels = model_levels)) %>%
+    filter(idx == i, grepl("beta", Parameter)) %>%
+    ggplot(aes(x = Parameter, color = model, y = Median))+
+    geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, linewidth = factor(in_topmods)),
+                  position = position_dodge(width = 0.5), width = 0, alpha = 0.8)+
+    geom_point(aes(size = factor(in_topmods)),
+               position = position_dodge(width = 0.5), pch = 1)+
+    theme_minimal()+
+    scale_x_discrete(labels = function(x) {
+      gsub(" ", "_", str_wrap(gsub("_", " ", x), width = 15))
+    })+       
+    coord_flip()+
+    labs(y = "Estimate", x = "Parameter", color = "Model",
+         size = "Top model?", linewidth = "Top model?",
+         title = map_dbl(carcs, "carcID")[i])+
+    shared_scales
+}
+
+betas_plots_stn <- map(1:length(stn_carcs), ~{
+  plot_betas(coefs_withinfo_stn, .x, carcs = stn_carcs) +
+    theme(legend.position = "none")
+})
+
+betas_plots_wild <- map(1:length(wild_carcs), ~{
+  plot_betas(coefs_withinfo_wild, .x, carcs = wild_carcs) +
+    theme(legend.position = "none")
+})
+
+plot_pctST <- function(df, i, carcs){
+  plt <- df %>%
+    mutate(model = factor(model, levels = c("DistI", "DistI_AgeIS", "DistIS", "DistIS_AgeIS", "noILVs"))) %>%
+    filter(idx == i, grepl("percent_ST", Parameter)) %>%
+    ggplot(aes(x = Parameter, color = factor(model), y = Median))+
+    geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, linewidth = factor(in_topmods)), position = position_dodge(width = 0.5), width = 0, alpha = 0.8)+
+    geom_point(aes(size = factor(in_topmods)), position = position_dodge(width = 0.5), pch = 1)+
+    theme_minimal()+
+    geom_hline(aes(yintercept = 0))+
+    coord_flip()+
+    labs(y = "Estimate", x = "Parameter", color = "Model",
+         size = "Top model?", linewidth = "Top model?",
+         title = map_dbl(carcs, "carcID")[i])+ 
+    shared_scales
+  return(plt)
+}
+
+pctST_plots_stn <- map(1:length(stn_carcs), ~{
+  plot_pctST(coefs_withinfo_stn, .x, carcs = stn_carcs)
+})
+
+pctST_plots_wild <- map(1:length(wild_carcs), ~{
+  plot_pctST(coefs_withinfo_wild, .x, carcs = wild_carcs)
+})
+
+patchworks_stn <- map2(betas_plots_stn, pctST_plots_stn, ~{.x + .y})
+
+patchworks_wild <- map2(betas_plots_wild, pctST_plots_wild, ~{.x + .y})
+
+# Check Pareto values
 pareto_dfs <- map(comps, ~as.data.frame(.x$pareto_diagnostics))
 pareto_dfs_wild <- map(comps_wild, ~as.data.frame(.x$pareto_diagnostics))
 
@@ -573,6 +819,9 @@ get_plotdata <- function(event_data, model_fit){
 
 plotdata_noILVs <- map2(social_fits_noILVs, event_data, ~get_plotdata(.y, .x))
 plotdata_DistI <- map2(social_fits_DistI, event_data, ~get_plotdata(.y, .x))
+plotdata_DistI_weibull <- map2(social_fits_DistI_weibull, event_data[c(24, 28, 35)], ~get_plotdata(.y, .x))
+plotdata_DistI_2nets <- map2(social_fits_DistI_2nets, event_data, ~get_plotdata(.y, .x))
+
 plotdata_DistIS <- map2(social_fits_DistIS, event_data, ~get_plotdata(.y, .x))
 plotdata_DistI_AgeIS <- map2(social_fits_DistI_AgeIS, event_data, ~get_plotdata(.y, .x))
 plotdata_DistIS_AgeIS <- map2(social_fits_DistIS_AgeIS, event_data, ~get_plotdata(.y, .x))
@@ -599,6 +848,55 @@ get_curveplots <- function(plot_data, cid){
 # Make ppc curve plots
 curveplots_noILVs <- map2(plotdata_noILVs, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
 curveplots_DistI <- map2(plotdata_DistI, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistI_weibull <- map2(plotdata_DistI_weibull, map_dbl(stn_carcs[c(24, 28, 35)], "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistI_2nets <- map2(plotdata_DistI_2nets, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
+
+
+# Question: does the weibull-shaped hazard help these models to fit better?
+## pair 1
+library(patchwork)
+p1 <- curveplots_DistI[[24]]
+p2 <- curveplots_DistI_weibull[[1]] # nope, not better
+p1+p2 # very similar, maybe slightly better but doesn't fix the end part.
+
+p1 <- curveplots_DistI[[28]]
+p2 <- curveplots_DistI_weibull[[2]]
+p1+p2 # likewise, doesn't look better.
+
+p1 <- curveplots_DistI[[35]]
+p2 <- curveplots_DistI_weibull[[3]]
+p1+p2 # also looks very similar, not better.
+
+# So I suppose we could either 1) select a weibull distribution a priori because it makes biologically sense, 2) directly compare the fits of the two models, or 3) just give up because it doesn't fix the problem.
+
+# Let's at least try the ELPD comparison on these pairs of models.
+test1 <- STb_compare(social_fits_DistI[[24]], social_fits_DistI_weibull[[1]], model_names = c("regular", "Weibull"))
+test1$comparison %>%
+  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
+  geom_point()+
+  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
+  theme_minimal()+
+  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 24") # no difference in predictive power
+
+test2 <- STb_compare(social_fits_DistI[[28]], social_fits_DistI_weibull[[2]], model_names = c("regular", "Weibull"))
+test2$comparison %>%
+  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
+  geom_point()+
+  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
+  theme_minimal()+
+  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 28") # no difference in predictive power
+
+test3 <- STb_compare(social_fits_DistI[[35]], social_fits_DistI_weibull[[3]], model_names = c("regular", "Weibull"))
+test3$comparison %>%
+  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
+  geom_point()+
+  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
+  theme_minimal()+
+  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 35") # weibull is significantly worse
+
+# Okay, so on the whole I'm not finding any support for using the weibull distribution in this situation.
+
+
 curveplots_DistIS <- map2(plotdata_DistIS, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
 curveplots_DistI_AgeIS <- map2(plotdata_DistI_AgeIS, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
 curveplots_DistIS_AgeIS <- map2(plotdata_DistIS_AgeIS, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
@@ -798,4 +1096,163 @@ results %>%
   coord_flip()+
   labs(y = "Carcasses", x = NULL)
 
+# Flight vs. roost generally
+sms <- map(social_fits_DistI_2nets, ~{
+  if(!is.null(.x)){
+    return(STb_summary(.x))
+  }else{NULL}})
+sms_df <- purrr::list_rbind(sms, names_to = "idx")
 
+sms_df %>%
+  filter(grepl("percent_ST", Parameter)) %>%
+  mutate(Parameter = case_when(Parameter == "percent_ST[1]" ~ "%ST_roost",
+                               Parameter == "percent_ST[2]" ~ "%ST_flight")) %>%
+  ggplot(aes(x = idx, y = Median, color = Parameter))+
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, x = idx), width = 0, linewidth = 1, alpha = 0.5)+
+  geom_point(pch = 21, fill = "white", size = 2)+
+  theme_minimal()+
+  coord_flip()+
+  scale_color_manual(values = c("skyblue2", "darkgreen"))+
+  labs(x = "Carcass (idx)",
+       title = "Flight vs. roost, station carcs",
+       y = "%ST estimate",
+       color = "Network")+
+  theme(text = element_text(size = 18))
+
+# Are flight and roost networks correlated? It's hard to draw conclusions from the multi-network NBDA if they are.
+library(vegan)
+library(dplyr)
+library(tidyr)
+tar_load(networks_long_combined) # get the network data
+
+make_matrix <- function(data, value_col) {
+  mat <- data %>%
+    select(focal, other, value = all_of(value_col)) %>%
+    pivot_wider(names_from = other, values_from = value, values_fill = 0) %>%
+    column_to_rownames("focal") %>%
+    as.matrix()
+  
+  # Ensure square and symmetric with all individuals
+  mat_full <- matrix(0, nrow = length(inds), ncol = length(inds),
+                     dimnames = list(inds, inds))
+  mat_full[rownames(mat), colnames(mat)] <- mat
+  mat_sym <- pmax(mat_full, t(mat_full))  # symmetrise
+  
+  return(mat_sym)
+}
+
+mantel_by_time <- function(df, time_val) {
+  
+  d <- df %>% filter(time == time_val)
+  
+  # Get all unique individuals
+  inds <- sort(unique(c(d$focal, d$other)))
+  
+  # Pivot each network variable to a matrix
+  m1 <- make_matrix(d, "roost_together")
+  m2 <- make_matrix(d, "flight_sri_scaled")
+  
+  # Check there's variance in both matrices -- Mantel fails if one is all zeros
+  if (var(m1[lower.tri(m1)]) == 0 || var(m2[lower.tri(m2)]) == 0) {
+    return(tibble(time = time_val, statistic = NA, p_value = NA, 
+                  note = "no variance in one or both matrices"))
+  }
+  
+  result <- mantel(m1, m2, method = "spearman", permutations = 999)
+  
+  tibble(
+    time     = time_val,
+    statistic = result$statistic,
+    p_value   = result$signif,
+    note      = "ok"
+  )
+}
+
+your_data <- networks_long_combined[[1]]
+
+# Run across all time steps
+time_steps <- sort(unique(your_data$time))
+
+results <- purrr::map_dfr(time_steps, ~ mantel_by_time(your_data, .x))
+results %>%
+  mutate(sig_corr = case_when(p_value >= 0.05 ~ F,
+                              p_value < 0.05 ~ T, 
+                              .default = NA)) %>%
+  ggplot(aes(x = time, y = statistic, color = sig_corr))+
+  geom_point()
+
+# "The multi-network NBDA will work most effectively when the networks are independent. When they are highly dependent (e.g. correlated), it will require a lot of data to distinguish the effects of each network. This will be reflected in wide confidence intervals (CIs) for each s parameter, and for the estimated difference between them." Farine et al 2015
+
+# Model averaging
+inputs_stn <- list(
+  m1 = social_fits_noILVs,
+  m2 = social_fits_DistI,
+  m3 = social_fits_DistI_AgeIS,
+  m4 = social_fits_DistIS,
+  m5 = social_fits_DistIS_AgeIS
+  #,
+  # ex1 = exclude_struct1,
+  # ex2 = exclude_struct2,
+  # ex3 = exclude_struct3,
+  # ex4 = exclude_struct4
+)
+
+all_beta_names <- c("beta_ILVi_mean_dist_to_carcass_norm", 
+                    "beta_ILVs_mean_dist_to_carcass_norm", 
+                    "beta_ILVi_age[1]",
+                    "beta_ILVs_age[1]",
+                    "beta_ILVi_age[2]",
+                    "beta_ILVs_age[2]")
+
+model_averaged_params_stn <- pmap(inputs_stn, function(m1, m2, m3, m4, m5#, 
+                                              #ex1, ex2, ex3, ex4
+                                              ) {
+  
+  all_models <- list(m1, m2, m3, m4, m5)
+  #exclude <- c(ex1, ex2, ex3, ex4)
+  models <- all_models#[!exclude]
+  
+  # return NULL if all models are NULL
+  if (all(map_lgl(all_models, is.null))) return(NULL)
+  
+  # get beta names available in surviving models
+  available_draws <- models[[1]]$draws() %>% as_draws_matrix()
+  available_betas <- models %>%
+    map(~colnames(.x$draws() %>% as_draws_matrix())) %>%
+    reduce(union) %>%
+    intersect(all_beta_names) # XXX START HERE 6/5
+  
+  weighted_average <- function(var) {
+    draws <- map(models, ~.x$draws(var) %>% as_draws_matrix())
+    reduce(
+      seq_along(models),
+      function(acc, j) acc + weights[j] * draws[[j]],
+      .init = matrix(0, nrow = nrow(draws[[1]]), ncol = ncol(draws[[1]]))
+    )
+  }
+  
+  if (length(models) == 1) {
+    weights <- NULL  # not needed but keeps structure consistent
+    result <- map(all_beta_names, ~{
+      if (.x %in% available_betas) {
+        models[[1]]$draws(.x) %>% as_draws_matrix()
+      } else {
+        NA
+      }
+    }) %>% setNames(all_beta_names)
+    return(c(list(percent_ST = models[[1]]$draws("percent_ST") %>% as_draws_matrix()), result))
+  }
+  
+  loos <- map(models, ~suppressWarnings(.x$loo()))
+  weights <- loo_model_weights(loos, method = "stacking")
+  
+  result <- map(all_beta_names, ~{
+    if (.x %in% available_betas) {
+      weighted_average(.x)
+    } else {
+      NA
+    }
+  }) %>% setNames(all_beta_names)
+  
+  c(list(percent_ST = weighted_average("percent_ST")), result)
+})
