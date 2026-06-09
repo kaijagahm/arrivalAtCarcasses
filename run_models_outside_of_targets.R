@@ -97,119 +97,97 @@ asocial_fits_DistIS_AgeIS_2nets <- with_progress(furrr::future_map2(asocial_mods
 iwalk(asocial_fits_DistIS_AgeIS_2nets, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "asocial", type = "station")}) # DistIS_AgeIS
 
 # Fit and save social (wild)
-social_fits_noILVs_wild_2nets <- with_progress(furrr::future_map2(social_mods_noILVs_wild_2nets, data_lists_noILVs_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_noILVs_wild_2nets, ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "social", type = "wild")}) # noILVs
+social_fits_noILVs_2nets_wild <- with_progress(furrr::future_map2(social_mods_noILVs_2nets_wild, data_lists_noILVs_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(social_fits_noILVs_2nets_wild, ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "social", type = "wild")}) # noILVs
 
-social_fits_DistI_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistI_wild_2nets, data_lists_DistI_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_DistI_wild_2nets, ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "social", type = "wild")}) # DistI
+social_fits_DistI_2nets_wild <- with_progress(furrr::future_map2(social_mods_DistI_2nets_wild, data_lists_DistI_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(social_fits_DistI_2nets_wild, ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "social", type = "wild")}) # DistI
 
-social_fits_DistIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_wild_2nets, data_lists_DistIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_DistIS_wild_2nets, ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "social", type = "wild")}) # DistIS
+social_fits_DistIS_2nets_wild <- with_progress(furrr::future_map2(social_mods_DistIS_2nets_wild, data_lists_DistIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(social_fits_DistIS_2nets_wild, ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "social", type = "wild")}) # DistIS
 
-social_fits_DistI_AgeIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_wild_2nets, data_lists_DistI_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_DistI_AgeIS_wild_2nets, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "wild")}) # DistI_AgeIS
+social_fits_DistI_AgeIS_2nets_wild <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_2nets_wild, data_lists_DistI_AgeIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(social_fits_DistI_AgeIS_2nets_wild, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "wild")}) # DistI_AgeIS
 
-social_fits_DistIS_AgeIS_wild_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_wild_2nets, data_lists_DistIS_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_DistIS_AgeIS_wild_2nets, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "social", type = "wild")}) # DistIS_AgeIS
+social_fits_DistIS_AgeIS_2nets_wild <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_2nets_wild, data_lists_DistIS_AgeIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(social_fits_DistIS_AgeIS_2nets_wild, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "social", type = "wild")}) # DistIS_AgeIS
 
 # Fit and save asocial (wild)
-asocial_fits_noILVs_wild_2nets <- with_progress(furrr::future_map2(asocial_mods_noILVs_wild_2nets, data_lists_noILVs_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(asocial_fits_noILVs_wild_2nets, ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "asocial", type = "wild")}) # noILVs
+asocial_fits_noILVs_2nets_wild <- with_progress(furrr::future_map2(asocial_mods_noILVs_2nets_wild, data_lists_noILVs_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(asocial_fits_noILVs_2nets_wild, ~{savefit(.x, .y, folder = "NoILVs_2nets", prefix = "asocial", type = "wild")}) # noILVs
 
-asocial_fits_DistI_wild_2nets <- with_progress(furrr::future_map2(asocial_mods_DistI_wild_2nets, data_lists_DistI_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(asocial_fits_DistI_wild_2nets, ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "asocial", type = "wild")}) # DistI
+asocial_fits_DistI_2nets_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_2nets_wild, data_lists_DistI_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(asocial_fits_DistI_2nets_wild, ~{savefit(.x, .y, folder = "DistI_2nets", prefix = "asocial", type = "wild")}) # DistI
 
-asocial_fits_DistIS_wild_2nets <- with_progress(furrr::future_map2(asocial_mods_DistIS_wild_2nets, data_lists_DistIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(asocial_fits_DistIS_wild_2nets, ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "asocial", type = "wild")}) # DistIS
+asocial_fits_DistIS_2nets_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_2nets_wild, data_lists_DistIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(asocial_fits_DistIS_2nets_wild, ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "asocial", type = "wild")}) # DistIS
 
-asocial_fits_DistI_AgeIS_wild_2nets <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS_wild_2nets, data_lists_DistI_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(asocial_fits_DistI_AgeIS_wild_2nets, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "asocial", type = "wild")}) # DistI_AgeIS
+asocial_fits_DistI_AgeIS_2nets_wild <- with_progress(furrr::future_map2(asocial_mods_DistI_AgeIS_2nets_wild, data_lists_DistI_AgeIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(asocial_fits_DistI_AgeIS_2nets_wild, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "asocial", type = "wild")}) # DistI_AgeIS
 
-asocial_fits_DistIS_AgeIS_wild_2nets <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS_wild_2nets, data_lists_DistIS_AgeIS_wild_2nets, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(asocial_fits_DistIS_AgeIS_wild_2nets, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "asocial", type = "wild")}) # DistIS_AgeIS
-
+asocial_fits_DistIS_AgeIS_2nets_wild <- with_progress(furrr::future_map2(asocial_mods_DistIS_AgeIS_2nets_wild, data_lists_DistIS_AgeIS_2nets_wild, ~fit_model(.x, .y, n_iter = nit), .options = furrr_options(seed = TRUE), .progress = T))
+iwalk(asocial_fits_DistIS_AgeIS_2nets_wild, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "asocial", type = "wild")}) # DistIS_AgeIS
 
 
 #Get filenames
 ## Station social
-soc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_social")
 soc_filenames_noILVs_2nets <- list.files(path = "data/saved_fits/station/NoILVs_2nets/", pattern = "fit_social")
-soc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social_[0-9]+")
-soc_filenames_DistI_weibull <- list.files(path = "data/saved_fits/station/DistI_weibull/", pattern = "fit_social")
 soc_filenames_DistI_2nets <- list.files(path = "data/saved_fits/station/DistI_2nets/", pattern = "fit_social")
-soc_filenames_DistI_compl <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_social_complex_")
-soc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_social")
 soc_filenames_DistIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_2nets/", pattern = "fit_social")
-soc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_social")
 soc_filenames_DistI_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_2nets/", pattern = "fit_social")
-soc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_social")
 soc_filenames_DistIS_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_2nets/", pattern = "fit_social")
 
 ## Station asocial
-# asoc_filenames_noILVs <- list.files(path = "data/saved_fits/station/NoILVs/", pattern = "fit_asocial")
-# asoc_filenames_DistI <- list.files(path = "data/saved_fits/station/DistI/", pattern = "fit_asocial")
-# asoc_filenames_DistIS <- list.files(path = "data/saved_fits/station/DistIS/", pattern = "fit_asocial")
-# asoc_filenames_DistI_AgeIS <- list.files(path = "data/saved_fits/station/DistI_AgeIS/", pattern = "fit_asocial")
-# asoc_filenames_DistIS_AgeIS <- list.files(path = "data/saved_fits/station/DistIS_AgeIS/", pattern = "fit_asocial")
+asoc_filenames_noILVs_2nets <- list.files(path = "data/saved_fits/station/NoILVs_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_2nets <- list.files(path = "data/saved_fits/station/DistI_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_2nets/", pattern = "fit_asocial")
 
 ## Wild social
-soc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_social")
-soc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_social")
-soc_filenames_DistI_wild <- list.files(path = "data/saved_fits/wild/DistI/", pattern = "fit_social")
-soc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_social")
-soc_filenames_DistIS_wild <- list.files(path = "data/saved_fits/wild/DistIS/", pattern = "fit_social")
-soc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_social")
-soc_filenames_DistI_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistI_AgeIS/", pattern = "fit_social")
-soc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_social")
-soc_filenames_DistIS_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS/", pattern = "fit_social")
-soc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_social")
+soc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_social")
+soc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_social")
+soc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_social")
+soc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_social")
+soc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_social")
 
 ## Wild asocial
-# asoc_filenames_noILVs_wild <- list.files(path = "data/saved_fits/wild/NoILVs/", pattern = "fit_asocial")
-# asoc_filenames_DistI_wild <- list.files(path = "data/saved_fits/wild/DistI/", pattern = "fit_asocial")
-# asoc_filenames_DistIS_wild <- list.files(path = "data/saved_fits/wild/DistIS/", pattern = "fit_asocial")
-# asoc_filenames_DistI_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistI_AgeIS/", pattern = "fit_asocial")
-# asoc_filenames_DistIS_AgeIS_wild <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS/", pattern = "fit_asocial")
+asoc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_asocial")
+
+
 
 # Read in fits
 ## Station social
-social_fits_noILVs <- map(soc_filenames_noILVs, ~readRDS(paste0("data/saved_fits/station/NoILVs/", .x)))
 social_fits_noILVs_2nets <- map(soc_filenames_noILVs_2nets, ~readRDS(paste0("data/saved_fits/station/NoILVs_2nets/", .x)))
-social_fits_DistI <- map(soc_filenames_DistI, ~readRDS(paste0("data/saved_fits/station/DistI/", .x)))
-social_fits_DistI_weibull <- map(soc_filenames_DistI_weibull, ~readRDS(paste0("data/saved_fits/station/DistI_weibull/", .x)))
 social_fits_DistI_2nets <- map(soc_filenames_DistI_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_2nets/", .x)))
-social_fits_DistIS <- map(soc_filenames_DistIS, ~readRDS(paste0("data/saved_fits/station/DistIS/", .x)))
 social_fits_DistIS_2nets <- map(soc_filenames_DistIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_2nets/", .x)))
-social_fits_DistI_AgeIS <- map(soc_filenames_DistI_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS/", .x)))
 social_fits_DistI_AgeIS_2nets <- map(soc_filenames_DistI_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS_2nets/", .x)))
-social_fits_DistIS_AgeIS <- map(soc_filenames_DistIS_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS/", .x)))
 social_fits_DistIS_AgeIS_2nets <- map(soc_filenames_DistIS_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS_2nets/", .x)))
 
 ## Station asocial
-# asocial_fits_noILVs <- map(asoc_filenames_noILVs, ~readRDS(paste0("data/saved_fits/station/NoILVs/", .x)))
-# asocial_fits_DistI <- map(asoc_filenames_DistI, ~readRDS(paste0("data/saved_fits/station/DistI/", .x)))
-# asocial_fits_DistIS <- map(asoc_filenames_DistIS, ~readRDS(paste0("data/saved_fits/station/DistIS/", .x)))
-# asocial_fits_DistI_AgeIS <- map(asoc_filenames_DistI_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS/", .x)))
-# asocial_fits_DistIS_AgeIS <- map(asoc_filenames_DistIS_AgeIS, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS/", .x)))
+asocial_fits_noILVs_2nets <- map(asoc_filenames_noILVs_2nets, ~readRDS(paste0("data/saved_fits/station/NoILVs_2nets/", .x)))
+asocial_fits_DistI_2nets <- map(asoc_filenames_DistI_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_2nets/", .x)))
+asocial_fits_DistIS_2nets <- map(asoc_filenames_DistIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_2nets/", .x)))
+asocial_fits_DistI_AgeIS_2nets <- map(asoc_filenames_DistI_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS_2nets/", .x)))
+asocial_fits_DistIS_AgeIS_2nets <- map(asoc_filenames_DistIS_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS_2nets/", .x)))
 
 ## Wild social
-social_fits_noILVs_wild <- map(soc_filenames_noILVs_wild, ~readRDS(paste0("data/saved_fits/wild/NoILVs/", .x)))
 social_fits_noILVs_wild_2nets <- map(soc_filenames_noILVs_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/NoILVs_2nets/", .x)))
-social_fits_DistI_wild <- map(soc_filenames_DistI_wild, ~readRDS(paste0("data/saved_fits/wild/DistI/", .x)))
 social_fits_DistI_wild_2nets <- map(soc_filenames_DistI_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_2nets/", .x)))
-social_fits_DistIS_wild <- map(soc_filenames_DistIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS/", .x)))
 social_fits_DistIS_wild_2nets <- map(soc_filenames_DistIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_2nets/", .x)))
-social_fits_DistI_AgeIS_wild <- map(soc_filenames_DistI_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS/", .x)))
 social_fits_DistI_AgeIS_wild_2nets <- map(soc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))
-social_fits_DistIS_AgeIS_wild <- map(soc_filenames_DistIS_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS/", .x)))
 social_fits_DistIS_AgeIS_wild_2nets <- map(soc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))
 
 ## Wild asocial
-# asocial_fits_noILVs_wild <- map(asoc_filenames_noILVs_wild, ~readRDS(paste0("data/saved_fits/wild/NoILVs/", .x)))
-# asocial_fits_DistI_wild <- map(asoc_filenames_DistI_wild, ~readRDS(paste0("data/saved_fits/wild/DistI/", .x)))
-# asocial_fits_DistIS_wild <- map(asoc_filenames_DistIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS/", .x)))
-# asocial_fits_DistI_AgeIS_wild <- map(asoc_filenames_DistI_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS/", .x)))
-# asocial_fits_DistIS_AgeIS_wild <- map(asoc_filenames_DistIS_AgeIS_wild, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS/", .x)))
+asocial_fits_noILVs_wild_2nets <- map(asoc_filenames_noILVs_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/NoILVs_2nets/", .x)))
+asocial_fits_DistI_wild_2nets <- map(asoc_filenames_DistI_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_2nets/", .x)))
+asocial_fits_DistIS_wild_2nets <- map(asoc_filenames_DistIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_2nets/", .x)))
+asocial_fits_DistI_AgeIS_wild_2nets <- map(asoc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))
+asocial_fits_DistIS_AgeIS_wild_2nets <- map(asoc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))
 
 # Inspect Rhat values (wild)
 summs_noILVs_wild <- map(social_fits_noILVs_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
