@@ -189,136 +189,42 @@ asocial_fits_DistIS_wild_2nets <- map(asoc_filenames_DistIS_wild_2nets, ~readRDS
 asocial_fits_DistI_AgeIS_wild_2nets <- map(asoc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))
 asocial_fits_DistIS_AgeIS_wild_2nets <- map(asoc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))
 
-# Inspect Rhat values (wild)
-summs_noILVs_wild <- map(social_fits_noILVs_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistI_wild <- map(social_fits_DistI_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistIS_wild <- map(social_fits_DistIS_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistI_AgeIS_wild <- map(social_fits_DistI_AgeIS_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistIS_AgeIS_wild <- map(social_fits_DistIS_AgeIS_wild, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+# Get model summaries (stn)
+summs_noILVs_2nets <- map(social_fits_noILVs_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistI_2nets <- map(social_fits_DistI_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistIS_2nets <- map(social_fits_DistIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistI_AgeIS_2nets <- map(social_fits_DistI_AgeIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistIS_AgeIS_2nets <- map(social_fits_DistIS_AgeIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
 
-summs_wild <- purrr::list_rbind(list("noILVs" = summs_noILVs_wild, "DistI" = summs_DistI_wild, "DistIS" = summs_DistIS_wild, "DistI_AgeIS" = summs_DistI_AgeIS_wild, "DistIS_AgeIS" = summs_DistIS_AgeIS_wild), names_to = "model") %>% mutate(type = "wild")
+summs_2nets <- purrr::list_rbind(list("noILVs" = summs_noILVs_2nets, "DistI" = summs_DistI_2nets, "DistIS" = summs_DistIS_2nets, "DistI_AgeIS" = summs_DistI_AgeIS_2nets, "DistIS_AgeIS" = summs_DistIS_AgeIS_2nets), names_to = "model") %>% mutate(type = "stn")
 
-summs_noILVs <- map(social_fits_noILVs, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistI <- map(social_fits_DistI, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistIS <- map(social_fits_DistIS, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistI_AgeIS <- map(social_fits_DistI_AgeIS, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
-summs_DistIS_AgeIS <- map(social_fits_DistIS_AgeIS, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+# Get model summaries (wild)
+summs_noILVs_wild_2nets <- map(social_fits_noILVs_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistI_wild_2nets <- map(social_fits_DistI_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistIS_wild_2nets <- map(social_fits_DistIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistI_AgeIS_wild_2nets <- map(social_fits_DistI_AgeIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
+summs_DistIS_AgeIS_wild_2nets <- map(social_fits_DistIS_AgeIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")
 
-summs <- purrr::list_rbind(list("noILVs" = summs_noILVs, "DistI" = summs_DistI, "DistIS" = summs_DistIS, "DistI_AgeIS" = summs_DistI_AgeIS, "DistIS_AgeIS" = summs_DistIS_AgeIS), names_to = "model") %>% mutate(type = "stn")
+summs_wild_2nets <- purrr::list_rbind(list("noILVs" = summs_noILVs_wild_2nets, "DistI" = summs_DistI_wild_2nets, "DistIS" = summs_DistIS_wild_2nets, "DistI_AgeIS" = summs_DistI_AgeIS_wild_2nets, "DistIS_AgeIS" = summs_DistIS_AgeIS_wild_2nets), names_to = "model") %>% mutate(type = "wild")
 
-hist(summs_wild$Rhat) # seems like all the rhat values are totally fine here. I don't see anything much below 1 or over 1.1. I am also planning to run more chains.
+hist(summs_2nets$Rhat) # seems like all the rhat values are totally fine here. I don't see anything much below 1 or over 1.1. I am also planning to run more chains.
 # Maybe some of them over 1.01 are too high. Let's look at the ppc curves and see if they match the bad rhat values.
-hist(summs$Rhat)
 
 # Are the Rhat values different for different parameters?
-summs %>%
+summs_2nets %>%
   ggplot(aes(x = Rhat))+
   geom_density(aes(color = Parameter))+
   theme_minimal()+
   theme(legend.position = "bottom")
 
-summs_wild %>%
-  ggplot(aes(x = Rhat))+
-  geom_density(aes(color = Parameter))+
-  theme_minimal()+
-  theme(legend.position = "bottom") # looks like they are all fairly similar. If anything, the rhats tend to be slightly higher for some of the age betas.
-
 # What about for different models?
-summs %>%
+summs_2nets %>%
   mutate(model = factor(model, levels = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"))) %>%
   ggplot(aes(x = Rhat))+
   geom_density(aes(color = Parameter))+
   theme_minimal()+
   theme(legend.position = "bottom")+
   facet_wrap(~model)
-
-summs_wild %>%
-  mutate(model = factor(model, levels = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"))) %>%
-  ggplot(aes(x = Rhat))+
-  geom_density(aes(color = Parameter))+
-  theme_minimal()+
-  theme(legend.position = "bottom")+
-  facet_wrap(~model) # I guess it gets a little wonky in the more complicated models, but overall this just doesn't look too bad.
-
-# Are some of the bad model fits related to number of individuals, number of seeds, etc.?
-stn_categories <- c(1, 1, 2, 0, 1, 2, NA, NA, 1, 2, 0, NA, NA, 1, 0, NA, NA, 0, 0, 0, 2, 2, 0, 1, 1, 1, 0, 0, 2, 1, 1, NA, 1, 2, 0, 2, 1, 2, 1, 2, 2, 1, 0, 0, 1, 1, 2, 0, 1, 2, 2, 0, 1, 1, 1, 2, 2, 1, 0, 2)
-wild_categories <- c(0, 1, 0, 0, 2, 2, 0, NA, 2, 0, 1, 0, NA, NA, 0, 0, NA, 0, 0, 1, 0, 2, 2, 0, 1, 0, 2, 0, 1, 1, 2, 1, 1, NA, 1, 0, 2, 0, 1, 0, 1, NA, 1, 1, 0, 1, 2, 0, 2, 1, 1, 1, 1, 2, 1, 1, 0, 1, 2, 2, NA, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 2, 2, 2, 1, 1, 1, 1, 2, 1, NA, 0, NA, 1, 0, 2, 1, 2, 2, 1, 1, 1, 0, 1, 0, 2, 0, 1, 0, 0, 0, 0, NA, NA, 0, 1, 0, 1, 1, 2, NA, 1)
-
-# Compare to characteristics of the carcasses
-stn_categories_nona <- stn_categories[!is.na(stn_categories)]
-wild_categories_nona <- wild_categories[!is.na(wild_categories)]
-dls_stn_nonull <- data_lists_DistI[-which(map_lgl(data_lists_DistI, is.null))]
-dls_wild_nonull <- data_lists_DistI_wild[-which(map_lgl(data_lists_DistI_wild, is.null))]
-tar_load(seeds)
-tar_load(seeds_wild)
-seeds_stn_nonull <- seeds[!is.na(stn_categories)] %>% map_dbl(., length)
-seeds_wild_nonull <- seeds_wild[!is.na(wild_categories)] %>% map_dbl(., length)
-stats <- data.frame(type = c(rep("stn", length(stn_categories_nona)), rep("wild", length(wild_categories_nona))),
-                    ppc_quality = c(stn_categories_nona, wild_categories_nona),
-                    tot_innetwork = c(map_dbl(dls_stn_nonull, "P"), map_dbl(dls_wild_nonull, "P")),
-                    tot_rightcensored = c(map_dbl(dls_stn_nonull, "N_c"), map_dbl(dls_wild_nonull, "N_c")),
-                    tot_seeds = c(seeds_stn_nonull, seeds_wild_nonull)) %>%
-  mutate(tot_found = c(map_dbl(dls_stn_nonull, "N"), map_dbl(dls_wild_nonull, "N"))-tot_seeds) %>%
-  mutate(ppc_quality = factor(ppc_quality, levels = c(0, 1, 2)))
-
-## N in network
-stats %>%
-  ggplot(aes(x = ppc_quality, y = tot_innetwork, color = type))+
-  geom_boxplot(outlier.shape = NA)+
-  geom_point(alpha = 0.4, position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15), pch = 1, size = 2)+
-  theme_minimal()+
-  labs(y = "N in network", x = "PPC plot quality")+
-  coord_flip()+
-  scale_color_manual(values = c("darkorange", "olivedrab3"), name = "Type")+
-  facet_wrap(~type, ncol = 1)
-# Maybe a bit of a positive relationship between high number of points in the network and bad plot quality, but no difference between 1 and 2.
-
-## Prop found
-stats %>%
-  ggplot(aes(x = ppc_quality, y = tot_found/tot_innetwork, color = type))+
-  geom_boxplot(outlier.shape = NA)+
-  geom_point(alpha = 0.4, position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15), pch = 1, size = 2)+
-  theme_minimal()+
-  labs(y = "Prop found", x = "PPC plot quality")+
-  coord_flip()+
-  scale_color_manual(values = c("darkorange", "olivedrab3"), name = "Type")+
-  facet_wrap(~type, ncol = 1)
-# Carcasses where proportionally fewer individuals found the carcass are not more likely to have bad ppc plots, which is what I would have expected/feared. If anything, a lot of the bad plots are the opposite (higher proportion found), especially for station. But the relationship is not clear and is probably not a significant difference. No relationship found for wild. 
-
-## N seeds
-stats %>%
-  ggplot(aes(x = ppc_quality, y = tot_seeds, color = type))+
-  geom_boxplot(outlier.shape = NA)+
-  geom_point(alpha = 0.4, position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15), pch = 1, size = 2)+
-  theme_minimal()+
-  labs(y = "N seeds", x = "PPC plot quality")+
-  coord_flip()+
-  scale_color_manual(values = c("darkorange", "olivedrab3"), name = "Type")+
-  facet_wrap(~type, ncol = 1) # yes, the ones with more seeds do seem to have a higher likelihood of having bad ppc plots. This would align with the problems I found earlier with Michael.
-
-## Prop. finders that were seeds (out of total found)
-stats %>%
-  ggplot(aes(x = ppc_quality, y = tot_seeds/(tot_seeds+tot_found), color = type))+
-  geom_boxplot(outlier.shape = NA)+
-  geom_point(alpha = 0.4, position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15), pch = 1, size = 2)+
-  theme_minimal()+
-  labs(y = "Prop finders that were seeds", x = "PPC plot quality")+
-  coord_flip()+
-  scale_color_manual(values = c("darkorange", "olivedrab3"), name = "Type")+
-  facet_wrap(~type, ncol = 1)
-# Even clearer relationship for the stn carcs--having a higher proportion of seeds does seem to be correlated with having really bad looking ppc plots.
-
-## N right-censored individuals
-stats %>%
-  ggplot(aes(x = ppc_quality, y = tot_rightcensored, color = type))+
-  geom_boxplot(outlier.shape = NA)+
-  geom_point(alpha = 0.4, position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15), pch = 1, size = 2)+
-  theme_minimal()+
-  labs(y = "N right-censored", x = "PPC plot quality")+
-  coord_flip()+
-  scale_color_manual(values = c("darkorange", "olivedrab3"), name = "Type")+
-  facet_wrap(~type, ncol = 1) # bad plots don't appear to be driven by having more right-censored individuals. If anything, for stn, there maybe is a negative relationship? Unclear if significant.
-
 
 # Inter-model comparisons
 # Model comparisons
