@@ -146,20 +146,18 @@ asoc_filenames_DistI_AgeIS_2nets <- list.files(path = "data/saved_fits/station/D
 asoc_filenames_DistIS_AgeIS_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_2nets/", pattern = "fit_asocial")
 
 ## Wild social
-soc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_social")
-soc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_social")
-soc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_social")
-soc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_social")
-soc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_social")
+soc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_social")
+soc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_social")
+soc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_social")
+soc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_social")
+soc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_social")
 
 ## Wild asocial
-asoc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_asocial")
-asoc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_asocial")
-asoc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_asocial")
-asoc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_asocial")
-asoc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_asocial")
-
-
+asoc_filenames_noILVs_wild_2nets <- list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistI_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_asocial")
+asoc_filenames_DistIS_AgeIS_wild_2nets <- list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_asocial")
 
 # Read in fits
 ## Station social
@@ -208,11 +206,18 @@ summs_DistIS_AgeIS_wild_2nets <- map(social_fits_DistIS_AgeIS_wild_2nets, ~{if(!
 
 summs_wild_2nets <- purrr::list_rbind(list("noILVs" = summs_noILVs_wild_2nets, "DistI" = summs_DistI_wild_2nets, "DistIS" = summs_DistIS_wild_2nets, "DistI_AgeIS" = summs_DistI_AgeIS_wild_2nets, "DistIS_AgeIS" = summs_DistIS_AgeIS_wild_2nets), names_to = "model") %>% mutate(type = "wild")
 
-hist(summs_2nets$Rhat) # seems like all the rhat values are totally fine here. I don't see anything much below 1 or over 1.1. I am also planning to run more chains.
-# Maybe some of them over 1.01 are too high. Let's look at the ppc curves and see if they match the bad rhat values.
+hist(summs_2nets$Rhat) # this is fine
+hist(summs_wild_2nets$Rhat)
+# this is also fine
 
 # Are the Rhat values different for different parameters?
 summs_2nets %>%
+  ggplot(aes(x = Rhat))+
+  geom_density(aes(color = Parameter))+
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+summs_wild_2nets %>%
   ggplot(aes(x = Rhat))+
   geom_density(aes(color = Parameter))+
   theme_minimal()+
@@ -233,30 +238,30 @@ summs_2nets %>%
 ## 5-way comparisons
 comps <- pmap(list(a = social_fits_noILVs_2nets, b = social_fits_DistI_2nets, c = social_fits_DistIS_2nets, d = social_fits_DistI_AgeIS_2nets, e = social_fits_DistIS_AgeIS_2nets), function(a, b, c, d, e){if(!is.null(a)){STb_compare(a, b, c, d, e, model_names = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"), method = "loo-psis")}else{NULL}})
 
-# comps_wild <- pmap(list(a = social_fits_noILVs_wild_2nets, b = social_fits_DistI_wild_2nets, c = social_fits_DistIS_wild_2nets, d = social_fits_DistI_AgeIS_wild_2nets, e = social_fits_DistIS_AgeIS_wild_2nets), function(a, b, c, d, e){if(!is.null(a)){STb_compare(a, b, c, d, e, model_names = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"), method = "loo-psis")}else{NULL}})
+comps_wild <- pmap(list(a = social_fits_noILVs_wild_2nets, b = social_fits_DistI_wild_2nets, c = social_fits_DistIS_wild_2nets, d = social_fits_DistI_AgeIS_wild_2nets, e = social_fits_DistIS_AgeIS_wild_2nets), function(a, b, c, d, e){if(!is.null(a)){STb_compare(a, b, c, d, e, model_names = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"), method = "loo-psis")}else{NULL}})
 
 comps_dfs <- map(comps, ~as.data.frame(.x$comparison))
-# comps_dfs_wild <- map(comps_wild, ~as.data.frame(.x$comparison))
+comps_dfs_wild <- map(comps_wild, ~as.data.frame(.x$comparison))
 comps_dfs <- map(comps_dfs, ~{.x$model <- rownames(.x);return(.x)})
-# comps_dfs_wild <- map(comps_dfs_wild, ~{.x$model <- rownames(.x);return(.x)})
+comps_dfs_wild <- map(comps_dfs_wild, ~{.x$model <- rownames(.x);return(.x)})
 
 # Examining which are the most common orders
 names(comps_dfs) <- map_dbl(stn_carcs, "carcID")
-# names(comps_dfs_wild) <- map_dbl(wild_carcs, "carcID")
+names(comps_dfs_wild) <- map_dbl(wild_carcs, "carcID")
 comps_dfs_df <- purrr::list_rbind(comps_dfs, names_to = "carcID")
-# comps_dfs_wild_df <- purrr::list_rbind(comps_dfs_wild, names_to = "carcID")
+comps_dfs_wild_df <- purrr::list_rbind(comps_dfs_wild, names_to = "carcID")
 rownames(comps_dfs_df) <- NULL
-# rownames(comps_dfs_wild_df) <- NULL
+rownames(comps_dfs_wild_df) <- NULL
 
 comps_dfs_df <- comps_dfs_df %>%
   arrange(carcID, desc(elpd_diff)) %>%
   group_by(carcID) %>%
   mutate(idx = 1:n())
 
-# comps_dfs_wild_df <- comps_dfs_wild_df %>%
-#   arrange(carcID, desc(elpd_diff)) %>%
-#   group_by(carcID) %>%
-#   mutate(idx = 1:n())
+comps_dfs_wild_df <- comps_dfs_wild_df %>%
+  arrange(carcID, desc(elpd_diff)) %>%
+  group_by(carcID) %>%
+  mutate(idx = 1:n())
 
 comps_dfs_df %>%
   ggplot(aes(x = carcID, y = log(abs(elpd_diff)), col = factor(model)))+
@@ -264,18 +269,18 @@ comps_dfs_df %>%
   coord_flip()+ # noILVs is consistently the worst, but there isn't much/any pattern in terms of which one is the best.
   theme_minimal()
 
-# comps_dfs_wild_df %>%
-#   ggplot(aes(x = carcID, y = log(abs(elpd_diff)), col = factor(model)))+
-#   geom_point()+
-#   coord_flip()+ # similar story with wild. noILVs is almost always the worst, but at the top there's not a single consistent pattern.
-#   theme_minimal()
+comps_dfs_wild_df %>%
+  ggplot(aes(x = carcID, y = log(abs(elpd_diff)), col = factor(model)))+
+  geom_point()+
+  coord_flip()+ # similar story with wild. noILVs is almost always the worst, but at the top there's not a single consistent pattern.
+  theme_minimal()
 
 # Note that this doesn't take into account which ones are actually different from each other. Let's see if we can do that.
 
 topmods_stn <- comps_dfs_df %>%
   filter(elpd_diff + se_diff >= 0)
-# topmods_wild <- comps_dfs_wild_df %>%
-#   filter(elpd_diff + se_diff >= 0)
+topmods_wild <- comps_dfs_wild_df %>%
+  filter(elpd_diff + se_diff >= 0)
 
 topmods_stn %>%
   group_by(model) %>%
@@ -291,19 +296,19 @@ topmods_stn %>%
        title = "Stn")+
   scale_y_continuous(limits = c(0, 1))
 
-# topmods_wild %>%
-#   group_by(model) %>%
-#   summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(wild_carcs)) %>%
-#   arrange(desc(in_top_mods.prop_carcs)) %>%
-#   ggplot(aes(x = factor(model, levels = model), y = in_top_mods.prop_carcs, fill = factor(model)))+
-#   geom_col()+
-#   theme_minimal()+
-#   theme(text = element_text(size = 18),
-#         legend.position = "none")+
-#   labs(y = "In top mods? (Prop. carcs)",
-#        x = "Model",
-#        title = "Wild")+
-#   scale_y_continuous(limits = c(0, 1))
+topmods_wild %>%
+  group_by(model) %>%
+  summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(wild_carcs)) %>%
+  arrange(desc(in_top_mods.prop_carcs)) %>%
+  ggplot(aes(x = factor(model, levels = model), y = in_top_mods.prop_carcs, fill = factor(model)))+
+  geom_col()+
+  theme_minimal()+
+  theme(text = element_text(size = 18),
+        legend.position = "none")+
+  labs(y = "In top mods? (Prop. carcs)",
+       x = "Model",
+       title = "Wild")+
+  scale_y_continuous(limits = c(0, 1))
 
 # In neither case is there one model formulation that is consistently one of the top models.
 
@@ -323,23 +328,24 @@ comps_plots <- map(comps_dfs, ~{
   }
 })
 
-# comps_plots_wild <- map(comps_dfs_wild, ~{
-#   if(nrow(.x) > 0){
-#     p <- ggplot(.x, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
-#       geom_point(size = 3) + #elpd_diff
-#       geom_errorbar(aes(ymin = elpd_diff - se_diff, 
-#                         ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
-#       coord_flip() +
-#       labs(x = "Model", y = "ELPD Difference", title = "Model Comparison") +
-#       theme_minimal()
-#     return(p)
-#   }else{
-#     return(NULL)
-#   }
-# })
+comps_plots_wild <- map(comps_dfs_wild, ~{
+  if(nrow(.x) > 0){
+    p <- ggplot(.x, aes(x = reorder(model, elpd_diff), y = elpd_diff)) +
+      geom_point(size = 3) + #elpd_diff
+      geom_errorbar(aes(ymin = elpd_diff - se_diff,
+                        ymax = elpd_diff + se_diff), width = 0.2) + #SE of elpd diff
+      coord_flip() +
+      labs(x = "Model", y = "ELPD Difference", title = "Model Comparison") +
+      theme_minimal()
+    return(p)
+  }else{
+    return(NULL)
+  }
+})
 
-comps_plots
-# comps_plots_wild
+# See the comparison plots
+comps_plots[[1]]
+comps_plots_wild[[1]]
 
 # Are the coefficients similar across different models?
 coefs_withinfo_stn <- summs_2nets %>%
@@ -349,12 +355,12 @@ coefs_withinfo_stn <- summs_2nets %>%
               mutate(in_topmods = T), by = c("model", "carcID")) %>%
   mutate(in_topmods = replace_na(in_topmods, F))
 
-# coefs_withinfo_wild <- summs_wild %>%
-#   left_join(data.frame(carcID = map_dbl(wild_carcs, "carcID"), idx = 1:length(wild_carcs)), by = "idx") %>%
-#   mutate(carcID = as.character(carcID)) %>%
-#   left_join(select(topmods_wild, carcID, model) %>%
-#               mutate(in_topmods = T), by = c("model", "carcID")) %>%
-#   mutate(in_topmods = replace_na(in_topmods, F))
+coefs_withinfo_wild <- summs_wild_2nets %>%
+  left_join(data.frame(carcID = map_dbl(wild_carcs, "carcID"), idx = 1:length(wild_carcs)), by = "idx") %>%
+  mutate(carcID = as.character(carcID)) %>%
+  left_join(select(topmods_wild, carcID, model) %>%
+              mutate(in_topmods = T), by = c("model", "carcID")) %>%
+  mutate(in_topmods = replace_na(in_topmods, F))
 
 # What about percent_ST only?
 coefs_withinfo_stn %>%
@@ -411,10 +417,10 @@ betas_plots_stn <- map(1:length(stn_carcs), ~{
     theme(legend.position = "none")
 })
 
-# betas_plots_wild <- map(1:length(wild_carcs), ~{
-#   plot_betas(coefs_withinfo_wild, .x, carcs = wild_carcs) +
-#     theme(legend.position = "none")
-# })
+betas_plots_wild <- map(1:length(wild_carcs), ~{
+  plot_betas(coefs_withinfo_wild, .x, carcs = wild_carcs) +
+    theme(legend.position = "none")
+})
 
 plot_pctST <- function(df, i, carcs){
   plt <- df %>%
@@ -437,26 +443,23 @@ pctST_plots_stn <- map(1:length(stn_carcs), ~{
   plot_pctST(coefs_withinfo_stn, .x, carcs = stn_carcs)
 })
 
-# pctST_plots_wild <- map(1:length(wild_carcs), ~{
-#   plot_pctST(coefs_withinfo_wild, .x, carcs = wild_carcs)
-# })
+pctST_plots_wild <- map(1:length(wild_carcs), ~{
+  plot_pctST(coefs_withinfo_wild, .x, carcs = wild_carcs)
+})
 
 patchworks_stn <- map2(betas_plots_stn, pctST_plots_stn, ~{.x + .y})
-
-# patchworks_wild <- map2(betas_plots_wild, pctST_plots_wild, ~{.x + .y})
-
+patchworks_wild <- map2(betas_plots_wild, pctST_plots_wild, ~{.x + .y})
 
 patchworks_stn[[1]]
 patchworks_stn[[2]]
 patchworks_stn[[3]]
-
-
-
-
+patchworks_wild[[1]]
+patchworks_wild[[2]]
+patchworks_wild[[3]]
 
 # Check Pareto values
 pareto_dfs <- map(comps, ~as.data.frame(.x$pareto_diagnostics))
-# pareto_dfs_wild <- map(comps_wild, ~as.data.frame(.x$pareto_diagnostics))
+pareto_dfs_wild <- map(comps_wild, ~as.data.frame(.x$pareto_diagnostics))
 
 pareto_plots <- map2(pareto_dfs, map_dbl(stn_carcs, "carcID"), ~{
   if(nrow(.x) > 0){
@@ -471,18 +474,18 @@ pareto_plots <- map2(pareto_dfs, map_dbl(stn_carcs, "carcID"), ~{
   }else{NULL}
 })
 
-# pareto_plots_wild <- map2(pareto_dfs_wild, map_dbl(wild_carcs, "carcID"), ~{
-#   if(nrow(.x) > 0){
-#     p <- ggplot(.x, aes(x=observation, y=pareto_k, color=model))+
-#       geom_point() +
-#       scale_color_viridis_d(begin=0.2)+
-#       geom_hline(yintercept = 0.7, linetype="dashed", color="orange")+
-#       geom_hline(yintercept = 1, linetype="dashed", color="red")+
-#       labs(x="Observation", y="Pareto-k value", title=.y)+
-#       theme_minimal()
-#     return(p)
-#   }else{NULL}
-# })
+pareto_plots_wild <- map2(pareto_dfs_wild, map_dbl(wild_carcs, "carcID"), ~{
+  if(nrow(.x) > 0){
+    p <- ggplot(.x, aes(x=observation, y=pareto_k, color=model))+
+      geom_point() +
+      scale_color_viridis_d(begin=0.2)+
+      geom_hline(yintercept = 0.7, linetype="dashed", color="orange")+
+      geom_hline(yintercept = 1, linetype="dashed", color="red")+
+      labs(x="Observation", y="Pareto-k value", title=.y)+
+      theme_minimal()
+    return(p)
+  }else{NULL}
+})
 
 get_plotdata <- function(event_data, model_fit){
   
@@ -503,14 +506,16 @@ get_plotdata <- function(event_data, model_fit){
       select(trial, time, cum_prop, type) %>%
       ungroup()
     
-    # add in 0,0 starting point
-    plot_data_obs <- bind_rows(
-      plot_data_obs,
-      plot_data_obs %>%
-        distinct(trial) %>%
-        mutate(time = 0, cum_prop = 0, type = "observed")
-    ) %>%
-      arrange(trial, time)
+    # If there's not already a value for 0, add in 0,0 starting point
+    if(!(0 %in% plot_data_obs$time)){
+      plot_data_obs <- bind_rows(
+        plot_data_obs,
+        plot_data_obs %>%
+          distinct(trial) %>%
+          mutate(time = 0, cum_prop = 0, type = "observed")
+      ) %>%
+        arrange(trial, time)
+    }
     
     # extract draws of predicted acqtime
     draws_df <- posterior::as_draws_df(model_fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
@@ -574,11 +579,11 @@ plotdata_DistIS <- map2(social_fits_DistIS_2nets, event_data, ~get_plotdata(.y, 
 plotdata_DistI_AgeIS <- map2(social_fits_DistI_AgeIS_2nets, event_data, ~get_plotdata(.y, .x))
 plotdata_DistIS_AgeIS <- map2(social_fits_DistIS_AgeIS_2nets, event_data, ~get_plotdata(.y, .x))
 
-# plotdata_noILVs_wild <- map2(social_fits_noILVs_wild, event_data_wild, ~get_plotdata(.y, .x))
-# plotdata_DistI_wild <- map2(social_fits_DistI_wild, event_data_wild, ~get_plotdata(.y, .x))
-# plotdata_DistIS_wild <- map2(social_fits_DistIS_wild, event_data_wild, ~get_plotdata(.y, .x))
-# plotdata_DistI_AgeIS_wild <- map2(social_fits_DistI_AgeIS_wild, event_data_wild, ~get_plotdata(.y, .x))
-# plotdata_DistIS_AgeIS_wild <- map2(social_fits_DistIS_AgeIS_wild, event_data_wild, ~get_plotdata(.y, .x))
+plotdata_noILVs_wild <- map2(social_fits_noILVs_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))
+plotdata_DistI_wild <- map2(social_fits_DistI_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))
+plotdata_DistIS_wild <- map2(social_fits_DistIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))
+plotdata_DistI_AgeIS_wild <- map2(social_fits_DistI_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))
+plotdata_DistIS_AgeIS_wild <- map2(social_fits_DistIS_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))
 
 get_curveplots <- function(plot_data, cid){
   if(!is.null(plot_data)){
@@ -600,46 +605,14 @@ curveplots_DistIS <- map2(plotdata_DistIS, map_dbl(stn_carcs, "carcID"), ~get_cu
 curveplots_DistI_AgeIS <- map2(plotdata_DistI_AgeIS, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
 curveplots_DistIS_AgeIS <- map2(plotdata_DistIS_AgeIS, map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))
 
-
-
-
-
-# Let's at least try the ELPD comparison on these pairs of models.
-test1 <- STb_compare(social_fits_DistI[[24]], social_fits_DistI_weibull[[1]], model_names = c("regular", "Weibull"))
-test1$comparison %>%
-  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
-  geom_point()+
-  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
-  theme_minimal()+
-  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 24") # no difference in predictive power
-
-test2 <- STb_compare(social_fits_DistI[[28]], social_fits_DistI_weibull[[2]], model_names = c("regular", "Weibull"))
-test2$comparison %>%
-  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
-  geom_point()+
-  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
-  theme_minimal()+
-  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 28") # no difference in predictive power
-
-test3 <- STb_compare(social_fits_DistI[[35]], social_fits_DistI_weibull[[3]], model_names = c("regular", "Weibull"))
-test3$comparison %>%
-  ggplot(aes(x = elpd_diff, y = factor(row.names(.))))+
-  geom_point()+
-  geom_errorbar(aes(xmin = elpd_diff-se_diff, xmax = elpd_diff+se_diff), width = 0.05)+
-  theme_minimal()+
-  labs(y = "Model", x = "ELPD Diff.", title = "Carcass 35") # weibull is significantly worse
-
-# Okay, so on the whole I'm not finding any support for using the weibull distribution in this situation.
-
-# 
-# curveplots_noILVs_wild <- map2(plotdata_noILVs_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
-# curveplots_DistI_wild <- map2(plotdata_DistI_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
-# curveplots_DistIS_wild <- map2(plotdata_DistIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
-# curveplots_DistI_AgeIS_wild <- map2(plotdata_DistI_AgeIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
-# curveplots_DistIS_AgeIS_wild <- map2(plotdata_DistIS_AgeIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_noILVs_wild <- map2(plotdata_noILVs_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistI_wild <- map2(plotdata_DistI_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistIS_wild <- map2(plotdata_DistIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistI_AgeIS_wild <- map2(plotdata_DistI_AgeIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
+curveplots_DistIS_AgeIS_wild <- map2(plotdata_DistIS_AgeIS_wild, map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))
 
 padded <- str_pad(1:length(curveplots_noILVs), width = 3, side = "left", pad = "0")
-# padded_wild <- str_pad(1:length(curveplots_noILVs_wild), width = 3, side = "left", pad = "0")
+padded_wild <- str_pad(1:length(curveplots_noILVs_wild), width = 3, side = "left", pad = "0")
 
 walk2(curveplots_noILVs, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistI, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
@@ -647,13 +620,160 @@ walk2(curveplots_DistIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/sta
 walk2(curveplots_DistI_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistIS_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 
-# walk2(curveplots_noILVs_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/noILVs/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistI_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistI_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_AgeIS/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_AgeIS/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_noILVs_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 
 
+# Investigating curveplots--quantifying, for each point on the X axis, whether it falls within the 95% CI for the models.
+
+obs <- map(plotdata_DistI, "obs")
+obs_wild <- map(plotdata_DistI_wild, "obs")
+pred <- map(plotdata_DistI, "pred")
+pred_wild <- map(plotdata_DistI_wild, "pred")
+
+# Step 1: for each observed timepoint, interpolate cum_prop for every draw
+obs_times <- map(obs, "time")
+obs_times_wild <- map(obs_wild, "time")
+interp_pred <- map2(pred, obs_times, ~{
+  if(!is.null(.x) & length(.y[.y != 0]) > 2){
+    .x %>% group_by(draw) %>%
+      group_modify(function(df, grp) {
+        tibble(time = .y,
+          cum_prop = approx(x = df$time, y = df$cum_prop, xout = .y, rule = 2)$y)
+      }) %>% ungroup()
+  }else{ NULL}})
+
+interp_pred_wild <- map2(pred_wild, obs_times_wild, ~{
+  if(!is.null(.x) & length(.y[.y != 0]) > 2){
+    .x %>% group_by(draw) %>%
+      group_modify(function(df, grp) {
+        tibble(time = .y,
+               cum_prop = approx(x = df$time, y = df$cum_prop, xout = .y, rule = 2)$y)
+      }) %>% ungroup()
+  }else{ NULL}})
+
+joined <- map2(obs, interp_pred, ~{
+  if(!is.null(.y)){
+    .x %>% left_join(.y, by = "time", suffix = c("", "_pred"))
+  }else{NULL}})
+
+joined_wild <- map2(obs_wild, interp_pred_wild, ~{
+  if(!is.null(.y)){
+    .x %>% left_join(.y, by = "time", suffix = c("", "_pred"))
+  }else{NULL}})
+
+quantiles <- map2(joined, stn_carcs, ~{
+  if(!is.null(.x)){
+    .x %>%
+      group_by(time) %>%
+      summarize(obs = cum_prop[1],
+                lower = quantile(cum_prop_pred, 0.025),
+                upper = quantile(cum_prop_pred, 0.975),
+                med = quantile(cum_prop_pred, 0.5)) %>%
+      mutate(inside = case_when(obs >= lower & obs <= upper ~ T, .default = F),
+             overunder = case_when(upper <= obs ~ "underpredicted",
+                                   lower >= obs ~ "overpredicted",
+                                   .default = "valid"),
+             idx = 1:n(),
+             carcID = .y$carcID,
+             year = .y$year)
+  }else{
+    NULL
+  }
+})
+
+quantiles_wild <- map2(joined_wild, wild_carcs, ~{
+  if(!is.null(.x)){
+    .x %>%
+      group_by(time) %>%
+      summarize(obs = cum_prop[1],
+                lower = quantile(cum_prop_pred, 0.025),
+                upper = quantile(cum_prop_pred, 0.975),
+                med = quantile(cum_prop_pred, 0.5)) %>%
+      mutate(inside = case_when(obs >= lower & obs <= upper ~ T, .default = F),
+             overunder = case_when(upper <= obs ~ "underpredicted",
+                                   lower >= obs ~ "overpredicted",
+                                   .default = "valid"),
+             idx = 1:n(),
+             carcID = .y$carcID,
+             year = .y$year)
+  }else{
+    NULL
+  }
+})
+
+quantiles_df <- purrr::list_rbind(quantiles)
+quantiles_df_wild <- purrr::list_rbind(quantiles_wild)
+
+quantiles_df_all <- bind_rows(quantiles_df %>% mutate(type = "stn"),
+                              quantiles_df_wild %>% mutate(type = "wild"))
+
+qt <- quantiles_df_all %>%
+  group_by(year, carcID, type) %>%
+  summarize(prop_inside = mean(overunder == "valid"),
+            prop_under = mean(overunder == "underpredicted"),
+            prop_over = mean(overunder == "overpredicted")) 
+
+qt_long <- qt %>%
+  pivot_longer(cols = starts_with("prop"), names_to = "category", values_to = "prop") 
+
+qt_long %>%
+  ggplot(aes(x = factor(carcID), y = prop, fill = category))+
+  geom_bar(stat = "identity")+
+  facet_wrap(~type, scales = "free")+
+  theme_minimal()+
+  coord_flip()+
+  scale_fill_manual(values = c("gray", "firebrick3", "dodgerblue"))
+
+# Some observations:
+# Station carcasses are more likely to be generally overpredicted. Wild carcasses are more likely to be generally underpredicted. This is the opposite of what I would have guessed!
+# More carcasses than I had expected have significant problems with their PPC curves.
+
+qt_long <- purrr::list_rbind(stn_carcs) %>%
+  st_as_sf() %>%
+  select(carcID, datetime_il, stationName, carcassWeight, X, Y) %>%
+  bind_rows(purrr::list_rbind(wild_carcs) %>%
+              st_as_sf() %>%
+              select(carcID, datetime_il, stationName, carcassWeight, X, Y)) %>%
+  right_join(qt_long, by = "carcID")
+
+qt_long %>%
+  ggplot(aes(x = factor(carcID), y = prop, fill = category))+
+  geom_bar(stat = "identity")+
+  facet_wrap(~year + type, ncol = 2, scales = "free")+
+  theme_minimal()+
+  coord_flip()+
+  scale_fill_manual(values = c("gray", "firebrick3", "dodgerblue"))
+# The station carcasses in 2023 are particularly bad for models overpredicting. I wonder if this has anything to do with the number of tagged individuals?
+# The difference between station and wild could also have something to do with the mismatch between starting wild from the first sighting versus starting station from the deposition of the carcass. This isn't comparable--need to go back and fix it. 
+
+
+
+# Some ideas for what could be causing the mismatch:
+# Time to first detection--carcasses where it takes a while for the first vulture to detect it might be getting overpredicted by the model. Carcasses where it's at a popular feeding station or otherwise close to a lot of vultures may be getting underpredicted by the model. Related: mean distance to vultures.
+# Station
+# Time of day when the carcass is placed
+# Size of the carcass
+# Number of seeds
+
+# Which points tend to be bad fits?
+quantiles_df_all %>%
+  group_by(carcID) %>%
+  mutate(prop_inside = mean(inside)) %>%
+  filter(prop_inside < 0.7) %>%
+  filter(carcID %in% sample(unique(.$carcID), 9)) %>%
+  ggplot(aes(x = idx, color = inside, y = obs))+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0)+
+  geom_point()+
+  theme_minimal()+
+  facet_wrap(~carcID, scales = "free")
+
+# some common patterns: 
+# model underpredicts at the beginning, then overpredicts at the end
+# model consistently underpredicts
 
 # Model output evaluation and inter-model comparisons ---------------------
 # Comparison between each model and its asocial equivalent
