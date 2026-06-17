@@ -496,7 +496,7 @@ get_plotdata <- function(event_data, model_fit){
     plot_data_obs <- ed %>%
       filter(
         #time > 0, # Remove this--we want to include the demonstrators in the obs line, since they're included in the draws!
-             time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+        time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
       group_by(trial) %>%
       arrange(time, .by_group = TRUE) %>%
       mutate(
@@ -642,7 +642,7 @@ interp_pred <- map2(pred, obs_times, ~{
     .x %>% group_by(draw) %>%
       group_modify(function(df, grp) {
         tibble(time = .y,
-          cum_prop = approx(x = df$time, y = df$cum_prop, xout = .y, rule = 2)$y)
+               cum_prop = approx(x = df$time, y = df$cum_prop, xout = .y, rule = 2)$y)
       }) %>% ungroup()
   }else{ NULL}})
 
@@ -726,7 +726,9 @@ qt_long %>%
   facet_wrap(~type, scales = "free")+
   theme_minimal()+
   coord_flip()+
-  scale_fill_manual(values = c("gray", "firebrick3", "dodgerblue"))
+  scale_fill_manual(values = c("gray", "firebrick3", "dodgerblue"))+
+  labs(x = NULL, y = NULL)+
+  theme(axis.text.x = element_text(size = 10))
 
 # Some observations:
 # Station carcasses are more likely to be generally overpredicted. Wild carcasses are more likely to be generally underpredicted. This is the opposite of what I would have guessed!
@@ -750,30 +752,228 @@ qt_long %>%
 # The station carcasses in 2023 are particularly bad for models overpredicting. I wonder if this has anything to do with the number of tagged individuals?
 # The difference between station and wild could also have something to do with the mismatch between starting wild from the first sighting versus starting station from the deposition of the carcass. This isn't comparable--need to go back and fix it. 
 
+# Time to first event
+counts <- purrr::list_rbind(event_data) %>%
+  bind_rows(purrr::list_rbind(event_data_wild)) %>%
+  group_by(trial) %>%
+  summarize(n_total = n(),
+            n_seeds = sum(time == 0),
+            n_censored = sum(time > t_end))
 
+qt_long <- qt_long %>%
+  left_join(purrr::list_rbind(event_data) %>%
+              group_by(trial) %>%
+              filter(time > 0) %>%
+              slice(1) %>%
+              select(trial, time) %>%
+              bind_rows(purrr::list_rbind(event_data_wild) %>%
+                          group_by(trial) %>%
+                          filter(time > 0) %>%
+                          slice(1) %>%
+                          select(trial, time)) %>%
+              rename("time_to_first_event" = "time",
+                     "carcID" = "trial"), by = "carcID") %>%
+  mutate(hours_to_first_event = time_to_first_event/60/60) %>%
+  left_join(counts, by = c("carcID" = "trial"))
 
-# Some ideas for what could be causing the mismatch:
-# Time to first detection--carcasses where it takes a while for the first vulture to detect it might be getting overpredicted by the model. Carcasses where it's at a popular feeding station or otherwise close to a lot of vultures may be getting underpredicted by the model. Related: mean distance to vultures.
-# Station
-# Time of day when the carcass is placed
-# Size of the carcass
-# Number of seeds
+qt_long %>%
+  filter(category == "prop_inside") %>%
+  ggplot(aes(x = hours_to_first_event, y = prop, color = factor(type)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  labs(y = "Prop. accurate points", x = "Hours to first sighting", color = "Type")+
+  theme_minimal()+
+  theme(text = element_text(size = 18))+
+  scale_color_manual(values = c("orange", "olivedrab"))
 
-# Which points tend to be bad fits?
+qt_long %>%
+  filter(category == "prop_inside") %>%
+  ggplot(aes(x = log(hours_to_first_event), y = prop, color = factor(type)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  labs(y = "Prop. accurate points", x = "Hours to first sighting", color = "Type")+
+  theme_minimal()+
+  theme(text = element_text(size = 18))+
+  scale_color_manual(values = c("orange", "olivedrab"))
+
+qt_long %>%
+  filter(category != "prop_inside") %>%
+  ggplot(aes(x = log(hours_to_first_event), y = prop, color = factor(type)))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~category)+
+  labs(y = "Prop. points", x = "Hours to first sighting", color = "Type")+
+  theme_minimal()+
+  theme(text = element_text(size = 18))+
+  scale_color_manual(values = c("orange", "olivedrab"))
+
+# Station name?
+qt_long %>%
+  filter(category != "prop_inside", type == "stn") %>%
+  group_by(stationName) %>%
+  filter(n() > 2) %>%
+  ggplot(aes(x = stationName, y = prop, fill = factor(category)))+
+  geom_boxplot()+
+  #coord_flip()+
+  theme_minimal()+
+  labs(y = "Prop. points", x = "Station", fill = "Over/\nunder\nprediction")+
+  theme(text = element_text(size = 16))+
+  scale_fill_manual(values = c("firebrick3", "dodgerblue"))
+
+# Geography
+qt_long %>%
+  filter(category != "prop_inside") %>%
+  ggplot(aes(x = X, y = Y))+
+  geom_point(pch = 1, aes(color = category, size = prop))+
+  theme_minimal()+
+  facet_wrap(~category)+
+  theme(text = element_text(size = 16))+
+  scale_color_manual(values = c("firebrick3", "dodgerblue"))
+
+# Prop. seeds
+qt_long %>%
+  filter(category != "prop_inside") %>%
+  ggplot(aes(x = n_seeds/n_total, y = prop, color = type))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~category)+
+  theme_minimal()+
+  scale_color_manual(values = c("orange", "olivedrab"))+
+  labs(y = "Proportion of points", x = "Prop. seeds")
+
+# N seeds
+qt_long %>%
+  filter(category != "prop_inside") %>%
+  ggplot(aes(x = n_seeds, y = prop, color = type))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~category)+
+  theme_minimal()+
+  scale_color_manual(values = c("orange", "olivedrab"))+
+  labs(y = "Proportion of points", x = "# seeds")
+
+# Prop censored
+qt_long %>%
+  filter(category != "prop_inside") %>%
+  ggplot(aes(x = (n_total - n_censored - n_seeds)/n_total, y = prop, color = type))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~category)+
+  theme_minimal()+
+  scale_color_manual(values = c("orange", "olivedrab"))+
+  labs(y = "Proportion of points", x = "Prop. found")
+
+# Which points on the curve tend to be bad fits?
 quantiles_df_all %>%
   group_by(carcID) %>%
-  mutate(prop_inside = mean(inside)) %>%
-  filter(prop_inside < 0.7) %>%
+  mutate(prop_inside = mean(overunder == "valid"), n = n()) %>%
+  filter(prop_inside < 0.7, n > 10) %>%
   filter(carcID %in% sample(unique(.$carcID), 9)) %>%
-  ggplot(aes(x = idx, color = inside, y = obs))+
+  ggplot(aes(x = idx, color = overunder, y = obs))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0)+
   geom_point()+
   theme_minimal()+
-  facet_wrap(~carcID, scales = "free")
+  facet_wrap(~carcID, scales = "free")+
+  scale_color_manual(values = c("gray", "firebrick3", "dodgerblue"))
 
 # some common patterns: 
 # model underpredicts at the beginning, then overpredicts at the end
 # model consistently underpredicts
+
+
+# Comparing curve shapes: some form of taking the derivative?
+#(𝑦𝑖+1−𝑦𝑖−1)/(𝑥𝑖+1−𝑥𝑖−1)
+
+test_obs <- obs[[1]]
+test_pred <- interp_pred[[1]]
+test_pred <- test_pred %>%
+  arrange(draw, time) %>%
+  group_by(draw) %>%
+  mutate(slope = (lead(cum_prop, 2)-cum_prop)/(lead(time, 2)-time))
+test_obs <- test_obs %>% mutate(slope = (lead(cum_prop, 2)-cum_prop)/(lead(time, 2)-time)) 
+
+ggplot(mapping = aes(x = time/60/60, y = slope))+
+  geom_line(data = test_pred %>% filter(time <5*60*60), aes(group = draw), alpha = 0.1, color = "purple")+
+  geom_line(data = test_obs %>% filter(time <5*60*60), alpha = 1)+
+  theme_minimal() +
+  labs(y = "Slope", x = "Hours")
+
+# Let's look at correlations instead of 95% confidence intervals, since those aren't sensitive to vertical shifts.
+cors_stn<- map2(obs, interp_pred, ~{
+  if(is.null(.x)|is.null(.y)){return(NULL)}else{
+    a <- .x$cum_prop
+    draws <- unique(.y$draw)
+    cors <- rep(NA, length = length(draws))
+    for(i in 1:length(draws)){
+      b <- .y %>% filter(draw == draws[i]) %>% pull(cum_prop)
+      cors[i] <- cor(a, b)
+    }
+    return(cors)
+  }
+})
+
+cors_wild<- map2(obs_wild, interp_pred_wild, ~{
+  if(is.null(.x)|is.null(.y)){return(NULL)}else{
+    a <- .x$cum_prop
+    draws <- unique(.y$draw)
+    cors <- rep(NA, length = length(draws))
+    for(i in 1:length(draws)){
+      b <- .y %>% filter(draw == draws[i]) %>% pull(cum_prop)
+      cors[i] <- cor(a, b)
+    }
+    return(cors)
+  }
+})
+
+cors_stn_df <- map2(cors_stn, map_dbl(stn_carcs, "carcID"), ~{
+  if(!is.null(.x)){
+    return(data.frame(carcID = .y, cor = .x))
+  }else{return(NULL)}
+}) %>% purrr::list_rbind() %>% mutate(type = "stn")
+
+cors_wild_df <- map2(cors_wild, map_dbl(wild_carcs, "carcID"), ~{
+  if(!is.null(.x)){
+    return(data.frame(carcID = .y, cor = .x))
+  }else{return(NULL)}
+}) %>% purrr::list_rbind() %>% mutate(type = "wild")
+cors <- bind_rows(cors_stn_df, cors_wild_df) %>% right_join(qt_long %>% pivot_wider(names_from = "category", values_from = "prop"))
+
+cors %>%
+  ggplot(aes(x = prop_inside, y = cor, group = carcID, fill = type))+
+  geom_boxplot(pch = 1, alpha = 0.5, width = 1, outlier.size = 0.5)+
+  theme_minimal()+
+  facet_wrap(~type)+
+  scale_fill_manual(values = c("orange", "olivedrab"))+
+  labs(y = "Obs-pred correlation", x = "Prop. pts inside 95% CI", fill = "Type")+
+  theme(text = element_text(size = 16))
+
+cors %>%
+  ggplot(aes(x = prop_inside, y = cor, group = carcID, fill = log(hours_to_first_event), color = log(hours_to_first_event)))+
+  geom_boxplot(pch = 1, alpha = 0.5, width = 1, outlier.size = 0.5)+
+  theme_minimal()+
+  facet_wrap(~type)+
+  scale_fill_viridis_c()+
+  scale_color_viridis_c()+
+  labs(y = "Obs-pred correlation", x = "Prop. pts inside 95% CI", fill = "Hrs to first event\n(log-transformed)", color = "Hrs to first event\n(log-transformed)")+
+  theme(text = element_text(size = 16))
+
+cors %>%
+  ggplot(aes(x = prop_inside, y = cor, group = carcID, fill = prop_under))+
+  geom_boxplot(pch = 1, alpha = 0.9, width = 1, outlier.size = 0.5)+
+  theme_minimal()+
+  facet_wrap(~type)+
+  scale_fill_gradient2(low = "white", high = "firebrick3")+
+  labs(y = "Obs-pred correlation", x = "Prop. pts inside 95% CI", fill = "Prop. overpredicted")+
+  theme(text = element_text(size = 16))
+
+cors %>%
+  ggplot(aes(x = prop_inside, y = cor, group = carcID, fill = prop_under))+
+  geom_boxplot(pch = 1, alpha = 0.9, width = 1, outlier.size = 0.5)+
+  theme_minimal()+
+  facet_wrap(~type)+
+  scale_fill_gradient2(low = "white", high = "dodgerblue3")+
+  labs(y = "Obs-pred correlation", x = "Prop. pts inside 95% CI", fill = "Prop. underpredicted")+
+  theme(text = element_text(size = 16))
 
 # Model output evaluation and inter-model comparisons ---------------------
 # Comparison between each model and its asocial equivalent
@@ -1056,8 +1256,8 @@ all_beta_names <- c("beta_ILVi_mean_dist_to_carcass_norm",
                     "beta_ILVs_age[2]")
 
 model_averaged_params_stn <- pmap(inputs_stn, function(m1, m2, m3, m4, m5#, 
-                                              #ex1, ex2, ex3, ex4
-                                              ) {
+                                                       #ex1, ex2, ex3, ex4
+) {
   
   all_models <- list(m1, m2, m3, m4, m5)
   #exclude <- c(ex1, ex2, ex3, ex4)
