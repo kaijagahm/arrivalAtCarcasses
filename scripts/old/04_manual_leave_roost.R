@@ -17,40 +17,38 @@ library(move2)
 library(gganimate)
 library(ggspatial)
 
-# get roost location data
-tar_load(roosts_stn) # this isn't great for our purposes because it's on a per-carcass basis, but that's ok
-tar_load(stn_carcs) # should be same length as roosts_stn
+# Get roost and carcass data
+tar_load(stn_carcs) #60
+# tar_load(wild_carcs) # 112
+tar_load(roosts_stn) # 60
+# tar_load(roosts_wild) # 112
+
 # get roost polygons, minus feeding stations
 tar_load(rp_minus_stations)
 
-# get gps data
+# get gps data for stn and wild carcs
 tar_load(stn_gps_30days)
+# tar_load(wild_gps_30days)
 
-# select just one carcass to work with
+# Select just one carcass to work with
 test_roosts <- sf::st_transform(roosts_stn[[1]], 32636)
 test_carc <- stn_carcs[[1]]
 test_gps <- sf::st_transform(stn_gps_30days[[1]], 32636)
 
-# how many roost dates are we working with here?
-length(unique(test_roosts$roost_date))
+length(unique(test_roosts$roost_date)) # 5 unique roost dates
 
-# Assign polygons to the roost locations
-st_crs(test_roosts) == st_crs(rp_minus_stations) # make sure these have the same crs before we can intersect them
+# Assign roost locations to roost polygons
+st_crs(test_roosts) == st_crs(rp_minus_stations) # must have same crs for intersection
 test_roosts$roostID <- as.numeric(st_intersects(test_roosts, rp_minus_stations))
-
-# Assign polygons to the gps locations
 st_crs(test_gps) == st_crs(rp_minus_stations) # needs to be TRUE
-test_gps$roostID_gps <- as.numeric(st_intersects(test_gps, rp_minus_stations))
-
-# Okay now let's group this per date_il and individual
-# simplify the roost data for the join
+test_gps$roostID_gps <- as.numeric(st_intersects(test_gps, rp_minus_stations)) # add roost IDs
 test_roosts_tojoin <- test_roosts %>% select(individual_local_identifier, roost_date, roostID) %>% bind_cols(st_coordinates(.)) %>% st_drop_geometry() %>%
   rename("roost_X" = X, "roost_Y" = Y)
 test_gps <- test_gps %>%
   mutate(roost_date = date_il - lubridate::days(1)) %>% 
   left_join(test_roosts_tojoin, by = c("individual_local_identifier", "roost_date")) %>%
   mutate(in_a_roost = !is.na(roostID_gps))
-glimpse(test_gps) # well now we already have a problem because it looks like some of the roost locations aren't assigned to a polygon, but some of the gps points for the same individual on the same date are assigned to a polygon.
+glimpse(test_gps) # We already have a problem because it looks like some of the roost locations aren't assigned to a polygon, but some of the gps points for the same individual on the same date are assigned to a polygon.
 
 # I don't want to deal with this yet, so let's just restrict this down to the nights when roostID is not NA
 test_gps_knownroost <- test_gps %>%
@@ -59,13 +57,13 @@ test_gps_knownroost <- test_gps %>%
 test_date <- test_gps_knownroost %>%
   filter(date_il == test_gps_knownroost$date_il[1])
 
+## How do we define when an individual has "left" the roost?
 test_date %>%
   ggplot(aes(x = timestamp_il, y = individual_local_identifier, color = in_a_roost))+
   geom_point()+
-  theme_minimal()
+  theme_minimal() # On the basis of this graph, I think we should consider individuals to have "left" the roost when they have had two points in a row outside of it, starting from the earliest point that day.
 
-# On the basis of this graph, I think we should consider individuals to have "left" the roost when they have had two points in a row outside of it, starting from the earliest point that day.
-
+# Get "left the roost" points
 data_timeordered <- test_gps_knownroost %>%
   group_by(date_il, individual_local_identifier) %>%
   group_split()
@@ -100,6 +98,7 @@ data_rejoined <- purrr::list_rbind(data_timeordered)
 leaving_points <- data_rejoined %>%
   filter(left_roost)
 
+# Departure points highlighted:
 data_rejoined %>%
   filter(date_il == min(date_il)) %>%
   ggplot(aes(x = timestamp_il, y = individual_local_identifier, color = in_a_roost, size = left_roost))+
@@ -189,7 +188,6 @@ departure_graphs[[3]]
 # https://bartk.gitlab.io/move2/reference/mt_interpolate.html
 
 # What about the trajectories after the departures?
-head(data_rejoined)
 data_rejoined <- sf::st_as_sf(data_rejoined)
 
 # Get data for a single day, and perhaps for a single roost
@@ -202,15 +200,8 @@ data_rejoined <- sf::st_as_sf(data_rejoined)
 # So we need to calculate individual daily displacement, restrict the GPS data to only dyads that flew far enough (does this restriction make sense for us, or not?) and then plot it onto the map...
 # I think linear interpolation actually might make more sense for the subsequent trajectories, because then we can measure distance along the interpolated points and actually look at dyad distance over time.
 
-# Let's start by just plotting some dyads on the map
-departure_gps <- data_rejoined %>% filter(date_il == lubridate::ymd("2022-11-14")) %>% filter(individual_local_identifier %in% c("K39", "A75w"))
-
-# Let's look at K39 and A75w
-tar_load(stations)
-mapview(departure_gps, zcol = "individual_local_identifier")+mapview(stations, col.regions = "red") # okay, these ones aren't near any stations, but there could still be a carcass... anyway let's move on
-
 mv <- mt_as_move2(
-  departure_gps,
+  data_rejoined,
   coords = c("location_long", "location_lat"),
   time = "timestamp_il",
   track_id = "individual_local_identifier",
@@ -232,10 +223,10 @@ interpolated_5min <- mt_interpolate(
     as.POSIXct("2022-11-14 11:59:00"), "5 mins"
   ),
   max_time_lag = units::as_units(1, "hours"),
-  omit = TRUE
+  omit = FALSE
 ) %>%
   mutate(interp = T) %>%
-  bind_rows(mutate(mv[!sf::st_is_empty(mv), ], interp = F)) %>%
+  # bind_rows(mutate(filter(mv, individual_local_identifier %in% .), interp = F)) %>% # add the non-interpolated data back
   arrange(individual_local_identifier, timestamp_il) %>%
   
   select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>%
@@ -251,7 +242,7 @@ interpolated_5min <- interpolated_5min %>%
   fill(roost_Y) %>%
   fill(roostID) %>%
   fill(left_roost) %>%
-  ungroup()
+  ungroup() %>% as.data.frame()
 
 after_departure <- interpolated_5min %>%
   group_by(individual_local_identifier, date_il) %>%
@@ -260,8 +251,7 @@ after_departure <- interpolated_5min %>%
   ungroup() %>%
   select(-after_departure)
 
-
-# calculate distance at each timestep
+# calculate distance at each timestep # OHHHH this code assumes we are already working with only one dyad! that doesn't work.
 pairwise_distances <- after_departure %>%
   filter(interp) %>% # keep only interpolated points so they'll be aligned
   group_by(timestamp_il) %>%
@@ -282,18 +272,8 @@ pairwise_distances <- after_departure %>%
   ungroup() %>%
   mutate(flight_status = case_when(flight1 & flight2 ~ "both",
                                    (flight1 & !flight2)|(!flight1 & flight2) ~ "one",
-                                   !flight1 & !flight2 ~ "zero"))
+                                   !flight1 & !flight2 ~ "zero")) # XXX stuck here, not sure what's happening
 
-distances %>%
-  ggplot(aes(x = timestamp_il, y = distance_m, color = flight_status)) +
-  geom_point()+
-  theme_classic()+
-  labs(y = "Distance apart (m)",
-       color = "Flight?",
-       x = "Timestamp",
-       title = c("K39 and A75w on 2022-11-14"))
-
-# This looks like a reasonable way to look at post-departure flights.
 
 # Now we need to calculate daily displacement for each individual
 displ <- after_departure %>%
@@ -305,20 +285,25 @@ displ <- after_departure %>%
 
 max_displacement <- displ %>%
   group_by(individual_local_identifier, date_il) %>%
-  summarize(max_displ_m = max(displacement, na.rm = T))
-# XXX will have to join this back on to look at whether the dyad falls within the max displacement range or not.
+  summarize(max_displ_m = as.numeric(max(displacement, na.rm = T))) %>%
+  st_drop_geometry()
 
 #"We focused on three indices of the ‘following behaviour’, (i) the proportion of the flight time that individuals spent close to each other (within detection range); (ii) the mean distance between individuals during the flight; (iii) whether the informed was leading the dyad, namely closer to the goal site and how this changed along the joint flight."
 tar_load(ddf) # we're using 2km ddf
 
-distances <- distances %>%
+pairwise_distances <- pairwise_distances %>%
   mutate(in_sight = case_when(distance_m <= ddf ~ T, .default = F))
 
-distances %>%
+pairwise_distances %>%
   group_by(id1, id2) %>%
   summarize(prop_both_flying = sum(flight_status == "both")/n(),
             prop_in_sight = sum(in_sight)/n(),
             prop_in_sight_both_flying = sum(flight_status == "both" & in_sight)/n())
+
+
+
+
+
 
 # Informed/uninformed status of carcasses
 #"Hence, we classified individuals as informed in cases they were within detection range (i.e. less than 4 km) of an existing carcass in the 2 days preceding the feeding event. These included cases in which individuals ate from the carcass at previous days, landed but did not eat or flew above the carcass but did not land. Cases in which individuals were between 4 and 10 km from the food resource were excluded (425 dyads) to avoid false classification of individual’s information status."

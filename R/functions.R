@@ -1954,3 +1954,37 @@ arrange_roost_nets <- function(r, ind, rt){
     rename("focal" = ID1, "other" = ID2)
   return(all)
 }
+
+
+# Functions for running STbayes models ------------------------------------
+
+# Helper funs
+get_asocial <- function(x){
+  if(!is.null(x)){
+    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T, model_type = "asocial"))
+    return(mod)
+  }else{return(NULL)}}
+
+get_social <- function(x){
+  if(!is.null(x)){
+    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T))
+    return(mod)
+  }else{return(NULL)}
+}
+
+fit_model <- function(mod, dl, n_iter = 1000){
+  if(!is.null(mod)){
+    social_fit <- fit_STb(dl, mod, iter = n_iter)
+    return(social_fit)
+  }else{return(NULL)}
+}
+
+savefit <- function(fit, idx, folder, prefix, type){
+  nm <- paste0(folder, "/fit_", prefix, "_", str_pad(as.character(idx), width = 3, side = "left", pad = "0"))
+  if(!is.null(fit)){
+    STb_save(fit, output_dir = paste0("data/saved_fits/", type, "/"), name = nm)
+  }else{
+    write_rds(NULL, file = paste0("data/saved_fits/", type, "/", nm, ".rds"))
+  }
+}
+
