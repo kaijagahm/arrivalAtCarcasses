@@ -1988,3 +1988,103 @@ savefit <- function(fit, idx, folder, prefix, type){
   }
 }
 
+# Get data for plotting ppc curves for models
+get_plotdata <- function(event_data, model_fit){
+  
+  if(!is.null(event_data) & !is.null(model_fit)){
+    # create cumulative count of events
+    ed <- event_data %>% group_by(trial) %>% mutate(n_trial = n())
+    
+    plot_data_obs <- ed %>%
+      filter(
+        #time > 0, # Remove this--we want to include the demonstrators in the obs line, since they're included in the draws!
+        time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+      group_by(trial) %>%
+      arrange(time, .by_group = TRUE) %>%
+      mutate(
+        cum_prop = row_number() / n_trial, # this denominator needs to be the number of individuals per trial
+        type = "observed"
+      ) %>%
+      select(trial, time, cum_prop, type) %>%
+      ungroup()
+    
+    # If there's not already a value for 0, add in 0,0 starting point
+    if(!(0 %in% plot_data_obs$time)){
+      plot_data_obs <- bind_rows(
+        plot_data_obs,
+        plot_data_obs %>%
+          distinct(trial) %>%
+          mutate(time = 0, cum_prop = 0, type = "observed")
+      ) %>%
+        arrange(trial, time)
+    }
+    
+    # extract draws of predicted acqtime
+    draws_df <- posterior::as_draws_df(model_fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
+    
+    # pivot longer
+    ppc_long <- draws_df %>%
+      select(starts_with("acquisition_time[")) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = c("trial", "ind"),
+        names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+        values_to = "time"
+      ) %>%
+      mutate(
+        trial = as.integer(trial),
+        ind = as.integer(ind),
+        draw = rep(1:(nrow(draws_df)),
+                   each = length(unique(.$trial)) * length(unique(.$ind))
+        )
+      )
+    
+    
+    # thin sample for plotting
+    sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+    ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+    
+    # build cumulative curves per draw
+    # same as before, we need a way to reference the number of individuals in each trial
+    ppc_long <- ppc_long %>%
+      group_by(draw, trial) %>%
+      mutate(n_trial = n())
+    summary(ppc_long)
+    # we also need to remove individuals predicted as censored
+    ppc_long <- ppc_long %>%
+      filter(time > -1)
+    # create cumulative curves
+    plot_data_ppc <- ppc_long %>%
+      group_by(draw, trial, time) %>%
+      summarise(n = n(), n_trial = first(n_trial), .groups = "drop") %>%
+      group_by(draw, trial) %>%
+      arrange(time) %>%
+      mutate(cum_prop = cumsum(n) / n_trial)
+    
+    # add in 0,0 starting point
+    plot_data_ppc <- bind_rows(
+      plot_data_ppc,
+      plot_data_ppc %>%
+        distinct(trial, draw) %>%
+        mutate(time = 0, cum_prop = 0, type = "ppc")
+    ) %>%
+      arrange(trial, time)
+    
+    return(list("obs" = plot_data_obs, "pred" = plot_data_ppc))
+    
+  }else{NULL}
+}
+
+# Make ppc curveplots
+get_curveplots <- function(plot_data, cid){
+  if(!is.null(plot_data)){
+    p <- ggplot(mapping = aes(x = time, y = cum_prop))+
+      geom_line(
+        data = plot_data$pred, aes(group = interaction(draw, trial)), alpha = 0.1)+
+      geom_line(
+        data = plot_data$obs, linewidth = 1)+
+      labs(x = "Time", y = "Cumulative proportion informed", title = cid)+
+      theme_minimal()
+    return(p)
+  }else{return(NULL)}
+}

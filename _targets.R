@@ -15,7 +15,7 @@ list(
   tar_target(rp, sf::st_read("data/raw/roosts50_kde95_cutOffRegion.kml")),
   tar_target(rp_minus_stations, sf::st_difference(sf::st_transform(rp, 32636), stations_union)),
   
-  # MANUALLY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
+  # `MANUAL``LY DEFINE HF-ACC WINDOWS (these dates come from the ACC data, but I've manually defined them here so we can exclude the acc part of the pipeline if need be)
   tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
   tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
   tar_target(mindate_24, "2024-04-01 00:00:00 UTC"),
@@ -620,15 +620,15 @@ list(
   tar_target(roosts_wild, c(roosts_wild_1, roosts_wild_2, roosts_wild_3, roosts_wild_4, roosts_wild_5)),
   
   # Manual calculation of co-departures from roosts and following
-  tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))),
+  tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))), 
   
   tar_target(downsampled_updated, dplyr::mutate(downsampled_forroosts, roostID_gps = as.numeric(sf::st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations)))),
   
-  tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)),
+  tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)), # roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
   
-  tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))),
+  tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))), # joined roosts to GPS data to prep for determining departures
   
-  tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))),
+  tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))), # only roost polygons
   tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier), .keep = T)),
   tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),
   tar_target(data_timeordered, purrr::map2(indiv_date_list, leftpoints, ~{
@@ -1341,7 +1341,37 @@ list(
     }else{return(NULL)}
   })),
   
-  # Ran STbayes models separately in run_models_outside_of_targets.R
+  # Create model objects ----------------------------------------------------
+  # Asocial stn, 2nets
+  tar_target(asocial_mods_noILVs_2nets, purrr::map(data_lists_noILVs_2nets, get_asocial)),
+  tar_target(asocial_mods_DistI_2nets, purrr::map(data_lists_DistI_2nets, get_asocial)),
+  tar_target(asocial_mods_DistIS_2nets, purrr::map(data_lists_DistIS_2nets, get_asocial)),
+  tar_target(asocial_mods_DistI_AgeIS_2nets, purrr::map(data_lists_DistI_AgeIS_2nets, get_asocial)),
+  tar_target(asocial_mods_DistIS_AgeIS_2nets, purrr::map(data_lists_DistIS_AgeIS_2nets, get_asocial)),
+  
+  # Asocial wild, 2nets
+  tar_target(asocial_mods_noILVs_2nets_wild, purrr::map(data_lists_noILVs_2nets_wild, get_asocial)),
+  tar_target(asocial_mods_DistI_2nets_wild, purrr::map(data_lists_DistI_2nets_wild, get_asocial)),
+  tar_target(asocial_mods_DistIS_2nets_wild, purrr::map(data_lists_DistIS_2nets_wild, get_asocial)),
+  tar_target(asocial_mods_DistI_AgeIS_2nets_wild, purrr::map(data_lists_DistI_AgeIS_2nets_wild, get_asocial)),
+  tar_target(asocial_mods_DistIS_AgeIS_2nets_wild, purrr::map(data_lists_DistIS_AgeIS_2nets_wild, get_asocial)),
+  
+  # Social stn, 2nets
+  tar_target(social_mods_noILVs_2nets, purrr::map(data_lists_noILVs_2nets, get_social)),
+  tar_target(social_mods_DistI_2nets, purrr::map(data_lists_DistI_2nets, get_social)),
+  tar_target(social_mods_DistIS_2nets, purrr::map(data_lists_DistIS_2nets, get_social)),
+  tar_target(social_mods_DistI_AgeIS_2nets, purrr::map(data_lists_DistI_AgeIS_2nets, get_social)),
+  tar_target(social_mods_DistIS_AgeIS_2nets, purrr::map(data_lists_DistIS_AgeIS_2nets, get_social)),
+  
+  # Social wild, 2nets
+  tar_target(social_mods_noILVs_2nets_wild, purrr::map(data_lists_noILVs_2nets_wild, get_social)),
+  tar_target(social_mods_DistI_2nets_wild, purrr::map(data_lists_DistI_2nets_wild, get_social)),
+  tar_target(social_mods_DistIS_2nets_wild, purrr::map(data_lists_DistIS_2nets_wild, get_social)),
+  tar_target(social_mods_DistI_AgeIS_2nets_wild, purrr::map(data_lists_DistI_AgeIS_2nets_wild, get_social)),
+  tar_target(social_mods_DistIS_AgeIS_2nets_wild, purrr::map(data_lists_DistIS_AgeIS_2nets_wild, get_social)),
+  
+  ### ~~~ Ran STbayes models separately in run_models_outside_of_targets.R. Proceed to next step by reading them in. ~~~ ###
+  
   #Get filenames
   ## Station social
   tar_target(soc_filenames_noILVs_2nets, list.files(path = "data/saved_fits/station/NoILVs_2nets/", pattern = "fit_social")),
@@ -1358,17 +1388,102 @@ list(
   tar_target(asoc_filenames_DistIS_AgeIS_2nets, list.files(path = "data/saved_fits/station/DistIS_AgeIS_2nets/", pattern = "fit_asocial")),
   
   ## Wild social
-  tar_target(soc_filenames_noILVs_wild_2nets, list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_social")),
-  tar_target(soc_filenames_DistI_wild_2nets, list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_social")),
-  tar_target(soc_filenames_DistIS_wild_2nets, list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_social")),
-  tar_target(soc_filenames_DistI_AgeIS_wild_2nets, list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_social")),
-  tar_target(soc_filenames_DistIS_AgeIS_wild_2nets, list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_social")),
+  tar_target(soc_filenames_noILVs_wild_2nets, list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_social")),
+  tar_target(soc_filenames_DistI_wild_2nets, list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_social")),
+  tar_target(soc_filenames_DistIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_social")),
+  tar_target(soc_filenames_DistI_AgeIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_social")),
+  tar_target(soc_filenames_DistIS_AgeIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_social")),
   
   ## Wild asocial
-  tar_target(asoc_filenames_noILVs_wild_2nets, list.files(path = "data/saved_fits/station/NoILVs_wild_2nets/", pattern = "fit_asocial")),
-  tar_target(asoc_filenames_DistI_wild_2nets, list.files(path = "data/saved_fits/station/DistI_wild_2nets/", pattern = "fit_asocial")),
-  tar_target(asoc_filenames_DistIS_wild_2nets, list.files(path = "data/saved_fits/station/DistIS_wild_2nets/", pattern = "fit_asocial")),
-  tar_target(asoc_filenames_DistI_AgeIS_wild_2nets, list.files(path = "data/saved_fits/station/DistI_AgeIS_wild_2nets/", pattern = "fit_asocial")),
-  tar_target(asoc_filenames_DistIS_AgeIS_wild_2nets, list.files(path = "data/saved_fits/station/DistIS_AgeIS_wild_2nets/", pattern = "fit_asocial"))
+  tar_target(asoc_filenames_noILVs_wild_2nets, list.files(path = "data/saved_fits/wild/NoILVs_2nets/", pattern = "fit_asocial")),
+  tar_target(asoc_filenames_DistI_wild_2nets, list.files(path = "data/saved_fits/wild/DistI_2nets/", pattern = "fit_asocial")),
+  tar_target(asoc_filenames_DistIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistIS_2nets/", pattern = "fit_asocial")),
+  tar_target(asoc_filenames_DistI_AgeIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistI_AgeIS_2nets/", pattern = "fit_asocial")),
+  tar_target(asoc_filenames_DistIS_AgeIS_wild_2nets, list.files(path = "data/saved_fits/wild/DistIS_AgeIS_2nets/", pattern = "fit_asocial")),
   
+  # Read in fits
+  ## Station social
+  tar_target(social_fits_noILVs_2nets, purrr::map(soc_filenames_noILVs_2nets, ~readRDS(paste0("data/saved_fits/station/NoILVs_2nets/", .x)))),
+  tar_target(social_fits_DistI_2nets, purrr::map(soc_filenames_DistI_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_2nets/", .x)))),
+  tar_target(social_fits_DistIS_2nets, purrr::map(soc_filenames_DistIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_2nets/", .x)))),
+  tar_target(social_fits_DistI_AgeIS_2nets, purrr::map(soc_filenames_DistI_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS_2nets/", .x)))),
+  tar_target(social_fits_DistIS_AgeIS_2nets, purrr::map(soc_filenames_DistIS_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS_2nets/", .x)))),
+  
+  ## Station asocial
+  tar_target(asocial_fits_noILVs_2nets, purrr::map(asoc_filenames_noILVs_2nets, ~readRDS(paste0("data/saved_fits/station/NoILVs_2nets/", .x)))),
+  tar_target(asocial_fits_DistI_2nets, purrr::map(asoc_filenames_DistI_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_2nets/", .x)))),
+  tar_target(asocial_fits_DistIS_2nets, purrr::map(asoc_filenames_DistIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_2nets/", .x)))),
+  tar_target(asocial_fits_DistI_AgeIS_2nets, purrr::map(asoc_filenames_DistI_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistI_AgeIS_2nets/", .x)))),
+  tar_target(asocial_fits_DistIS_AgeIS_2nets, purrr::map(asoc_filenames_DistIS_AgeIS_2nets, ~readRDS(paste0("data/saved_fits/station/DistIS_AgeIS_2nets/", .x)))),
+  
+  ## Wild social
+  tar_target(social_fits_noILVs_wild_2nets, purrr::map(soc_filenames_noILVs_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/NoILVs_2nets/", .x)))),
+  tar_target(social_fits_DistI_wild_2nets, purrr::map(soc_filenames_DistI_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_2nets/", .x)))),
+  tar_target(social_fits_DistIS_wild_2nets, purrr::map(soc_filenames_DistIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_2nets/", .x)))),
+  tar_target(social_fits_DistI_AgeIS_wild_2nets, purrr::map(soc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))),
+  tar_target(social_fits_DistIS_AgeIS_wild_2nets, purrr::map(soc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))),
+  
+  ## Wild asocial
+  tar_target(asocial_fits_noILVs_wild_2nets, purrr::map(asoc_filenames_noILVs_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/NoILVs_2nets/", .x)))),
+  tar_target(asocial_fits_DistI_wild_2nets, purrr::map(asoc_filenames_DistI_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_2nets/", .x)))),
+  tar_target(asocial_fits_DistIS_wild_2nets, purrr::map(asoc_filenames_DistIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_2nets/", .x)))),
+  tar_target(asocial_fits_DistI_AgeIS_wild_2nets, purrr::map(asoc_filenames_DistI_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistI_AgeIS_2nets/", .x)))),
+  tar_target(asocial_fits_DistIS_AgeIS_wild_2nets, purrr::map(asoc_filenames_DistIS_AgeIS_wild_2nets, ~readRDS(paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/", .x)))),
+  
+  # Get model summaries (stn)
+  tar_target(summs_noILVs_2nets, purrr::map(social_fits_noILVs_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistI_2nets, purrr::map(social_fits_DistI_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistIS_2nets, purrr::map(social_fits_DistIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistI_AgeIS_2nets, purrr::map(social_fits_DistI_AgeIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistIS_AgeIS_2nets, purrr::map(social_fits_DistIS_AgeIS_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  
+  tar_target(summs_2nets, mutate(purrr::list_rbind(list("noILVs" = summs_noILVs_2nets, "DistI" = summs_DistI_2nets, "DistIS" = summs_DistIS_2nets, "DistI_AgeIS" = summs_DistI_AgeIS_2nets, "DistIS_AgeIS" = summs_DistIS_AgeIS_2nets), names_to = "model"), type = "stn")),
+  
+  # Get model summaries (wild)
+  tar_target(summs_noILVs_wild_2nets, purrr::map(social_fits_noILVs_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistI_wild_2nets, purrr::map(social_fits_DistI_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistIS_wild_2nets, purrr::map(social_fits_DistIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistI_AgeIS_wild_2nets, purrr::map(social_fits_DistI_AgeIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  tar_target(summs_DistIS_AgeIS_wild_2nets, purrr::map(social_fits_DistIS_AgeIS_wild_2nets, ~{if(!is.null(.x)){STb_summary(.x)}else{NULL}}) %>% purrr::list_rbind(names_to = "idx")),
+  
+  tar_target(summs_wild_2nets, mutate(purrr::list_rbind(list("noILVs" = summs_noILVs_wild_2nets, "DistI" = summs_DistI_wild_2nets, "DistIS" = summs_DistIS_wild_2nets, "DistI_AgeIS" = summs_DistI_AgeIS_wild_2nets, "DistIS_AgeIS" = summs_DistIS_AgeIS_wild_2nets), names_to = "model"), type = "wild")),
+  
+  # Inter-model comparisons
+  # Model comparisons
+  ## Compare 
+  ## 5-way comparisons
+  tar_target(comps, purrr::pmap(list(a = social_fits_noILVs_2nets, b = social_fits_DistI_2nets, c = social_fits_DistIS_2nets, d = social_fits_DistI_AgeIS_2nets, e = social_fits_DistIS_AgeIS_2nets), function(a, b, c, d, e){if(!is.null(a)){STbayes::STb_compare(a, b, c, d, e, model_names = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"), method = "loo-psis")}else{NULL}})),
+  
+  tar_target(comps_wild, purrr::pmap(list(a = social_fits_noILVs_wild_2nets, b = social_fits_DistI_wild_2nets, c = social_fits_DistIS_wild_2nets, d = social_fits_DistI_AgeIS_wild_2nets, e = social_fits_DistIS_AgeIS_wild_2nets), function(a, b, c, d, e){if(!is.null(a)){STbayes::STb_compare(a, b, c, d, e, model_names = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"), method = "loo-psis")}else{NULL}})),
+  
+  tar_target(comps_dfs_1, purrr::map(comps, ~as.data.frame(.x$comparison))),
+  tar_target(comps_dfs_wild_1, purrr::map(comps_wild, ~as.data.frame(.x$comparison))),
+  tar_target(comps_dfs, purrr::map(comps_dfs_1, ~{.x$model <- rownames(.x);return(.x)})),
+  tar_target(comps_dfs_wild, purrr::map(comps_dfs_wild_1, ~{.x$model <- rownames(.x);return(.x)})),
+  
+  # Get data for curveplots
+  tar_target(plotdata_noILVs, purrr::map2(social_fits_noILVs_2nets, event_data, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistI, purrr::map2(social_fits_DistI_2nets, event_data, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistIS, purrr::map2(social_fits_DistIS_2nets, event_data, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistI_AgeIS, purrr::map2(social_fits_DistI_AgeIS_2nets, event_data, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistIS_AgeIS, purrr::map2(social_fits_DistIS_AgeIS_2nets, event_data, ~get_plotdata(.y, .x))),
+  
+  tar_target(plotdata_noILVs_wild, purrr::map2(social_fits_noILVs_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+tar_target(plotdata_DistI_wild, purrr::map2(social_fits_DistI_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+tar_target(plotdata_DistIS_wild, purrr::map2(social_fits_DistIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+tar_target(plotdata_DistI_AgeIS_wild, purrr::map2(social_fits_DistI_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+tar_target(plotdata_DistIS_AgeIS_wild, purrr::map2(social_fits_DistIS_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+  
+  # Make ppc curve plots
+  tar_target(curveplots_noILVs, purrr::map2(plotdata_noILVs, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI, purrr::map2(plotdata_DistI, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS, purrr::map2(plotdata_DistIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI_AgeIS, purrr::map2(plotdata_DistI_AgeIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS_AgeIS, purrr::map2(plotdata_DistIS_AgeIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  
+  tar_target(curveplots_noILVs_wild, purrr::map2(plotdata_noILVs_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI_wild, purrr::map2(plotdata_DistI_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS_wild, purrr::map2(plotdata_DistIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI_AgeIS_wild, purrr::map2(plotdata_DistI_AgeIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS_AgeIS_wild, purrr::map2(plotdata_DistIS_AgeIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y)))
 )
