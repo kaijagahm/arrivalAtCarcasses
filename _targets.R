@@ -731,10 +731,27 @@ list(
   
   tar_target(gps_diffusion, purrr::map(gps_withdaylight, ~dplyr::filter(.x, time_since_carcass >= 0))),
   tar_target(first_sightings, purrr::map2(gps_diffusion, seeds, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
-  tar_target(event_data, purrr::pmap(list(first_sightings, seeds, all_indivs_sorted, stn_carcs),
+  # Modify to set stn carcs as "starting" at the first sighting instead of when they were placed.
+  tar_target(offset_amount, map(first_sightings, ~.x$time_since_carcass[1])),
+  tar_target(stn_carcs_modified, purrr::map2(stn_carcs, offset_amount, ~{
+    .x %>% rename("datetime_il_old" = datetime_il) %>% mutate(datetime_il = datetime_il_old+.y)})),
+  tar_target(first_sightings_modified, purrr::map2(first_sightings, offset_amount, ~{
+    .x %>% mutate(daytime_since_carcass = daytime_since_carcass -as.numeric(.y),
+                  time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
+      filter(daytime_since_carcass > 0)
+  })),
+  tar_target(gps_diffusion_modified, purrr::map2(gps_diffusion, offset_amount, ~{
+    .x %>% mutate(daytime_since_carcass = daytime_since_carcass - as.numeric(.y),
+                  time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
+      filter(daytime_since_carcass >= 0)
+  })),
+  tar_target(seeds_modified, purrr::map2(seeds, first_sightings, ~{
+    return(c(.x, .y$individual_local_identifier[1]))})),
+  
+  tar_target(event_data, purrr::pmap(list(first_sightings_modified, seeds_modified, all_indivs_sorted, stn_carcs_modified),
                                      ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)
   )),
-  tar_target(gps_fornetwork, purrr::map2(gps_diffusion, stn_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
+  tar_target(gps_fornetwork, purrr::map2(gps_diffusion_modified, stn_carcs_modified, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
   tar_target(cutpoints2, purrr::map(cutpoints, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
@@ -785,16 +802,16 @@ list(
   tar_target(nr6, purrr::map2(roosts_stn[51:60], all_indivs_sorted[51:60], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(networks_long_roost_1, c(nr1, nr2, nr3, nr4, nr5, nr6)),
   
-  tar_target(networks_long_roost_2, purrr::map2(networks_long_roost_1, map_dbl(stn_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  tar_target(networks_long_roost_2, purrr::map2(networks_long_roost_1, map_dbl(stn_carcs_modified, "carcID"), ~{mutate(.x, "trial" = .y)})),
   
-  tar_target(equivalence_tables, purrr::map(first_sightings, ~{
+  tar_target(equivalence_tables, purrr::map(first_sightings_modified, ~{
     if(nrow(.x) > 0){
       .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
         mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
     }else{NULL}
   })),
   
-  tar_target(equivalence_tables_fixed, purrr::pmap(list("ed" = event_data, "gd" = gps_diffusion, "et" = equivalence_tables), function(ed, gd, et){
+  tar_target(equivalence_tables_fixed, purrr::pmap(list("ed" = event_data, "gd" = gps_diffusion_modified, "et" = equivalence_tables), function(ed, gd, et){
     if(!is.null(et)){
       t_last <- min(ed$time[ed$time > ed$t_end])/60/60
       idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
@@ -872,7 +889,7 @@ list(
   
   tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
   
-  tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
+  tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs_modified, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
   }), names_to = "time"), trial = .y$carcID[1]))),
   
@@ -996,7 +1013,7 @@ list(
                                ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
   
   # ILVs
-  tar_target(age_ilv, purrr::pmap(list("gd" = gps_diffusion, "sc" = stn_carcs, "ais" = all_indivs_sorted), function(gd, sc, ais){
+  tar_target(age_ilv, purrr::pmap(list("gd" = gps_diffusion_modified, "sc" = stn_carcs_modified, "ais" = all_indivs_sorted), function(gd, sc, ais){
     yr <- sc$year
     col_to_select <- paste0("age_", yr)
     out <- gd %>% st_drop_geometry() %>%
@@ -1059,7 +1076,7 @@ list(
       dplyr::select(id, age)
   })),
   
-  tar_target(ILV_tv, purrr::map2(dists_dyn, purrr::map_dbl(stn_carcs, "carcID"), ~{
+  tar_target(ILV_tv, purrr::map2(dists_dyn, purrr::map_dbl(stn_carcs_modified, "carcID"), ~{
     if(!is.null(.x)){
       .x %>% dplyr::select("id" = individual_local_identifier,
                            time, mean_dist_to_carcass_norm) %>%
@@ -1475,11 +1492,11 @@ tar_target(plotdata_DistI_AgeIS_wild, purrr::map2(social_fits_DistI_AgeIS_wild_2
 tar_target(plotdata_DistIS_AgeIS_wild, purrr::map2(social_fits_DistIS_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
   
   # Make ppc curve plots
-  tar_target(curveplots_noILVs, purrr::map2(plotdata_noILVs, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
-  tar_target(curveplots_DistI, purrr::map2(plotdata_DistI, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
-  tar_target(curveplots_DistIS, purrr::map2(plotdata_DistIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
-  tar_target(curveplots_DistI_AgeIS, purrr::map2(plotdata_DistI_AgeIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
-  tar_target(curveplots_DistIS_AgeIS, purrr::map2(plotdata_DistIS_AgeIS, purrr::map_dbl(stn_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_noILVs, purrr::map2(plotdata_noILVs, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI, purrr::map2(plotdata_DistI, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS, purrr::map2(plotdata_DistIS, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistI_AgeIS, purrr::map2(plotdata_DistI_AgeIS, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
+  tar_target(curveplots_DistIS_AgeIS, purrr::map2(plotdata_DistIS_AgeIS, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
   
   tar_target(curveplots_noILVs_wild, purrr::map2(plotdata_noILVs_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
   tar_target(curveplots_DistI_wild, purrr::map2(plotdata_DistI_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
