@@ -124,7 +124,7 @@ all <- unique(c(trajectories_sync$id1, trajectories_sync$id2))
 length(all) # 148 indivs
 all_possible_dyads <- expand_grid("id1" = all, "id2" = all) %>% filter(id1 < id2)
 nrow(all_possible_dyads) # 10878 possible dyads
-sighting
+
 all_dates <- unique(sightings$date_il)
 
 sightings_carc_date <- sightings %>%
@@ -174,6 +174,7 @@ arrivals_simple <- arrivals %>%
   select(date_il, carcID, id1, id2, "arrive_time_diff_hrs" = daytime_since_carcass_diff, "arrive_dist_apart_m" = dist_apart)
 
 # 3. What proportion of departure pairs go to the same carcass?
+tar_load(minmax_dates)
 depart_lookahead <- departures %>%
   filter((date_il >= minmax_dates[[1]] & date_il <= minmax_dates[[2]])|(date_il >= minmax_dates[[3]] & date_il <= minmax_dates[[4]])|(date_il >= minmax_dates[[5]] & date_il <= minmax_dates[[6]])) %>%
   left_join(arrivals_simple, by = c("date_il", "ID1" = "id1", "ID2" = "id2"))
