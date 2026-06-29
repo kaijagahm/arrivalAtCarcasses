@@ -627,7 +627,7 @@ list(
   tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)), # roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
   
   tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))), # joined roosts to GPS data to prep for determining departures
-  
+
   tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))), # only roost polygons
   tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier), .keep = T)),
   tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),

@@ -14,30 +14,30 @@ handlers(global = TRUE)
 source("R/functions.R")
 nit <- 500
 # Get plotdata
-# tar_load(plotdata_noILVs)
+tar_load(plotdata_noILVs)
 tar_load(plotdata_DistI)
-# tar_load(plotdata_DistIS)
-# tar_load(plotdata_DistI_AgeIS)
-# tar_load(plotdata_DistIS_AgeIS)
+tar_load(plotdata_DistIS)
+tar_load(plotdata_DistI_AgeIS)
+tar_load(plotdata_DistIS_AgeIS)
 
-# tar_load(plotdata_noILVs_wild)
+tar_load(plotdata_noILVs_wild)
 tar_load(plotdata_DistI_wild)
-# tar_load(plotdata_DistIS_wild)
-# tar_load(plotdata_DistI_AgeIS_wild)
-# tar_load(plotdata_DistIS_AgeIS_wild)
+tar_load(plotdata_DistIS_wild)
+tar_load(plotdata_DistI_AgeIS_wild)
+tar_load(plotdata_DistIS_AgeIS_wild)
 
 # Save curveplots
-# tar_load(curveplots_noILVs)
+tar_load(curveplots_noILVs)
 tar_load(curveplots_DistI)
-# tar_load(curveplots_DistIS)
-# tar_load(curveplots_DistI_AgeIS)
-# tar_load(curveplots_DistIS_AgeIS)
+tar_load(curveplots_DistIS)
+tar_load(curveplots_DistI_AgeIS)
+tar_load(curveplots_DistIS_AgeIS)
 
-# tar_load(curveplots_noILVs_wild)
+tar_load(curveplots_noILVs_wild)
 tar_load(curveplots_DistI_wild)
-# tar_load(curveplots_DistIS_wild)
-# tar_load(curveplots_DistI_AgeIS_wild)
-# tar_load(curveplots_DistIS_AgeIS_wild)
+tar_load(curveplots_DistIS_wild)
+tar_load(curveplots_DistI_AgeIS_wild)
+tar_load(curveplots_DistIS_AgeIS_wild)
 
 tar_load(event_data)
 tar_load(event_data_wild)
@@ -45,20 +45,20 @@ tar_load(event_data_wild)
 padded <- str_pad(1:length(curveplots_DistI), width = 3, side = "left", pad = "0")
 padded_wild <- str_pad(1:length(curveplots_DistI_wild), width = 3, side = "left", pad = "0")
 
-tar_load(stn_carcs)
+tar_load(stn_carcs_modified)
 tar_load(wild_carcs)
 
-# walk2(curveplots_noILVs, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_noILVs, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistI, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistI_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# 
-# walk2(curveplots_noILVs_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistI_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistI_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
-# walk2(curveplots_DistIS_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+
+walk2(curveplots_noILVs_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistIS_AgeIS_wild, padded_wild, ~{ggsave(.x, file = paste0("data/saved_fits/wild/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 
 
 # Investigate bad curveplots ----------------------------------------------
@@ -113,7 +113,7 @@ get_quantiles <- function(joined, carcs){
     return(out)
   }else{return(NULL)}
 }
-quantiles <- map2(joined, stn_carcs, ~get_quantiles(.x, .y))
+quantiles <- map2(joined, stn_carcs_modified, ~get_quantiles(.x, .y))
 quantiles_wild <- map2(joined_wild, wild_carcs, ~get_quantiles(.x, .y))
 quantiles_df <- purrr::list_rbind(quantiles)
 quantiles_df_wild <- purrr::list_rbind(quantiles_wild)
@@ -165,7 +165,7 @@ qt_long %>%
   theme(axis.text.x = element_blank())
 
 ## Add more carcass info
-qt_long <- purrr::list_rbind(stn_carcs) %>%
+qt_long <- purrr::list_rbind(stn_carcs_modified) %>%
   st_as_sf() %>%
   select(carcID, datetime_il, stationName, carcassWeight, X, Y) %>%
   bind_rows(purrr::list_rbind(wild_carcs) %>%
@@ -173,7 +173,7 @@ qt_long <- purrr::list_rbind(stn_carcs) %>%
               select(carcID, datetime_il, stationName, carcassWeight, X, Y)) %>%
   right_join(qt_long, by = "carcID")
 
-quantiles_df_all <- purrr::list_rbind(stn_carcs) %>%
+quantiles_df_all <- purrr::list_rbind(stn_carcs_modified) %>%
   st_as_sf() %>%
   select(carcID, datetime_il, stationName, carcassWeight, X, Y) %>%
   bind_rows(purrr::list_rbind(wild_carcs) %>%
@@ -288,8 +288,10 @@ quantiles_df_all %>%
   theme_minimal()+
   geom_hline(aes(yintercept = 0), color = "blue")+
   geom_boxplot(outlier.size = 0.5)+
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)
+  facet_wrap(~type, scales = "free_x", nrow = 2)+
+  theme(axis.text.x = element_blank(),
+        text = element_text(size = 16))+
+  labs(y = "Z-score", x = "Carcass", fill = "Year")
 
 ## Zscore boxplots, by time of day
 quantiles_df_all %>%
@@ -299,21 +301,11 @@ quantiles_df_all %>%
   theme_minimal()+
   geom_hline(aes(yintercept = 0), color = "blue")+
   geom_boxplot(outlier.size = 0.5)+
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)+
-  scale_fill_viridis_c() # No pattern by time of day!
-
-## Zscore boxplots, by time to first vulture
-quantiles_df_all %>%
-  mutate(carcID = fct_reorder(factor(carcID), hours_to_first_event)) %>%
-  filter(zscore < 50) %>%
-  ggplot(aes(x = carcID, y = zscore, fill = hours_to_first_event))+
-  theme_minimal()+
-  geom_hline(aes(yintercept = 0), color = "blue")+
-  geom_boxplot(outlier.size = 0.5)+
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)+
-  scale_fill_viridis_c() # No pattern by time of day!
+  facet_wrap(~type, scales = "free_x", nrow = 2)+
+  scale_fill_viridis_c()+ # No pattern by time of day!
+  theme(axis.text.x = element_blank(),
+        text = element_text(size = 16))+
+  labs(y = "Z-score", x = "Carcass", fill = "Hour of day")
 
 ## Zscore boxplots, by #vultures
 quantiles_df_all %>%
@@ -323,9 +315,11 @@ quantiles_df_all %>%
   theme_minimal()+
   geom_hline(aes(yintercept = 0), color = "blue")+
   geom_boxplot(outlier.size = 0.5)+
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)+
-  scale_fill_viridis_c() # This definitely does seem to be driving... some sort of pattern? At least a broader range of z-scores when there are more vultures, which I think demonstrates a poorer curve fit in general?
+  facet_wrap(~type, scales = "free_x", nrow = 2)+
+  scale_fill_viridis_c()+
+  theme(axis.text.x = element_blank(),
+        text = element_text(size = 16))+
+  labs(y = "Z-score", x = "Carcass", fill = "Prop. found")# This definitely does seem to be driving... some sort of pattern? At least a broader range of z-scores when there are more vultures, which I think demonstrates a poorer curve fit in general?
 
 quantiles_df_all %>%
   mutate(carcID = fct_reorder(factor(carcID), n_found)) %>%
@@ -333,11 +327,13 @@ quantiles_df_all %>%
   ggplot(aes(x = carcID, y = zscore, color = overunder))+
   theme_minimal()+
   geom_hline(aes(yintercept = 0), color = "black", alpha = 0.5)+
-  geom_point(size = 0.5, alpha = 0.7)+  
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)+
+  geom_point(size = 0.7, alpha = 0.7)+  
+  facet_wrap(~type, scales = "free_x", nrow = 2)+
   scale_fill_viridis_c()+
-  theme(legend.position = "bottom") # Y-axis here is still ordered by NUMBER OF VULTURES. Can see many more high and low z-scores (green and red, respectively) when there are more vultures involved.
+  theme(legend.position = "bottom")+
+  theme(axis.text.x = element_blank(),
+        text = element_text(size = 16))+
+  labs(y = "Z-score", x = "Carcass", color = "Prediction")# Y-axis here is still ordered by NUMBER OF VULTURES. Can see many more high and low z-scores (green and red, respectively) when there are more vultures involved.
 
 # Z-scores by carcass predictability?
 pred <- readRDS("data/created/predictability_results.RDS")
@@ -352,14 +348,15 @@ quantiles_df_all <- left_join(quantiles_df_all, pred_simple, by = "carcID")
 quantiles_df_all %>%
   mutate(carcID = fct_reorder(factor(carcID), prop_days_covered)) %>%
   filter(zscore < 50) %>%
-  ggplot(aes(x = carcID, y = zscore, color = overunder))+
+  ggplot(aes(x = carcID, y = zscore, fill = prop_days_covered))+
   theme_minimal()+
   geom_hline(aes(yintercept = 0), color = "black", alpha = 0.5)+
-  geom_point(size = 0.5, alpha = 0.7)+  
-  coord_flip()+
-  facet_wrap(~type, scales = "free_y", nrow = 2)+
+  geom_boxplot(outlier.size = 0.5)+
+  facet_wrap(~type, scales = "free_x", nrow = 2)+
   scale_fill_viridis_c()+
-  theme(legend.position = "bottom") # appears to be no pattern by predictability
+  theme(axis.text.x = element_blank(),
+        text = element_text(size = 16))+
+  labs(y = "Z-score", x = "Carcass", fill = "Predictability")
 
 ## Over/under by predictability
 qt_long %>%

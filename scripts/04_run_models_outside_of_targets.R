@@ -75,8 +75,11 @@ tar_load(social_mods_DistIS_AgeIS_2nets)
 # social_fits_DistIS_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_2nets, data_lists_DistIS_2nets, ~fit_model(.x, .y, nit), .options = furrr_options(seed = TRUE), .progress = T))
 # iwalk(social_fits_DistIS_2nets, ~{savefit(.x, .y, folder = "DistIS_2nets", prefix = "social", type = "station")}) # DistIS
 
+
 social_fits_DistI_AgeIS_2nets <- with_progress(furrr::future_map2(social_mods_DistI_AgeIS_2nets, data_lists_DistI_AgeIS_2nets, ~fit_model(.x, .y, nit), .options = furrr_options(seed = TRUE), .progress = T))
-iwalk(social_fits_DistI_AgeIS_2nets, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "station")}) # DistI_AgeIS
+Sys.sleep(10)
+iwalk(social_fits_DistI_AgeIS_2nets, ~{savefit(.x, .y, folder = "DistI_AgeIS_2nets", prefix = "social", type = "station")
+  Sys.sleep(1)}) # DistI_AgeIS
 
 # social_fits_DistIS_AgeIS_2nets <- with_progress(furrr::future_map2(social_mods_DistIS_AgeIS_2nets, data_lists_DistIS_AgeIS_2nets, ~fit_model(.x, .y, nit), .options = furrr_options(seed = TRUE), .progress = T))
 # iwalk(social_fits_DistIS_AgeIS_2nets, ~{savefit(.x, .y, folder = "DistIS_AgeIS_2nets", prefix = "social", type = "station")}) # DistIS_AgeIS

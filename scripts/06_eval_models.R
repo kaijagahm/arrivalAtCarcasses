@@ -15,39 +15,39 @@ nit <- 500
 
 # # Read in fits
 # ## Social stn
-# tar_load(social_fits_noILVs_2nets)
-# tar_load(social_fits_DistI_2nets)
-# tar_load(social_fits_DistIS_2nets)
-# tar_load(social_fits_DistI_AgeIS_2nets)
-# tar_load(social_fits_DistIS_AgeIS_2nets)
+tar_load(social_fits_noILVs_2nets)
+tar_load(social_fits_DistI_2nets)
+tar_load(social_fits_DistIS_2nets)
+tar_load(social_fits_DistI_AgeIS_2nets)
+tar_load(social_fits_DistIS_AgeIS_2nets)
 # 
 # ## Social wild
-# tar_load(social_fits_noILVs_wild_2nets)
-# tar_load(social_fits_DistI_wild_2nets)
-# tar_load(social_fits_DistIS_wild_2nets)
-# tar_load(social_fits_DistI_AgeIS_wild_2nets)
-# tar_load(social_fits_DistIS_AgeIS_wild_2nets)
+tar_load(social_fits_noILVs_wild_2nets)
+tar_load(social_fits_DistI_wild_2nets)
+tar_load(social_fits_DistIS_wild_2nets)
+tar_load(social_fits_DistI_AgeIS_wild_2nets)
+tar_load(social_fits_DistIS_AgeIS_wild_2nets)
 # 
 # ## Asocial stn
-# tar_load(asocial_fits_noILVs_2nets)
-# tar_load(asocial_fits_DistI_2nets)
-# tar_load(asocial_fits_DistIS_2nets)
-# tar_load(asocial_fits_DistI_AgeIS_2nets)
-# tar_load(asocial_fits_DistIS_AgeIS_2nets)
+tar_load(asocial_fits_noILVs_2nets)
+tar_load(asocial_fits_DistI_2nets)
+tar_load(asocial_fits_DistIS_2nets)
+tar_load(asocial_fits_DistI_AgeIS_2nets)
+tar_load(asocial_fits_DistIS_AgeIS_2nets)
 # 
 # ## Asocial wild
-# tar_load(asocial_fits_noILVs_wild_2nets)
-# tar_load(asocial_fits_DistI_wild_2nets)
-# tar_load(asocial_fits_DistIS_wild_2nets)
-# tar_load(asocial_fits_DistI_AgeIS_wild_2nets)
-# tar_load(asocial_fits_DistIS_AgeIS_wild_2nets)
+tar_load(asocial_fits_noILVs_wild_2nets)
+tar_load(asocial_fits_DistI_wild_2nets)
+tar_load(asocial_fits_DistIS_wild_2nets)
+tar_load(asocial_fits_DistI_AgeIS_wild_2nets)
+tar_load(asocial_fits_DistIS_AgeIS_wild_2nets)
 
 # Load model summaries
 tar_load(summs_2nets)
 tar_load(summs_wild_2nets)
 
 # Get carcass data (stn and wild)
-tar_load(stn_carcs)
+tar_load(stn_carcs_modified)
 tar_load(wild_carcs)
 
 # Model convergence checks ------------------------------------------------
@@ -111,13 +111,15 @@ comps_dfs_wild_df %>%
 # Note that this doesn't take into account which ones are actually different from each other. Let's see if we can do that.
 
 topmods_stn <- comps_dfs_df %>%
-  filter(elpd_diff + se_diff >= 0)
+  filter(elpd_diff + se_diff >= 0) %>%
+  mutate(carcID = as.numeric(carcID))
 topmods_wild <- comps_dfs_wild_df %>%
-  filter(elpd_diff + se_diff >= 0)
+  filter(elpd_diff + se_diff >= 0) %>%
+  mutate(carcID = as.numeric(carcID))
 
 topmods_stn %>%
   group_by(model) %>%
-  summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(stn_carcs)) %>%
+  summarize(in_top_mods.prop_carcs = length(unique(carcID))/length(stn_carcs_modified)) %>%
   arrange(desc(in_top_mods.prop_carcs)) %>%
   ggplot(aes(x = factor(model, levels = model), y = in_top_mods.prop_carcs, fill = factor(model)))+
   geom_col()+
@@ -170,15 +172,15 @@ comps_plots_wild[[1]]
 
 # Are the coefficients similar across different models?
 coefs_withinfo_stn <- summs_2nets %>%
-  left_join(data.frame(carcID = map_dbl(stn_carcs, "carcID"), idx = 1:length(stn_carcs)), by = "idx") %>%
-  mutate(carcID = as.character(carcID)) %>%
+  left_join(data.frame(carcID = map_dbl(stn_carcs_modified, "carcID"), idx = 1:length(stn_carcs_modified)), by = "idx") %>%
+  mutate(carcID = as.numeric(carcID)) %>%
   left_join(select(topmods_stn, carcID, model) %>%
               mutate(in_topmods = T), by = c("model", "carcID")) %>%
   mutate(in_topmods = replace_na(in_topmods, F))
 
 coefs_withinfo_wild <- summs_wild_2nets %>%
   left_join(data.frame(carcID = map_dbl(wild_carcs, "carcID"), idx = 1:length(wild_carcs)), by = "idx") %>%
-  mutate(carcID = as.character(carcID)) %>%
+  mutate(carcID = as.numeric(carcID)) %>%
   left_join(select(topmods_wild, carcID, model) %>%
               mutate(in_topmods = T), by = c("model", "carcID")) %>%
   mutate(in_topmods = replace_na(in_topmods, F))
@@ -193,7 +195,7 @@ coefs_withinfo_stn %>%
   coord_flip()+
   labs(y = "Estimate", x = "Parameter", color = "Model",
        size = "Top model?", linewidth = "Top model?",
-       title = map_dbl(stn_carcs, "carcID")[1])+ 
+       title = map_dbl(stn_carcs_modified, "carcID")[1])+ 
   scale_linewidth_manual(values = c(0.5, 1.5))+
   scale_size_manual(values = c(1, 3)) # okay yeah the estimates of %ST don't change.
 
@@ -233,8 +235,8 @@ plot_betas <- function(df, i, carcs){
     shared_scales
 }
 
-betas_plots_stn <- map(1:length(stn_carcs), ~{
-  plot_betas(coefs_withinfo_stn, .x, carcs = stn_carcs) +
+betas_plots_stn <- map(1:length(stn_carcs_modified), ~{
+  plot_betas(coefs_withinfo_stn, .x, carcs = stn_carcs_modified) +
     theme(legend.position = "none")
 })
 
@@ -260,8 +262,8 @@ plot_pctST <- function(df, i, carcs){
   return(plt)
 }
 
-pctST_plots_stn <- map(1:length(stn_carcs), ~{
-  plot_pctST(coefs_withinfo_stn, .x, carcs = stn_carcs)
+pctST_plots_stn <- map(1:length(stn_carcs_modified), ~{
+  plot_pctST(coefs_withinfo_stn, .x, carcs = stn_carcs_modified)
 })
 
 pctST_plots_wild <- map(1:length(wild_carcs), ~{
@@ -278,6 +280,9 @@ patchworks_wild[[1]]
 patchworks_wild[[2]]
 patchworks_wild[[3]]
 
+
+
+# XXX start here
 # Model output evaluation and inter-model comparisons ---------------------
 # Comparison between each model and its asocial equivalent
 comps_noILVs <- map2(social_fits_noILVs, asocial_fits_noILVs, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("noILVs", "noILVs_asoc"), method = "loo-psis")}else{NULL}})
@@ -332,11 +337,11 @@ get_diff_from_asoc <- function(comparison_df){
   }else{return(NULL)}
 }
 
-dfa_noILVs <- map(comps_dfs_noILVs, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistI <- map(comps_dfs_DistI, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS <- map(comps_dfs_DistIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID") 
-dfa_DistI_AgeIS <- map(comps_dfs_DistI_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS_AgeIS <- map(comps_dfs_DistIS_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
+dfa_noILVs <- map(comps_dfs_noILVs, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
+dfa_DistI <- map(comps_dfs_DistI, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
+dfa_DistIS <- map(comps_dfs_DistIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID") 
+dfa_DistI_AgeIS <- map(comps_dfs_DistI_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
+dfa_DistIS_AgeIS <- map(comps_dfs_DistIS_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
 
 dfa <- purrr::list_rbind(list("noILVs" = dfa_noILVs, "DistI" = dfa_DistI, "DistIS" = dfa_DistIS, "DistI_AgeIS" = dfa_DistI_AgeIS, "DistIS_AgeIS" = dfa_DistIS_AgeIS), names_to = "model")
 names(dfa)[3] <- "sig"
@@ -372,16 +377,16 @@ ns <- map(data_lists, ~{
   propfound <- found/tot
   return(data.frame(found = found, tot = tot, propfound = propfound))
 })
-names(ns) <- map_dbl(stn_carcs, "carcID")
+names(ns) <- map_dbl(stn_carcs_modified, "carcID")
 nsdf <- purrr::list_rbind(ns, names_to = "carcID")
 
-results <- data.frame(carcID = map_dbl(stn_carcs, "carcID"), pct_st = pct_st) %>%
+results <- data.frame(carcID = map_dbl(stn_carcs_modified, "carcID"), pct_st = pct_st) %>%
   mutate(carcID = as.character(carcID)) %>%
   left_join(dfa, by = "carcID") %>%
   left_join(nsdf, by = "carcID") %>%
   rename("diff_from_asoc" = `.x[[i]]`) %>%
   mutate(carcID = as.numeric(carcID)) %>%
-  left_join(purrr::list_rbind(stn_carcs), by = "carcID")
+  left_join(purrr::list_rbind(stn_carcs_modified), by = "carcID")
 
 # sig and %ST by prop found
 results %>%
