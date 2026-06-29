@@ -2088,3 +2088,16 @@ get_curveplots <- function(plot_data, cid){
     return(p)
   }else{return(NULL)}
 }
+
+# Identify individual informed status with respect to each carcass
+get_vulture_lines <- function(x){
+  if(nrow(x) > 0){
+    x %>%
+      move2::select_track_data(individual_local_identifier, date_il, day, id) %>%
+      move2::mt_set_track_id("id") %>%
+      move2::mt_track_lines() %>%
+      sf::st_transform(32636)
+  }else{
+    NULL
+  }
+}

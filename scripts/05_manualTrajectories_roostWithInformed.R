@@ -11,124 +11,13 @@ library(paletteer)
 library(future)
 library(furrr)
 
-tar_load(stn_gps_30days)
-tar_load(wild_gps_30days)
-tar_load(stn_carcs)
-tar_load(wild_carcs)
+tar_load(gps_stn)
+tar_load(gps_wild)
 tar_load(stations)
 
-gps_stn <- purrr::map2(stn_gps_30days, stn_carcs, ~{
-  out <- .x %>%
-    mutate(timestamp_il = lubridate::with_tz(timestamp, tz = "Israel")) %>%
-    filter(timestamp_il >= .y$datetime_il) %>%
-    mutate(date_il = lubridate::date(timestamp_il),
-           day = as.numeric(difftime(date_il, lubridate::date(.y$datetime_il), units = "days"))) %>%
-    arrange(timestamp_il) %>%
-    select(ground_speed, heading, height_above_msl, timestamp, tag_id, individual_id, individual_local_identifier, nick_name, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
-    mutate(year = lubridate::year(.y$date))
-  return(out)
-})
-
-gps_wild <- purrr::map2(wild_gps_30days, wild_carcs, ~{
-  out <- .x %>%
-    mutate(timestamp_il = lubridate::with_tz(timestamp, tz = "Israel")) %>%
-    filter(timestamp_il >= .y$datetime_il) %>%
-    mutate(date_il = lubridate::date(timestamp_il),
-           day = as.numeric(difftime(date_il, lubridate::date(.y$datetime_il), units = "days"))) %>%
-    arrange(timestamp_il) %>%
-    select(ground_speed, heading, height_above_msl, timestamp, tag_id, individual_id, individual_local_identifier, nick_name, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
-    mutate(year = lubridate::year(.y$date))
-  return(out)
-})
-
-gps_mts_stn <- map(gps_stn, ~{.x %>% mutate(id = paste(individual_local_identifier, day, sep = "_")) %>%
-    arrange(id, day, timestamp_il)})
-gps_mts_wild <- map(gps_wild, ~{.x %>% mutate(id = paste(individual_local_identifier, day, sep = "_")) %>%
-    arrange(id, day, timestamp_il)}) # movement tracks
-
-# fix single-point lines
-single_point_lines_stn <- map(gps_mts_stn, ~{
-  .x %>% group_by(id) %>%
-    filter(n() == 1)
-})
-
-single_point_lines_wild <- map(gps_mts_wild, ~{
-  .x %>% group_by(id) %>%
-    filter(n() == 1)
-})
-
-gps_mts_stn <- map2(gps_mts_stn, single_point_lines_stn, ~{
-  bind_rows(.x, sf::st_jitter(.y, factor = 0.00001)) %>%
-    arrange(id, timestamp_il) # with duplicates added
-})
-gps_mts_wild <- map2(gps_mts_wild, single_point_lines_wild, ~{
-  bind_rows(.x, sf::st_jitter(.y, factor = 0.00001)) %>%
-    arrange(id, timestamp_il) # with duplicates added
-})
-
-gps_mts_stn <- map(gps_mts_stn, ~{
-  .x %>% mt_as_move2(time_column = "timestamp_il", track_id_column = "id", track_attributes = c("day", "individual_local_identifier", "date_il"))
-})
-
-gps_mts_wild <- map(gps_mts_wild, ~{
-  .x %>% mt_as_move2(time_column = "timestamp_il", track_id_column = "id", track_attributes = c("day", "individual_local_identifier", "date_il"))
-})
-
-future::plan("multisession", workers = 10)
-vulture_lines_stn <- furrr::future_map(gps_mts_stn, ~{
-  .x %>%
-    select_track_data(individual_local_identifier, date_il, day, id) %>%
-    mt_set_track_id("id") %>%
-    mt_track_lines() %>%
-    st_transform(32636)
-}, .progress = T)
-vulture_lines_wild <- furrr::future_map(gps_mts_wild, ~{
-  .x %>%
-    select_track_data(individual_local_identifier, date_il, day, id) %>%
-    mt_set_track_id("id") %>%
-    mt_track_lines() %>%
-    st_transform(32636)
-}, .progress = T)
-
-# check that all are valid
-map_lgl(vulture_lines_stn, ~all(st_is_valid(.x))) # a few are not valid. I wonder why and what that means?
-st_is_valid(vulture_lines_stn[[27]]) # just once in a while. Gonna ignore for now.
-map_lgl(vulture_lines_wild, ~all(st_is_valid(.x)))
-
-# Buffered carcass locations
-carcs_buffered_stn <- map(stn_carcs, ~sf::st_buffer(.x, 2000))
-carcs_buffered_wild <- map(wild_carcs, ~sf::st_buffer(.x, 2000))
-
-dayzero_stn <- map(vulture_lines_stn, ~.x %>% filter(day == 0))
-dayone_stn <- map(vulture_lines_stn, ~.x %>% filter(day == 1))
-daytwo_stn <- map(vulture_lines_stn, ~.x %>% filter(day == 2))
-daythree_stn <- map(vulture_lines_stn, ~.x %>% filter(day == 3))
-dayfour_stn <- map(vulture_lines_stn, ~.x %>% filter(day == 4))
-
-dayzero_wild <- map(vulture_lines_wild, ~.x %>% filter(day == 0))
-dayone_wild <- map(vulture_lines_wild, ~.x %>% filter(day == 1))
-daytwo_wild <- map(vulture_lines_wild, ~.x %>% filter(day == 2))
-daythree_wild <- map(vulture_lines_wild, ~.x %>% filter(day == 3))
-dayfour_wild <- map(vulture_lines_wild, ~.x %>% filter(day == 4))
-
-all_indivs_stn <- map(vulture_lines_stn, ~sort(unique(.x$individual_local_identifier)))
-all_indivs_wild <- map(vulture_lines_wild, ~sort(unique(.x$individual_local_identifier)))
-
-sighted_dayzero_stn <- purrr::pmap(list(a = all_indivs_stn, b = dayzero_stn, c = carcs_buffered_stn), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_dayone_stn <- purrr::pmap(list(a = all_indivs_stn, b = dayone_stn, c = carcs_buffered_stn), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_daytwo_stn <- purrr::pmap(list(a = all_indivs_stn, b = daytwo_stn, c = carcs_buffered_stn), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_daythree_stn <- purrr::pmap(list(a = all_indivs_stn, b = daythree_stn, c = carcs_buffered_stn), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_dayfour_stn <- purrr::pmap(list(a = all_indivs_stn, b = dayfour_stn, c = carcs_buffered_stn), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-
-sighted_dayzero_wild <- purrr::pmap(list(a = all_indivs_wild, b = dayzero_wild, c = carcs_buffered_wild), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_dayone_wild <- purrr::pmap(list(a = all_indivs_wild, b = dayone_wild, c = carcs_buffered_wild), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_daytwo_wild <- purrr::pmap(list(a = all_indivs_wild, b = daytwo_wild, c = carcs_buffered_wild), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_daythree_wild <- purrr::pmap(list(a = all_indivs_wild, b = daythree_wild, c = carcs_buffered_wild), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-sighted_dayfour_wild <- purrr::pmap(list(a = all_indivs_wild, b = dayfour_wild, c = carcs_buffered_wild), function(a, b, c){a %in% sf::st_intersection(b, c)$individual_local_identifier})
-
-sightings_stn <- purrr::pmap(list(a = all_indivs_stn, b = sighted_dayzero_stn, c = sighted_dayone_stn, d = sighted_daytwo_stn, e = sighted_daythree_stn, f = sighted_dayfour_stn), function(a, b, c, d, e, f){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e, "s4" = f)}, .progress = T)
-
-sightings_wild <- purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild, f = sighted_dayfour_wild), function(a, b, c, d, e, f){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e, "s4" = f)}, .progress = T)
+# Get sightings (in targets pipeline)
+tar_load(sightings_wild)
+tar_load(sightings_stn)
 
 # Now time to get roostmates
 tar_load(roosts_stn)

@@ -5,7 +5,7 @@ library(crew)
 # Set target options:
 tar_option_set(
   error = "null",
-  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph", "STbayes"),
+  packages = c("plyr", "vultureUtils", "tidyverse", "here", "NBDA", "sf", "dplyr", "lubridate", "ranger", "tidymodels", "moments", "parsnip", "caret", "zoo", "move", "terra", "readxl", "data.table", "geosphere", "tidygraph", "STbayes", "move2"),
   controller = crew_controller_local(workers = 10)
 )
 
@@ -627,7 +627,7 @@ list(
   tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)), # roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
   
   tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))), # joined roosts to GPS data to prep for determining departures
-
+  
   tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))), # only roost polygons
   tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier), .keep = T)),
   tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),
@@ -1486,10 +1486,10 @@ list(
   tar_target(plotdata_DistIS_AgeIS, purrr::map2(social_fits_DistIS_AgeIS_2nets, event_data, ~get_plotdata(.y, .x))),
   
   tar_target(plotdata_noILVs_wild, purrr::map2(social_fits_noILVs_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
-tar_target(plotdata_DistI_wild, purrr::map2(social_fits_DistI_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
-tar_target(plotdata_DistIS_wild, purrr::map2(social_fits_DistIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
-tar_target(plotdata_DistI_AgeIS_wild, purrr::map2(social_fits_DistI_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
-tar_target(plotdata_DistIS_AgeIS_wild, purrr::map2(social_fits_DistIS_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistI_wild, purrr::map2(social_fits_DistI_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistIS_wild, purrr::map2(social_fits_DistIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistI_AgeIS_wild, purrr::map2(social_fits_DistI_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
+  tar_target(plotdata_DistIS_AgeIS_wild, purrr::map2(social_fits_DistIS_AgeIS_wild_2nets, event_data_wild, ~get_plotdata(.y, .x))),
   
   # Make ppc curve plots
   tar_target(curveplots_noILVs, purrr::map2(plotdata_noILVs, purrr::map_dbl(stn_carcs_modified, "carcID"), ~get_curveplots(.x, .y))),
@@ -1502,5 +1502,136 @@ tar_target(plotdata_DistIS_AgeIS_wild, purrr::map2(social_fits_DistIS_AgeIS_wild
   tar_target(curveplots_DistI_wild, purrr::map2(plotdata_DistI_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
   tar_target(curveplots_DistIS_wild, purrr::map2(plotdata_DistIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
   tar_target(curveplots_DistI_AgeIS_wild, purrr::map2(plotdata_DistI_AgeIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
-  tar_target(curveplots_DistIS_AgeIS_wild, purrr::map2(plotdata_DistIS_AgeIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y)))
+  tar_target(curveplots_DistIS_AgeIS_wild, purrr::map2(plotdata_DistIS_AgeIS_wild, purrr::map_dbl(wild_carcs, "carcID"), ~get_curveplots(.x, .y))),
+  
+  
+  # Informed status per vulture/carcass/day ---------------------------------
+  tar_target(gps_stn, purrr::map2(stn_gps_30days, stn_carcs_modified, ~{
+    out <- .x %>%
+      mutate(timestamp_il = lubridate::with_tz(timestamp, tz = "Israel")) %>%
+      filter(timestamp_il >= .y$datetime_il) %>%
+      mutate(date_il = lubridate::date(timestamp_il),
+             day = as.numeric(difftime(date_il, lubridate::date(.y$datetime_il),
+                                       units = "days"))) %>%
+      arrange(timestamp_il) %>%
+      select(ground_speed, individual_id, individual_local_identifier, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
+      mutate(year = lubridate::year(.y$date))
+    return(out)
+  })),
+  
+  tar_target(gps_wild, purrr::map2(wild_gps_30days, wild_carcs, ~{
+    out <- .x %>%
+      mutate(timestamp_il = lubridate::with_tz(timestamp, tz = "Israel")) %>%
+      filter(timestamp_il >= .y$datetime_il) %>%
+      mutate(date_il = lubridate::date(timestamp_il),
+             day = as.numeric(difftime(date_il, lubridate::date(.y$datetime_il),
+                                       units = "days"))) %>%
+      arrange(timestamp_il) %>%
+      select(ground_speed, individual_id, individual_local_identifier, sex, tag_local_identifier, date, dateOnly, dist_to_carcass, time_since_carcass, carcID, location_long, location_lat, timestamp_il, date_il, day) %>%
+      mutate(year = lubridate::year(.y$date))
+    return(out)
+  })),
+  # Make movement tracks
+  tar_target(gps_mts_stn, purrr::map(gps_stn, ~{
+    .x %>% mutate(id = paste(individual_local_identifier, day, sep = "_")) %>%
+      arrange(id, day, timestamp_il)})),
+  tar_target(gps_mts_wild, purrr::map(gps_wild, ~{
+    .x %>% mutate(id = paste(individual_local_identifier, day, sep = "_")) %>%
+      arrange(id, day, timestamp_il)})),
+  
+  # fix single-point lines
+  tar_target(single_point_lines_stn, purrr::map(gps_mts_stn, ~{
+    .x %>% group_by(id) %>%
+      filter(n() == 1)})),
+  tar_target(single_point_lines_wild, map(gps_mts_wild, ~{
+    .x %>% group_by(id) %>%
+      filter(n() == 1)})),
+  
+  tar_target(gps_mts_stn1, purrr::map2(gps_mts_stn, single_point_lines_stn, ~{
+    bind_rows(.x, sf::st_jitter(.y, factor = 0.00001)) %>%
+      arrange(id, timestamp_il) # with duplicates added
+  })),
+  tar_target(gps_mts_wild1, map2(gps_mts_wild, single_point_lines_wild, ~{
+    bind_rows(.x, sf::st_jitter(.y, factor = 0.00001)) %>%
+      arrange(id, timestamp_il) # with duplicates added
+  })),
+  
+  tar_target(gps_mts_stn2, purrr::map(gps_mts_stn1, ~{
+    .x %>% mt_as_move2(time_column = "timestamp_il", track_id_column = "id", track_attributes = c("day", "individual_local_identifier", "date_il"))
+  })),
+  
+  tar_target(gps_mts_wild2, purrr::map(gps_mts_wild1, ~{
+    .x %>% mt_as_move2(time_column = "timestamp_il", track_id_column = "id", track_attributes = c("day", "individual_local_identifier", "date_il"))
+  })),
+  
+  tar_target(vls1, purrr::map(gps_mts_stn2[1:10], get_vulture_lines)),
+  tar_target(vls2, purrr::map(gps_mts_stn2[11:20], get_vulture_lines)),
+  tar_target(vls3, purrr::map(gps_mts_stn2[21:30], get_vulture_lines)),
+  tar_target(vls4, purrr::map(gps_mts_stn2[31:40], get_vulture_lines)),
+  tar_target(vls5, purrr::map(gps_mts_stn2[41:50], get_vulture_lines)),
+  tar_target(vls6, purrr::map(gps_mts_stn2[51:60], get_vulture_lines)),
+  tar_target(vulture_lines_stn, c(vls1, vls2, vls3, vls4, vls5, vls6)),
+  
+  tar_target(vlw1, purrr::map(gps_mts_wild2[1:19], get_vulture_lines)),
+  tar_target(vlw2, purrr::map(gps_mts_wild2[20:39], get_vulture_lines)),
+  tar_target(vlw3, purrr::map(gps_mts_wild2[40:59], get_vulture_lines)),
+  tar_target(vlw4, purrr::map(gps_mts_wild2[60:79], get_vulture_lines)),
+  tar_target(vlw5, purrr::map(gps_mts_wild2[80:99], get_vulture_lines)),
+  tar_target(vlw6, purrr::map(gps_mts_wild2[100:112], get_vulture_lines)),
+  tar_target(vulture_lines_wild, c(vlw1, vlw2, vlw3, vlw4, vlw5, vlw6)),
+  
+  # Buffered carcass locations
+  tar_target(carcs_buffered_stn, purrr::map(stn_carcs_modified, ~sf::st_buffer(.x, 2000))),
+  tar_target(carcs_buffered_wild, purrr::map(wild_carcs, ~sf::st_buffer(.x, 2000))),
+  
+  tar_target(dayzero_stn, purrr::map(vulture_lines_stn, ~{if(!is.null(.x)){.x %>% filter(day == 0)}else{NULL}})),
+  tar_target(dayone_stn, purrr::map(vulture_lines_stn, ~{if(!is.null(.x)){.x %>% filter(day == 1)}else{NULL}})),
+  tar_target(daytwo_stn, purrr::map(vulture_lines_stn, ~{if(!is.null(.x)){.x %>% filter(day == 2)}else{NULL}})),
+  tar_target(daythree_stn, purrr::map(vulture_lines_stn, ~{if(!is.null(.x)){.x %>% filter(day == 3)}else{NULL}})),
+  
+  tar_target(dayzero_wild, purrr::map(vulture_lines_wild, ~{if(!is.null(.x)){.x %>% filter(day == 0)}else{NULL}})),
+  tar_target(dayone_wild, purrr::map(vulture_lines_wild, ~{if(!is.null(.x)){.x %>% filter(day == 1)}else{NULL}})),
+  tar_target(daytwo_wild, purrr::map(vulture_lines_wild, ~{if(!is.null(.x)){.x %>% filter(day == 2)}else{NULL}})),
+  tar_target(daythree_wild, purrr::map(vulture_lines_wild, ~{if(!is.null(.x)){.x %>% filter(day == 3)}else{NULL}})),
+  
+  tar_target(all_indivs_stn, purrr::map(vulture_lines_stn, ~sort(unique(.x$individual_local_identifier)))),
+  tar_target(all_indivs_wild, purrr::map(vulture_lines_wild, ~sort(unique(.x$individual_local_identifier)))),
+  
+  tar_target(sighted_dayzero_stn, purrr::pmap(list(a = all_indivs_stn, b = dayzero_stn, c = carcs_buffered_stn), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_dayone_stn, purrr::pmap(list(a = all_indivs_stn, b = dayone_stn, c = carcs_buffered_stn), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_daytwo_stn, purrr::pmap(list(a = all_indivs_stn, b = daytwo_stn, c = carcs_buffered_stn), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_daythree_stn, purrr::pmap(list(a = all_indivs_stn, b = daythree_stn, c = carcs_buffered_stn), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  
+  tar_target(sighted_dayzero_wild, purrr::pmap(list(a = all_indivs_wild, b = dayzero_wild, c = carcs_buffered_wild), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_dayone_wild, purrr::pmap(list(a = all_indivs_wild, b = dayone_wild, c = carcs_buffered_wild), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_daytwo_wild, purrr::pmap(list(a = all_indivs_wild, b = daytwo_wild, c = carcs_buffered_wild), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  tar_target(sighted_daythree_wild, purrr::pmap(list(a = all_indivs_wild, b = daythree_wild, c = carcs_buffered_wild), function(a, b, c){
+    if(any(map_lgl(list(a, b, c), is.null))){
+      return(NULL)
+    }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
+  
+  tar_target(sightings_stn, purrr::pmap(list(a = all_indivs_stn, b = sighted_dayzero_stn, c = sighted_dayone_stn, d = sighted_daytwo_stn, e = sighted_daythree_stn), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T)),
+
+  tar_target(sightings_wild, purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T))
 )
