@@ -1631,7 +1631,7 @@ list(
       return(NULL)
     }else{a %in% sf::st_intersection(b, c)$individual_local_identifier}})),
   
-  tar_target(sightings_stn, purrr::pmap(list(a = all_indivs_stn, b = sighted_dayzero_stn, c = sighted_dayone_stn, d = sighted_daytwo_stn, e = sighted_daythree_stn), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T)),
+  tar_target(informed_stn, purrr::pmap(list(a = all_indivs_stn, b = sighted_dayzero_stn, c = sighted_dayone_stn, d = sighted_daytwo_stn, e = sighted_daythree_stn), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T)),
 
-  tar_target(sightings_wild, purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T))
+  tar_target(informed_wild, purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T))
 )
