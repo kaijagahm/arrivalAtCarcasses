@@ -5,10 +5,11 @@ library(targets)
 tar_load(trajectories_sync)
 tar_load(sync_departures_df)
 tar_load(after_departure_interp_only)
-tar_load(roosts_tojoin)
-roosts_tojoin <- roosts_tojoin %>%
+tar_load(roosts_all_updated)
+roosts_tojoin <- roosts_all_updated %>%
   mutate(depart_date = roost_date + lubridate::days(1)) %>%
   select(individual_local_identifier, depart_date, roostID)
+
 tar_load(informed_stn)
 tar_load(informed_wild)
 
@@ -142,7 +143,7 @@ arrivals_simple <- arrivals %>%
 tar_load(minmax_dates)
 depart_lookahead <- departures %>%
   filter((date_il >= minmax_dates[[1]] & date_il <= minmax_dates[[2]])|(date_il >= minmax_dates[[3]] & date_il <= minmax_dates[[4]])|(date_il >= minmax_dates[[5]] & date_il <= minmax_dates[[6]])) %>%
-  left_join(arrivals_simple, by = c("date_il", "ID1" = "id1", "ID2" = "id2"))
+  left_join(mutate(arrivals_simple, date_il = as.character(date_il)), by = c("date_il", "ID1" = "id1", "ID2" = "id2"))
 
 depart_lookahead %>%
   group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%

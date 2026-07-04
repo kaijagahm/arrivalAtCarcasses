@@ -1616,28 +1616,55 @@ get_leftroost <- function(ordered_df, threshold){
 }
 
 get_trajectories_sync_pair <- function(sync, trajs){
-  outs <- vector(mode = "list", length = nrow(sync))
-  for(i in 1:nrow(sync)){
-    pair <- unlist(sync[i, c("ID1", "ID2")])
-    date <- sync$date_il[i]
-    trajs_pair <- dplyr::filter(trajs, individual_local_identifier %in% pair & date_il == date)
-    
-    outs[[i]] <- trajs_pair %>%
-      dplyr::group_by(timestamp_il) %>%
-      dplyr::filter(n() == 2) %>%
-      dplyr::group_modify(~ {
-        tibble(
-          id1 = .x$individual_local_identifier[1],
-          id2 = .x$individual_local_identifier[2],
-          flight1 = .x$flight[1],
-          flight2 = .x$flight[2],
-          distance_m = as.numeric(sf::st_distance(.x$geometry[1],
-                                                  .x$geometry[2]))
-        )
-      }) %>%
-      ungroup()
-    cat("done with ", i, "/", nrow(sync), "\n")
-  }
+  
+  # Fix type mismatch: sync$date_il is character, trajs$date_il is Date
+  sync <- sync %>% dplyr::mutate(date_il = as.Date(date_il))
+  
+  # 1. Pull out coordinates once, drop geometry
+  coords <- sf::st_coordinates(trajs)
+  trajs_df <- trajs %>%
+    sf::st_drop_geometry() %>%
+    dplyr::mutate(X = coords[, "X"], Y = coords[, "Y"]) %>%
+    dplyr::select(individual_local_identifier, date_il, timestamp_il, flight, X, Y)
+  
+  # 2. Add a row index to sync
+  sync <- sync %>% dplyr::mutate(.pair_id = dplyr::row_number())
+  
+  # 3. Join trajs to sync twice
+  t1 <- trajs_df %>%
+    dplyr::rename(ID1 = individual_local_identifier,
+                  flight1 = flight, X1 = X, Y1 = Y) %>%
+    dplyr::inner_join(
+      sync %>% dplyr::select(.pair_id, date_il, ID1),
+      by = c("ID1", "date_il")
+    )
+  
+  t2 <- trajs_df %>%
+    dplyr::rename(ID2 = individual_local_identifier,
+                  flight2 = flight, X2 = X, Y2 = Y) %>%
+    dplyr::inner_join(
+      sync %>% dplyr::select(.pair_id, date_il, ID2),
+      by = c("ID2", "date_il")
+    )
+  
+  # 4. Join the two on .pair_id + timestamp_il
+  out <- dplyr::inner_join(
+    t1, t2,
+    by = c(".pair_id", "date_il", "timestamp_il")
+  ) %>%
+    dplyr::mutate(
+      distance_m = sqrt((X1 - X2)^2 + (Y1 - Y2)^2)
+    ) %>%
+    dplyr::select(.pair_id, date_il, timestamp_il,
+                  id1 = ID1, id2 = ID2, flight1, flight2, distance_m)
+  
+  # 5. Split back into a list, one element per row of sync
+  outs <- vector("list", nrow(sync))
+  split_out <- split(out, out$.pair_id)
+  outs[as.integer(names(split_out))] <- split_out
+  empty <- out[0, ]
+  outs[sapply(outs, is.null)] <- list(empty)
+  
   return(outs)
 }
 
@@ -2101,3 +2128,165 @@ get_vulture_lines <- function(x){
     NULL
   }
 }
+
+
+# Co-departures from roost ------------------------------------------------
+### tocombine: 1
+join_roosts_gps <- function(gps, roosts, roostPolygons){
+  # See which roost polygon each GPS point falls into (if any). (Assumes no overlapping roost polys)
+  roostID_gps <- gps %>% sf::st_as_sf() %>%
+    sf::st_transform(32636) %>%
+    sf::st_intersects(roostPolygons) %>%
+    as.numeric()
+  gps_updated <- gps %>% mutate(roostID_gps = roostID_gps)
+  
+  roosts_tojoin <- roosts %>% select(individual_local_identifier, roost_date, roostID) %>%
+    bind_cols(sf::st_coordinates(roosts)) %>%
+    sf::st_drop_geometry() %>%
+    rename("roost_X" = X, "roost_Y" = Y)# roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
+  
+  gps_joined <- gps_updated %>%
+    mutate(roost_date = date_il - lubridate::days(1)) %>%
+    left_join(roosts_tojoin, by = c("individual_local_identifier", "roost_date")) %>%
+    mutate(in_a_roost = !is.na(roostID_gps)) # joined roosts to GPS data to prep for determining departures
+  
+  # CALCULATE DEPARTURES from known roosts only---------------------------------------------
+  gps_joined_knownroost <- gps_joined %>%
+    filter(!is.na(roostID)) # only roost polygons
+  rm(gps_updated) # don't need these anymore; let's clear some memory
+  rm(gps_joined)
+  
+  indiv_date_list <- gps_joined_knownroost %>%
+    arrange(date_il, individual_local_identifier, timestamp_il) %>%
+    group_by(date_il, individual_local_identifier) %>%
+    group_split(.keep = T)
+  
+  # identify points when they "left" the roost, looking for 2 consecutive points
+  leftpoints <- purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))
+  
+  data_rejoined <- purrr::map2(indiv_date_list, leftpoints, ~{
+    .x$left_roost <- FALSE
+    if(!is.na(.y)){.x$left_roost[.y] <- TRUE}
+    return(.x)}) %>% data.table::rbindlist() %>%
+    as.data.frame() %>%
+    sf::st_as_sf(crs = 32636)
+  
+  return(data_rejoined)
+}
+
+get_departures <- function(data_rejoined){
+  leaving_points <- data_rejoined %>% filter(left_roost)
+  leaving_points_dates <- leaving_points %>%
+    group_by(date_il) %>%
+    group_split(.keep = T)
+  
+  dates <- purrr::map_chr(leaving_points_dates, ~as.character(.x$date_il[1]))
+  roost_mats <- purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$roostID, .x$roostID, FUN = "==")*1
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)
+  }) %>%
+    setNames(., dates)
+  
+  roost_mats_long <- purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")}) %>% setNames(., dates)
+  
+  roost_mats_same_whichroost <- purrr::list_rbind(roost_mats_long, names_to = "date_il") %>%
+    mutate(date_il = lubridate::ymd(date_il)) %>%
+    left_join(leaving_points, by = c("ID1" = "individual_local_identifier", "date_il")) %>%
+    filter(same_roost == 1)
+  
+  difftime_mats <- purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$timestamp_il, .x$timestamp_il,
+                 function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)}) %>% setNames(., dates)
+  
+  difftime_mats_long <- purrr::map(difftime_mats, ~{
+    as.data.frame(.x) %>%
+      rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")
+  }) %>%
+    setNames(., dates)
+  
+  both <- purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2"))) %>% setNames(., dates)
+  
+  departures <- purrr::map(both, ~{
+    .x %>% dplyr::filter(same_roost == 1) %>%
+      dplyr::select(-same_roost) %>% filter(ID1 < ID2)
+  }) %>% setNames(., dates)
+  
+  departures_df <- purrr::list_rbind(departures, names_to = "date_il") %>%
+    mutate(year = lubridate::year(date_il)) %>%
+    left_join(st_drop_geometry(data_rejoined) %>% mutate(date_il = as.character(date_il)) %>% select(date_il, "ID1" = "individual_local_identifier", roostID) %>% distinct())
+  
+  return(departures_df)
+}
+
+get_after_departures <- function(data_rejoined, gps_spd, sync_departures_df){
+  data_split_years <- data_rejoined %>%
+    mutate(year = case_when(date_il < lubridate::ymd("2023-01-01") ~ 2022, date_il > lubridate::ymd("2023-01-01") & date_il < lubridate::ymd("2023-07-01") ~ 2023, date_il > lubridate::ymd("2023-07-01") ~ 2024)) %>%
+    arrange(year) %>%
+    group_split(.keep = T)
+  
+  mv <- purrr::map(data_split_years, ~{
+    out <- move2::mt_as_move2(
+      .x, time = "timestamp_il", track_id = "individual_local_identifier",
+      crs = st_crs(data_rejoined)
+    )
+    return(out[order(mt_track_id(out)),])}
+  )
+  
+  interpolated_10min <- purrr::map(mv, ~move2::mt_interpolate(
+    .x[!sf::st_is_empty(.x), ],
+    time = seq(
+      as.POSIXct(min(.x$date_il, na.rm = T)),
+      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "10 mins"
+    ),
+    max_time_lag = units::as_units(1, "hours"),
+    omit = TRUE
+  ) %>%
+    mutate(interp = T) %>%
+    bind_rows(mutate(.x[!sf::st_is_empty(.x),], interp = F)) %>%
+    arrange(individual_local_identifier, timestamp_il) %>%
+    ungroup())
+  
+  interpolated_tidied <- purrr::map(interpolated_10min, ~{
+    .x %>% 
+      dplyr::select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(flight = ground_speed > gps_spd) %>% 
+      arrange(individual_local_identifier, timestamp_il) %>% 
+      tidyr::fill(date_il) %>% 
+      dplyr::group_by(individual_local_identifier, date_il) %>% 
+      tidyr::fill(flight) %>% 
+      tidyr::fill(roost_X) %>% 
+      tidyr::fill(roost_Y) %>% 
+      tidyr::fill(roostID) %>% 
+      tidyr::fill(left_roost) %>% 
+      dplyr::ungroup()})
+  
+  after_departure <- purrr::map(interpolated_tidied, ~{.x %>%
+      dplyr::group_by(individual_local_identifier, date_il) %>%
+      dplyr::mutate(after = cumsum(left_roost)) %>%
+      dplyr::filter(after > 0) %>%
+      dplyr::ungroup() %>% dplyr::select(-after)})
+  return(after_departure)
+}
+  
+get_trajectories_sync <- function(after_departure_interp_only, sync_departures_df){
+  sync_departures_list <- dplyr::group_split(sync_departures_df, year, .keep = TRUE)
+  
+  trajectories_sync_list_2022 <- get_trajectories_sync_pair(sync_departures_list[[1]], after_departure_interp_only[[1]])
+  trajectories_sync_list_2023 <- get_trajectories_sync_pair(sync_departures_list[[2]], after_departure_interp_only[[2]])
+  trajectories_sync_list_2024 <- get_trajectories_sync_pair(sync_departures_list[[3]], after_departure_interp_only[[3]]) #  XXXX START HERE 7/4/26
+  
+  trajectories_sync_2022 <- purrr::list_rbind(trajectories_sync_list_2022)
+  trajectories_sync_2023 <- purrr::list_rbind(trajectories_sync_list_2023)
+  trajectories_sync_2024 <- purrr::list_rbind(trajectories_sync_list_2024)
+  
+  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year") %>%
+    mutate(date_il = lubridate::date(timestamp_il))
+  return(trajectories_sync)
+}
+

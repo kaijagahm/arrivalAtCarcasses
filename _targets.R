@@ -622,105 +622,13 @@ list(
   # Manual calculation of co-departures from roosts and following
   tar_target(roosts_all_updated, mutate(roosts_all, roostID = as.numeric(st_intersects(sf::st_transform(roosts_all, 32636), rp_minus_stations)))), 
   
-  tar_target(downsampled_updated, dplyr::mutate(downsampled_forroosts, roostID_gps = as.numeric(sf::st_intersects(sf::st_transform(sf::st_as_sf(downsampled_forroosts), 32636), rp_minus_stations)))),
-  
-  tar_target(roosts_tojoin, dplyr::rename(sf::st_drop_geometry(dplyr::bind_cols(dplyr::select(roosts_all_updated, individual_local_identifier, roost_date, roostID), sf::st_coordinates(roosts_all_updated))), "roost_X" = X, "roost_Y" = Y)), # roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
-  
-  tar_target(gps_joined, dplyr::mutate(dplyr::left_join(dplyr::mutate(downsampled_updated, roost_date = date_il-lubridate::days(1)), roosts_tojoin, by = c("individual_local_identifier", "roost_date")), in_a_roost = !is.na(roostID_gps))), # joined roosts to GPS data to prep for determining departures
-  
-  tar_target(gps_joined_knownroost, dplyr::filter(gps_joined, !is.na(roostID))), # only roost polygons
-  tar_target(indiv_date_list, group_split(group_by(gps_joined_knownroost, date_il, individual_local_identifier), .keep = T)),
-  tar_target(leftpoints, purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))),
-  tar_target(data_timeordered, purrr::map2(indiv_date_list, leftpoints, ~{
-    .x$left_roost <- FALSE
-    if(!is.na(.y)){.x$left_roost[.y] <- TRUE}
-    return(.x)})),
-  tar_target(data_rejoined, sf::st_as_sf(as.data.frame(data.table::rbindlist(data_timeordered)), crs = 32636)),
-  tar_target(leaving_points, dplyr::filter(data_rejoined, left_roost)),
-  tar_target(leaving_points_dates, group_split(group_by(leaving_points, date_il), .keep = T)),
-  tar_target(dates, purrr::map_chr(leaving_points_dates, ~as.character(.x$date_il[1]))),
-  tar_target(roost_mats, setNames(purrr::map(leaving_points_dates, ~{
-    mat <- outer(.x$roostID, .x$roostID, FUN = "==") * 1
-    rownames(mat) <- .x$individual_local_identifier
-    colnames(mat) <- .x$individual_local_identifier
-    return(mat)}), dates)),
-  tar_target(roost_mats_long, setNames(purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")}), dates)),
-  tar_target(roost_mats_same_whichroost, filter(left_join(mutate(purrr::list_rbind(roost_mats_long, names_to = "date_il"), date_il = lubridate::ymd(date_il)), leaving_points, by = c("ID1" = "individual_local_identifier", "date_il")), same_roost == 1)),
-  tar_target(difftime_mats, setNames(purrr::map(leaving_points_dates, ~{
-    mat <- outer(.x$timestamp_il, .x$timestamp_il,
-                 function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
-    rownames(mat) <- .x$individual_local_identifier
-    colnames(mat) <- .x$individual_local_identifier
-    return(mat)}), dates)),
-  tar_target(difftime_mats_long, setNames(purrr::map(difftime_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")}), dates)),
-  tar_target(both, setNames(purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2"))), dates)),
-  tar_target(departure_times, setNames(purrr::map(both, ~{dplyr::filter(.x, same_roost == 1) %>% dplyr::select(-same_roost) %>% filter(ID1 < ID2)}), dates)),
-  tar_target(sync_departures, setNames(purrr::map(departure_times, ~filter(.x, time_diff_min <= 10)), dates)),
-  tar_target(sync_departures_df, mutate(purrr::list_rbind(sync_departures, names_to = "date_il"), year = lubridate::year(date_il))),
-  tar_target(departure_edgelists, purrr::map2(departure_times, leaving_points_dates, ~{.x %>% rename("from" = ID1, "to" = ID2) %>%
-      mutate(weight = 1 / (time_diff_min + 1))})),
-  tar_target(departure_nets, purrr::map2(departure_edgelists, leaving_points_dates, ~{
-    tidygraph::tbl_graph(edges = .x, directed = F) %>%
-      tidygraph::activate(nodes) %>%
-      dplyr::left_join(dplyr::distinct(dplyr::select(.y, individual_local_identifier, roostID)), by = c("name" = "individual_local_identifier"))})),
-  
-  tar_target(data_split_years, dplyr::group_split(dplyr::arrange(dplyr::mutate(data_rejoined, year = case_when(date_il < lubridate::ymd("2023-01-01") ~ 2022, date_il > lubridate::ymd("2023-01-01") & date_il < lubridate::ymd("2023-07-01") ~ 2023, date_il > lubridate::ymd("2023-07-01") ~ 2024)), individual_local_identifier), year, .keep = T)),
-  
-  # Trajectories after departure
-  tar_target(mv, purrr::map(data_split_years, ~move2::mt_as_move2(
-    .x,
-    time = "timestamp_il", track_id = "individual_local_identifier",
-    crs = st_crs(data_rejoined)))),
-  
-  tar_target(interpolated_10min, purrr::map(mv, ~move2::mt_interpolate(
-    .x[!sf::st_is_empty(.x), ],
-    time = seq(
-      as.POSIXct(min(.x$date_il, na.rm = T)),
-      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "10 mins"
-    ),
-    max_time_lag = units::as_units(1, "hours"),
-    omit = TRUE
-  ) %>%
-    mutate(interp = T) %>%
-    bind_rows(mutate(.x[!sf::st_is_empty(.x), ], interp = F)) %>%
-    arrange(individual_local_identifier, timestamp_il) %>%
-    ungroup())),
-  
-  tar_target(interpolated_tidied, purrr::map(interpolated_10min, ~{
-    .x %>% 
-      dplyr::select(individual_local_identifier, date_il, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
-      dplyr::ungroup() %>% 
-      dplyr::mutate(flight = ground_speed > gps_spd) %>% 
-      arrange(individual_local_identifier, timestamp_il) %>% 
-      tidyr::fill(date_il) %>% 
-      dplyr::group_by(individual_local_identifier, date_il) %>% 
-      tidyr::fill(flight) %>% 
-      tidyr::fill(roost_X) %>% 
-      tidyr::fill(roost_Y) %>% 
-      tidyr::fill(roostID) %>% 
-      tidyr::fill(left_roost) %>% 
-      dplyr::ungroup()})),
-  
-  tar_target(after_departure, purrr::map(interpolated_tidied, ~{.x %>%
-      dplyr::group_by(individual_local_identifier, date_il) %>%
-      dplyr::mutate(after = cumsum(left_roost)) %>%
-      dplyr::filter(after > 0) %>%
-      dplyr::ungroup() %>% dplyr::select(-after)})),
-  
+  tar_target(data_rejoined, join_roosts_gps(gps = downsampled_forroosts, roosts = roosts_all_updated, roostPolygons = rp_minus_stations)),
+  tar_target(departures_df, get_departures(data_rejoined)), # all departures, regardless of time diff
+  tar_target(sync_departures_df, filter(departures_df, time_diff_min <= 10)), # only synchronized departures
+  tar_target(after_departure, get_after_departures(data_rejoined, gps_spd, sync_departures_df)),
   tar_target(after_departure_interp_only, purrr::map(after_departure, ~filter(.x, interp))),
-  
-  tar_target(sync_departures_list, dplyr::group_split(sync_departures_df, year, .keep = TRUE)),
-  
-  tar_target(trajectories_sync_list_2022, get_trajectories_sync_pair(sync_departures_list[[1]], after_departure_interp_only[[1]])),
-  tar_target(trajectories_sync_list_2023, get_trajectories_sync_pair(sync_departures_list[[2]], after_departure_interp_only[[2]])),
-  tar_target(trajectories_sync_list_2024, get_trajectories_sync_pair(sync_departures_list[[3]], after_departure_interp_only[[3]])),
-  
-  tar_target(trajectories_sync_2022, purrr::list_rbind(trajectories_sync_list_2022)),
-  tar_target(trajectories_sync_2023, purrr::list_rbind(trajectories_sync_list_2023)),
-  tar_target(trajectories_sync_2024, purrr::list_rbind(trajectories_sync_list_2024)),
-  
-  tar_target(trajectories_sync, mutate(purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year"), date_il = lubridate::date(timestamp_il))),
-  
+  tar_target(trajectories_sync, get_trajectories_sync(after_departure_interp_only, sync_departures_df)), # XXX go back and check this code--claude refactored
+
   # stBayes: dynamic
   ## stn
   tar_target(gps_withdaylight, purrr::map2(stn_gps_30days, stn_carcs, ~get_daylight_hours(.x, .y))),
