@@ -2,142 +2,14 @@
 library(tidyverse)
 library(sf)
 library(targets)
-tar_load(trajectories_sync)
 tar_load(sync_departures_df)
-tar_load(after_departure_interp_only)
-tar_load(roosts_all_updated)
-roosts_tojoin <- roosts_all_updated %>%
-  mutate(depart_date = roost_date + lubridate::days(1)) %>%
-  select(individual_local_identifier, depart_date, roostID)
-
-tar_load(informed_stn)
-tar_load(informed_wild)
-
-# ---------------------------------------------------------
-# Arrivals/sightings by carcass
-
-tar_load(gps_diffusion)
-tar_load(gps_diffusion_wild)
-tar_load(ddf)
-tar_load(dds)
-tar_load(gps_spd)
-
-gd <- map(gps_diffusion, ~select(.x, individual_local_identifier, carcID, timestamp_il, dist_to_carcass, time_since_carcass, daytime_since_carcass, ground_speed))
-gdw <- map(gps_diffusion_wild, ~select(.x, individual_local_identifier, carcID, timestamp_il, dist_to_carcass, time_since_carcass, daytime_since_carcass, ground_speed))
-
-glimpse(gdw[[1]])
-
-# 1. Get detections of each carcass by each individual on each day
-sightings <- purrr::list_rbind(gd) %>% 
-  bind_rows(purrr::list_rbind(gdw)) %>%
-  arrange(individual_local_identifier, timestamp_il, carcID) %>%
-  filter((ground_speed <= gps_spd & dist_to_carcass <= dds)|(ground_speed > gps_spd & dist_to_carcass <= ddf)) %>%
-  rename("id" = individual_local_identifier) %>%
-  mutate(date_il = lubridate::date(timestamp_il))
-
-# 2. Find pairs that go to the same carcass on the same day
-# ID1 | ID2 | carcID | date
-trajectories_sync %>% select(id1, id2) %>% distinct() %>% nrow() # 4600 dyads
-all <- unique(c(trajectories_sync$id1, trajectories_sync$id2))
-length(all) # 148 indivs
-all_possible_dyads <- expand_grid("id1" = all, "id2" = all) %>% filter(id1 < id2)
-nrow(all_possible_dyads) # 10878 possible dyads
-
-all_dates <- unique(sightings$date_il)
-
-sightings_carc_date <- sightings %>%
-  group_by(carcID, date_il) %>%
-  group_split(.keep = T)
-
-## Get only the first time that each individual sighted the carcass on the given date
-first_sightings_carc_date <- map(sightings_carc_date, ~{
-  out <- .x %>%
-    arrange(id, timestamp_il) %>%
-    group_by(id) %>%
-    slice(1) %>%
-    select(date_il, carcID, id, timestamp_il, time_since_carcass, daytime_since_carcass, dist_to_carcass, ground_speed, geometry) %>%
-    ungroup()
-  return(out)
-})
-length(first_sightings_carc_date) # 577 unique carcasses and dates
-
-# Get diffs for the first sighting per day per carcass for each pair of individuals
-map_dbl(first_sightings_carc_date, nrow)
-# carc_date_pairs <- map(first_sightings_carc_date, ~{
-#   base_df <- .x %>% st_drop_geometry() %>% mutate(geometry = .x$geometry)
-#   pairs <- inner_join(base_df, base_df, by = c("carcID", "date_il"), suffix = c("_1", "_2")) %>%
-#     filter(id_1 < id_2) %>%
-#     rename("id1" = id_1, "id2" = id_2) %>%
-#     mutate(
-#       timestamp_diff          = abs(as.numeric(difftime(timestamp_il_1, timestamp_il_2, units = "secs"))),
-#       time_since_carcass_diff    = abs(time_since_carcass_1 - time_since_carcass_2),
-#       daytime_since_carcass_diff = abs(daytime_since_carcass_1 - daytime_since_carcass_2),
-#       dist_to_carcass_diff       = abs(dist_to_carcass_1 - dist_to_carcass_2),
-#       ground_speed_diff       = abs(ground_speed_1 - ground_speed_2),
-#       dist_apart              = st_distance(st_sfc(geometry_1), st_sfc(geometry_2), by_element = TRUE)
-#     ) %>%
-#     select(-geometry_1, -geometry_2)
-#   return(pairs)
-# }, .progress = T)
-# 
-# carc_date_pairs_df <- purrr::list_rbind(carc_date_pairs) %>%
-#   select(date_il, carcID, id1, id2, timestamp_il_1, timestamp_il_2, timestamp_diff, time_since_carcass_1, time_since_carcass_2, time_since_carcass_diff, daytime_since_carcass_1, daytime_since_carcass_2, daytime_since_carcass_diff, dist_to_carcass_1, dist_to_carcass_2, dist_to_carcass_diff, dist_apart, ground_speed_1, ground_speed_2, ground_speed_diff)
-# 
-# saveRDS(carc_date_pairs_df, "data/created/carc_date_pairs_df.RDS")
-carc_date_pairs_df <- readRDS("data/created/carc_date_pairs_df.RDS")
-
-carcs <- purrr::list_rbind(stn_carcs_modified) %>% bind_rows(purrr::list_rbind(wild_carcs)) %>%
-  select(carcID, "carcass_date" = date)
-carc_date_pairs_df <- carc_date_pairs_df %>% left_join(carcs, by = "carcID") %>%
-  mutate(day = as.numeric(difftime(date_il, carcass_date, units = "days")))
-
-# Further restrictions on the dyads -----------------------------------------------
-# 1. Total displacement for the day (15km filter)
-# 2. Informed vs. uninformed dyads
-names(informed_stn) <- map(stn_carcs_modified, "carcID")
-names(informed_wild) <- map(wild_carcs, "carcID")
-
-islong <- purrr::list_rbind(informed_stn, names_to = "carcID") %>%
-  pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
-  mutate(day = as.numeric(str_remove(day, "s"))) %>%
-  arrange(carcID, id, day) %>%
-  group_by(carcID, id) %>%
-  mutate(informed = cumsum(sighted) > 0) %>%
-  select(-sighted) %>%
-  mutate(informed_previous = lag(informed)) %>%
-  select(-informed) %>%
-  ungroup()
-
-iwlong <- purrr::list_rbind(informed_wild, names_to = "carcID") %>%
-  pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
-  mutate(day = as.numeric(str_remove(day, "s"))) %>%
-  arrange(carcID, id, day) %>%
-  mutate(informed = cumsum(sighted) > 0) %>%
-  select(-sighted) %>%
-  mutate(informed_previous = lag(informed)) %>%
-  select(-informed) %>%
-  ungroup()
-
-informed <- bind_rows(islong, iwlong) %>%
-  mutate(informed_previous = case_when(is.na(informed_previous) & day == 0 ~ F, .default = informed_previous))
-
-carc_date_pairs_df <- carc_date_pairs_df %>%
-  mutate(carcID = as.character(carcID)) %>%
-  left_join(informed, by = c("carcID", "day", "id1" = "id")) %>%
-  rename("id1_informed_prev" = informed_previous) %>%
-  left_join(informed, by = c("carcID", "day", "id2" = "id")) %>%
-  rename("id2_informed_prev" = informed_previous) %>%
-  mutate(dyad_type = case_when(id1_informed_prev & id2_informed_prev ~ "Both informed",
-                               id1_informed_prev & !id2_informed_prev ~ "One informed",
-                               !id1_informed_prev & id2_informed_prev ~ "One informed",
-                               !id1_informed_prev & !id2_informed_prev ~ "Neither informed",
-                               .default = NA))
+tar_load(arrival_dyads)
 
 # Compare departure and arrival dyads -------------------------------------
 departures <- sync_departures_df %>% rename("depart_time_diff_min" = "time_diff_min")
-arrivals <- carc_date_pairs_df
-arrivals_simple <- arrivals %>%
-  select(date_il, carcID, id1, id2, "arrive_time_diff_hrs" = daytime_since_carcass_diff, "arrive_dist_apart_m" = dist_apart)
+arrivals_simple <- arrival_dyads %>%
+  select(date_il, carcID, id1, id2, "arrive_time_diff_hrs" = daytime_since_carcass_diff, "arrive_dist_apart_m" = dist_apart) %>%
+  mutate(date_il = lubridate::date(date_il))
 
 # 3. What proportion of departure pairs go to the same carcass?
 tar_load(minmax_dates)
@@ -273,29 +145,6 @@ arrive_lookback %>%
 
 
 # Displacements (for 15km limit) ------------------------------------------
-# Calculate displacements after departures from roost
-adios <- purrr::map(after_departure_interp_only, ~{
-  df <- .x
-  df %>%
-    group_by(individual_local_identifier, date_il) %>%
-    mutate(displacement = {
-      pts <- st_geometry(df)[cur_group_rows()]
-      as.numeric(st_distance(pts, pts[1]))  # [1] not [[1]] to keep geometry
-    }) %>%
-    ungroup()
-}, .progress = T)
-
-# Determine max displacement per individual per day
-max_displs <- setNames(purrr::map(adios, ~{
-  .x %>% st_drop_geometry() %>% group_by(individual_local_identifier, date_il) %>%
-    summarize(max_displacement_m = max(displacement, na.rm = T)) %>%
-    mutate(max_displacement_km = max_displacement_m/1000)
-}), c("2022", "2023", "2024")) %>% purrr::list_rbind(names_to = "year") %>% mutate(year = factor(year))
-
-sync_departures_df <- sync_departures_df %>%
-  mutate(date_il = lubridate::ymd(date_il), year = as.character(year)) %>%
-  left_join(roosts_tojoin, by = c("date_il" = "depart_date", "ID1" = "individual_local_identifier"))
-table(sync_departures_df$roostID, exclude = NULL) # joined back the roost IDs
 
 joined <- left_join(trajectories_sync, sync_departures_df, by = c("year", "date_il", "id1" = "ID1", "id2" = "ID2")) %>% rename("departure_time_diff_min" = "time_diff_min") %>%
   mutate(hour = lubridate::hour(timestamp_il),

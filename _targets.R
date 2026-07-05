@@ -628,6 +628,9 @@ list(
   tar_target(after_departure, get_after_departures(data_rejoined, gps_spd, sync_departures_df)),
   tar_target(after_departure_interp_only, purrr::map(after_departure, ~filter(.x, interp))),
   tar_target(trajectories_sync, get_trajectories_sync(after_departure_interp_only, sync_departures_df)), # XXX go back and check this code--claude refactored
+  
+  tar_target(first_sightings_carc_date, get_first_sightings_per_date(gps_diffusion, gps_diffusion_wild, gps_spd, dds, ddf, trajectories_sync)),
+  tar_target(arrival_dyads, get_arrival_dyads(first_sightings_carc_date, stn_carcs_modified, wild_carcs, informed)),
 
   # stBayes: dynamic
   ## stn
@@ -1541,5 +1544,11 @@ list(
   
   tar_target(informed_stn, purrr::pmap(list(a = all_indivs_stn, b = sighted_dayzero_stn, c = sighted_dayone_stn, d = sighted_daytwo_stn, e = sighted_daythree_stn), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T)),
 
-  tar_target(informed_wild, purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T))
+  tar_target(informed_wild, purrr::pmap(list(a = all_indivs_wild, b = sighted_dayzero_wild, c = sighted_dayone_wild, d = sighted_daytwo_wild, e = sighted_daythree_wild), function(a, b, c, d, e){data.frame("id" = a, "s0" = b, "s1" = c, "s2" = d, "s3" = e)}, .progress = T)),
+  
+  tar_target(informed, get_informed(informed_stn, informed_wild, stn_carcs_modified, wild_carcs)),
+  
+  tar_target(max_displs, get_max_displs(after_departure_interp_only)),
+  
+  tar_target(dyad_flight_stats, get_dyad_flight_stats(trajectories_sync, sync_departures_df, ddf))
 )

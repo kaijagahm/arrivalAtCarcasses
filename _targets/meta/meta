@@ -930,6 +930,15 @@ informed_stn|stem|8375971681d5db4c|5accc99581c9ff90|36482101f1fee487|-569704411|
 data_rejoined|stem|e8f8cdf175a2a19d|901281249c0be249|9aa47199827d22ed|2009645183||t20638.0348177425s|s27668145b|27668145|rds|local|vector|||219.281|no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min;|
 departures_df|stem|bccfd951d6f13d32|d2e3b5aadab73c14|e26d91fd158fda85|1849654392||t20638.0412975727s|s560213b|560213|rds|local|vector|||15.5||
 sync_departures_df|stem|cd43b0acad069b65|809171f52b0eab5f|58fe61933d6b9320|-2091809919||t20638.041303068s|s97330b|97330|rds|local|vector|||0.016||
+after_departure|stem|405ffd67d2b9aa5a|e650a78be7d55565|7aa80f316e27e7d1|-828275600||t20638.9725879449s|s23924029b|23924029|rds|local|vector|||204.844||
+after_departure_interp_only|stem|3565a89779ea9ec7|7383e0f6184f252c|e0f4d7f9a3790d92|1737218327||t20638.9760594525s|s14236087b|14236087|rds|local|vector|||3.5||
+trajectories_sync|stem|31310bf75be41bba|eb3d686c350729f2|35b9d20cc086dead|-1434952517||t20638.9798518524s|s8369746b|8369746|rds|local|vector|||13.484|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 16485 of `x` matches multiple rows in `y`. i Row 4135 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 481 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 32505 of `x` matches multiple rows in `y`. i Row 1862 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 475 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 34070 of `x` matches multiple rows in `y`. i Row 703 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.|
+first_sightings_carc_date|stem|70a28dd140884931|44afcc099a2e7011|26536ab5e4340a6b|1264708234||t20638.9944228278s|s283176b|283176|rds|local|vector|||73.922||
+carc_date_pairs_df|stem|107a6b19b16ecc14|a1c0c5e576415dea|ffc59ca925d4bcf2|-245091315||t20638.9949888798s|s3023215b|3023215|rds|local|vector|||47.829|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`|
+get_carc_date_pairs|function|3520914f34b52d9d
+informed|stem|0c6f3608d004407e|b2a8ce966816a70d|0ce3c936bea16275|1272124423||t20639.0002408312s|s21795b|21795|rds|local|vector|||1.219||
+arrival_dyads|stem|42ce586156ae9c4b|75566a9ce1888fb5|0213b9b6133e41a7|1867336967||t20639.0021549974s|s3051798b|3051798|rds|local|vector|||58.203|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`|
+max_displs|stem|625c0fb629a34103|9f8fccd181c6dbfb|14bf4a5e430f67cf|-305360093||t20639.0223102862s|s199968b|199968|rds|local|vector|||115.734|There were 480 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 18: `individual_local_identifier = 'A00w'` `date_il = 2022-10-30`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 479 remaining warnings.. There were 260 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2023-02-16`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 259 remaining warnings.. There were 365 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2024-03-08`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 364 remaining warnings.|
 get_trajectories_sync_pair|function|37439e151e611039
 get_at_carcass|function|b8968c714063e9c5
 find_temporally_connected_points|function|66f3741cc8b997d7
@@ -982,6 +991,7 @@ get_telems|function|47297fdee2ffcea0
 get_station_bouts|function|b2e8df860673d07b
 prepare_nbda_data|function|46e39efaeecec4e4
 get_constraintsVectMatrix|function|9c3622c78d6b0a2e
+get_informed|function|fc731a4429e03873
 gpfs|function|16e72778f70a2721
 get_guesses|function|a3a35db662f5a544
 format_event_data|function|ca4694d8d77c7c4d
@@ -996,19 +1006,23 @@ prepare_times|function|b4d11362c73d7ad7
 get_matches|function|ebc8c363cd2fef7f
 get_wild_carcasses|function|03f437cfc609aad1
 get_cc|function|cff31d67764fbb1b
+get_dyad_flight_stats|function|dd480770a8cfa2c4
 join_gps_bouts|function|3efed8ae2273b043
 get_situcolors|function|8d4c9a3b2eba20b3
 get_roosts_bin|function|fa1fe83ec190041c
+get_first_sightings_per_date|function|f46871d69ebc5a1c
 get_graphs|function|9002a3516b133ac1
 get_closest_station|function|19ff3ebcf12c18a0
 attach_age_sex|function|d5b0d68b5283f64a
 NEW_get_roosts_df|function|93b7fd9d390018b1
 get_acc_data|function|8f0e5facb667ede3
 getmodstats|function|06d0b868b595a688
+get_arrival_dyads|function|e3bdea4d20a4c0ad
 get_years|function|b64546004099cfdb
 get_full|function|cdfb0e61819501ac
 discoveryplot|function|d284b11222d4b585
 remove_bad_bouts|function|d4f88889a900892d
+get_max_displs|function|d35874969e29b570
 get_dynamic_nets|function|50bc3ac7dfc41d07
 calibrate|function|f0791eb1960fb053
 fix_names_ages|function|f6759a62fbfcf441
@@ -1076,13 +1090,13 @@ get_firsts|function|ad6319a793f06e9d
 expand_mats|function|b89843db444ed655
 get_metrics_summary|function|c0528d5a3aa70a6a
 get_has_enough_sightings|function|d19a39f7f1207db7
-get_after_departures|function|226c21c0d70720fb
+get_after_departures|function|5a9723ebcb75799a
 get_seeds|function|9d0101c1d3a86a53
 get_gps_flight_hr|function|f4b411be8a81ffb3
 compile_areas|function|f51258254a38c148
 get_new_movement_vars|function|3ee7c964a84f3f05
 get_roost_dates|function|f95c759b9a6a71ba
-get_trajectories_sync|function|d54c4f71d599faaa
+get_trajectories_sync|function|1f24d02c0dd34f94
 get_stat_feats|function|3cca77600c07ddc5
 spaceTimeGroups_new|function|92beca8094521e52
 fix_nets_list|function|a81450bfdc337834
@@ -1104,6 +1118,4 @@ get_fl_bin|function|20c01d64143a18d8
 get_fl_weighted|function|ae1fc292919c8978
 get_fl_bin_list|function|4628e125dc1bec5a
 get_fl_wt_list|function|0efe2bb9cd2fdd12
-after_departure|stem|181b7c594aff90c6|e650a78be7d55565|c0cbdc55968283aa|-828275600||t20638.0822000015s|s35504406b|35504406|rds|local|vector|||353.563||
-after_departure_interp_only|stem|e9abdab432f40afd|7383e0f6184f252c|54595039144f7102|1737218327||t20638.0826942141s|s25964742b|25964742|rds|local|vector|||2.907||
-trajectories_sync|stem|error|eb3d686c350729f2|cedf7c09202f43ef|-1434952517||t20638.0858521751s||0|null|local|vector|||257.703|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 151567 of `x` matches multiple rows in `y`. i Row 4135 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.|subscript out of bounds
+dyad_flight_stats|stem|f7a8216cc5edebfd|109dd788e38ede68|dc5cae2b04d39df9|67825091||t20639.0262565482s|s352193b|352193|rds|local|vector|||8.078||
