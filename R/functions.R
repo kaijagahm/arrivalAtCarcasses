@@ -2448,3 +2448,101 @@ get_dyad_flight_stats <- function(trajectories_sync, sync_departures_df, ddf){
     ungroup()
   return(flight_stats)
 }
+
+beats_asoc <- function(comparison){
+  if(!is.null(comparison)){
+    comp <- as.data.frame(comparison$comparison) %>% bind_cols(., "mod" = row.names(.))
+    beats_asoc <- (comp$elpd_diff[(grepl("asoc", comp$mod))] < comp$elpd_diff[!(grepl("asoc", comp$mod))])& (comp$elpd_diff[(grepl("asoc", comp$mod))] + comp$se_diff[(grepl("asoc", comp$mod))] < 0)
+    return(beats_asoc)
+  }else{
+    return(NA)
+  }
+}
+
+plot_asoc <- function(comparison){
+  if(!is.null(comparison)){
+    df <- as.data.frame(comparison$comparison)
+    p <- df %>% ggplot(aes(x = row.names(df), y = elpd_diff))+geom_point()+geom_errorbar(aes(ymin = elpd_diff-se_diff, ymax = elpd_diff + se_diff), width = 0.1)+ coord_flip()
+    return(p)
+  }else{
+    return(NULL)
+  }
+}
+
+pool_coefficient <- function(coef_label, fits, weights, param_map, n_total = 20000) {
+  draws_list <- lapply(names(fits), function(nm) {
+    n_draw <- round(weights[nm] * n_total)
+    if (n_draw == 0) return(NULL)
+    
+    row <- param_map %>% filter(model == nm, coef_label == !!coef_label)
+    
+    if (nrow(row) == 0) {
+      return(rep(0, n_draw))
+    }
+    
+    d <- as_draws_df(fits[[nm]]$draws(variables = row$param_in_model))[[row$param_in_model]]
+    
+    # percent_ST is structurally undefined (NaN) in asocial models, since there's
+    # no social pathway to compute a percentage of -- same "contributes 0" logic
+    # as s being absent from these models entirely
+    d[is.nan(d) | is.na(d)] <- 0
+    
+    sample(d, n_draw, replace = TRUE)
+  })
+  unlist(draws_list)
+}
+
+get_model_averaged_estimates <- function(fits, names){
+  if(all(map_lgl(fits, is.null))){
+    return(NULL)
+  }else{
+    suppressMessages(loo_list <- map(fits, ~{
+      if(!is.null(.x)){
+        .x$loo()}}))
+    
+    weights_obj <- loo_model_weights(loo_list, method = "stacking")
+    weights <- setNames(as.numeric(weights_obj), names)
+    names(fits) <- names
+    
+    # now that I have the weights, have to figure out how to do model averaging.
+    # Code from Claude (will need to check all of this!)
+    param_names <- lapply(fits, function(f) STb_summary(f)$Parameter)
+    names(param_names) <- names(fits)
+    param_map <- suppressWarnings(imap_dfr(param_names, function(params, model_name) {
+      tibble(model = model_name, param_in_model = params) %>%
+        filter(!str_detect(param_in_model, "^log_")) %>%   # drop log-scale duplicates
+        mutate(
+          coef_label = case_when(
+            param_in_model == "lambda_0" ~ "lambda_0",
+            str_detect(param_in_model, "^s\\[") ~
+              paste0("s_net", str_extract(param_in_model, "(?<=\\[)\\d+")),
+            str_detect(param_in_model, "^percent_ST\\[") ~
+              paste0("percent_ST_net", str_extract(param_in_model, "(?<=\\[)\\d+")),
+            str_detect(param_in_model, "^beta_ILVi_") ~
+              paste0(str_remove(param_in_model, "^beta_ILVi_"), "__on_asocial"),
+            str_detect(param_in_model, "^beta_ILVs_") ~
+              paste0(str_remove(param_in_model, "^beta_ILVs_"), "__on_social"),
+            TRUE ~ NA_character_
+          )
+        )
+    }))
+    # sanity check: make sure nothing fell through un-labeled
+    if(nrow(param_map %>% filter(is.na(coef_label))) > 0){
+      stop("Something fell through un-labeled!")
+    }
+    
+    coef_labels <- unique(na.omit(param_map$coef_label))
+    
+    averaged_results <- lapply(coef_labels, function(cl) {
+      pooled <- pool_coefficient(cl, fits, weights, param_map)
+      tibble(
+        coef_label = cl,
+        Median     = median(pooled),
+        MAD        = mad(pooled),
+        CI_Lower   = unname(quantile(pooled, 0.025)),
+        CI_Upper   = unname(quantile(pooled, 0.975))
+      )
+    }) %>% bind_rows()
+    return(averaged_results)
+  }
+}

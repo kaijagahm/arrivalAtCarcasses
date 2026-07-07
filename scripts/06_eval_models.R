@@ -5,7 +5,7 @@ library(progressr)
 library(tidyverse)
 library(STbayes)
 library(sf)
-library(loo)
+library(loo) # for model averaging/comparison
 library(posterior)
 library(patchwork)
 plan(multisession, workers = 5)
@@ -79,7 +79,7 @@ tar_load(comps_dfs)
 tar_load(comps_dfs_wild)
 
 # Examining which are the most common orders
-names(comps_dfs) <- map_dbl(stn_carcs, "carcID")
+names(comps_dfs) <- map_dbl(stn_carcs_modified, "carcID")
 names(comps_dfs_wild) <- map_dbl(wild_carcs, "carcID")
 comps_dfs_df <- purrr::list_rbind(comps_dfs, names_to = "carcID")
 comps_dfs_wild_df <- purrr::list_rbind(comps_dfs_wild, names_to = "carcID")
@@ -145,7 +145,7 @@ topmods_wild %>%
        title = "Wild")+
   scale_y_continuous(limits = c(0, 1))
 
-# In neither case is there one model formulation that is consistently one of the top models.
+# In neither case is there one model formulation that is consistently one of the top models. We'll have to use model averaging instead of choosing a single model to pull the coefficient from.
 
 # Model comparison plots
 get_comps_plots <- function(x){
@@ -280,96 +280,18 @@ patchworks_wild[[1]]
 patchworks_wild[[2]]
 patchworks_wild[[3]]
 
-
-
 # XXX start here
 # Model output evaluation and inter-model comparisons ---------------------
 # Comparison between each model and its asocial equivalent
-comps_noILVs <- map2(social_fits_noILVs, asocial_fits_noILVs, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("noILVs", "noILVs_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistI <- map2(social_fits_DistI, asocial_fits_DistI, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistI", "DistI_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistIS <- map2(social_fits_DistIS, asocial_fits_DistIS, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistIS", "DistIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistI_AgeIS <- map2(social_fits_DistI_AgeIS, asocial_fits_DistI_AgeIS, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistI_AgeIS", "DistI_AgeIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistIS_AgeIS <- map2(social_fits_DistIS_AgeIS, asocial_fits_DistIS_AgeIS, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistIS_AgeIS", "DistIS_AgeIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_noILVs_wild <- map2(social_fits_noILVs_wild, asocial_fits_noILVs_wild, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("noILVs", "noILVs_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistI_wild <- map2(social_fits_DistI_wild, asocial_fits_DistI_wild, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistI", "DistI_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistIS_wild <- map2(social_fits_DistIS_wild, asocial_fits_DistIS_wild, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistIS", "DistIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistI_AgeIS_wild <- map2(social_fits_DistI_AgeIS_wild, asocial_fits_DistI_AgeIS_wild, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistI_AgeIS", "DistI_AgeIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_DistIS_AgeIS_wild <- map2(social_fits_DistIS_AgeIS_wild, asocial_fits_DistIS_AgeIS_wild, ~{if(!is.null(.x)){STb_compare(.x, .y, model_names = c("DistIS_AgeIS", "DistIS_AgeIS_asoc"), method = "loo-psis")}else{NULL}})
-
-comps_dfs_noILVs <- map(comps_noILVs, ~as.data.frame(.x$comparison))
-comps_dfs_DistI <- map(comps_DistI, ~as.data.frame(.x$comparison))
-comps_dfs_DistIS <- map(comps_DistIS, ~as.data.frame(.x$comparison))
-comps_dfs_DistI_AgeIS <- map(comps_DistI_AgeIS, ~as.data.frame(.x$comparison))
-comps_dfs_DistIS_AgeIS <- map(comps_DistIS_AgeIS, ~as.data.frame(.x$comparison))
-
-comps_dfs_noILVs_wild <- map(comps_noILVs_wild, ~as.data.frame(.x$comparison))
-comps_dfs_DistI_wild <- map(comps_DistI_wild, ~as.data.frame(.x$comparison))
-comps_dfs_DistIS_wild <- map(comps_DistIS_wild, ~as.data.frame(.x$comparison))
-comps_dfs_DistI_AgeIS_wild <- map(comps_DistI_AgeIS_wild, ~as.data.frame(.x$comparison))
-comps_dfs_DistIS_AgeIS_wild <- map(comps_DistIS_AgeIS_wild, ~as.data.frame(.x$comparison))
-
-comps_dfs_noILVs <- map(comps_dfs_noILVs, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistI <- map(comps_dfs_DistI, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistIS <- map(comps_dfs_DistIS, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistI_AgeIS <- map(comps_dfs_DistI_AgeIS, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistIS_AgeIS <- map(comps_dfs_DistIS_AgeIS, ~{.x$model <- rownames(.x);return(.x)})
-
-comps_dfs_noILVs_wild <- map(comps_dfs_noILVs_wild, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistI_wild <- map(comps_dfs_DistI_wild, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistIS_wild <- map(comps_dfs_DistIS_wild, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistI_AgeIS_wild <- map(comps_dfs_DistI_AgeIS_wild, ~{.x$model <- rownames(.x);return(.x)})
-comps_dfs_DistIS_AgeIS_wild <- map(comps_dfs_DistIS_AgeIS_wild, ~{.x$model <- rownames(.x);return(.x)})
-
-get_diff_from_asoc <- function(comparison_df){
-  if(!is.null(comparison_df)){
-    interval <- c((comparison_df$elpd_diff[2]-comparison_df$se_diff[2]), (comparison_df$elpd_diff[2]+comparison_df$se_diff[2]))
-    sig <- comparison_df$elpd_diff[1] >= max(interval) | comparison_df$elpd_diff[1] <= min(interval)
-    return(sig)
-  }else{return(NULL)}
-}
-
-dfa_noILVs <- map(comps_dfs_noILVs, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistI <- map(comps_dfs_DistI, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS <- map(comps_dfs_DistIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID") 
-dfa_DistI_AgeIS <- map(comps_dfs_DistI_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS_AgeIS <- map(comps_dfs_DistIS_AgeIS, get_diff_from_asoc) %>% setNames(., map_dbl(stn_carcs_modified, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-
-dfa <- purrr::list_rbind(list("noILVs" = dfa_noILVs, "DistI" = dfa_DistI, "DistIS" = dfa_DistIS, "DistI_AgeIS" = dfa_DistI_AgeIS, "DistIS_AgeIS" = dfa_DistIS_AgeIS), names_to = "model")
-names(dfa)[3] <- "sig"
-
-dfa_noILVs_wild <- map(comps_dfs_noILVs_wild, get_diff_from_asoc) %>% setNames(., map_dbl(wild_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistI_wild <- map(comps_dfs_DistI_wild, get_diff_from_asoc) %>% setNames(., map_dbl(wild_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS_wild <- map(comps_dfs_DistIS_wild, get_diff_from_asoc) %>% setNames(., map_dbl(wild_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID") 
-dfa_DistI_AgeIS_wild <- map(comps_dfs_DistI_AgeIS_wild, get_diff_from_asoc) %>% setNames(., map_dbl(wild_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-dfa_DistIS_AgeIS_wild <- map(comps_dfs_DistIS_AgeIS_wild, get_diff_from_asoc) %>% setNames(., map_dbl(wild_carcs, "carcID")) %>% map(., as.data.frame) %>% purrr::list_rbind(., names_to = "carcID")
-
-dfa_wild <- purrr::list_rbind(list("noILVs" = dfa_noILVs_wild, "DistI" = dfa_DistI_wild, "DistIS" = dfa_DistIS_wild, "DistI_AgeIS" = dfa_DistI_AgeIS_wild, "DistIS_AgeIS" = dfa_DistIS_AgeIS_wild), names_to = "model")
-names(dfa_wild)[3] <- "sig"
+tar_load(dfa)
 
 dfa %>%
-  mutate(model = factor(model, levels = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"))) %>%
-  ggplot(aes(x = model, y = factor(carcID), fill = sig))+
+  ggplot(aes(x = mod, y = factor(carcID), fill = beats_asoc))+
   geom_tile()+
   scale_fill_manual(values = c("red", "skyblue"))+
   labs(y = NULL, x = "ILVs", fill = "Diff from\nasocial?")+
-  theme_minimal() # interesting! some of the significance disappears, some appears
-
-dfa_wild %>%
-  mutate(model = factor(model, levels = c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS"))) %>%
-  ggplot(aes(x = model, y = factor(carcID), fill = sig))+
-  geom_tile()+
-  scale_fill_manual(values = c("red", "skyblue"))+
-  labs(y = NULL, x = "ILVs", fill = "Diff from\nasocial?")+
-  theme_minimal() # interesting! some of the significance disappears, some appears
+  theme_minimal()+ # almost all of the models are better than their asocial equivalents.
+  facet_wrap(~carcType, scales = "free_y")
 
 ns <- map(data_lists, ~{
   found <- .x$N
@@ -542,76 +464,44 @@ results %>%
 
 # "The multi-network NBDA will work most effectively when the networks are independent. When they are highly dependent (e.g. correlated), it will require a lot of data to distinguish the effects of each network. This will be reflected in wide confidence intervals (CIs) for each s parameter, and for the estimated difference between them." Farine et al 2015
 
-# Model averaging
-inputs_stn <- list(
-  m1 = social_fits_noILVs,
-  m2 = social_fits_DistI,
-  m3 = social_fits_DistI_AgeIS,
-  m4 = social_fits_DistIS,
-  m5 = social_fits_DistIS_AgeIS
-  #,
-  # ex1 = exclude_struct1,
-  # ex2 = exclude_struct2,
-  # ex3 = exclude_struct3,
-  # ex4 = exclude_struct4
-)
+tar_load(social_fits_noILVs_2nets)
+tar_load(social_fits_DistI_2nets)
+tar_load(social_fits_DistIS_2nets)
+tar_load(social_fits_DistI_AgeIS_2nets)
+tar_load(social_fits_DistIS_AgeIS_2nets)
 
-all_beta_names <- c("beta_ILVi_mean_dist_to_carcass_norm", 
-                    "beta_ILVs_mean_dist_to_carcass_norm", 
-                    "beta_ILVi_age[1]",
-                    "beta_ILVs_age[1]",
-                    "beta_ILVi_age[2]",
-                    "beta_ILVs_age[2]")
+tar_load(asocial_fits_noILVs_2nets)
+tar_load(asocial_fits_DistI_2nets)
+tar_load(asocial_fits_DistIS_2nets)
+tar_load(asocial_fits_DistI_AgeIS_2nets)
+tar_load(asocial_fits_DistIS_AgeIS_2nets)
 
-model_averaged_params_stn <- pmap(inputs_stn, function(m1, m2, m3, m4, m5#, 
-                                                       #ex1, ex2, ex3, ex4
-) {
-  
-  all_models <- list(m1, m2, m3, m4, m5)
-  #exclude <- c(ex1, ex2, ex3, ex4)
-  models <- all_models#[!exclude]
-  
-  # return NULL if all models are NULL
-  if (all(map_lgl(all_models, is.null))) return(NULL)
-  
-  # get beta names available in surviving models
-  available_draws <- models[[1]]$draws() %>% as_draws_matrix()
-  available_betas <- models %>%
-    map(~colnames(.x$draws() %>% as_draws_matrix())) %>%
-    reduce(union) %>%
-    intersect(all_beta_names) # XXX START HERE 6/5
-  
-  weighted_average <- function(var) {
-    draws <- map(models, ~.x$draws(var) %>% as_draws_matrix())
-    reduce(
-      seq_along(models),
-      function(acc, j) acc + weights[j] * draws[[j]],
-      .init = matrix(0, nrow = nrow(draws[[1]]), ncol = ncol(draws[[1]]))
-    )
-  }
-  
-  if (length(models) == 1) {
-    weights <- NULL  # not needed but keeps structure consistent
-    result <- map(all_beta_names, ~{
-      if (.x %in% available_betas) {
-        models[[1]]$draws(.x) %>% as_draws_matrix()
-      } else {
-        NA
-      }
-    }) %>% setNames(all_beta_names)
-    return(c(list(percent_ST = models[[1]]$draws("percent_ST") %>% as_draws_matrix()), result))
-  }
-  
-  loos <- map(models, ~suppressWarnings(.x$loo()))
-  weights <- loo_model_weights(loos, method = "stacking")
-  
-  result <- map(all_beta_names, ~{
-    if (.x %in% available_betas) {
-      weighted_average(.x)
-    } else {
-      NA
-    }
-  }) %>% setNames(all_beta_names)
-  
-  c(list(percent_ST = weighted_average("percent_ST")), result)
-})
+mods <- purrr::pmap(list(a = social_fits_noILVs_2nets,
+                         b = social_fits_DistI_2nets,
+                         c = social_fits_DistIS_2nets,
+                         d = social_fits_DistI_AgeIS_2nets,
+                         e = social_fits_DistIS_AgeIS_2nets,
+                         f = asocial_fits_noILVs_2nets,
+                         g = asocial_fits_DistI_2nets,
+                         h = asocial_fits_DistIS_2nets,
+                         i = asocial_fits_DistI_AgeIS_2nets,
+                         j = asocial_fits_DistIS_AgeIS_2nets), 
+                    function(a, b, c, d, e, f, g, h, i, j) list(a, b, c, d, e, f, g, h, i, j))
+
+mods_wild <- purrr::pmap(list(a = social_fits_noILVs_wild_2nets,
+                         b = social_fits_DistI_wild_2nets,
+                         c = social_fits_DistIS_wild_2nets,
+                         d = social_fits_DistI_AgeIS_wild_2nets,
+                         e = social_fits_DistIS_AgeIS_wild_2nets,
+                         f = asocial_fits_noILVs_wild_2nets,
+                         g = asocial_fits_DistI_wild_2nets,
+                         h = asocial_fits_DistIS_wild_2nets,
+                         i = asocial_fits_DistI_AgeIS_wild_2nets,
+                         j = asocial_fits_DistIS_AgeIS_wild_2nets), 
+                    function(a, b, c, d, e, f, g, h, i, j) list(a, b, c, d, e, f, g, h, i, j))
+
+model_names <- c("noILVs", "DistI", "DistIS", "DistI_AgeIS", "DistIS_AgeIS", "a_noILVs", "a_DistI", "a_DistIS", "a_DistI_AgeIS", "a_DistIS_AgeIS")
+
+model_averaged_estimates <- map(mods, ~suppressMessages(suppressWarnings(get_model_averaged_estimates(.x, model_names))), .progress = T)
+model_averaged_estimates_wild <- map(mods_wild, ~suppressMessages(suppressWarnings(get_model_averaged_estimates(.x, model_names))), .progress = T)
+
