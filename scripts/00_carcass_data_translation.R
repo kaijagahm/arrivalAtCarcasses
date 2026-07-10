@@ -6,6 +6,7 @@ library(RColorBrewer)
 library(paletteer)
 library(sf)
 library(mapview)
+library(writexl)
 source(here("R/functions.R"))
 
 # We have two spreadsheets containing carcass data. One from 2018 through 2024, and one updated [I don't remember the exact specs of the updated one]. Need to bring these into R, combine them, check for duplicates, and clean everything up.
@@ -531,20 +532,15 @@ both %>%
 
 changed <- both %>%
   filter(edited_coords | edited_station)
-write.csv(changed, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_changed.csv")
 
 moved <- both %>%
   filter(edited_coords)
-write.csv(moved, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_moved.csv")
 
 moved_original_locs <- st_drop_geometry(moved) %>%
   sf::st_as_sf(coords = c("long_orig", "lat_orig"), remove = F, crs = "WGS84")
-write.csv(moved_original_locs, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_moved_originallocs.csv")
 
 relabeled <- both %>%
   filter(edited_station)
-write.csv(relabeled, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_relabeled.csv")
-write.csv(audited, file = "data/created/carcass_auditing/summaries/2026-07-09_all_points.csv")
 
 summary_bystation <- audited %>%
   st_drop_geometry() %>%
@@ -555,7 +551,6 @@ summary_bystation <- audited %>%
             prop_relabeled = round(n_relabeled/n, 2),
             prop_moved = round(n_moved/n, 2)) %>%
   arrange(desc(prop_moved), desc(prop_relabeled))
-write_csv(summary_bystation, file = "data/created/carcass_auditing/summaries/2026-07-09_summary_bystation.csv")
 
 summary_byyear <- audited %>%
   st_drop_geometry() %>%
@@ -566,7 +561,18 @@ summary_byyear <- audited %>%
             prop_relabeled = round(n_relabeled/n, 2),
             prop_moved = round(n_moved/n, 2)) %>%
   arrange(desc(year))
-write_csv(summary_byyear, file = "data/created/carcass_auditing/summaries/2026-07-09_summary_byyear.csv")
+
+dataset_list <- list(
+  "all_points" = st_drop_geometry(audited),
+  "carcasses_changed" = st_drop_geometry(changed),
+  "carcasses_moved"   = st_drop_geometry(moved),
+  "carcasses_moved_originallocs" = st_drop_geometry(moved_original_locs),
+  "carcasses_relabeled" = st_drop_geometry(relabeled),
+  "summary_by_station" = summary_bystation,
+  "summary_by_year" = summary_byyear
+)
+
+writexl::write_xlsx(dataset_list, path = "data/created/carcass_auditing/2026-07-09_carcassData.xlsx")
 
 st_write(changed, "data/created/carcass_auditing/changed.kml", driver = "KML", delete_layer = TRUE)
 st_write(moved, "data/created/carcass_auditing/moved.kml", driver = "KML", delete_layer = TRUE)
