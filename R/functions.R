@@ -2546,3 +2546,8 @@ get_model_averaged_estimates <- function(fits, names){
     return(averaged_results)
   }
 }
+
+get_carc_stats <- function(carcs_list){
+  summ <- purrr::list_rbind(carcs_list) %>% group_by(trial) %>% summarize(n_total = n(), n_seeds = sum(time == 0), n_right_censored = sum(time > t_end), n_found = n_total-n_right_censored) %>% mutate(prop_found = n_found/n_total, prop_seeds = n_seeds/n_total, prop_right_censored = n_right_censored/n_total)
+  return(summ)
+}

@@ -19,7 +19,7 @@ carcs <- carcasses_south %>%
   select(carcID, carcType, date, time, datetime, datetime_il, long, lat, stationName, carcassWeight, geometry, X, Y)
 
 carcs_simple <- carcasses_south %>%
-  select(carcID, carcType, date, stationName, year) %>%
+  select(carcID, carcType, date, stationName, year, carcassWeight) %>%
   distinct()
 dim(carcs)
 dim(carcs_simple)

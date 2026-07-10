@@ -88,6 +88,8 @@ old <- old[-which(old$carcID %in% new$carcID),] # remove those carcasses from `o
 # Join the old and new datasets
 ## bind_rows will handle the three columns that are present only in `new`--will just fill with NAs for `old`
 carcasses_inpa <- bind_rows(old, new)
+original_summary <- carcasses_inpa %>% group_by(year = lubridate::year(date), stationName) %>% summarize(n = n()) %>% pivot_wider(names_from = "year", values_from = "n")
+write_csv(original_summary, file = "data/created/original_summary_2026-07-09.csv")
 
 # Add a properly-formatted datetime column
 carcasses_inpa <- carcasses_inpa %>%
@@ -529,15 +531,42 @@ both %>%
 
 changed <- both %>%
   filter(edited_coords | edited_station)
+write.csv(changed, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_changed.csv")
 
 moved <- both %>%
   filter(edited_coords)
+write.csv(moved, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_moved.csv")
 
 moved_original_locs <- st_drop_geometry(moved) %>%
   sf::st_as_sf(coords = c("long_orig", "lat_orig"), remove = F, crs = "WGS84")
+write.csv(moved_original_locs, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_moved_originallocs.csv")
 
 relabeled <- both %>%
   filter(edited_station)
+write.csv(relabeled, file = "data/created/carcass_auditing/summaries/2026-07-09_carcasses_relabeled.csv")
+write.csv(audited, file = "data/created/carcass_auditing/summaries/2026-07-09_all_points.csv")
+
+summary_bystation <- audited %>%
+  st_drop_geometry() %>%
+  group_by(stationName) %>%
+  summarize(n = n(),
+            n_relabeled = sum(edited_station, na.rm = T),
+            n_moved = sum(edited_coords, na.rm = T),
+            prop_relabeled = round(n_relabeled/n, 2),
+            prop_moved = round(n_moved/n, 2)) %>%
+  arrange(desc(prop_moved), desc(prop_relabeled))
+write_csv(summary_bystation, file = "data/created/carcass_auditing/summaries/2026-07-09_summary_bystation.csv")
+
+summary_byyear <- audited %>%
+  st_drop_geometry() %>%
+  group_by("year" = lubridate::year(date)) %>%
+  summarize(n = n(),
+            n_relabeled = sum(edited_station, na.rm = T),
+            n_moved = sum(edited_coords, na.rm = T),
+            prop_relabeled = round(n_relabeled/n, 2),
+            prop_moved = round(n_moved/n, 2)) %>%
+  arrange(desc(year))
+write_csv(summary_byyear, file = "data/created/carcass_auditing/summaries/2026-07-09_summary_byyear.csv")
 
 st_write(changed, "data/created/carcass_auditing/changed.kml", driver = "KML", delete_layer = TRUE)
 st_write(moved, "data/created/carcass_auditing/moved.kml", driver = "KML", delete_layer = TRUE)

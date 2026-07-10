@@ -18,6 +18,8 @@ tar_load(model_averaged_estimates_stn)
 tar_load(model_averaged_estimates_wild)
 tar_load(stn_carcs_modified)
 tar_load(wild_carcs)
+tar_load(carc_summs_stn)
+tar_load(carc_summs_wild)
 names(model_averaged_estimates_stn) <- map_dbl(stn_carcs_modified, "carcID")
 names(model_averaged_estimates_wild) <- map_dbl(wild_carcs, "carcID")
 mae <- purrr::list_rbind(model_averaged_estimates_stn, names_to = "carcID") %>% 
@@ -40,63 +42,148 @@ greens <- c("#62680D", "#E5ED77") # roost wild vs. stn
 pctst <- mae %>%
   filter(grepl("percent_ST", coef_label)) %>%
   mutate(param = case_when(coef_label == "percent_ST_net1" ~ "Flight",
-                           coef_label == "percent_ST_net2" ~ "Roost"))
+                           coef_label == "percent_ST_net2" ~ "Roost")) %>%
+  mutate(detected = case_when(CI_Lower > 0 ~ 1, .default = 0),
+         carctype = case_when(carcType == "stn" ~ "SFS",
+                              carcType == "wild" ~ "Non-SFS"),
+         param_lbl = case_when(param == "Flight" ~ "Flight network",
+                               param == "Roost" ~ "Roost network"))
 pctst_soc <- pctst %>%
   filter(CI_Lower > 0)
 nrow(pctst_soc)/nrow(pctst) # 53% of carcasses/networks have social transmission detected
 
 # Does predictability predict whether or not we detect social transmission?
-pctst %>%
-  mutate(detected = case_when(CI_Lower > 0 ~ 1, .default = 0)) %>%
-  ggplot(aes(x = prop_days_covered, y = detected, color = interaction(carcType, param)))+
-  geom_point(size = 4, alpha = 0.5, pch = 1)+
-  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.2)+
-  theme_minimal()+
-  theme(text = element_text(size = 14),
-        legend.position = "none")+
-  labs(y = "Detected", x = "Predictability", color = "Carcass type")+
-  facet_wrap(~param)+
-  scale_color_manual(values = c(blues, greens))
+detected_yn <- pctst %>%
+  ggplot(aes(x = prop_days_covered, y = detected, color = carctype))+
+  geom_jitter(height = 0.03, 
+              width = 0, 
+              alpha = 0.3,
+              size = 3)+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  labs(y = "Social transmission detected?", 
+       x = "Predictability", color = "Carcass type")+
+  facet_wrap(~param_lbl)+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(
+    breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
+    labels = c("No", "Yes")
+  )
+detected_yn
+ggsave(detected_yn, file = "fig/ISBEplots/detected_yn.png", width = 9, height = 4.5)
+
 
 # %ST by carcass type, when ST > 0
-pctst_soc %>%
-  ggplot(aes(x = factor(year), y = Median, fill = interaction(carcType, param)))+
-  geom_boxplot(outlier.size = 0.5)+
-  facet_wrap(~param)+
-  theme_minimal()+
-  theme(text = element_text(size = 16))+
+pctst_boxplot <- pctst_soc %>%
+  ggplot(aes(x = carctype, y = Median, fill = carctype, color = carctype))+
+  geom_boxplot(alpha = 0.3, outlier.shape = NA)+
+  geom_jitter(width = 0.2, aes(color = carctype), alpha = 0.4, size = 2)+
+  facet_wrap(~param_lbl, scales = "free_y")+
   labs(y = "%ST (Median)",
-       x = "Year",
-       fill = "Carcass type")+
-  scale_fill_manual(values = c(blues, greens))
+       x = "Carcass type",
+       fill = "Carcass type",
+       color = "Carcass type")+
+  scale_fill_manual(values = carcasscolors)+
+  scale_color_manual(values = carcasscolors)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  scale_y_continuous(limits = c(0, 1))
+pctst_boxplot
+ggsave(pctst_boxplot, file = "fig/ISBEplots/pctst_boxplot.png", width = 9, height = 4.5)
 
 # %ST by carcass type and predictability, when ST > 0
-pctst_soc %>%
-  ggplot(aes(x = prop_days_covered, y = Median, color = interaction(carcType, param)))+
-  geom_point(size = 3, pch = 1, alpha = 0.8)+
-  theme_minimal()+
+pctst_scatter <- pctst_soc %>%
+  ggplot(aes(x = prop_days_covered, y = Median, color = carctype))+
+  geom_point(size = 4, alpha = 0.4)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
   geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
-  theme(text = element_text(size = 16),
-        legend.position = "bottom")+
   labs(y = "%ST (Median)",
        x = "Predictability",
        color = "Carcass type")+
-  scale_color_manual(values = c(blues, greens))+
-  facet_wrap(~param)
+  scale_color_manual(values = carcasscolors)+
+  facet_wrap(~param_lbl, scales = "free_y")+
+  scale_y_continuous(limits = c(0, 1))
+pctst_scatter
+ggsave(pctst_scatter, file = "fig/ISBEplots/pctst_scatter.png", width = 9, height = 4.5)
 
-# %ST by carcass type, predictability, and year, when ST > 0
-pctst_soc %>%
-  ggplot(aes(x = prop_days_covered, y = Median, color = interaction(carcType, param)))+
-  facet_wrap(~year)+
-  geom_point(size = 2, pch = 1, alpha = 0.8)+
-  theme_minimal()+
-  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
-  theme(text = element_text(size = 16),
-        legend.position = "bottom")+
-  labs(y = "%ST (Median)",
-       x = "Predictability",
-       color = "Carcass type")+
-  scale_color_manual(values = c(blues, greens))
+pctst %>%
+  filter(carctype == "SFS") %>%
+  ggplot(aes(x = carcassWeight, y = detected, color = carctype))+
+  geom_jitter(height = 0.03, 
+              width = 0, 
+              alpha = 0.3,
+              size = 3)+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  labs(y = "Social transmission detected?", 
+       x = "Carcass weight", color = "Carcass type")+
+  facet_wrap(~param_lbl)+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(
+    breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
+    labels = c("No", "Yes")
+  )
+
+pctst %>%
+  left_join(bind_rows(carc_summs_stn, carc_summs_wild), by = c("carcID" = "trial")) %>%
+  ggplot(aes(x = n_found, y = detected, color = carctype))+
+  geom_jitter(height = 0.03, 
+              width = 0, 
+              alpha = 0.3,
+              size = 3)+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  labs(y = "Social transmission detected?", 
+       x = "# found", color = "Carcass type")+
+  facet_wrap(~param_lbl)+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(
+    breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
+    labels = c("No", "Yes")
+  )
+
+pctst %>%
+  left_join(bind_rows(carc_summs_stn, carc_summs_wild), by = c("carcID" = "trial")) %>%
+  ggplot(aes(x = n_total, y = detected, color = carctype, group = interaction(carctype, year)))+
+  geom_jitter(height = 0.03, 
+              width = 0, 
+              alpha = 0.3,
+              size = 3)+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  labs(y = "Social transmission detected?", 
+       x = "N in network", color = "Carcass type")+
+  facet_wrap(~param_lbl)+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(
+    breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
+    labels = c("No", "Yes")
+  )
+
+summary(lm(Median ~ prop_days_covered + carcassWeight + coef_label, data = filter(pctst_soc, carctype == "SFS")))
+summary(lm(Median ~ prop_days_covered*carctype + coef_label, data = pctst_soc))
+
+
+
+
+
 
 library(lme4)
 mod <- lm(Median ~ prop_days_covered*carcType + coef_label, data = pctst_soc)

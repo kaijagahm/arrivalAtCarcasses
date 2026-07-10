@@ -1616,5 +1616,8 @@ list(
   
   tar_target(max_displs, get_max_displs(after_departure_interp_only)),
   
-  tar_target(dyad_flight_stats, get_dyad_flight_stats(trajectories_sync, sync_departures_df, ddf))
+  tar_target(dyad_flight_stats, get_dyad_flight_stats(trajectories_sync, sync_departures_df, ddf)),
+  
+  tar_target(carc_summs_stn, get_carc_stats(event_data)),
+  tar_target(carc_summs_wild, get_carc_stats(event_data_wild))
 )
