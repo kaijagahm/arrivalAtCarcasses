@@ -74,65 +74,90 @@ ed <- ed %>% filter(time < t_end) %>% select(id, time) %>%
   mutate(time = as.numeric(factor(time)))
 indivs <- ed$id
 
-net <- net %>% select(time, focal, other, flight_sri_scaled) %>%
+net_flight <- net %>% select(time, focal, other, flight_sri_scaled) %>%
+  filter(focal %in% indivs & other %in% indivs)
+net_roost <- net %>% select(time, focal, other, roost_together) %>%
   filter(focal %in% indivs & other %in% indivs)
 
 # ---- 1. Get the full set of node names ----
-all_nodes <- sort(unique(c(net$focal, net$other)))
+all_nodes_flight <- sort(unique(c(net_flight$focal, net_flight$other)))
+all_nodes_roost <- sort(unique(c(net_roost$focal, net_roost$other)))
 
 # ---- 2. Build one "master" graph (all edges, any time) just to fix a layout ----
 # Using all nonzero edges across all times gives a sensible overall layout;
 # nodes with no edges anywhere will still be placed (just off on their own).
-master_edges <- net %>%
+master_edges_flight <- net_flight %>%
   filter(flight_sri_scaled > 0, focal != other) %>%
   distinct(focal, other) %>%
   rename(from = focal, to = other)
 
-master_graph <- tbl_graph(
-  nodes    = tibble(name = all_nodes),
-  edges    = master_edges,
+master_edges_roost <- net_roost %>%
+  filter(roost_together > 0, focal != other) %>%
+  distinct(focal, other) %>%
+  rename(from = focal, to = other)
+
+master_graph_flight <- tbl_graph(
+  nodes    = tibble(name = all_nodes_flight),
+  edges    = master_edges_flight,
+  directed = FALSE
+)
+
+master_graph_roost <- tbl_graph(
+  nodes    = tibble(name = all_nodes_roost),
+  edges    = master_edges_roost,
   directed = FALSE
 )
 
 set.seed(42)  # fixes the FR algorithm's randomness so layout is reproducible
-master_layout <- create_layout(master_graph, layout = "kk")
+master_layout_flight <- create_layout(master_graph_flight, layout = "kk")
+master_layout_roost <- create_layout(master_graph_roost, layout = "graphopt")
 
-node_coords <- master_layout %>%
+node_coords_flight <- master_layout_flight %>%
+  as_tibble() %>%
+  select(name, x, y)
+
+node_coords_roost <- master_layout_roost %>%
   as_tibble() %>%
   select(name, x, y)
 
 # ---- 3. Cumulative "red" node sets per time value ----
-times <- sort(unique(net$time))
+times_flight <- sort(unique(net_flight$time))
+times_roost <- sort(unique(net_roost$time))
 
-red_by_time <- set_names(
-  map(times, ~ ed %>% filter(time <= .x) %>% pull(id) %>% unique()),
-  as.character(times)
+informed_by_time_flight <- set_names(
+  map(times_flight, ~ ed %>% filter(time <= .x) %>% pull(id) %>% unique()),
+  as.character(times_flight)
+)
+
+informed_by_time_roost <- set_names(
+  map(times_roost, ~ ed %>% filter(time <= .x) %>% pull(id) %>% unique()),
+  as.character(times_roost)
 )
 
 # ---- Global edge weight range (based on edges that will actually be drawn) ----
-weight_range <- net %>%
+weight_range_flight <- net_flight %>%
   filter(flight_sri_scaled > 0) %>%
   summarise(min_w = min(flight_sri_scaled), max_w = max(flight_sri_scaled))
 
-global_min <- weight_range$min_w
-global_max <- weight_range$max_w
+global_min <- weight_range_flight$min_w
+global_max <- weight_range_flight$max_w
 
 # ---- Updated plotting function ----
-plot_network_time <- function(t) {
+plot_network_time_flight <- function(t) {
   
-  edges_t <- net %>%
+  edges_t <- net_flight %>%
     filter(time == t, flight_sri_scaled > 0, focal != other) %>%
     transmute(from = focal, to = other, weight = flight_sri_scaled)
   
-  nodes_t <- tibble(name = all_nodes) %>%
-    mutate(status = if_else(name %in% red_by_time[[as.character(t)]], "red", "black"))
+  nodes_t <- tibble(name = all_nodes_flight) %>%
+    mutate(status = if_else(name %in% informed_by_time_flight[[as.character(t)]], "informed", "uninformed"))
   
   g <- tbl_graph(nodes = nodes_t, edges = edges_t, directed = FALSE)
   
   layout_t <- create_layout(
     g, layout = "manual",
-    x = node_coords$x[match(nodes_t$name, node_coords$name)],
-    y = node_coords$y[match(nodes_t$name, node_coords$name)]
+    x = node_coords_flight$x[match(nodes_t$name, node_coords_flight$name)],
+    y = node_coords_flight$y[match(nodes_t$name, node_coords_flight$name)]
   )
   
   ggraph(layout_t) +
@@ -143,22 +168,56 @@ plot_network_time <- function(t) {
       guide  = "none"
     ) +
     geom_node_point(aes(fill = status), size = 15, alpha = 0.9, pch = 21) +
-    scale_fill_manual(values = c(black = "lightgray", red = "black"), guide = "none") +
+    scale_fill_manual(values = c(uninformed = "lightgray", informed = "black"), guide = "none") +
     theme_void() +
     labs(title = paste("Network at time", t))
 }
 
-all_plots <- set_names(map(times, plot_network_time), as.character(times))
+all_plots_flight <- set_names(map(times_flight, plot_network_time_flight), as.character(times_flight))
 
-# View one
-all_plots[[4]]
+plot_network_time_roost <- function(t) {
+  
+  edges_t <- net_roost %>%
+    filter(time == t, roost_together > 0, focal != other) %>%
+    transmute(from = focal, to = other, weight = roost_together)
+  
+  if(nrow(edges_t) > 0){
+    nodes_t <- tibble(name = all_nodes_roost) %>%
+      mutate(status = if_else(name %in% red_by_time_roost[[as.character(t)]], "informed", "uninformed"))
+    
+    g <- tbl_graph(nodes = nodes_t, edges = edges_t, directed = FALSE)
+    
+    layout_t <- create_layout(
+      g, layout = "manual",
+      x = node_coords_roost$x[match(nodes_t$name, node_coords_roost$name)],
+      y = node_coords_roost$y[match(nodes_t$name, node_coords_roost$name)]
+    )
+    
+    ggraph(layout_t) +
+      geom_edge_link(width = 1, alpha = 0.8, colour = "grey50") +
+      geom_node_point(aes(fill = status), size = 15, alpha = 0.9, pch = 23) +
+      scale_fill_manual(values = c(uninformed = "lightgray", informed = "black"), guide = "none") +
+      theme_void()
+  }else{
+    NULL
+  }
+}
+
+all_plots_roost <- set_names(map(times_roost, plot_network_time_roost), as.character(times_roost))
+all_plots_roost[[1]]
+all_plots_roost[[30]]
+all_plots_roost[[33]]
 
 # ---- 6. Save all of them ----
-walk2(all_plots[1:6], names(all_plots[1:6]), function(p, t) {
-  ggsave(filename = paste0("fig/ISBEplots/networks/network_time_", t, ".png"),
+walk2(all_plots_flight[1:6], names(all_plots_flight[1:6]), function(p, t) {
+  ggsave(filename = paste0("fig/ISBEplots/networks/flight_network_time_", t, ".png"),
          plot = p, width = 7, height = 7, dpi = 300)
 })
 
+walk2(all_plots_roost[c(1, 30, 33)], names(all_plots_roost[c(1, 30, 33)]), function(p, t) {
+  ggsave(filename = paste0("fig/ISBEplots/networks/roost_network_time_", t, ".png"),
+         plot = p, width = 7, height = 7, dpi = 300)
+})
 
 # Acc plot ----------------------------------------------------------------
 tar_load(cal_24_2)
