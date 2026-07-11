@@ -275,7 +275,6 @@ summary(reg_flight)
 # Don't rely too much on Test for Residual Heterogeneity, "(which is essentially the Q-test we already got to know previously (see Chapter 5.1.1)). Now, however, we test if the heterogeneity not explained by the predictor is significant. We see that this is the case, with p < 0.001. However, we know the limitations of the Q-test (Chapter 5.1.1), and should therefore not rely too heavily on this result."
 
 #The next part shows the Test of Moderators. We see that this test is not significant (p = 0.3879). This means that we do not have evidence that predictability predicts effect size.
-bubble(reg, studlab = TRUE) # not sure how to read this
 
 # What about an interaction term?
 reg_flight_int <- metareg(m_flight, ~ carcType*prop_days_covered)
@@ -310,6 +309,29 @@ betas %>%
   facet_wrap(~coef_label, scales = "free")+
   theme(axis.text.x = element_blank())
 
+# Age only
+age_betas <- betas %>%
+  mutate(CI_Lower = case_when(CI_Lower < -4 ~ NA, .default = CI_Lower)) %>%
+  mutate(new_labels = case_when(grepl("asocial", coef_label) ~ "Age effect on intrinsic rate",
+                                grepl("_social", coef_label) ~ "Age effect on social rate", .default = NA),
+         age_level = case_when(grepl("[1]", coef_label) ~ "Subadult (vs. juvenile)",
+                               grepl("[2]", coef_label) ~ "Adult (vs. juvenile)")) %>%
+  filter(grepl("age", coef_label)) %>%
+  ggplot(aes(x = factor(carcID), y = Median, color = carcType))+
+  scale_color_manual(values = carcasscolors)+
+  geom_point()+
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0)+
+  theme_classic()+
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        axis.ticks.x = element_blank(),
+        text = element_text(size = 20))+
+  facet_wrap(~interaction(new_labels, age_level), scales = "free")+
+  labs(y = "Effect size",
+       x = NULL,
+       color = "Carcass type")
+ggsave(age_betas, file = "fig/ISBEplots/age_betas.png", width = 5, height = 5)
+
 betas %>%
   filter(coef_label == "mean_dist_to_carcass_norm__on_asocial") %>%
   filter(CI_Lower > -60) %>%
@@ -321,3 +343,4 @@ betas %>%
   geom_hline(aes(yintercept = 0))+
   labs(y = "Median", x = "CarcID", color = "Carcass type")
 # None positive, some significantly negative. This is the only one that has any significant results.
+
