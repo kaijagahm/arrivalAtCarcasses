@@ -12,6 +12,7 @@ library(patchwork)
 library(meta) # for meta-regression, frequentist
 library(brms) # for Bayesian analyses, including meta-regression
 handlers(global = TRUE)
+library(ggExtra)
 source("R/functions.R")
 
 tar_load(model_averaged_estimates_stn)
@@ -75,7 +76,6 @@ detected_yn <- pctst %>%
 detected_yn
 ggsave(detected_yn, file = "fig/ISBEplots/detected_yn.png", width = 9, height = 4.5)
 
-
 # %ST by carcass type, when ST > 0
 pctst_boxplot <- pctst_soc %>%
   ggplot(aes(x = carctype, y = Median, fill = carctype, color = carctype))+
@@ -114,7 +114,133 @@ pctst_scatter <- pctst_soc %>%
 pctst_scatter
 ggsave(pctst_scatter, file = "fig/ISBEplots/pctst_scatter.png", width = 9, height = 4.5)
 
-pctst %>%
+# Composite plot: scatterplot with marginal violins or half-violins
+## Scatterplots: flight
+scatter_fl <- pctst_soc %>%
+  filter(param_lbl == "Flight network") %>%
+  ggplot(aes(x = prop_days_covered, y = Median, color = carctype))+
+  geom_point(size = 4, alpha = 0.4)+
+  theme_classic()+
+  theme(text = element_text(size = 20))+
+  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
+  labs(y = "%ST (Median)",
+       x = "Predictability",
+       color = "Carcass type")+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(limits = c(0, 1))
+
+## Scatterplots: roost
+scatter_ro <- pctst_soc %>%
+  filter(param_lbl == "Roost network") %>%
+  ggplot(aes(x = prop_days_covered, y = Median, color = carctype))+
+  geom_point(size = 4, alpha = 0.4)+
+  theme_classic()+
+  theme(text = element_text(size = 20))+
+  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
+  labs(y = "%ST (Median)",
+       x = "Predictability",
+       color = "Carcass type")+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(limits = c(0, 1))
+
+## Violins: flight
+violin_fl <- pctst_soc %>%
+  filter(param_lbl == "Flight network") %>%
+  ggplot(aes(x = carctype, y = Median, color = carctype, fill = carctype))+
+  geom_violin(alpha = 0.2, linewidth = 1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())+
+  labs(y = "%ST (Median)",
+       x = NULL)+
+  scale_color_manual(values = carcasscolors)+
+  scale_fill_manual(values = carcasscolors)+
+  scale_y_continuous(limits = c(0, 1))
+
+## Violins: roost
+violin_ro <- pctst_soc %>%
+  filter(param_lbl == "Roost network") %>%
+  ggplot(aes(x = carctype, y = Median, color = carctype, fill = carctype))+
+  geom_violin(alpha = 0.2, linewidth = 1)+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())+
+  scale_color_manual(values = carcasscolors)+
+  scale_fill_manual(values = carcasscolors)+
+  scale_y_continuous(limits = c(0, 1))
+
+
+(scatter_fl & theme(legend.position = "none")) + violin_fl
+
+## Density: flight
+density_fl <- pctst_soc %>%
+  filter(param_lbl == "Flight network") %>%
+  mutate(carctype = factor(carctype, levels = c("SFS", "Non-SFS"))) %>%
+  ggplot(aes(x = Median, color = carctype, fill = carctype))+
+  geom_density(alpha = 0.2, linewidth = 1, outline.type = "full")+
+  theme_classic()+
+  coord_flip()+
+  theme(text = element_text(size = 20),
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())+
+  scale_color_manual(values = rev(carcasscolors))+
+  scale_fill_manual(values = rev(carcasscolors))
+
+## Density: roost
+density_ro <- pctst_soc %>%
+  filter(param_lbl == "Roost network") %>%
+  mutate(carctype = factor(carctype, levels = c("SFS", "Non-SFS"))) %>%
+  ggplot(aes(x = Median, color = carctype, fill = carctype))+
+  geom_density(alpha = 0.2, linewidth = 1, outline.type = "full")+
+  theme_classic()+
+  coord_flip()+
+  theme(text = element_text(size = 20),
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())+
+  scale_color_manual(values = rev(carcasscolors))+
+  scale_fill_manual(values = rev(carcasscolors))
+
+combined_fl <- ((scatter_fl & theme(legend.position = "none")) | density_fl) & theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"))
+
+combined_ro <- ((scatter_ro & theme(legend.position = "none")) | density_ro) & theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"))
+
+combined_both <- ((scatter_fl & theme(legend.position = "none")) | density_fl | plot_spacer() | (scatter_ro & theme(legend.position = "none", axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())) | density_ro) + plot_layout(widths = c(4, 0.75, 0.3, 4, 0.75), guides = "collect") & theme(plot.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"))
+
+combined_both
+ggsave(combined_both, file = "fig/ISBEplots/scatter_density_combined.png", width = 8, height = 4.5)
+
+
+carcwt <- pctst %>%
   filter(carctype == "SFS") %>%
   ggplot(aes(x = carcassWeight, y = detected, color = carctype))+
   geom_jitter(height = 0.03, 
@@ -134,8 +260,10 @@ pctst %>%
     breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
     labels = c("No", "Yes")
   )
+carcwt
+ggsave(carcwt, file = "fig/carcwt.png", width = 9, height = 4.5)
 
-pctst %>%
+nfound <- pctst %>%
   left_join(bind_rows(carc_summs_stn, carc_summs_wild), by = c("carcID" = "trial")) %>%
   ggplot(aes(x = n_found, y = detected, color = carctype))+
   geom_jitter(height = 0.03, 
@@ -155,10 +283,12 @@ pctst %>%
     breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
     labels = c("No", "Yes")
   )
+nfound
+ggsave(nfound, file = "fig/nfound.png", width = 9, height = 4.5)
 
-pctst %>%
+ninnet <- pctst %>%
   left_join(bind_rows(carc_summs_stn, carc_summs_wild), by = c("carcID" = "trial")) %>%
-  ggplot(aes(x = n_total, y = detected, color = carctype, group = interaction(carctype, year)))+
+  ggplot(aes(x = n_total, y = detected, color = carctype))+
   geom_jitter(height = 0.03, 
               width = 0, 
               alpha = 0.3,
@@ -176,6 +306,10 @@ pctst %>%
     breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
     labels = c("No", "Yes")
   )
+ninnet
+ggsave(ninnet, file = "fig/ninnet.png", width = 9, height = 4.5)
+
+## What about the other carcasses that are active at the same time?
 
 summary(lm(Median ~ prop_days_covered + carcassWeight + coef_label, data = filter(pctst_soc, carctype == "SFS")))
 summary(lm(Median ~ prop_days_covered*carctype + coef_label, data = pctst_soc))
@@ -311,12 +445,10 @@ betas %>%
 
 # Age only
 age_betas <- betas %>%
-  mutate(CI_Lower = case_when(CI_Lower < -4 ~ NA, .default = CI_Lower)) %>%
-  mutate(new_labels = case_when(grepl("asocial", coef_label) ~ "Age effect on intrinsic rate",
-                                grepl("_social", coef_label) ~ "Age effect on social rate", .default = NA),
-         age_level = case_when(grepl("[1]", coef_label) ~ "Subadult (vs. juvenile)",
-                               grepl("[2]", coef_label) ~ "Adult (vs. juvenile)")) %>%
   filter(grepl("age", coef_label)) %>%
+  mutate(coef_label = str_replace(coef_label, "age\\[1\\]", "subadult"),
+         coef_label = str_replace(coef_label, "age\\[2\\]", "adult")) %>%
+  mutate(CI_Lower = case_when(CI_Lower < -4 ~ NA, .default = CI_Lower)) %>%
   ggplot(aes(x = factor(carcID), y = Median, color = carcType))+
   scale_color_manual(values = carcasscolors)+
   geom_point()+
@@ -325,22 +457,33 @@ age_betas <- betas %>%
   theme(axis.text.x = element_blank(),
         strip.background = element_rect(color = "white", fill = "white"),
         axis.ticks.x = element_blank(),
-        text = element_text(size = 20))+
-  facet_wrap(~interaction(new_labels, age_level), scales = "free")+
+        text = element_text(size = 20),
+        legend.position = "bottom")+
+  facet_wrap(~coef_label, scales = "free")+
   labs(y = "Effect size",
-       x = NULL,
+       x = "Carcass",
        color = "Carcass type")
-ggsave(age_betas, file = "fig/ISBEplots/age_betas.png", width = 5, height = 5)
+age_betas
+ggsave(age_betas, file = "fig/age_betas.png", width = 10, height = 5)
 
-betas %>%
-  filter(coef_label == "mean_dist_to_carcass_norm__on_asocial") %>%
-  filter(CI_Lower > -60) %>%
+# Distance only
+dist_betas <- betas %>%
+  filter(grepl("dist", coef_label)) %>%
+  mutate(CI_Lower = case_when(CI_Lower < -4 ~ NA, .default = CI_Lower)) %>%
   ggplot(aes(x = factor(carcID), y = Median, color = carcType))+
+  scale_color_manual(values = carcasscolors)+
   geom_point()+
-  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper))+
-  theme_minimal()+
-  theme(axis.text.x = element_blank(), text = element_text(size = 16))+
-  geom_hline(aes(yintercept = 0))+
-  labs(y = "Median", x = "CarcID", color = "Carcass type")
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0)+
+  theme_classic()+
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        axis.ticks.x = element_blank(),
+        text = element_text(size = 20),
+        legend.position = "bottom")+
+  facet_wrap(~coef_label, scales = "free")+
+  labs(y = "Effect size",
+       x = "Carcass",
+       color = "Carcass type")
+dist_betas
+ggsave(dist_betas, file = "fig/dist_betas.png", width = 10, height = 5)
 # None positive, some significantly negative. This is the only one that has any significant results.
-
