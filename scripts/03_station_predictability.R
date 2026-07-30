@@ -19,7 +19,7 @@ carcs <- carcasses_south %>%
   select(carcID, carcType, date, time, datetime, datetime_il, long, lat, stationName, carcassWeight, geometry, X, Y)
 
 carcs_simple <- carcasses_south %>%
-  select(carcType, date, stationName, year) %>%
+  select(carcID, carcType, date, stationName, year, carcassWeight) %>%
   distinct()
 dim(carcs)
 dim(carcs_simple)
@@ -213,3 +213,5 @@ predictability_results %>%
   scale_color_viridis_c()+
   theme_minimal()+
   theme(text = element_text(size = 18))
+
+saveRDS(predictability_results, file = "data/created/predictability_results.RDS")

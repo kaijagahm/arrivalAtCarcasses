@@ -1616,28 +1616,55 @@ get_leftroost <- function(ordered_df, threshold){
 }
 
 get_trajectories_sync_pair <- function(sync, trajs){
-  outs <- vector(mode = "list", length = nrow(sync))
-  for(i in 1:nrow(sync)){
-    pair <- unlist(sync[i, c("ID1", "ID2")])
-    date <- sync$date_il[i]
-    trajs_pair <- dplyr::filter(trajs, individual_local_identifier %in% pair & date_il == date)
-    
-    outs[[i]] <- trajs_pair %>%
-      dplyr::group_by(timestamp_il) %>%
-      dplyr::filter(n() == 2) %>%
-      dplyr::group_modify(~ {
-        tibble(
-          id1 = .x$individual_local_identifier[1],
-          id2 = .x$individual_local_identifier[2],
-          flight1 = .x$flight[1],
-          flight2 = .x$flight[2],
-          distance_m = as.numeric(sf::st_distance(.x$geometry[1],
-                                                  .x$geometry[2]))
-        )
-      }) %>%
-      ungroup()
-    cat("done with ", i, "/", nrow(sync), "\n")
-  }
+  
+  # Fix type mismatch: sync$date_il is character, trajs$date_il is Date
+  sync <- sync %>% dplyr::mutate(date_il = as.Date(date_il))
+  
+  # 1. Pull out coordinates once, drop geometry
+  coords <- sf::st_coordinates(trajs)
+  trajs_df <- trajs %>%
+    sf::st_drop_geometry() %>%
+    dplyr::mutate(X = coords[, "X"], Y = coords[, "Y"]) %>%
+    dplyr::select(individual_local_identifier, date_il, timestamp_il, flight, X, Y)
+  
+  # 2. Add a row index to sync
+  sync <- sync %>% dplyr::mutate(.pair_id = dplyr::row_number())
+  
+  # 3. Join trajs to sync twice
+  t1 <- trajs_df %>%
+    dplyr::rename(ID1 = individual_local_identifier,
+                  flight1 = flight, X1 = X, Y1 = Y) %>%
+    dplyr::inner_join(
+      sync %>% dplyr::select(.pair_id, date_il, ID1),
+      by = c("ID1", "date_il")
+    )
+  
+  t2 <- trajs_df %>%
+    dplyr::rename(ID2 = individual_local_identifier,
+                  flight2 = flight, X2 = X, Y2 = Y) %>%
+    dplyr::inner_join(
+      sync %>% dplyr::select(.pair_id, date_il, ID2),
+      by = c("ID2", "date_il")
+    )
+  
+  # 4. Join the two on .pair_id + timestamp_il
+  out <- dplyr::inner_join(
+    t1, t2,
+    by = c(".pair_id", "date_il", "timestamp_il")
+  ) %>%
+    dplyr::mutate(
+      distance_m = sqrt((X1 - X2)^2 + (Y1 - Y2)^2)
+    ) %>%
+    dplyr::select(.pair_id, date_il, timestamp_il,
+                  id1 = ID1, id2 = ID2, flight1, flight2, distance_m)
+  
+  # 5. Split back into a list, one element per row of sync
+  outs <- vector("list", nrow(sync))
+  split_out <- split(out, out$.pair_id)
+  outs[as.integer(names(split_out))] <- split_out
+  empty <- out[0, ]
+  outs[sapply(outs, is.null)] <- list(empty)
+  
   return(outs)
 }
 
@@ -1988,3 +2015,539 @@ savefit <- function(fit, idx, folder, prefix, type){
   }
 }
 
+# Get data for plotting ppc curves for models
+get_plotdata <- function(event_data, model_fit){
+  
+  if(!is.null(event_data) & !is.null(model_fit)){
+    # create cumulative count of events
+    ed <- event_data %>% group_by(trial) %>% mutate(n_trial = n())
+    
+    plot_data_obs <- ed %>%
+      filter(
+        #time > 0, # Remove this--we want to include the demonstrators in the obs line, since they're included in the draws!
+        time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+      group_by(trial) %>%
+      arrange(time, .by_group = TRUE) %>%
+      mutate(
+        cum_prop = row_number() / n_trial, # this denominator needs to be the number of individuals per trial
+        type = "observed"
+      ) %>%
+      select(trial, time, cum_prop, type) %>%
+      ungroup()
+    
+    # If there's not already a value for 0, add in 0,0 starting point
+    if(!(0 %in% plot_data_obs$time)){
+      plot_data_obs <- bind_rows(
+        plot_data_obs,
+        plot_data_obs %>%
+          distinct(trial) %>%
+          mutate(time = 0, cum_prop = 0, type = "observed")
+      ) %>%
+        arrange(trial, time)
+    }
+    
+    # extract draws of predicted acqtime
+    draws_df <- posterior::as_draws_df(model_fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
+    
+    # pivot longer
+    ppc_long <- draws_df %>%
+      select(starts_with("acquisition_time[")) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = c("trial", "ind"),
+        names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+        values_to = "time"
+      ) %>%
+      mutate(
+        trial = as.integer(trial),
+        ind = as.integer(ind),
+        draw = rep(1:(nrow(draws_df)),
+                   each = length(unique(.$trial)) * length(unique(.$ind))
+        )
+      )
+    
+    
+    # thin sample for plotting
+    sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+    ppc_long <- ppc_long %>% filter(draw %in% sample_idx)
+    
+    # build cumulative curves per draw
+    # same as before, we need a way to reference the number of individuals in each trial
+    ppc_long <- ppc_long %>%
+      group_by(draw, trial) %>%
+      mutate(n_trial = n())
+    summary(ppc_long)
+    # we also need to remove individuals predicted as censored
+    ppc_long <- ppc_long %>%
+      filter(time > -1)
+    # create cumulative curves
+    plot_data_ppc <- ppc_long %>%
+      group_by(draw, trial, time) %>%
+      summarise(n = n(), n_trial = first(n_trial), .groups = "drop") %>%
+      group_by(draw, trial) %>%
+      arrange(time) %>%
+      mutate(cum_prop = cumsum(n) / n_trial)
+    
+    # add in 0,0 starting point
+    plot_data_ppc <- bind_rows(
+      plot_data_ppc,
+      plot_data_ppc %>%
+        distinct(trial, draw) %>%
+        mutate(time = 0, cum_prop = 0, type = "ppc")
+    ) %>%
+      arrange(trial, time)
+    
+    return(list("obs" = plot_data_obs, "pred" = plot_data_ppc))
+    
+  }else{NULL}
+}
+
+# Make ppc curveplots
+get_curveplots <- function(plot_data, cid){
+  if(!is.null(plot_data)){
+    p <- ggplot(mapping = aes(x = time, y = cum_prop))+
+      geom_line(
+        data = plot_data$pred, aes(group = interaction(draw, trial)), alpha = 0.1)+
+      geom_line(
+        data = plot_data$obs, linewidth = 1)+
+      labs(x = "Time", y = "Cumulative proportion informed", title = cid)+
+      theme_minimal()
+    return(p)
+  }else{return(NULL)}
+}
+
+# Identify individual informed status with respect to each carcass
+get_vulture_lines <- function(x){
+  if(nrow(x) > 0){
+    x %>%
+      move2::select_track_data(individual_local_identifier, date_il, day, id) %>%
+      move2::mt_set_track_id("id") %>%
+      move2::mt_track_lines() %>%
+      sf::st_transform(32636)
+  }else{
+    NULL
+  }
+}
+
+
+# Co-departures from roost ------------------------------------------------
+### tocombine: 1
+join_roosts_gps <- function(gps, roosts, roostPolygons){
+  # See which roost polygon each GPS point falls into (if any). (Assumes no overlapping roost polys)
+  roostID_gps <- gps %>% sf::st_as_sf() %>%
+    sf::st_transform(32636) %>%
+    sf::st_intersects(roostPolygons) %>%
+    as.numeric()
+  gps_updated <- gps %>% mutate(roostID_gps = roostID_gps)
+  
+  roosts_tojoin <- roosts %>% select(individual_local_identifier, roost_date, roostID) %>%
+    bind_cols(sf::st_coordinates(roosts)) %>%
+    sf::st_drop_geometry() %>%
+    rename("roost_X" = X, "roost_Y" = Y)# roost loc and polygon ID (if any) per vulture per night. Includes non-polygon roosts.
+  
+  gps_joined <- gps_updated %>%
+    mutate(roost_date = date_il - lubridate::days(1)) %>%
+    left_join(roosts_tojoin, by = c("individual_local_identifier", "roost_date")) %>%
+    mutate(in_a_roost = !is.na(roostID_gps)) # joined roosts to GPS data to prep for determining departures
+  
+  # CALCULATE DEPARTURES from known roosts only---------------------------------------------
+  gps_joined_knownroost <- gps_joined %>%
+    filter(!is.na(roostID)) # only roost polygons
+  rm(gps_updated) # don't need these anymore; let's clear some memory
+  rm(gps_joined)
+  
+  indiv_date_list <- gps_joined_knownroost %>%
+    arrange(date_il, individual_local_identifier, timestamp_il) %>%
+    group_by(date_il, individual_local_identifier) %>%
+    group_split(.keep = T)
+  
+  # identify points when they "left" the roost, looking for 2 consecutive points
+  leftpoints <- purrr::map_dbl(indiv_date_list, ~get_leftroost(.x, threshold = 2))
+  
+  data_rejoined <- purrr::map2(indiv_date_list, leftpoints, ~{
+    .x$left_roost <- FALSE
+    if(!is.na(.y)){.x$left_roost[.y] <- TRUE}
+    return(.x)}) %>% data.table::rbindlist() %>%
+    as.data.frame() %>%
+    sf::st_as_sf(crs = 32636)
+  
+  return(data_rejoined)
+}
+
+get_departures <- function(data_rejoined){
+  leaving_points <- data_rejoined %>% filter(left_roost)
+  leaving_points_dates <- leaving_points %>%
+    group_by(date_il) %>%
+    group_split(.keep = T)
+  
+  dates <- purrr::map_chr(leaving_points_dates, ~as.character(.x$date_il[1]))
+  roost_mats <- purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$roostID, .x$roostID, FUN = "==")*1
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)
+  }) %>%
+    setNames(., dates)
+  
+  roost_mats_long <- purrr::map(roost_mats, ~{as.data.frame(.x) %>% rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "same_roost")}) %>% setNames(., dates)
+  
+  roost_mats_same_whichroost <- purrr::list_rbind(roost_mats_long, names_to = "date_il") %>%
+    mutate(date_il = lubridate::ymd(date_il)) %>%
+    left_join(leaving_points, by = c("ID1" = "individual_local_identifier", "date_il")) %>%
+    filter(same_roost == 1)
+  
+  difftime_mats <- purrr::map(leaving_points_dates, ~{
+    mat <- outer(.x$timestamp_il, .x$timestamp_il,
+                 function(t1, t2) as.numeric(abs(difftime(t1, t2, units = "mins"))))
+    rownames(mat) <- .x$individual_local_identifier
+    colnames(mat) <- .x$individual_local_identifier
+    return(mat)}) %>% setNames(., dates)
+  
+  difftime_mats_long <- purrr::map(difftime_mats, ~{
+    as.data.frame(.x) %>%
+      rownames_to_column("ID1") %>% pivot_longer(cols = -ID1, names_to = "ID2", values_to = "time_diff_min")
+  }) %>%
+    setNames(., dates)
+  
+  both <- purrr::map2(roost_mats_long, difftime_mats_long, ~dplyr::left_join(.x, .y, by = c("ID1", "ID2"))) %>% setNames(., dates)
+  
+  departures <- purrr::map(both, ~{
+    .x %>% dplyr::filter(same_roost == 1) %>%
+      dplyr::select(-same_roost) %>% filter(ID1 < ID2)
+  }) %>% setNames(., dates)
+  
+  departures_df <- purrr::list_rbind(departures, names_to = "date_il") %>%
+    mutate(year = lubridate::year(date_il)) %>%
+    left_join(st_drop_geometry(data_rejoined) %>% mutate(date_il = as.character(date_il)) %>% select(date_il, "ID1" = "individual_local_identifier", roostID) %>% distinct())
+  
+  return(departures_df)
+}
+
+get_after_departures <- function(data_rejoined, gps_spd, sync_departures_df){
+  data_split_years <- data_rejoined %>%
+    mutate(year = case_when(date_il < lubridate::ymd("2023-01-01") ~ 2022, date_il > lubridate::ymd("2023-01-01") & date_il < lubridate::ymd("2023-07-01") ~ 2023, date_il > lubridate::ymd("2023-07-01") ~ 2024)) %>%
+    arrange(year) %>%
+    group_by(year) %>%
+    group_split(.keep = T)
+  
+  mv <- purrr::map(data_split_years, ~{
+    out <- move2::mt_as_move2(
+      .x, time = "timestamp_il", track_id = "individual_local_identifier",
+      crs = st_crs(data_rejoined)
+    )
+    return(out[order(mt_track_id(out)),])}
+  )
+  
+  interpolated_10min <- purrr::map(mv, ~move2::mt_interpolate(
+    .x[!sf::st_is_empty(.x), ],
+    time = seq(
+      as.POSIXct(min(.x$date_il, na.rm = T)),
+      as.POSIXct(max(.x$date_il, na.rm = T)+lubridate::days(1)), "10 mins"
+    ),
+    max_time_lag = units::as_units(1, "hours"),
+    omit = TRUE
+  ) %>%
+    mutate(interp = T) %>%
+    bind_rows(mutate(.x[!sf::st_is_empty(.x),], interp = F)) %>%
+    arrange(individual_local_identifier, timestamp_il) %>%
+    ungroup())
+  
+  interpolated_tidied <- purrr::map(interpolated_10min, ~{
+    .x %>% 
+      dplyr::select(individual_local_identifier, date_il, year, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::mutate(flight = ground_speed > gps_spd) %>% 
+      arrange(individual_local_identifier, timestamp_il) %>% 
+      tidyr::fill(date_il) %>% 
+      dplyr::group_by(individual_local_identifier, date_il) %>% 
+      tidyr::fill(flight) %>% 
+      tidyr::fill(roost_X) %>% 
+      tidyr::fill(roost_Y) %>% 
+      tidyr::fill(roostID) %>% 
+      tidyr::fill(left_roost) %>% 
+      dplyr::ungroup()})
+  
+  after_departure <- purrr::map(interpolated_tidied, ~{.x %>%
+      dplyr::group_by(individual_local_identifier, date_il) %>%
+      dplyr::mutate(after = cumsum(left_roost)) %>%
+      dplyr::filter(after > 0) %>%
+      dplyr::ungroup() %>% dplyr::select(-after)})
+  return(after_departure)
+}
+  
+get_trajectories_sync <- function(after_departure_interp_only, sync_departures_df){
+  sync_departures_list <- sync_departures_df %>%
+    group_by(year) %>%
+    group_split(.keep = T)
+  
+  trajectories_sync_list_2022 <- get_trajectories_sync_pair(sync_departures_list[[1]], after_departure_interp_only[[1]])
+  trajectories_sync_list_2023 <- get_trajectories_sync_pair(sync_departures_list[[2]], after_departure_interp_only[[2]])
+  trajectories_sync_list_2024 <- get_trajectories_sync_pair(sync_departures_list[[3]], after_departure_interp_only[[3]]) #  XXXX START HERE 7/4/26
+  
+  trajectories_sync_2022 <- purrr::list_rbind(trajectories_sync_list_2022)
+  trajectories_sync_2023 <- purrr::list_rbind(trajectories_sync_list_2023)
+  trajectories_sync_2024 <- purrr::list_rbind(trajectories_sync_list_2024)
+  
+  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year") %>%
+    mutate(date_il = lubridate::date(timestamp_il))
+  return(trajectories_sync)
+}
+
+get_first_sightings_per_date <- function(gps_diffusion, gps_diffusion_wild, gps_spd, dds, ddf, trajectories_sync){
+  # 1. Get detections of each carcass by each individual on each day
+  sightings <- purrr::list_rbind(gps_diffusion) %>% 
+    bind_rows(purrr::list_rbind(gps_diffusion_wild)) %>%
+    arrange(individual_local_identifier, timestamp_il, carcID) %>%
+    filter((ground_speed <= gps_spd & dist_to_carcass <= dds)|(ground_speed > gps_spd & dist_to_carcass <= ddf)) %>%
+    rename("id" = individual_local_identifier) %>%
+    mutate(date_il = lubridate::date(timestamp_il))
+  
+  # 2. Find pairs that go to the same carcass on the same day
+  # ID1 | ID2 | carcID | date
+  trajectories_sync %>% select(id1, id2) %>% distinct() %>% nrow() # 4600 dyads
+  all <- unique(c(trajectories_sync$id1, trajectories_sync$id2))
+  all_possible_dyads <- expand_grid("id1" = all, "id2" = all) %>% filter(id1 < id2)
+  
+  all_dates <- unique(sightings$date_il)
+  
+  sightings_carc_date <- sightings %>%
+    group_by(carcID, date_il) %>%
+    group_split(.keep = T)
+  
+  ## Get only the first time that each individual sighted the carcass on the given date
+  first_sightings_carc_date <- map(sightings_carc_date, ~{
+    out <- .x %>%
+      arrange(id, timestamp_il) %>%
+      group_by(id) %>%
+      slice(1) %>%
+      select(date_il, carcID, id, timestamp_il, time_since_carcass, daytime_since_carcass, dist_to_carcass, ground_speed, geometry) %>%
+      ungroup()
+    return(out)
+  })
+  return(first_sightings_carc_date) # 577 unique carcasses and dates
+}
+
+get_arrival_dyads <- function(first_sightings_carc_date, stn_carcs_modified, wild_carcs, informed){
+  # Get diffs for the first sighting per day per carcass for each pair of individuals
+  carc_date_pairs <- map(first_sightings_carc_date, ~{
+    base_df <- .x %>% st_drop_geometry() %>% mutate(geometry = .x$geometry)
+    pairs <- inner_join(base_df, base_df, by = c("carcID", "date_il"), suffix = c("_1", "_2")) %>%
+      filter(id_1 < id_2) %>%
+      rename("id1" = id_1, "id2" = id_2) %>%
+      mutate(
+        timestamp_diff          = abs(as.numeric(difftime(timestamp_il_1, timestamp_il_2, units = "secs"))),
+        time_since_carcass_diff    = abs(time_since_carcass_1 - time_since_carcass_2),
+        daytime_since_carcass_diff = abs(daytime_since_carcass_1 - daytime_since_carcass_2),
+        dist_to_carcass_diff       = abs(dist_to_carcass_1 - dist_to_carcass_2),
+        ground_speed_diff       = abs(ground_speed_1 - ground_speed_2),
+        dist_apart              = st_distance(st_sfc(geometry_1), st_sfc(geometry_2), by_element = TRUE)
+      ) %>%
+      select(-geometry_1, -geometry_2)
+    return(pairs)
+  }, .progress = T)
+
+  arrival_dyads <- purrr::list_rbind(carc_date_pairs) %>%
+    select(date_il, carcID, id1, id2, timestamp_il_1, timestamp_il_2, timestamp_diff, time_since_carcass_1, time_since_carcass_2, time_since_carcass_diff, daytime_since_carcass_1, daytime_since_carcass_2, daytime_since_carcass_diff, dist_to_carcass_1, dist_to_carcass_2, dist_to_carcass_diff, dist_apart, ground_speed_1, ground_speed_2, ground_speed_diff)
+  
+  arrival_dyads <- purrr::list_rbind(stn_carcs_modified) %>% bind_rows(purrr::list_rbind(wild_carcs)) %>%
+    select(carcID, "carcass_date" = date) %>% right_join(arrival_dyads, by = "carcID") %>%
+    mutate(day = as.numeric(difftime(date_il, carcass_date, units = "days")))
+  
+  arrival_dyads <- arrival_dyads %>%
+    mutate(carcID = as.character(carcID)) %>%
+    left_join(informed, by = c("carcID", "day", "id1" = "id")) %>%
+    rename("id1_informed_prev" = informed_previous) %>%
+    left_join(informed, by = c("carcID", "day", "id2" = "id")) %>%
+    rename("id2_informed_prev" = informed_previous) %>%
+    mutate(dyad_type = case_when(id1_informed_prev & id2_informed_prev ~ "Both informed",
+                                 id1_informed_prev & !id2_informed_prev ~ "One informed",
+                                 !id1_informed_prev & id2_informed_prev ~ "One informed",
+                                 !id1_informed_prev & !id2_informed_prev ~ "Neither informed",
+                                 .default = NA))
+  
+  return(arrival_dyads)
+}
+
+get_informed <- function(informed_stn, informed_wild, stn_carcs_modified, wild_carcs){
+  names(informed_stn) <- map(stn_carcs_modified, "carcID")
+  names(informed_wild) <- map(wild_carcs, "carcID")
+  
+  islong <- purrr::list_rbind(informed_stn, names_to = "carcID") %>%
+    pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
+    mutate(day = as.numeric(str_remove(day, "s"))) %>%
+    arrange(carcID, id, day) %>%
+    group_by(carcID, id) %>%
+    mutate(informed = cumsum(sighted) > 0) %>%
+    select(-sighted) %>%
+    mutate(informed_previous = lag(informed)) %>%
+    select(-informed) %>%
+    ungroup()
+  
+  iwlong <- purrr::list_rbind(informed_wild, names_to = "carcID") %>%
+    pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
+    mutate(day = as.numeric(str_remove(day, "s"))) %>%
+    arrange(carcID, id, day) %>%
+    mutate(informed = cumsum(sighted) > 0) %>%
+    select(-sighted) %>%
+    mutate(informed_previous = lag(informed)) %>%
+    select(-informed) %>%
+    ungroup()
+  
+  informed <- bind_rows(islong, iwlong) %>%
+    mutate(informed_previous = case_when(is.na(informed_previous) & day == 0 ~ F, .default = informed_previous))
+  return(informed)
+}
+
+get_max_displs <- function(after_departure_interp_only){
+  # Calculate displacements after departures from roost
+  adios <- purrr::map(after_departure_interp_only, ~{
+    df <- .x
+    df %>%
+      group_by(individual_local_identifier, date_il) %>%
+      mutate(displacement = {
+        pts <- st_geometry(df)[cur_group_rows()]
+        as.numeric(st_distance(pts, pts[1]))  # [1] not [[1]] to keep geometry
+      }) %>%
+      ungroup()
+  }, .progress = T)
+  
+  # Determine max displacement per individual per day
+  max_displs <- setNames(purrr::map(adios, ~{
+    .x %>% st_drop_geometry() %>% group_by(individual_local_identifier, date_il) %>%
+      summarize(max_displacement_m = max(displacement, na.rm = T)) %>%
+      mutate(max_displacement_km = max_displacement_m/1000)
+  }), c("2022", "2023", "2024")) %>% purrr::list_rbind(names_to = "year") %>% mutate(year = factor(year))
+  return(max_displs)
+}
+
+get_dyad_flight_stats <- function(trajectories_sync, sync_departures_df, ddf){
+  joined <- trajectories_sync %>%
+    mutate(year = as.numeric(year)) %>%
+    left_join(mutate(sync_departures_df, date_il = lubridate::ymd(date_il)), by = c("year", "date_il", "id1" = "ID1", "id2" = "ID2")) %>% rename("departure_time_diff_min" = "time_diff_min") %>%
+    mutate(hour = lubridate::hour(timestamp_il),
+           distance_km = distance_m/1000)
+  
+  daylight_hours <- c(7:18)
+  
+  joined_daylight <- joined %>% filter(hour %in% daylight_hours) %>%
+    mutate(flight_status = case_when(flight1 & flight2 ~ "both",
+                                     (flight1 & !flight2)|(!flight1 & flight2) ~ "one",
+                                     !flight1 & !flight2 ~ "zero"))
+  
+  # Get flight stats for co-departing dyads
+  flight_stats <- joined_daylight %>%
+    group_by(year, date_il, id1, id2) %>%
+    summarize(n_pts = n(),
+              n_with_distance = sum(!is.na(distance_m)),
+              prop_with_distance = sum(!is.na(distance_m))/n(),
+              n_both_flying = sum(flight_status == "both"),
+              prop_both_flying = sum(flight_status == "both")/n(),
+              prop_close = sum(distance_km <= ddf)/n(),
+              prop_flying_close = sum(flight_status == "both" & (distance_m <= ddf))/sum(flight_status == "both"),
+              mean_flight_dist_km = mean(distance_km[flight_status == "both"])) %>%
+    ungroup()
+  return(flight_stats)
+}
+
+beats_asoc <- function(comparison){
+  if(!is.null(comparison)){
+    comp <- as.data.frame(comparison$comparison) %>% bind_cols(., "mod" = row.names(.))
+    beats_asoc <- (comp$elpd_diff[(grepl("asoc", comp$mod))] < comp$elpd_diff[!(grepl("asoc", comp$mod))])& (comp$elpd_diff[(grepl("asoc", comp$mod))] + comp$se_diff[(grepl("asoc", comp$mod))] < 0)
+    return(beats_asoc)
+  }else{
+    return(NA)
+  }
+}
+
+plot_asoc <- function(comparison){
+  if(!is.null(comparison)){
+    df <- as.data.frame(comparison$comparison)
+    p <- df %>% ggplot(aes(x = row.names(df), y = elpd_diff))+geom_point()+geom_errorbar(aes(ymin = elpd_diff-se_diff, ymax = elpd_diff + se_diff), width = 0.1)+ coord_flip()
+    return(p)
+  }else{
+    return(NULL)
+  }
+}
+
+pool_coefficient <- function(coef_label, fits, weights, param_map, n_total = 20000) {
+  draws_list <- lapply(names(fits), function(nm) {
+    n_draw <- round(weights[nm] * n_total)
+    if (n_draw == 0) return(NULL)
+    
+    row <- param_map %>% filter(model == nm, coef_label == !!coef_label)
+    
+    if (nrow(row) == 0) {
+      return(rep(0, n_draw))
+    }
+    
+    d <- as_draws_df(fits[[nm]]$draws(variables = row$param_in_model))[[row$param_in_model]]
+    
+    # percent_ST is structurally undefined (NaN) in asocial models, since there's
+    # no social pathway to compute a percentage of -- same "contributes 0" logic
+    # as s being absent from these models entirely
+    d[is.nan(d) | is.na(d)] <- 0
+    
+    sample(d, n_draw, replace = TRUE)
+  })
+  unlist(draws_list)
+}
+
+get_model_averaged_estimates <- function(fits, names){
+  if(all(map_lgl(fits, is.null))){
+    return(NULL)
+  }else{
+    suppressMessages(loo_list <- map(fits, ~{
+      if(!is.null(.x)){
+        .x$loo()}}))
+    
+    weights_obj <- loo_model_weights(loo_list, method = "stacking")
+    weights <- setNames(as.numeric(weights_obj), names)
+    names(fits) <- names
+    
+    # now that I have the weights, have to figure out how to do model averaging.
+    # Code from Claude (will need to check all of this!)
+    param_names <- lapply(fits, function(f) STb_summary(f)$Parameter)
+    names(param_names) <- names(fits)
+    param_map <- suppressWarnings(imap_dfr(param_names, function(params, model_name) {
+      tibble(model = model_name, param_in_model = params) %>%
+        filter(!str_detect(param_in_model, "^log_")) %>%   # drop log-scale duplicates
+        mutate(
+          coef_label = case_when(
+            param_in_model == "lambda_0" ~ "lambda_0",
+            str_detect(param_in_model, "^s\\[") ~
+              paste0("s_net", str_extract(param_in_model, "(?<=\\[)\\d+")),
+            str_detect(param_in_model, "^percent_ST\\[") ~
+              paste0("percent_ST_net", str_extract(param_in_model, "(?<=\\[)\\d+")),
+            str_detect(param_in_model, "^beta_ILVi_") ~
+              paste0(str_remove(param_in_model, "^beta_ILVi_"), "__on_asocial"),
+            str_detect(param_in_model, "^beta_ILVs_") ~
+              paste0(str_remove(param_in_model, "^beta_ILVs_"), "__on_social"),
+            TRUE ~ NA_character_
+          )
+        )
+    }))
+    # sanity check: make sure nothing fell through un-labeled
+    if(nrow(param_map %>% filter(is.na(coef_label))) > 0){
+      stop("Something fell through un-labeled!")
+    }
+    
+    coef_labels <- unique(na.omit(param_map$coef_label))
+    
+    averaged_results <- lapply(coef_labels, function(cl) {
+      pooled <- pool_coefficient(cl, fits, weights, param_map)
+      tibble(
+        coef_label = cl,
+        Median     = median(pooled),
+        MAD        = mad(pooled),
+        CI_Lower   = unname(quantile(pooled, 0.025)),
+        CI_Upper   = unname(quantile(pooled, 0.975))
+      )
+    }) %>% bind_rows()
+    return(averaged_results)
+  }
+}
+
+get_carc_stats <- function(carcs_list){
+  summ <- purrr::list_rbind(carcs_list) %>% group_by(trial) %>% summarize(n_total = n(), n_seeds = sum(time == 0), n_right_censored = sum(time > t_end), n_found = n_total-n_right_censored) %>% mutate(prop_found = n_found/n_total, prop_seeds = n_seeds/n_total, prop_right_censored = n_right_censored/n_total)
+  return(summ)
+}
