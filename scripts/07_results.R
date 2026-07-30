@@ -60,7 +60,7 @@ detected_yn <- pctst %>%
               width = 0, 
               alpha = 0.3,
               size = 3)+
-  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1)+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1, linetype = 5)+
   theme_classic()+
   theme(text = element_text(size = 20),
         strip.background = element_rect(color = "white",fill = "white"),
@@ -74,7 +74,34 @@ detected_yn <- pctst %>%
     labels = c("No", "Yes")
   )
 detected_yn
-ggsave(detected_yn, file = "fig/ISBEplots/detected_yn.png", width = 9, height = 4.5)
+formod <- pctst
+names(formod)[names(pctst) == "prop_days_covered"] <- "avail"
+mod_yn <- glm(detected ~ avail*carctype*param_lbl, data = formod, family = "binomial")
+summary(mod_yn)
+ggsave(detected_yn, file = "fig/ISBEplots/detected_yn.png", width = 10, height = 4.5)
+
+mod_yn_nointeraction <- glm(detected ~ avail*param_lbl, data = formod, family = "binomial")
+summary(mod_yn_nointeraction)
+detected_yn_noint <- pctst %>%
+  ggplot(aes(x = prop_days_covered, y = detected))+
+  geom_jitter(height = 0.03, 
+              width = 0, 
+              alpha = 0.3,
+              size = 3, aes(color = carctype))+
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE, linewidth = 1.5, alpha = 0.1, linetype = 5, color = "black")+
+  theme_classic()+
+  theme(text = element_text(size = 20),
+        strip.background = element_rect(color = "white",fill = "white"),
+        strip.text = element_text(face = "bold"))+
+  labs(y = "Social transmission detected?", 
+       x = "Predictability", color = "Carcass type")+
+  facet_wrap(~param_lbl)+
+  scale_color_manual(values = carcasscolors)+
+  scale_y_continuous(
+    breaks = c(0, 1), # Replace 0 and 1 with your axis' min/max
+    labels = c("No", "Yes")
+  )
+detected_yn_noint
 
 # %ST by carcass type, when ST > 0
 pctst_boxplot <- pctst_soc %>%
@@ -104,7 +131,7 @@ pctst_scatter <- pctst_soc %>%
   theme(text = element_text(size = 20),
         strip.background = element_rect(color = "white",fill = "white"),
         strip.text = element_text(face = "bold"))+
-  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
+  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2, linetype = 5)+
   labs(y = "%ST (Median)",
        x = "Predictability",
        color = "Carcass type")+
@@ -114,6 +141,15 @@ pctst_scatter <- pctst_soc %>%
 pctst_scatter
 ggsave(pctst_scatter, file = "fig/ISBEplots/pctst_scatter.png", width = 9, height = 4.5)
 
+# mod_scatter <- lm(Median ~ prop_days_covered*carctype*param_lbl, data = pctst_soc)
+# summary(mod_scatter) # carc type only marginal
+# 
+# mod_scatter_noint <- lm(Median ~ prop_days_covered*param_lbl, data = pctst_soc)
+# summary(mod_scatter_noint) # nothing significant
+
+mod_scatter_noint_2 <- lm(Median ~ prop_days_covered*carctype, data = pctst_soc)
+summary(mod_scatter_noint_2) # carcass type only
+
 # Composite plot: scatterplot with marginal violins or half-violins
 ## Scatterplots: flight
 scatter_fl <- pctst_soc %>%
@@ -122,7 +158,7 @@ scatter_fl <- pctst_soc %>%
   geom_point(size = 4, alpha = 0.4)+
   theme_classic()+
   theme(text = element_text(size = 20))+
-  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
+  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2, linetype = 5)+
   labs(y = "%ST (Median)",
        x = "Predictability",
        color = "Carcass type")+
@@ -136,7 +172,7 @@ scatter_ro <- pctst_soc %>%
   geom_point(size = 4, alpha = 0.4)+
   theme_classic()+
   theme(text = element_text(size = 20))+
-  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2)+
+  geom_smooth(method = "lm", linewidth = 1.5, alpha = 0.2, linetype = 5)+
   labs(y = "%ST (Median)",
        x = "Predictability",
        color = "Carcass type")+
