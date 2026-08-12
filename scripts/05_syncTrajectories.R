@@ -4,59 +4,69 @@ library(sf)
 library(targets)
 tar_load(sync_departures_df)
 tar_load(arrival_dyads)
+tar_load(informed)
+informed <- informed %>%
+  select(carcID, id, date, "informed" = informed_previous)
 
 # Compare departure and arrival dyads -------------------------------------
-departures <- sync_departures_df %>% rename("depart_time_diff_min" = "time_diff_min")
+departures <- sync_departures_df %>% rename("depart_time_diff_min" = "time_diff_min") %>%
+  mutate(date_il = lubridate::ymd(date_il))
 arrivals_simple <- arrival_dyads %>%
   select(date_il, carcID, id1, id2, "arrive_time_diff_hrs" = daytime_since_carcass_diff, "arrive_dist_apart_m" = dist_apart) %>%
-  mutate(date_il = lubridate::date(date_il))
+  mutate(date_il = lubridate::date(date_il)) %>%
+  left_join(informed, by = c("carcID", "date_il" = "date", "id1" = "id")) %>%
+  rename("id1_informed" = "informed") %>%
+  left_join(informed, by = c("carcID", "date_il" = "date", "id2" = "id")) %>%
+  rename("id2_informed" = "informed") %>%
+  mutate(pair_informed = id1_informed + id2_informed)
+table(arrivals_simple$pair_informed)
 
-# 3. What proportion of departure pairs go to the same carcass?
-tar_load(minmax_dates)
-depart_lookahead <- departures %>%
-  filter((date_il >= minmax_dates[[1]] & date_il <= minmax_dates[[2]])|(date_il >= minmax_dates[[3]] & date_il <= minmax_dates[[4]])|(date_il >= minmax_dates[[5]] & date_il <= minmax_dates[[6]])) %>%
-  left_join(mutate(arrivals_simple, date_il = as.character(date_il)), by = c("date_il", "ID1" = "id1", "ID2" = "id2"))
-
-depart_lookahead %>%
-  group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
-  summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
-  ungroup() %>%
-  group_by(date_il) %>%
-  summarize(prop_any_same = sum(n_carcs > 0)/n(),
-            prop_1_same = sum(n_carcs == 1)/n(),
-            prop_2_same = sum(n_carcs == 2)/n(),
-            prop_3_same = sum(n_carcs == 3)/n(),
-            prop_4_same = sum(n_carcs == 4)/n(),
-            prop_5up_same = sum(n_carcs >= 5)/n())
-
-depart_lookahead %>%
-  group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
-  summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
-  ungroup() %>%
-  ggplot(aes(x = factor(date_il), fill = factor(n_carcs)))+
-  geom_bar(stat = "count", position = position_stack(reverse = T))+
-  facet_wrap(~year, scales = "free_x")+
-  theme_minimal()+
-  theme(axis.text.x = element_blank(), legend.position = "bottom")+
-  labs(y = "# co-departing dyads",
-       x = "Date",
-       fill = "Shared carcs")+
-  scale_fill_viridis_d()
-
-depart_lookahead %>%
-  group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
-  summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
-  ungroup() %>%
-  mutate(shared_carc = case_when(n_carcs > 0 ~ T, .default = F)) %>%
-  ggplot(aes(x = factor(date_il), fill = factor(shared_carc)))+
-  geom_bar(stat = "count", position = position_stack(reverse = T))+
-  facet_wrap(~year, scales = "free_x")+
-  theme_minimal()+
-  theme(axis.text.x = element_blank(), legend.position = "bottom")+
-  labs(y = "# co-departing dyads",
-       x = "Date",
-       fill = "Went to same carc?")+
-  scale_fill_viridis_d()
+# # 3. What proportion of departure pairs go to the same carcass?
+# tar_load(minmax_dates)
+# depart_lookahead <- departures %>%
+#   filter((date_il >= minmax_dates[[1]] & date_il <= minmax_dates[[2]])|(date_il >= minmax_dates[[3]] & date_il <= minmax_dates[[4]])|(date_il >= minmax_dates[[5]] & date_il <= minmax_dates[[6]])) %>%
+#   left_join(arrivals_simple, by = c("date_il", "ID1" = "id1", "ID2" = "id2"))
+# 
+# depart_lookahead %>%
+#   group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
+#   summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
+#   ungroup() %>%
+#   group_by(date_il) %>%
+#   summarize(prop_any_same = sum(n_carcs > 0)/n(),
+#             prop_1_same = sum(n_carcs == 1)/n(),
+#             prop_2_same = sum(n_carcs == 2)/n(),
+#             prop_3_same = sum(n_carcs == 3)/n(),
+#             prop_4_same = sum(n_carcs == 4)/n(),
+#             prop_5up_same = sum(n_carcs >= 5)/n())
+# 
+# depart_lookahead %>%
+#   group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
+#   summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
+#   ungroup() %>%
+#   ggplot(aes(x = factor(date_il), fill = factor(n_carcs)))+
+#   geom_bar(stat = "count", position = position_stack(reverse = T))+
+#   facet_wrap(~year, scales = "free_x")+
+#   theme_minimal()+
+#   theme(axis.text.x = element_blank(), legend.position = "bottom")+
+#   labs(y = "# co-departing dyads",
+#        x = "Date",
+#        fill = "Shared carcs")+
+#   scale_fill_viridis_d()
+# 
+# depart_lookahead %>%
+#   group_by(date_il, ID1, ID2, depart_time_diff_min, year, roostID) %>%
+#   summarize(n_carcs = length(unique(carcID[!is.na(carcID)]))) %>%
+#   ungroup() %>%
+#   mutate(shared_carc = case_when(n_carcs > 0 ~ T, .default = F)) %>%
+#   ggplot(aes(x = factor(date_il), fill = factor(shared_carc)))+
+#   geom_bar(stat = "count", position = position_stack(reverse = T))+
+#   facet_wrap(~year, scales = "free_x")+
+#   theme_minimal()+
+#   theme(axis.text.x = element_blank(), legend.position = "bottom")+
+#   labs(y = "# co-departing dyads",
+#        x = "Date",
+#        fill = "Went to same carc?")+
+#   scale_fill_viridis_d()
 
 # 4. What proportion of arrival pairs left the roost together?
 arrive_lookback <- arrivals_simple %>%
@@ -81,6 +91,81 @@ arrive_lookback %>%
        x = "Date",
        fill = "Left roost together?")+
   scale_fill_viridis_d()
+
+# What proportion of the arriving dyads on each day of the carcass 1) did not depart together, 2) departed together and were both informed, 3) departed together and were both uninformed, 4) departed together and one was informed?
+
+following_dyads <- arrive_lookback %>%
+  select(carcID, date_il, day, departed_together, pair_informed, carcType) %>%
+  group_by(carcID, carcType, date_il, day) %>%
+  summarize(not_following_p = mean(!departed_together),
+            not_following_n = sum(!departed_together),
+            both_informed_p = mean(pair_informed == 2 & departed_together),
+            both_informed_n = sum(pair_informed == 2 & departed_together),
+            one_informed_p = mean(pair_informed == 1 & departed_together),
+            one_informed_n = sum(pair_informed == 1 & departed_together),
+            neither_informed_p = mean(pair_informed == 0 & departed_together),
+            neither_informed_n = sum(pair_informed == 0 & departed_together)) %>%
+  pivot_longer(cols = c("not_following_p", "not_following_n", "both_informed_p", "both_informed_n", "one_informed_p", "one_informed_n", "neither_informed_p", "neither_informed_n"), names_to = c("category", ".value"), names_pattern = "(.+)_(.+$)") %>%
+  ungroup()
+
+set.seed(3)
+following_dyads %>%
+  filter(carcID %in% sample(unique(.$carcID), 6)) %>%
+  ggplot(aes(x = day, y = p, col = category))+
+  geom_line()+
+  facet_wrap(~carcID) # this doesn't tell us much, it seems
+
+following_dyads %>%
+  filter(carcID %in% sample(unique(.$carcID), 6)) %>%
+  ggplot(aes(x = day, y = n, col = category))+
+  geom_line()+
+  facet_wrap(~carcID) # this doesn't tell us much, it seems
+
+# What about just the following dyads over time for all the carcasses?
+following_dyads %>%
+  filter(category == "one_informed", day <= 3) %>%
+  ggplot(aes(x = day, y = p, group = carcID, color = carcType))+
+  geom_line(alpha = 0.5)+
+  theme_minimal()+
+  facet_wrap(~carcType, scales = "free_y", nrow = 2)+
+  ggtitle("Following events over time (proportion)")+
+  labs(y = "Proportion of arriving dyads",
+       x = "Day of carcass",
+       color = "Carcass type")+
+  scale_x_continuous(breaks = c(1, 2, 3))+
+  theme(panel.grid.minor.x = element_blank())# XXX something seems to be wrong with how we're measuring the dyads for the wild carcasses. It doesn't seem plausible that absolutely none of them would have following events.
+# these are really small proportions of daily dyads, and the numbers would probably go down even further if we restricted displacement or co-flight time. Worth noting.
+
+following_dyads %>%
+  filter(category == "one_informed", day <= 3) %>%
+  ggplot(aes(x = day, y = n, group = carcID, color = carcType))+
+  geom_line(alpha = 0.5)+
+  theme_minimal()+
+  facet_wrap(~carcType, scales = "free_y", nrow = 2)+
+  ggtitle("Following events over time (number)")+
+  labs(y = "Proportion of arriving dyads",
+       x = "Day of carcass",
+       color = "Carcass type")+
+  scale_x_continuous(breaks = c(1, 2, 3))+
+  theme(panel.grid.minor.x = element_blank()) # even though those proportions were really small, we do actually see some numbers! A bunch of carcasses with 10+ following events. Not all of them, though. These numbers are small.
+
+following_dyads %>%
+  mutate(year = lubridate::year(date_il)) %>%
+  filter(category == "one_informed", day <= 3) %>%
+  ggplot(aes(x = n, fill = factor(day), color = factor(day)))+
+  geom_density(alpha = 0.3)+
+  theme_classic()+
+  facet_wrap(~year, nrow = 3) # makes sense that we would see far fewer on day 1. What if we take that out?
+
+following_dyads %>%
+  mutate(year = lubridate::year(date_il)) %>%
+  filter(category == "one_informed", day <= 3, day > 1) %>%
+  ggplot(aes(x = n, fill = factor(day), color = factor(day)))+
+  geom_density(alpha = 0.3)+
+  theme_classic()+
+  facet_wrap(~year, nrow = 3) # similar distributions for the two days
+
+# XXX start here 2026-08-12
 
 coroosting_dyads_per_carcass <- arrive_lookback %>%
   mutate(year = lubridate::year(date_il)) %>%

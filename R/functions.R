@@ -2381,7 +2381,11 @@ get_informed <- function(informed_stn, informed_wild, stn_carcs_modified, wild_c
     select(-sighted) %>%
     mutate(informed_previous = lag(informed)) %>%
     select(-informed) %>%
-    ungroup()
+    ungroup() %>%
+    left_join(purrr::list_rbind(stn_carcs_modified) %>% 
+                mutate(carcID = as.character(carcID)) %>% 
+                select(carcID, "carcass_date" = date), by = "carcID") %>%
+    mutate(date = carcass_date + lubridate::days(day))
   
   iwlong <- purrr::list_rbind(informed_wild, names_to = "carcID") %>%
     pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
@@ -2391,7 +2395,11 @@ get_informed <- function(informed_stn, informed_wild, stn_carcs_modified, wild_c
     select(-sighted) %>%
     mutate(informed_previous = lag(informed)) %>%
     select(-informed) %>%
-    ungroup()
+    ungroup() %>%
+    left_join(purrr::list_rbind(wild_carcs) %>% 
+                mutate(carcID = as.character(carcID)) %>% 
+                select(carcID, "carcass_date" = date), by = "carcID") %>%
+    mutate(date = carcass_date + lubridate::days(day))
   
   informed <- bind_rows(islong, iwlong) %>%
     mutate(informed_previous = case_when(is.na(informed_previous) & day == 0 ~ F, .default = informed_previous))
