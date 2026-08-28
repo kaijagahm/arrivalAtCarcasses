@@ -71,7 +71,9 @@ arrive_lookback <- arrivals_simple %>%
                               .default = "wild")) %>%
   arrange(carcID, date_il) %>%
   group_by(carcID) %>%
-  mutate(day = match(date_il, unique(date_il)))
+  mutate(day = match(date_il, unique(date_il))) %>%
+  mutate(dyad_type = factor(dyad_type, levels = c("Neither informed", "One informed", "Both informed"))) %>%
+  ungroup()
 
 arrive_lookback %>%
   filter(day <= 3) %>% 
@@ -231,10 +233,47 @@ formod <- following_dyads %>% filter(category == "one_informed") %>% filter(!is.
 summary(lm(log(n) ~ prop_days_covered*carcType, data = formod))
 
 
+# Descriptive stats for dyads ---------------------------------------------
+arrive_lookback %>%
+  filter(departed_together) %>%
+  ggplot(aes(x = dyad_type, y = log(arrive_time_diff_hrs), fill = dyad_type))+
+  geom_violin()+
+  geom_boxplot(fill = NA, width = 0.1, outlier.shape = NA)+
+  facet_wrap(~carcType)+
+  theme_minimal()
+# hmm, so there is no clear cutoff point for the dyad arrival times (following vs. not). It's pretty much continuous.
 
+# What about for a given carcass?
+arrive_lookback %>%
+  filter(carcID == "101", departed_together) %>%
+  ggplot(aes(x = dyad_type, y = arrive_time_diff_hrs, fill = dyad_type))+
+  geom_violin()+
+  geom_jitter(width = 0.1, pch = 1, size = 1.5)+
+  geom_boxplot(fill = NA, width = 0.1, outlier.shape = NA)+
+  theme_minimal() # oh interesting! In this one, it seems to be bimodal. Does that hold up for other carcasses?
 
+arrive_lookback %>%
+  filter(carcID == sample(unique(arrive_lookback$carcID), 1), departed_together) %>%
+  ggplot(aes(x = dyad_type, y = arrive_time_diff_hrs, fill = dyad_type))+
+  geom_violin()+
+  geom_jitter(width = 0.1, pch = 1, size = 1.5)+
+  geom_boxplot(fill = NA, width = 0.1, outlier.shape = NA)+
+  theme_minimal() # I've run through a bunch of these now and I don't see much. Many of them have continuous arrival times for the one-informed dyads. The ones that do have a break have it around 1-2 hours, which makes sense biologically as well.
 
+# Let's pull out just the one-informed dyad arrival times and compare all the carcasses.
+forplot <- arrive_lookback %>%
+  filter(dyad_type == "One informed" & departed_together) %>%
+  group_by(carcID) %>%
+  filter(n() >= 5) %>%
+  ungroup()
 
+forplot %>%
+  filter(carcID == sample(unique(forplot$carcID), 1)) %>%
+  ggplot(aes(x = arrive_time_diff_hrs, group = carcID))+
+  geom_line(stat = "density", alpha = 0.4)+
+  theme_classic() # It looks like 1 hour might be a decent cutoff point, but there's nothing perfectly consistent here
+
+# Next thing to check: flight distance apart, and max displacement.
 
 
 # CAVEATS
@@ -280,6 +319,92 @@ arrive_lookback %>%
 # The difference between station and wild does suggest that there might be some kind of signal in here in terms of frequency of following events to different carcasses of different types/predictabilities! Maybe we can even make some predictions of how this will differ over the course of the three-day span.
 
 # Still need to do a bunch of work on this though, including figuring out whether dyads are informed or not.
+tar_load(dyad_flight_stats)
+arrive_lookback <- arrive_lookback %>%
+  left_join(dyad_flight_stats %>% select(-year), by = c("date_il", "id1", "id2"))
+
+
+arrive_lookback %>%
+  ggplot(aes(x = dyad_type, y = mean_flight_dist_km, fill = dyad_type))+
+  geom_violin()+
+  facet_wrap(~carcType) # no difference in mean flight distance
+
+arrive_lookback %>%
+  filter(dyad_type == "One informed") %>%
+  ggplot(aes(x = mean_flight_dist_km, y = arrive_time_diff_hrs, color = carcType))+
+  geom_point(pch = 1)+
+  geom_smooth(method = "lm")+
+  theme_minimal() # positive relationship, obviously
+
+# Only those arriving within 2hr
+arrive_lookback %>%
+  filter(dyad_type == "One informed", arrive_time_diff_hrs < 2) %>%
+  ggplot(aes(x = mean_flight_dist_km, y = arrive_time_diff_hrs, color = carcType))+
+  geom_point(pch = 1)+
+  geom_smooth(method = "lm")+
+  theme_minimal() # positive relationship, obviously
+
+# Clearly we are not accurately measuring following events. Need to look at the trajectories more clearly on a map.
+tar_load(trajectories_sync)
+
+oneinformed_toview <- arrive_lookback %>% filter(dyad_type == "One informed", departed_together) %>%
+  select(date_il, carcID, day, id1, id2, arrive_time_diff_hrs)
+
+idx <- sample(1:nrow(oneinformed_toview), 1)
+traj <- trajectories_sync %>%
+  filter(id1 == oneinformed_toview$id1[idx],
+         id2 == oneinformed_toview$id2[idx],
+         date_il == oneinformed_toview$date_il[idx])
+
+get_dyad_coords <- function(idx, oneinformed_toview, after_departure_interp_only) {
+  row <- oneinformed_toview[idx, ]
+  target_year <- lubridate::year(row$date_il)
+  
+  # after_departure_interp_only is a list of 3 move2 objects, one per year (2022, 2023, 2024)
+  # match by the actual year value present in the data, not list position, to be safe
+  year_index <- purrr::map_lgl(after_departure_interp_only, ~{
+    target_year %in% unique(.x$year)
+  }) %>% which()
+  
+  if (length(year_index) == 0) {
+    warning("No matching year found in after_departure_interp_only")
+    return(NULL)
+  }
+  
+  mv <- after_departure_interp_only[[year_index]]
+  
+  coords <- st_coordinates(mv)
+  
+  mv_df <- mv %>%
+    st_drop_geometry() %>%
+    mutate(X = coords[, "X"], Y = coords[, "Y"]) %>%
+    filter(individual_local_identifier %in% c(row$id1, row$id2),
+           date_il == row$date_il,
+           lubridate::hour(timestamp_il) < 22)
+  
+  return(mv_df)
+}
+
+dyad_coords <- get_dyad_coords(idx, oneinformed_toview, after_departure_interp_only)
+
+dyad_coords %>%
+  mutate(ts = as.numeric(factor(timestamp_il))) %>%
+  ggplot(aes(x = X, y = Y, color = ts)) +
+  geom_path() +
+  geom_point(alpha = 0.5) +
+  theme_minimal() +
+  coord_equal() +
+  labs(title = paste("Dyad trajectory:", oneinformed_toview$id1[idx], "&", oneinformed_toview$id2[idx],
+                     "\n", oneinformed_toview$date_il[idx]),
+       color = "Timestamp")+
+  scale_color_viridis_c()
+
+
+# To look at further: E12w and T53b on 2022-11-15
+# This is a mess. I need to figure out how to actually define following events.
+
+# Next step as of 2026-08-28: restrict by 15km (below)
+
 
 
 # Displacements (for 15km limit) ------------------------------------------
