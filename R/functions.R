@@ -1992,16 +1992,16 @@ get_asocial <- function(x){
     return(mod)
   }else{return(NULL)}}
 
-get_social <- function(x){
+get_social <- function(x, ...){
   if(!is.null(x)){
-    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T))
+    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T, ...))
     return(mod)
   }else{return(NULL)}
 }
 
-fit_model <- function(mod, dl, n_iter = 1000){
+fit_model <- function(mod, dl, n_iter = 1000, ...){
   if(!is.null(mod)){
-    social_fit <- fit_STb(dl, mod, iter = n_iter)
+    social_fit <- fit_STb(dl, mod, iter = n_iter, ...)
     return(social_fit)
   }else{return(NULL)}
 }
@@ -2391,6 +2391,7 @@ get_informed <- function(informed_stn, informed_wild, stn_carcs_modified, wild_c
     pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
     mutate(day = as.numeric(str_remove(day, "s"))) %>%
     arrange(carcID, id, day) %>%
+    group_by(carcID, id) %>%
     mutate(informed = cumsum(sighted) > 0) %>%
     select(-sighted) %>%
     mutate(informed_previous = lag(informed)) %>%

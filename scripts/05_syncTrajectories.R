@@ -4,6 +4,7 @@ library(sf)
 library(targets)
 tar_load(sync_departures_df)
 tar_load(arrival_dyads)
+# LAST MODIFIED: 2026-08-19
 
 # Compare departure and arrival dyads -------------------------------------
 departures <- sync_departures_df %>% rename("depart_time_diff_min" = "time_diff_min") %>%
@@ -89,15 +90,15 @@ arrive_lookback %>%
 following_dyads <- arrive_lookback %>%
   select(carcID, date_il, day, departed_together, dyad_type, carcType) %>%
   group_by(carcID, carcType, date_il, day) %>%
-  summarize(not_following_p = mean(!departed_together),
-            not_following_n = sum(!departed_together),
+  summarize(different_roost_p = mean(!departed_together),
+            different_roost_n = sum(!departed_together),
             both_informed_p = mean(dyad_type == "Both informed" & departed_together),
             both_informed_n = sum(dyad_type == "Both informed" & departed_together),
             one_informed_p = mean(dyad_type == "One informed" & departed_together),
             one_informed_n = sum(dyad_type == "One informed" & departed_together),
             neither_informed_p = mean(dyad_type == "Neither informed" & departed_together),
             neither_informed_n = sum(dyad_type == "Neither informed" & departed_together)) %>%
-  pivot_longer(cols = c("not_following_p", "not_following_n", "both_informed_p", "both_informed_n", "one_informed_p", "one_informed_n", "neither_informed_p", "neither_informed_n"), names_to = c("category", ".value"), names_pattern = "(.+)_(.+$)") %>%
+  pivot_longer(cols = c("different_roost_p", "different_roost_n", "both_informed_p", "both_informed_n", "one_informed_p", "one_informed_n", "neither_informed_p", "neither_informed_n"), names_to = c("category", ".value"), names_pattern = "(.+)_(.+$)") %>%
   ungroup()
 
 set.seed(3)
