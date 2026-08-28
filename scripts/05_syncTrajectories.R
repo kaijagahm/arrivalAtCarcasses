@@ -4,7 +4,7 @@ library(sf)
 library(targets)
 tar_load(sync_departures_df)
 tar_load(arrival_dyads)
-# LAST MODIFIED: 2026-08-19
+# LAST MODIFIED: 2026-08-28
 
 # Compare departure and arrival dyads -------------------------------------
 departures <- sync_departures_df %>% rename("depart_time_diff_min" = "time_diff_min") %>%
@@ -99,6 +99,7 @@ following_dyads <- arrive_lookback %>%
             neither_informed_p = mean(dyad_type == "Neither informed" & departed_together),
             neither_informed_n = sum(dyad_type == "Neither informed" & departed_together)) %>%
   pivot_longer(cols = c("different_roost_p", "different_roost_n", "both_informed_p", "both_informed_n", "one_informed_p", "one_informed_n", "neither_informed_p", "neither_informed_n"), names_to = c("category", ".value"), names_pattern = "(.+)_(.+$)") %>%
+  mutate(category = factor(category, levels = c("different_roost", "neither_informed", "one_informed", "both_informed"))) %>%
   ungroup()
 
 set.seed(3)
@@ -160,7 +161,7 @@ following_dyads %>%
   geom_line(alpha = 0.8, linewidth = 1.5)+
   theme_minimal()+
   facet_wrap(~carcType, scales = "free_y", nrow = 2)+
-  ggtitle("Following events over time (proportion)")+
+  ggtitle("Following events over time (number)")+
   labs(y = "Number of arriving dyads",
        x = "Day of carcass")+
   scale_x_continuous(breaks = c(1, 2, 3))+
@@ -168,19 +169,36 @@ following_dyads %>%
   scale_color_viridis_d()+
   theme(legend.position = "none") # even though those proportions were really small, we do actually see some numbers! A bunch of carcasses with 10+ following events. Not all of them, though. These numbers are small.
 
+# Same thing for wild:
 following_dyads %>%
-  mutate(year = lubridate::year(date_il)) %>%
-  filter(category == "one_informed", day <= 3, day > 1) %>%
-  ggplot(aes(x = n, fill = factor(day), color = factor(day)))+
-  geom_density(alpha = 0.3)+
-  theme_classic()+
-  facet_wrap(~year, ncol = 3)+ # similar distributions for the two days
-  labs(y = "Density", x = "Number of following-from-roost dyads",
-       fill = "Carcass day",
-       color = "Carcass day")+
-  theme(legend.position = "bottom", text = element_text(size = 18))
+  filter(category == "one_informed", day <= 3, carcType == "wild") %>%
+  ggplot(aes(x = day, y = p, group = carcID, color = factor(carcID)))+
+  geom_line(alpha = 0.8, linewidth = 1.5)+
+  theme_minimal()+
+  facet_wrap(~carcType, scales = "free_y", nrow = 2)+
+  ggtitle("Following events over time (proportion)")+
+  labs(y = "Proportion of arriving dyads",
+       x = "Day of carcass")+
+  scale_x_continuous(breaks = c(1, 2, 3))+
+  theme(panel.grid.minor.x = element_blank())+
+  scale_color_viridis_d()+
+  theme(legend.position = "none")
 
-# XXX start here 2026-08-12
+following_dyads %>%
+  filter(category == "one_informed", day <= 3, carcType == "wild") %>%
+  ggplot(aes(x = day, y = n, group = carcID, color = factor(carcID)))+
+  geom_line(alpha = 0.8, linewidth = 1.5)+
+  theme_minimal()+
+  facet_wrap(~carcType, scales = "free_y", nrow = 2)+
+  ggtitle("Following events over time (number)")+
+  labs(y = "Number of arriving dyads",
+       x = "Day of carcass")+
+  scale_x_continuous(breaks = c(1, 2, 3))+
+  theme(panel.grid.minor.x = element_blank())+
+  scale_color_viridis_d()+
+  theme(legend.position = "none")
+
+
 
 pred <- readRDS("data/created/predictability_results.RDS")
 following_dyads <- following_dyads %>%
@@ -188,20 +206,20 @@ following_dyads <- following_dyads %>%
 
 # Proportion of arriving dyads that were following events, by carcass availability
 following_dyads %>%
-  filter(category == "one_informed", carcType == "stn") %>%
-  ggplot(aes(x = prop_days_covered, y = log(p)))+
+  filter(category == "one_informed") %>%
+  ggplot(aes(x = prop_days_covered, y = log(p), color = carcType))+
   geom_point(size = 2, pch = 1, alpha = 0.9)+
   geom_smooth(method = "lm", linetype = 2)+
   theme_minimal()+
   labs(y = "Proportion of following events\n(log-transformed)",
        x = "Predictability")+
   theme(text = element_text(size = 18))
-formod <- following_dyads %>% filter(category == "one_informed", carcType == "stn") %>% filter(!is.na(p)) %>% mutate(p = case_when(p == 0 ~ 0.000001, .default = p))
-summary(lm(log(p) ~ prop_days_covered, data = formod))
+formod <- following_dyads %>% filter(category == "one_informed") %>% filter(!is.na(p)) %>% mutate(p = case_when(p == 0 ~ 0.000001, .default = p))
+summary(lm(log(p) ~ prop_days_covered*carcType, data = formod))
 
 following_dyads %>%
-  filter(category == "one_informed", carcType == "stn") %>%
-  ggplot(aes(x = prop_days_covered, y = log(n)))+
+  filter(category == "one_informed") %>%
+  ggplot(aes(x = prop_days_covered, y = log(n), color = carcType))+
   geom_point(size = 2, pch = 1, alpha = 0.9)+
   geom_smooth(method = "lm", linetype = 2)+
   theme_minimal()+
@@ -209,10 +227,8 @@ following_dyads %>%
        x = "Predictability")+
   theme(text = element_text(size = 18))
 
-formod <- following_dyads %>% filter(category == "one_informed", carcType == "stn") %>% filter(!is.na(n)) %>% mutate(n = case_when(n == 0 ~ 0.000001, .default = n))
-summary(lm(log(n) ~ prop_days_covered, data = formod))
-
-# Proportion of dyads that were following events, by carcass availability
+formod <- following_dyads %>% filter(category == "one_informed") %>% filter(!is.na(n)) %>% mutate(n = case_when(n == 0 ~ 0.000001, .default = n))
+summary(lm(log(n) ~ prop_days_covered*carcType, data = formod))
 
 
 
