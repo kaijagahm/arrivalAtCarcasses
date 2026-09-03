@@ -2,7 +2,7 @@
 # Follow-up to Kaija/Michael discussion at ISBE
 
 library(tidyverse)
-#library(targets)
+library(targets)
 library(STbayes)
 library(posterior)
 
@@ -13,15 +13,21 @@ idxs <- c(4, 5, 14, 19)
 # Retrieve data from {targets} pipeline and subset it for this demo.
 # Let me know if you want access to other data products or data from additional diffusions! Just trying to keep it simple for now and not send you my entire pipeline.
 
-# tar_load(event_data)
-# tar_load(data_lists_DistI_2nets)
-# tar_load(stn_carcs_modified)
-# tar_load(social_mods_DistI_2nets)
+tar_load(event_data)
+event_data_divided <- map(event_data, ~{
+  .x$t_end <- .x$t_end/1000
+  .x$time <- .x$time/1000
+  return(.x)
+})
+#tar_load(data_lists_DistI_2nets)
+tar_load(data_lists_divided_test)
+tar_load(stn_carcs_modified)
+tar_load(social_mods_DistI_2nets)
 # 
-# events <- event_data[idxs]
-# data_lists <- data_lists_DistI_2nets[idxs]
-# carcs <- stn_carcs_modified[idxs]
-# soc <- social_mods_DistI_2nets[idxs]
+events <- event_data_divided[idxs]
+data_lists <- data_lists_divided_test[idxs]
+carcs <- stn_carcs_modified[idxs]
+soc <- social_mods_DistI_2nets[idxs]
 # 
 # write_rds(events, "data/forMichael_2026-07-30/events.RDS")
 # write_rds(data_lists, "data/forMichael_2026-07-30/data_lists.RDS")
@@ -33,10 +39,10 @@ data_lists <- readRDS("data/forMichael_2026-07-30/data_lists.RDS")
 carcs <- readRDS("data/forMichael_2026-07-30/carcs.RDS")
 soc <- readRDS("data/forMichael_2026-07-30/soc.RDS")
 
-# # Fit models (commented this part out because it runs slowly, but feel free to re-run!)
-# social_fits <- purrr::map2(soc, data_lists, ~fit_STb(.y, .x, iter = 1000), .progress = T)
-# 
-# # Save fits
+# Fit models (commented this part out because it runs slowly, but feel free to re-run!)
+social_fits <- purrr::map2(soc, data_lists, ~fit_STb(.y, .x, iter = 1000), .progress = T)
+
+# Save fits
 walk2(social_fits, idxs, ~{
   nm <- paste0("fit_social", "_", str_pad(as.character(.y), width = 3, side = "left", pad = "0"))
   STb_save(.x, output_dir = paste0("data/forMichael_2026-07-30/saved_fits/"), name = nm)

@@ -2257,6 +2257,7 @@ get_after_departures <- function(data_rejoined, gps_spd, sync_departures_df){
       dplyr::select(individual_local_identifier, date_il, year, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
       dplyr::ungroup() %>% 
       dplyr::mutate(flight = ground_speed > gps_spd) %>% 
+      dplyr::filter(lubridate::hour(timestamp_il) < 22) %>%   # <-- add filter to remove any movement points after 10pm
       arrange(individual_local_identifier, timestamp_il) %>% 
       tidyr::fill(date_il) %>% 
       dplyr::group_by(individual_local_identifier, date_il) %>% 
@@ -2288,8 +2289,7 @@ get_trajectories_sync <- function(after_departure_interp_only, sync_departures_d
   trajectories_sync_2023 <- purrr::list_rbind(trajectories_sync_list_2023)
   trajectories_sync_2024 <- purrr::list_rbind(trajectories_sync_list_2024)
   
-  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year") %>%
-    mutate(date_il = lubridate::date(timestamp_il))
+  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year")
   return(trajectories_sync)
 }
 
