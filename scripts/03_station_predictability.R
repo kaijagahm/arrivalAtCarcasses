@@ -125,50 +125,81 @@ write_rds(carcs_focal, file = "data/created/carcs_focal.RDS")
 # Defining predictability by % days with carcass present within a 4km radius
 mapview(carcs_buffered, zcol = "carcType") # we can clearly see there are some hotspots/areas of overlap.
 
+
+carcs_buffered_2 <-  st_buffer(carcs_simple, 8000) # 8km radius
+
 carcs_buffered <- carcs_buffered %>%
   mutate(end_date = date+lubridate::days(3)) %>%
   glimpse()
 
 predictability_results <- carcs_buffered %>%
   mutate(
-    # 1. Define the 6-month window
     window_start = date - lubridate::days(180),
-    window_end = date - lubridate::days(1) # Up to the day before start
+    window_end   = date - lubridate::days(1) # up to the day before focal date
   ) %>%
   rowwise() %>%
-  mutate(prop_days_covered = {
-    # 2. Identify spatial neighbors (including itself, or exclude if needed)
-    # We use st_intersects to find any polygon that touches our current geometry
-    neighbor_indices <- sf::st_intersects(geometry, carcs_buffered)[[1]]
-    neighbors <- carcs_buffered[neighbor_indices, ]
-    
-    # 3. Filter neighbors to only those that overlap our 6-month window
-    # Calculation: Interval [A, B] overlaps [C, D] if A <= D and B >= C
-    overlapping_neighbors <- neighbors %>%
-      filter(date <= window_end & end_date >= window_start)
-    
-    if (nrow(overlapping_neighbors) == 0) {
-      0
-    } else {
-      # 4. Calculate unique days covered
-      # Clip neighbor dates to the window boundaries
-      covered_days <- overlapping_neighbors %>%
-        mutate(
-          clipped_start = pmax(date, window_start),
-          clipped_end = pmin(end_date, window_end)
-        ) %>%
-        # Generate a sequence of days for every overlapping interval
-        mutate(days_seq = map2(clipped_start, clipped_end, ~seq(.x, .y, by = "day"))) %>%
-        pull(days_seq) %>%
-        flatten() %>%
-        unique()
+  mutate(
+    stats = list({
+      # Spatial neighbors (shared by both calculations below)
+      neighbor_indices <- sf::st_intersects(geometry, all_carcasses)[[1]]
+      neighbors <- all_carcasses[neighbor_indices, ]
       
-      # Calculate proportion
-      total_window_days <- as.numeric(window_end - window_start) + 1
-      length(covered_days) / total_window_days
-    }
-  }) %>%
-  ungroup()
+      ## --- 1. Proportion of days covered (unchanged logic) ---
+      overlapping_neighbors <- neighbors %>%
+        filter(date <= window_end & end_date >= window_start)
+      
+      if (nrow(overlapping_neighbors) == 0) {
+        prop_days_covered <- 0
+      } else {
+        covered_days <- overlapping_neighbors %>%
+          mutate(
+            clipped_start = pmax(date, window_start),
+            clipped_end   = pmin(end_date, window_end)
+          ) %>%
+          mutate(days_seq = map2(clipped_start, clipped_end, ~seq(.x, .y, by = "day"))) %>%
+          pull(days_seq) %>%
+          flatten() %>%
+          unique()
+        
+        total_window_days <- as.numeric(window_end - window_start) + 1
+        prop_days_covered <- length(covered_days) / total_window_days
+      }
+      
+      ## --- 2. Inter-carcass intervals within the buffer/window ---
+      # Use the raw deposition dates (not the 3-day end_date span) of every
+      # carcass event within 4km, in the 180 days before the focal carcass.
+      carcass_dates <- neighbors %>%
+        filter(date >= window_start & date <= window_end) %>%
+        pull(date) %>%
+        sort()
+      
+      n_events <- length(carcass_dates)
+      
+      if (n_events < 2) {
+        sd_interval_days  <- NA_real_
+        var_interval_days <- NA_real_
+      } else {
+        intervals <- as.numeric(diff(carcass_dates)) # consecutive gaps in days
+        sd_interval_days  <- sd(intervals)
+        var_interval_days <- var(intervals)
+      }
+      
+      tibble::tibble(
+        prop_days_covered     = prop_days_covered,
+        n_carcasses_in_window = n_events,
+        sd_interval_days      = sd_interval_days,
+        var_interval_days     = var_interval_days
+      )
+    })
+  ) %>%
+  ungroup() %>%
+  tidyr::unnest(stats)
+
+predictability_results %>%
+  ggplot(aes(x = prop_days_covered, y = sd_interval_days))+
+  geom_point(aes(color = carcType))+
+  theme_minimal() # this is interesting! Suggests that we are not accurately capturing the idea of predictability.
+
 
 predictability_results %>%
   mutate(carcType = case_when(carcType == "stn" ~ "SFS",
