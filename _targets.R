@@ -19,17 +19,21 @@ list(
   tar_target(mindate_22, "2022-11-11 00:00:00 UTC"),
   tar_target(mindate_23, "2023-03-15 00:00:00 UTC"),
   tar_target(mindate_24, "2024-04-01 00:00:00 UTC"),
+  tar_target(mindate_23_test, "2023-03-01 00:00:00 UTC"),
   tar_target(maxdate_22, "2022-12-11 00:00:00 UTC"),
   tar_target(maxdate_23, "2023-04-15 00:00:00 UTC"),
   tar_target(maxdate_24, "2024-05-06 00:00:00 UTC"),
-  tar_target(minmax_dates, list(mindate_22, maxdate_22, mindate_23, maxdate_23, mindate_24, maxdate_24)),
+  tar_target(maxdate_23_test, "2023-03-14 00:00:00 UTC"),
+  tar_target(minmax_dates, list(mindate_22, maxdate_22, mindate_23, maxdate_23, mindate_24, maxdate_24, mindate_23_test, maxdate_23_test)),
   tar_target(minmax_buff, list(
     lubridate::ymd_hms(mindate_22) - lubridate::days(31),
     lubridate::ymd_hms(maxdate_22) + lubridate::days(5),
     lubridate::ymd_hms(mindate_23) - lubridate::days(31),
     lubridate::ymd_hms(maxdate_23) + lubridate::days(5),
     lubridate::ymd_hms(mindate_24) - lubridate::days(31),
-    lubridate::ymd_hms(maxdate_24) + lubridate::days(5)
+    lubridate::ymd_hms(maxdate_24) + lubridate::days(5),
+    lubridate::ymd_hms(mindate_23_test) - lubridate::days(31),
+    lubridate::ymd_hms(maxdate_23_test) + lubridate::days(5)
   )),
   
   # HIGH-FREQUENCY ACC DATA
@@ -480,10 +484,10 @@ list(
   
   # Get the individual IDs so we can match them to gps points
   tar_target(device_ids, list(purrr::map_dbl(bo_pr_2022, ~.x$device_id[1]), purrr::map_dbl(bo_pr_2023, ~.x$device_id[1]), purrr::map_dbl(bo_pr_2024, ~.x$device_id[1]))),
-  # tar_target(device_ids_test, list(purrr::map_dbl(bo_pr_2023_test, ~.x$device_id[1]))), # XXX START HERE--NEED TO PULL APPROPRIATE GPS DATA TO JOIN WITH THESE TAGS
+  tar_target(device_ids_test, list(purrr::map_dbl(bo_pr_2023_test, ~.x$device_id[1]))),
   
   tar_target(gps_focal_indivs, map2(.x = device_ids, .y = gps, ~get_gps_forbouts_indivs(.x, .y))),
-  tar_target(gps_focal_indivs_test, map2(.x = device_ids_test, .y = gps, ~get_gps_forbouts_indivs(.x, .y))),
+  tar_target(gps_focal_indivs_test, map2(.x = device_ids_test, .y = gps_test, ~get_gps_forbouts_indivs(.x, .y))),
   tar_target(gps_spd, 4), # Matching Gideon's ACC paper
   tar_target(wg22_1, purrr::map2(bo_pr_2022[1:3], gps_focal_indivs[[1]][1:3], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg22_2, purrr::map2(bo_pr_2022[4:6], gps_focal_indivs[[1]][4:6], ~get_matches(.x, .y, gps_spd))),
@@ -566,20 +570,50 @@ list(
   tar_target(wg24_25, purrr::map2(bo_pr_2024[73:75], gps_focal_indivs[[3]][73:75], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg24_26, purrr::map2(bo_pr_2024[76:length(bo_pr_2024)], gps_focal_indivs[[3]][76:length(gps_focal_indivs[[3]])], ~get_matches(.x, .y, gps_spd))),
   
+  tar_target(wg23_1_test, purrr::map2(bo_pr_2023_test[1:3], gps_focal_indivs_test[[1]][1:3], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_2_test, purrr::map2(bo_pr_2023_test[4:6], gps_focal_indivs_test[[1]][4:6], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_3_test, purrr::map2(bo_pr_2023_test[7:9], gps_focal_indivs_test[[1]][7:9], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_4_test, purrr::map2(bo_pr_2023_test[10:12], gps_focal_indivs_test[[1]][10:12], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_5_test, purrr::map2(bo_pr_2023_test[13:15], gps_focal_indivs_test[[1]][13:15], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_6_test, purrr::map2(bo_pr_2023_test[16:18], gps_focal_indivs_test[[1]][16:18], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_7_test, purrr::map2(bo_pr_2023_test[19:21], gps_focal_indivs_test[[1]][19:21], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_8_test, purrr::map2(bo_pr_2023_test[22:24], gps_focal_indivs_test[[1]][22:24], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_9_test, purrr::map2(bo_pr_2023_test[25:27], gps_focal_indivs_test[[1]][25:27], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_10_test, purrr::map2(bo_pr_2023_test[28:30], gps_focal_indivs_test[[1]][28:30], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_11_test, purrr::map2(bo_pr_2023_test[31:33], gps_focal_indivs_test[[1]][31:33], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_12_test, purrr::map2(bo_pr_2023_test[34:36], gps_focal_indivs_test[[1]][34:36], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_13_test, purrr::map2(bo_pr_2023_test[37:39], gps_focal_indivs_test[[1]][37:39], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_14_test, purrr::map2(bo_pr_2023_test[40:42], gps_focal_indivs_test[[1]][40:42], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_15_test, purrr::map2(bo_pr_2023_test[43:45], gps_focal_indivs_test[[1]][43:45], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_16_test, purrr::map2(bo_pr_2023_test[46:48], gps_focal_indivs_test[[1]][46:48], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_17_test, purrr::map2(bo_pr_2023_test[49:51], gps_focal_indivs_test[[1]][49:51], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_18_test, purrr::map2(bo_pr_2023_test[52:54], gps_focal_indivs_test[[1]][52:54], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_19_test, purrr::map2(bo_pr_2023_test[55:57], gps_focal_indivs_test[[1]][55:57], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_20_test, purrr::map2(bo_pr_2023_test[58:60], gps_focal_indivs_test[[1]][58:60], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_21_test, purrr::map2(bo_pr_2023_test[61:63], gps_focal_indivs_test[[1]][61:63], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_22_test, purrr::map2(bo_pr_2023_test[64:66], gps_focal_indivs_test[[1]][64:66], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_23_test, purrr::map2(bo_pr_2023_test[67:69], gps_focal_indivs_test[[1]][67:69], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_24_test, purrr::map2(bo_pr_2023_test[70:72], gps_focal_indivs_test[[1]][70:72], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_25_test, purrr::map2(bo_pr_2023_test[73:75], gps_focal_indivs_test[[1]][73:75], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg23_26_test, purrr::map2(bo_pr_2023_test[76:length(bo_pr_2023_test)], gps_focal_indivs_test[[1]][76:length(gps_focal_indivs_test[[1]])], ~get_matches(.x, .y, gps_spd))),
+  
   tar_target(with_gps_2022, c(wg22_1, wg22_2, wg22_3, wg22_4, wg22_5, wg22_6, wg22_7, wg22_8, wg22_9, wg22_10, wg22_11, wg22_12, wg22_13, wg22_14, wg22_15, wg22_16, wg22_17, wg22_18, wg22_19, wg22_20, wg22_21, wg22_22, wg22_23, wg22_24, wg22_25, wg22_26)),
   tar_target(with_gps_2023, c(wg23_1, wg23_2, wg23_3, wg23_4, wg23_5, wg23_6, wg23_7, wg23_8, wg23_9, wg23_10, wg23_11, wg23_12, wg23_13, wg23_14, wg23_15, wg23_16, wg23_17, wg23_18, wg23_19, wg23_20, wg23_21, wg23_22, wg23_23, wg23_24, wg23_25, wg23_26)),
   tar_target(with_gps_2024, c(wg24_1, wg24_2, wg24_3, wg24_4, wg24_5, wg24_6, wg24_7, wg24_8, wg24_9, wg24_10, wg24_11, wg24_12, wg24_13, wg24_14, wg24_15, wg24_16, wg24_17, wg24_18, wg24_19, wg24_20, wg24_21, wg24_22, wg24_23, wg24_24, wg24_25, wg24_26)),
+  tar_target(with_gps_2023_test, c(wg23_1_test, wg23_2_test, wg23_3_test, wg23_4_test, wg23_5_test, wg23_6_test, wg23_7_test, wg23_8_test, wg23_9_test, wg23_10_test, wg23_11_test, wg23_12_test, wg23_13_test, wg23_14_test, wg23_15_test, wg23_16_test, wg23_17_test, wg23_18_test, wg23_19_test, wg23_20_test, wg23_21_test, wg23_22_test, wg23_23_test, wg23_24_test, wg23_25_test, wg23_26_test)),
   
   ## Attach the gps data back to the bouts and predictions
   tar_target(full_2022, map2(bo_pr_2022, with_gps_2022, ~join_gps_bouts(.x, .y))),
   tar_target(full_2023, map2(bo_pr_2023, with_gps_2023, ~join_gps_bouts(.x, .y))),
   tar_target(full_2024, map2(bo_pr_2024, with_gps_2024, ~join_gps_bouts(.x, .y))),
+  tar_target(full_2023_test, map2(bo_pr_2023_test, with_gps_2023_test, ~join_gps_bouts(.x, .y))),
   
   ## Feeding bouts (high-frequency periods only)
   tar_target(feeding_bo_prob_thresh, 0.5),
   tar_target(feeding_bo_2022, map(full_2022, ~getfeeding(.x, feeding_bo_prob_thresh))),
   tar_target(feeding_bo_2023, map(full_2023, ~getfeeding(.x, feeding_bo_prob_thresh))),
   tar_target(feeding_bo_2024, map(full_2024, ~getfeeding(.x, feeding_bo_prob_thresh))),
+  tar_target(feeding_bo_2023_test, map(full_2023_test, ~getfeeding(.x, feeding_bo_prob_thresh))),
   
   ## Bind them together to get all feeding bouts
   tar_target(feeding_bouts, mutate(as.data.frame(data.table::rbindlist(c(feeding_bo_2022, feeding_bo_2023, feeding_bo_2024), use.name = T, ignore.attr = T, fill = T)),
@@ -663,20 +697,26 @@ list(
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
   # download data to match high frequency period, plus buffer
-  tar_target(ornitela_data_2022, readRDS(here("data/ornitela_data_2022_version2025-09-21.RDS"))),
-  tar_target(ornitela_data_2023, readRDS(here("data/ornitela_data_2023_version2025-09-21.RDS"))),
-  tar_target(ornitela_data_2024, readRDS(here("data/ornitela_data_2024_version2025-09-21.RDS"))),
-  tar_target(inpa_data_2022, readRDS(here("data/inpa_data_2022_version2025-09-21.RDS"))),
-  tar_target(inpa_data_2023, readRDS(here("data/inpa_data_2023_version2025-09-21.RDS"))),
-  tar_target(inpa_data_2024, readRDS(here("data/inpa_data_2024_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2022, readRDS(here("data/download_gps_data/ornitela_data_2022_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2023, readRDS(here("data/download_gps_data/ornitela_data_2023_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2024, readRDS(here("data/download_gps_data/ornitela_data_2024_version2025-09-21.RDS"))),
+  tar_target(ornitela_data_2023_test, readRDS(here("data/download_gps_data/ornitela_data_2023_test_version2026-09-23.RDS"))),
+  tar_target(inpa_data_2022, readRDS(here("data/download_gps_data/inpa_data_2022_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2023, readRDS(here("data/download_gps_data/inpa_data_2023_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2024, readRDS(here("data/download_gps_data/inpa_data_2024_version2025-09-21.RDS"))),
+  tar_target(inpa_data_2023_test, readRDS(here("data/download_gps_data/inpa_data_2023_test_version2026-09-23.RDS"))),
   
   tar_target(gps_1, purrr::map2(.x = list(ornitela_data_2022, ornitela_data_2023, ornitela_data_2024), .y = list(inpa_data_2022, inpa_data_2023, inpa_data_2024), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs = "WGS84"))),
+  tar_target(gps_1_test, purrr::map2(.x = list(ornitela_data_2023_test), .y = list(inpa_data_2023_test), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs = "WGS84"))),
   
   tar_target(gps, purrr::map(gps_1, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
+  tar_target(gps_test, purrr::map(gps_1_test, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
   
   tar_target(gps_combined, st_transform(st_as_sf(mutate(purrr::list_rbind(gps), ground_speed = as.numeric(ground_speed))), 32636)),
+  tar_target(gps_combined_test, st_transform(st_as_sf(mutate(purrr::list_rbind(gps_test), ground_speed = as.numeric(ground_speed))), 32636)),
   
   tar_target(fixed_names_ages, fix_names_ages(gps_combined, ww_file)),
+  tar_target(fixed_names_ages_test, fix_names_ages(gps_combined_test, ww_file)),
   
   # Data cleaning -----------------------------------------------------------
   tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
@@ -686,16 +726,23 @@ list(
                                                              fixed_names_ages,
                                                              default_end_date = as.Date("2025-09-21"),
                                                              verbose = TRUE)), # DONE
+  tar_target(removed_beforeafter_deploy_test, process_deployments(ww_file,
+                                                             fixed_names_ages_test,
+                                                             default_end_date = as.Date("2025-09-21"),
+                                                             verbose = TRUE)),
   
   ## Clean the data with the various steps in the vultureUtils::cleanData function
   tar_target(cleaned, clean_data(removed_beforeafter_deploy)),
+  tar_target(cleaned_test, clean_data(removed_beforeafter_deploy_test)),
   
   # Note: we decided NOT to mask the data to the israel region because we don't need to limit the area in which social interactions could have occurred. We did mask the carcasses, though, taking only the ones south of Jerusalem. In addition, Shaked and I used visual inspection to classify wild carcasses only in the Israel/Jordan area and not farther out. To compare, can look at the original wild_carcasses file and then the validated one, and notice that the ones that didn't have a "status" assigned were outside of the geographic area. There weren't any edge cases.
   ## If any vultures have too *high* a fix rate, downsample it to every 10 minutes so it's easier to work with.
   tar_target(downsampled, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
+  tar_target(downsampled_test, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned_test), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
   
   # Remove hospital/invalid periods
   tar_target(removed_periods, remove_periods(ww_file, downsampled)),
+  tar_target(removed_periods_test, remove_periods(ww_file, downsampled_test)),
   # (End data cleaning) -----------------------------------------------------
   
   # Preparing data for NBDA -------------------------------------------------
