@@ -10,8 +10,8 @@ tar_load(feeding_bo_2023_test)
 length(feeding_bo_2023)
 length(feeding_bo_2023_test) # makes sense that these are the same length since they're still lists by individual
 
-map_dbl(feeding_bo_2023, nrow)
-map_dbl(feeding_bo_2023_test, nrow) # ah, we're not getting ANY feeding bouts here. What's going on?
+floor(map_dbl(feeding_bo_2023, nrow)/2) # dividing by two since this is a month of data vs. two weeks
+map_dbl(feeding_bo_2023_test, nrow) # there we go!! some, just way fewer, which is to be expected.
 
 tar_load(full_2023)
 tar_load(full_2023_test)
@@ -34,47 +34,34 @@ all %>%
   filter(which_prob == pred) %>%
   ggplot(aes(x = prob, color = pred, fill = pred))+
   geom_density()+
-  facet_wrap(~period)
+  facet_wrap(~period) # luckily, I don't see any systemic differences in the classification probabilities between these two datasets.
 
 all %>%
   filter(which_prob == pred, pred == "Eating") %>%
   ggplot(aes(x = prob, color = pred, fill = pred))+
   geom_density()+
-  facet_wrap(~period) # huh, odd. With a 0.5 threshold, we still should have some eating ones. What's going on?
+  facet_wrap(~period)+ 
+  geom_vline(aes(xintercept = 0.5), color = "blue", linetype = 2) # okay, so with an 0.5 threshold, we should still be getting quite a few bouts, which lines up with what we see above.
 
-# Ah, the problem is that these bouts aren't localized.
-getfeeding <- function(x, thresh){
-  if(!is.null(x)){
-    out <- filter(x, pred == "Eating" & !is.na(location_lat) & .pred_Eating > thresh)
-  }else{
-    out <- NULL
-  }
-  return(out)
-}
+# Okay, so we know that this method can successfully identify and localize feeding bouts, just fewer of them. That's good! Some options:
 
-getfeeding_nolocs <- function(x, thresh){
-  if(!is.null(x)){
-    out <- filter(x, pred == "Eating" & .pred_Eating > thresh)
-  }else{
-    out <- NULL
-  }
-  return(out)
-}
+# 1. Downsample the high-frequency bouts to get a comparable rate. What would the rate even be?
+bouts_2023 <- map(feeding_bo_2023, ~select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% select(-start) %>% mutate(when = "2023")
 
-test <- purrr::map(full_2023_test, ~getfeeding(.x, thresh = 0.5))
-test_nolocs <- purrr::map(full_2023_test, ~getfeeding_nolocs(.x, thresh = 0.5))
-map_dbl(test, nrow)
-map_dbl(test_nolocs, nrow) # yeah, okay, so the problem is that these bouts are not getting matched with GPS points, not that there are no bouts at all.
+bouts_2023_test <- map(feeding_bo_2023_test, ~select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% select(-start) %>% mutate(when = "2023_test")
 
-# What proportion of them are getting matched in the original data?
-prop_localized_2023 <- map(full_2023, ~{.x %>%
-  group_by(device_id, pred) %>%
-  summarize(prop_localized = mean(!is.na(location_lat)), .groups = "drop")},) %>%
-  purrr::list_rbind()
+both <- bind_rows(bouts_2023, bouts_2023_test)
 
-prop_localized_2023_test <- map(full_2023_test, ~{.x %>%
-    group_by(device_id, pred) %>%
-    summarize(prop_localized = mean(!is.na(location_lat)), .groups = "drop")},) %>%
-  purrr::list_rbind()
-hist(prop_localized_2023_test$prop_localized) # yeah so none of this data is getting localized at all. what did I do wrong?
+summ_by_individual <- both %>%
+  group_by(when, device_id) %>%
+  summarize(n = n()) %>%
+  pivot_wider(id_cols = "device_id", names_from = "when", values_from = "n") %>%
+  rename("hf" = `2023`,
+         "lf" = `2023_test`) %>%
+  mutate(floor_half_hf = floor(hf/2),
+         ratio_lf_half = lf/floor_half_hf)
 
+# What about spatial density?
+# 1. Make three two-week rasters to look at the density of bouts over time. Normalize them. How similar? (I already suspect this is not going to work because the numbers are just so much lower, but who knows)
+
+# XXX start here with this--some issues with joining
