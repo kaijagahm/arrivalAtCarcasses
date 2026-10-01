@@ -12,7 +12,7 @@ library(STbayes)
 # tar_load(ILV_tv)
 # which_valid <- which(map_dbl(networks_long_combined, nrow) > 0)
 # event_data <- event_data[which_valid]
-# # Adding zero dyads to fill out networks that are missing any dyads
+# Adding zero dyads to fill out networks that are missing any dyads
 # all_individuals <- purrr::list_rbind(event_data) %>% pull(id) %>% unique() %>% sort()
 # all_dyads <- expand_grid("focal" = all_individuals, "other" = all_individuals)
 # 
