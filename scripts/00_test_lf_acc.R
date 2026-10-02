@@ -57,9 +57,9 @@ all %>%
 # Okay, so we know that this method can successfully identify and localize feeding bouts, just fewer of them. That's good! Some options:
 
 # 1. Downsample the high-frequency bouts to get a comparable rate. What would the rate even be?
-bouts_2023 <- map(feeding_bo_2023, ~select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% select(-start) %>% mutate(when = "2023")
+bouts_2023 <- map(feeding_bo_2023, ~dplyr::select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% dplyr::select(-start) %>% mutate(when = "2023")
 
-bouts_2023_lf <- map(feeding_bo_2023_lf, ~select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% select(-start) %>% mutate(when = "2023_lf")
+bouts_2023_lf <- map(feeding_bo_2023_lf, ~dplyr::select(.x, device_id, .pred_Eating, start)) %>% purrr::list_rbind() %>% mutate(start_date = lubridate::date(start)) %>% dplyr::select(-start) %>% mutate(when = "2023_lf")
 
 both <- bind_rows(bouts_2023, bouts_2023_lf)
 
@@ -360,3 +360,109 @@ plot(r_norm[[3]]) # looks very different!
 cor(values(r_norm_carcs[[2]]), values(r_norm[[3]])) # very bad
 
 # okay so we could change the scaling of the carcasses, but the fact remains that these are not very correlated after they've both been normalized, which I don't love. What are the feeding bouts capturing if not the carcasses?
+
+# For each (buffered) carcass in periods 2 and 3, check relationship to (subset of) feeding bouts
+# Need the following:
+# Buffered carcasses (split into periods 2 and 3)
+buff <- readRDS("data/created/carcs_buffered.RDS")
+buff_period2 <- buff %>%
+  filter(end_date >= range(feeding_proj[[2]]$start)[1],
+         date <= range(feeding_proj[[2]]$start)[2])
+
+buff_period3 <- buff %>%
+  filter(end_date >= range(feeding_proj[[3]]$start)[1],
+         date <= range(feeding_proj[[3]]$start)[2])
+
+# 100 random subsets of feeding bouts (period 2 and period 3)
+random_subsets_p2
+random_subsets_p3
+
+# Join these together by space and time
+join_space_time <- function(polys, pts) {
+  
+  # Unique ID per polygon row (safer than relying on carcID)
+  polys <- polys |> mutate(poly_id = row_number())
+  
+  # 1. Spatial candidate pairs (point falls within / touches polygon)
+  hits <- st_intersects(polys, pts)
+  
+  pairs <- tibble(
+    poly_id   = rep(seq_along(hits), lengths(hits)),
+    point_idx = unlist(hits)
+  )
+  
+  # 2. Keep pairs where the point's start time is within the polygon's time range
+  end_bound <- polys$end_date[pairs$poly_id]
+  
+  pairs <- pairs |>
+    mutate(
+      poly_start = polys$date[poly_id],
+      poly_end   = end_bound,
+      pt_start   = pts$start[point_idx]
+    ) |>
+    filter(
+      pt_start >= poly_start,
+      pt_start <= poly_end
+    ) |>
+    dplyr::select(poly_id, point_idx)
+  
+  # 3. Matched rows: polygon attributes + point attributes (point geometry dropped)
+  matched <- bind_cols(
+    polys[pairs$poly_id, ],
+    st_drop_geometry(pts)[pairs$point_idx, ]
+  )
+  
+  # 4. Unmatched polygons: one row each, point columns become NA
+  unmatched <- polys |> filter(!poly_id %in% pairs$poly_id)
+  
+  # 5. Combine (bind_rows fills missing point columns with NA)
+  bind_rows(matched, unmatched) |>
+    arrange(poly_id) |>
+    dplyr::select(-poly_id)
+}
+
+# Apply to all 100 subsets, stacking results with a subset identifier
+results_all_p2 <- imap(
+  random_subsets_p2,
+  \(pts, i) {
+    join_space_time(buff_period2, pts) |>
+      mutate(subset = i, .before = 1)
+  }
+) |>
+  bind_rows() %>%
+  ungroup()
+
+results_all_p3 <- imap(
+  random_subsets_p3,
+  \(pts, i) {
+    join_space_time(buff_period3, pts) |>
+      mutate(subset = i, .before = 1)
+  }
+) |>
+  bind_rows() %>%
+  ungroup()
+
+
+summ_p2 <- results_all_p2 %>%
+  group_by(carcID, carcType, subset) %>%
+  summarize(n_bouts = length(unique(bout_id))) %>%
+  ungroup() %>%
+  mutate(period = 2)
+
+summ_p3 <- results_all_p3 %>%
+  group_by(carcID, carcType, subset) %>%
+  summarize(n_bouts = length(unique(bout_id))) %>%
+  ungroup() %>%
+  mutate(period = 3)
+
+summ <- bind_rows(summ_p2, summ_p3) %>%
+  mutate(carcID = factor(carcID))
+
+summ %>%
+  filter(n_bouts < 10) %>%
+  ggplot(aes(x = carcID, y = n_bouts))+
+  geom_boxplot(outlier.shape = NA)+
+  theme_minimal()+
+  facet_wrap(~period*carcType, scales = "free_x") # What's going on here? Why do some of the wild carcasses have zero feeding bouts at all? They were defined by the presence of feeding bouts, so how is this possible? I guess it's technically possible that none of the subsets happened to sample the feeding bouts that were used for this particular carcass, but that seems pretty unlikely to happen over and over.
+
+# I think I need to pick a single one and try to drill down and figure it out. Ugh.
