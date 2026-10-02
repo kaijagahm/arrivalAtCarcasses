@@ -27,15 +27,8 @@ mindate_22|stem|b0aa9fe669cbab63|e5494c610cbdafd6|2c530c1562a7fbd1|-1204486640||
 maxdate_23|stem|f7fa89574ec9221a|f56142816f9e7c30|2c530c1562a7fbd1|-146928122||t20348.9525349007s|s72b|72|rds|local|vector|||18.641||
 mindate_23|stem|c4c931c3f26dbb88|f5866fce56ce7a38|2c530c1562a7fbd1|-1594463062||t20348.9525400603s|s72b|72|rds|local|vector|||1.219||
 mindate_24|stem|5b774920e36c3319|581a13a865190eeb|2c530c1562a7fbd1|-1927688550||t20348.9525570235s|s71b|71|rds|local|vector|||1.828||
-minmax_buff|stem|0c24b05365c05d18|7c7b82aec2caae19|4e9c2effca66641b|-1458743838||t20348.9525719708s|s153b|153|rds|local|vector|||0.062||
 minmax_dates|stem|8f7d44a3da95e7b4|4a8ea5cabe504af2|4e9c2effca66641b|-1673753152||t20348.9568926194s|s108b|108|rds|local|vector|||0||
 ww_file|stem|a135582d49837de6|28d92932f3c047ab|2c530c1562a7fbd1|-814932461|data/raw/whoswho_vultures_20250422_new.xlsx|t20352.8162339265s|s476501b|476501|file|local|vector|||15.265||
-inpa_data_2024|stem|4810a6e6fb4211ef|27459193eda99ef2|2c530c1562a7fbd1|-1418810284||t20352.849261911s|s3375116b|3375116|rds|local|vector|||21.078||
-ornitela_data_2024|stem|3c7d94a7f3537f45|3ab518d3e4b5944b|2c530c1562a7fbd1|-1421203361||t20352.8493436983s|s4751063b|4751063|rds|local|vector|||2.75||
-ornitela_data_2022|stem|e3479faa0fe363b4|0ae65e2af276fbd7|2c530c1562a7fbd1|1584165961||t20352.8494389128s|s5476520b|5476520|rds|local|vector|||3.187||
-ornitela_data_2023|stem|5693b8e73a6d18ad|e330266cd11b12d4|2c530c1562a7fbd1|-431815628||t20352.849559286s|s6964062b|6964062|rds|local|vector|||3.86||
-inpa_data_2022|stem|5624e732839509db|f31fc433e3645985|2c530c1562a7fbd1|-1210581480||t20352.8495880818s|s1870843b|1870843|rds|local|vector|||0.719||
-inpa_data_2023|stem|f0ba9f77e6ebf656|02591aa52892e386|2c530c1562a7fbd1|-1568963189||t20352.8496218185s|s2154639b|2154639|rds|local|vector|||0.766||
 carcasses_audited|stem|2824ec234ee1fb7d|7f2fcd8a0c431140|2c530c1562a7fbd1|-36716571||t20376.7410373326s|s222116b|222116|rds|local|vector|||16.875||
 stations|stem|1a82b8a98d392b28|73b5eafde2c34e72|2c530c1562a7fbd1|-1924759837||t20376.7410385929s|s4985b|4985|rds|local|vector|||16.937||
 carcasses_focal|stem|90267c30b2a8ecee|bc38b30d090fbb49|5ab52ecbe9c6ce54|1203039562||t20376.7410400905s|s8178b|8178|rds|local|vector|||0.062||
@@ -348,8 +341,6 @@ filenames|stem|2d851193bca4b7ae|66d81f62e7f5b182|2c530c1562a7fbd1|-366487781||t2
 slopes_layer|stem|382d499afe823760|4bcf21a61c7cafc8|09b0ced764d9eabf|2068455652||t20433.8041727548s|s17455888b|17455888|rds|local|vector|||2.265||
 validation_cleaned|stem|54b3d16248a94856|066133c1073fefc5|76db1e2c4d18ab7b|-1482423449||t20476.947778521s|s3634b|3634|rds|local|vector|||0.047||
 validation_tojoin|stem|1d86eabceb21545b|94937b22f7bddc0d|142dcfb4447337c4|-934568189||t20476.9656886103s|s383b|383|rds|local|vector|||0.047||
-gps_1|stem|e5a33c7f6f1c24f7|4d41a6f8c4dcbc6c|f18eeab8f9585516|1784024678||t20476.9778430172s|s24486346b|24486346|rds|local|vector|||4.312||
-gps|stem|1b8d2e4690169882|7da1c0d7495e496c|2742aface00ca0e5|-1034569801||t20476.978162649s|s31149312b|31149312|rds|local|vector|||0.281||
 downsampled|stem|3fa6732a061efe2d|50dcaa9b61efd494|71219956b58d8c5a|-1777741541||t20476.987489165s|s34958457b|34958457|rds|local|vector|||58.062||
 jerusalem_northing_36n|stem|ea04bc48d7319749|d9d45d238ec1a6ce|2c530c1562a7fbd1|-260595121||t20476.9885618344s|s54b|54|rds|local|vector|||11.984||
 gps_combined|stem|b2eeb46237cf7254|0363fcce6c6d51cb|a13ba2a06bf678fb|-363792662||t20476.9945234822s|s40287023b|40287023|rds|local|vector|||12.859||
@@ -360,7 +351,6 @@ removed_periods|stem|c42c04ca0c8d02ec|da71728401374914|5e535714499db036|-3720465
 rp|stem|244e4ba6ee6aa41c|5a4f7e82796a2968|2c530c1562a7fbd1|283090623||t20477.060901381s|s56419b|56419|rds|local|vector|||11.328||
 validation|stem|7089b0798bccecf9|0bf534d0449abce3|2c530c1562a7fbd1|-1446879880||t20477.1209223916s|s3676b|3676|rds|local|vector|||11.453||
 device_ids|stem|743add586010a592|6553c1b4ee926255|b62c39b0b343aa59|1556935669||t20479.8117305709s|s389b|389|rds|local|vector|||0||
-gps_focal_indivs|stem|49b7214d98aa8518|267302e3bf5f25b4|c09058e6f01a43d4|1201847583||t20479.8121304421s|s27108931b|27108931|rds|local|vector|||9.031||
 wg22_3|stem|424615148f5de8de|4a7f9eb12be2d951|366ccdf710f95abd|624057559||t20479.8124063157s|s7718b|7718|rds|local|vector|||1||
 wg22_5|stem|8273b404df3d1e48|a45886e1d608adea|366ccdf710f95abd|-1728395748||t20479.8126354195s|s37549b|37549|rds|local|vector|||20.735||
 wg22_7|stem|c18caa4a84219865|9a19f8a974836592|366ccdf710f95abd|1611514944||t20479.8127042916s|s43475b|43475|rds|local|vector|||26.516||
@@ -600,11 +590,6 @@ asocial_mods_DistIS_2nets_wild|stem|495009df2389d952|02c0dbee597500d0|734528f2ef
 asocial_mods_DistIS_AgeIS_2nets_wild|stem|1aea5bd11ebc81cc|c11398873a8f246d|ff2d67b21e6b5b8f|-757660731||t20626.7763558888s|s7217b|7217|rds|local|vector|||9.844||
 asocial_mods_noILVs_2nets_wild|stem|3d4ad685b4a6127b|f598b499fd2966b6|629e0b98be9e83c6|-89158077||t20626.7763611256s|s6214b|6214|rds|local|vector|||8.328||
 asocial_mods_DistI_AgeIS_2nets_wild|stem|cb0be1f2091065e1|f92b379691685467|06f47e164441f88b|779362927||t20626.7763694866s|s7211b|7211|rds|local|vector|||9.844||
-social_mods_DistI_2nets_wild|stem|b1435bb883c23d31|b79ac54a878c6736|12cc8efa7e00a33f|-358856387||t20626.7763720866s|s10169b|10169|rds|local|vector|||11.765||
-social_mods_noILVs_2nets_wild|stem|69223693a613f7b6|72e83a15f54db4df|08c9066e8d289975|-76097231||t20626.7763849731s|s8445b|8445|rds|local|vector|||10.985||
-social_mods_DistIS_2nets_wild|stem|12b5cfad0271a235|ed346cc1ec4ddd3f|ec03fc211b8a6dc2|1000864133||t20626.7763900828s|s11514b|11514|rds|local|vector|||12.078||
-social_mods_DistIS_AgeIS_2nets_wild|stem|241b53ca7eb23759|da219320930defe9|1e2050dd1b255b02|-2086701799||t20626.7763934857s|s10694b|10694|rds|local|vector|||12.797||
-social_mods_DistI_AgeIS_2nets_wild|stem|bc2a38362cea2e30|30040ddff9bf29af|1b0eb796ec7e7152|-278173075||t20626.7764041527s|s9817b|9817|rds|local|vector|||12.437||
 asocial_fits_noILVs_wild_2nets|stem|aab05fc1971aca5c|6a3f7b1007dd38ee|6bacfcc9eee3a809|1127728170||t20626.7974034793s|s27317676b|27317676|rds|local|vector|||4.422||
 social_fits_noILVs_wild_2nets|stem|5e138728ac162807|13087787b9460ce4|ed4991c035fd3ffc|-1228675496||t20626.7974042334s|s25845285b|25845285|rds|local|vector|||4.375||
 summs_noILVs_wild_2nets|stem|10df6f65cbad329e|baeb0361059f582a|e326306d399d379d|-1904976530||t20626.7975071607s|s16441b|16441|rds|local|vector|||7.359||
@@ -687,19 +672,14 @@ networks_long_dynamic|stem|f222f9f949e70f92|23370e118ee03b98|3cfab909f1def9c5|76
 networks_long_combined|stem|01c7a484794c172a|e46c4a3fee29a63a|90e154de81b74d45|-2079153853||t20629.8505161752s|s4573757b|4573757|rds|local|vector|||14.422||
 data_lists_DistI_2nets|stem|219e5f8ad050739f|854c7846f6a228b6|6b1cdf6b8673030e|-150370776||t20629.8518228419s|s6399862b|6399862|rds|local|vector|||82.641||
 asocial_mods_DistI_2nets|stem|6a42a5e12dc8e3eb|edd06c0c6373cb17|e155724e07fc581d|694293682||t20629.8519283901s|s4117b|4117|rds|local|vector|||3.5||
-social_mods_DistI_2nets|stem|b9076693186861f2|dacfba8bff5af28e|752e5e60fa8b4beb|429552168||t20629.8519437098s|s5530b|5530|rds|local|vector|||4.547||
 data_lists_noILVs_2nets|stem|2522b3320243df12|6cc3e6528102a5b7|b3cbd4d63b729b2e|2045245075||t20629.8522051071s|s4837621b|4837621|rds|local|vector|||80.109||
 data_lists_DistI_AgeIS_2nets|stem|9978299ecb8f5809|ff259aa02a9395a4|6b1cdf6b8673030e|1626689785||t20629.8522580634s|s6399921b|6399921|rds|local|vector|||84.656||
 data_lists_DistIS_AgeIS_2nets|stem|dd9338a71e6b5ed5|f641abc2da85d62b|6b1cdf6b8673030e|-249821970||t20629.8522630486s|s6399995b|6399995|rds|local|vector|||84.344||
 asocial_mods_noILVs_2nets|stem|63f6deb2754ea69c|7a6751e1afe11828|cb7a8ee22d4e1f60|2004506034||t20629.8523111323s|s3589b|3589|rds|local|vector|||3.282||
-social_mods_noILVs_2nets|stem|dc56f58d4a94001e|081408258f76fac8|355dc5fceb10f6b5|-1423630455||t20629.8523193634s|s4812b|4812|rds|local|vector|||4.312||
 asocial_mods_DistI_AgeIS_2nets|stem|9fb93ac8e4cdee94|45d2c3e9193b350b|b46ac2a97b5b928f|454039794||t20629.8523701277s|s4048b|4048|rds|local|vector|||3.859||
 asocial_mods_DistIS_AgeIS_2nets|stem|c0254ac88387a205|8bd66d8dc161012e|6fbe4f81bd101e04|-551048362||t20629.8524298844s|s4049b|4049|rds|local|vector|||3.609||
-social_mods_DistI_AgeIS_2nets|stem|d8c2f4c156c9c5df|120b229c55e97cca|69ce9cc3920e5980|-508558185||t20629.8524516876s|s5408b|5408|rds|local|vector|||5.313||
-social_mods_DistIS_AgeIS_2nets|stem|61e6a3f73061675e|bb6c8f5b708757b0|c03e352bf6730140|-427270371||t20629.8524580284s|s5769b|5769|rds|local|vector|||5.469||
 data_lists_DistIS_2nets|stem|a05e9bc521c52194|4b1ec586e7b6c20b|6b1cdf6b8673030e|959138993||t20629.8526154726s|s6399862b|6399862|rds|local|vector|||82.922||
 asocial_mods_DistIS_2nets|stem|6a42a5e12dc8e3eb|b019ca277548d280|06834a21c1ad96a5|1778785168||t20629.8527561224s|s4117b|4117|rds|local|vector|||3.657||
-social_mods_DistIS_2nets|stem|084eab4e1506841b|a4ade9f86bd7560b|dca5df1cbf090778|2030294358||t20629.8532618065s|s6060b|6060|rds|local|vector|||4.484||
 asocial_fits_noILVs_2nets|stem|eb1515c77e62cfac|7cb9e7159dcf42d8|090c1d084d688f8b|112017740||t20630.7404806649s|s13412895b|13412895|rds|local|vector|||3.313||
 summs_noILVs_2nets|stem|6db6686da7e962c5|fb6aa567f9618164|814417c9e533fec0|-1231064361||t20630.7405922199s|s7481b|7481|rds|local|vector|||6.891||
 plotdata_noILVs|stem|34648655e6057398|61bd05334d578764|8f582bb854b0aebc|-779120681||t20630.7407534894s|s2016959b|2016959|rds|local|vector|||20.234|Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as requir|
@@ -780,14 +760,6 @@ informed_stn|stem|8375971681d5db4c|5accc99581c9ff90|36482101f1fee487|-569704411|
 data_rejoined|stem|e8f8cdf175a2a19d|901281249c0be249|9aa47199827d22ed|2009645183||t20638.0348177425s|s27668145b|27668145|rds|local|vector|||219.281|no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min; returning Inf. no non-missing arguments to min;|
 departures_df|stem|bccfd951d6f13d32|d2e3b5aadab73c14|e26d91fd158fda85|1849654392||t20638.0412975727s|s560213b|560213|rds|local|vector|||15.5||
 sync_departures_df|stem|cd43b0acad069b65|809171f52b0eab5f|58fe61933d6b9320|-2091809919||t20638.041303068s|s97330b|97330|rds|local|vector|||0.016||
-after_departure|stem|405ffd67d2b9aa5a|e650a78be7d55565|7aa80f316e27e7d1|-828275600||t20638.9725879449s|s23924029b|23924029|rds|local|vector|||204.844||
-after_departure_interp_only|stem|3565a89779ea9ec7|7383e0f6184f252c|e0f4d7f9a3790d92|1737218327||t20638.9760594525s|s14236087b|14236087|rds|local|vector|||3.5||
-trajectories_sync|stem|31310bf75be41bba|eb3d686c350729f2|35b9d20cc086dead|-1434952517||t20638.9798518524s|s8369746b|8369746|rds|local|vector|||13.484|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 16485 of `x` matches multiple rows in `y`. i Row 4135 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 481 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 32505 of `x` matches multiple rows in `y`. i Row 1862 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 475 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 34070 of `x` matches multiple rows in `y`. i Row 703 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.|
-first_sightings_carc_date|stem|70a28dd140884931|44afcc099a2e7011|26536ab5e4340a6b|1264708234||t20638.9944228278s|s283176b|283176|rds|local|vector|||73.922||
-informed|stem|0c6f3608d004407e|b2a8ce966816a70d|0ce3c936bea16275|1272124423||t20639.0002408312s|s21795b|21795|rds|local|vector|||1.219||
-arrival_dyads|stem|42ce586156ae9c4b|75566a9ce1888fb5|0213b9b6133e41a7|1867336967||t20639.0021549974s|s3051798b|3051798|rds|local|vector|||58.203|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`|
-max_displs|stem|625c0fb629a34103|9f8fccd181c6dbfb|14bf4a5e430f67cf|-305360093||t20639.0223102862s|s199968b|199968|rds|local|vector|||115.734|There were 480 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 18: `individual_local_identifier = 'A00w'` `date_il = 2022-10-30`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 479 remaining warnings.. There were 260 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2023-02-16`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 259 remaining warnings.. There were 365 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2024-03-08`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 364 remaining warnings.|
-dyad_flight_stats|stem|f7a8216cc5edebfd|109dd788e38ede68|dc5cae2b04d39df9|67825091||t20639.0262565482s|s352193b|352193|rds|local|vector|||8.078||
 vsasocial_noILVs|stem|ee385fd81405b61c|bbb2ab9c7b3d691c|4cf0bd54b4d89e3b|277231560||t20640.9102711789s|s169950b|169950|rds|local|vector|||9.422|Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . So|
 vsasocial_DistI|stem|6814ffd8c00899af|9c52729cd737fa49|b2f85d20055a82a2|-995711416||t20640.9103758527s|s406966b|406966|rds|local|vector|||10.14|Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values|
 vsasocial_DistI_AgeIS|stem|1b08f181cf5f9520|434607172c1d6748|9d67afaff495dfe9|-1452329694||t20640.910378412s|s412472b|412472|rds|local|vector|||10.219|Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details. . Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution because all tail values are the same.. Can't fit generalized Pareto distribution|
@@ -816,6 +788,195 @@ mods_stn|stem|f99882ab9de98a2d|37c8b84bcddc4ce1|4c9ce90a22b445ac|-452988719||t20
 mods_wild|stem|15cac9d31b70fa83|5bbc06a8079cabbc|5d010b3ae035ea78|-2117473003||t20641.0950312486s|s2074836860b|2074836860|rds|local|vector|||0||
 model_averaged_estimates_stn|stem|8521ee8dd67a1ec3|581a2e84ae79da8e|253b7b420da22d6a|2057515709||t20641.1037830393s|s10741b|10741|rds|local|vector|||215.75||
 model_averaged_estimates_wild|stem|adfa0a10739805c8|b4ba8d203cb9d0c2|4c161d8ec21ad9b7|-177786877||t20641.1055903435s|s24068b|24068|rds|local|vector|||360.359||
+carc_summs_stn|stem|feef7f59b54fe55b|2a72577003d28d9c|1cb12ce2ced29ac2|-187412682||t20643.9898866298s|s1437b|1437|rds|local|vector|||0.031||
+carc_summs_wild|stem|2d8a7625b61a3f83|421d4700c07ecefc|bf7c96d31ef214f1|536117994||t20643.989887607s|s2411b|2411|rds|local|vector|||0.031||
+social_mods_DistI_2nets_weibull_varrates|stem|3d8d01444b064e49|552baa8d3b6dec6f|0c16f5b988ece40f|775930192||t20682.8180192877s|s6184b|6184|rds|local|vector|||5.312||
+social_mods_DistI_2nets_wild_weibull_varrates|stem|5659e90c2155e0ea|47bc053bc0aed858|3ed0a166f244314d|-1237739234||t20682.8195580869s|s11322b|11322|rds|local|vector|||14.484||
+social_mods_DistIS_AgeIS_2nets|stem|61e6a3f73061675e|bb6c8f5b708757b0|00113f0f571b0754|-427270371||t20684.0255631766s|s5769b|5769|rds|local|vector|||5.813||
+social_mods_DistI_AgeIS_2nets|stem|d8c2f4c156c9c5df|120b229c55e97cca|f90bca6af299c6e9|-508558185||t20684.0255736114s|s5408b|5408|rds|local|vector|||6.343||
+social_mods_DistIS_2nets|stem|084eab4e1506841b|a4ade9f86bd7560b|a88af433c7ef8e00|2030294358||t20684.0255783882s|s6060b|6060|rds|local|vector|||6.765||
+social_mods_noILVs_2nets|stem|dc56f58d4a94001e|081408258f76fac8|98b9ac816ccc52d5|-1423630455||t20684.0255920438s|s4812b|4812|rds|local|vector|||5.188||
+social_mods_noILVs_2nets_wild|stem|69223693a613f7b6|72e83a15f54db4df|508e5e9c23aa4286|-76097231||t20684.0256562293s|s8445b|8445|rds|local|vector|||12.828||
+social_mods_DistIS_2nets_wild|stem|12b5cfad0271a235|ed346cc1ec4ddd3f|62fce8bd64dde797|1000864133||t20684.0256675253s|s11514b|11514|rds|local|vector|||13.125||
+social_mods_DistI_2nets_wild|stem|b1435bb883c23d31|b79ac54a878c6736|3ed0a166f244314d|-358856387||t20684.0256682781s|s10169b|10169|rds|local|vector|||12.438||
+social_mods_DistI_AgeIS_2nets_wild|stem|bc2a38362cea2e30|30040ddff9bf29af|f6728cb17f40a6f0|-278173075||t20684.025669603s|s9817b|9817|rds|local|vector|||13.765||
+social_mods_DistIS_AgeIS_2nets_wild|stem|241b53ca7eb23759|da219320930defe9|84429e06077f1157|-2086701799||t20684.0256731582s|s10694b|10694|rds|local|vector|||14.188||
+social_mods_DistI_2nets|stem|b9076693186861f2|dacfba8bff5af28e|0c16f5b988ece40f|429552168||t20684.0256916733s|s5530b|5530|rds|local|vector|||4.875||
+social_fits_DistI_2nets_weibull_varrates|stem|90086bb6269ab4ee|1e72535523be1ca6|61a3ac9ec616937c|36968267||t20684.0368614181s|s200130007b|200130007|rds|local|vector|||6.313||
+summs_DistI_2nets_weibull_varrates|stem|bba94b4b417b6ad8|446c853cb9775f3c|768a512e4cd4957d|1979032538||t20684.0370429566s|s10847b|10847|rds|local|vector|||11.391|The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.. The ESS has been capped to avoid unstable estimates.|
+plotdata_DistI_weibull_varrates|stem|c0d9b5b3031c8948|1a94a4295fd2b76e|c5184dc4ca3d3951|414442718||t20684.0372270441s|s1854485b|1854485|rds|local|vector|||9.891|Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as requir|
+curveplots_DistI_weibull_varrates|stem|43a77a9420e2c417|ff6f9edffa7d90c6|84212703dd172219|-1630495553||t20684.0373997323s|s20321665b|20321665|rds|local|vector|||2.75||
+social_mods_noILVs_2nets_weibull_varrates|stem|729c39903986a43f|8e337811a18b81d4|98b9ac816ccc52d5|1077444342||t20684.8312588477s|s5594b|5594|rds|local|vector|||5.109||
+social_mods_DistI_AgeIS_2nets_weibull_varrates|stem|3376ee1d8cb70826|d5f5c292e36be910|f90bca6af299c6e9|2068105873||t20684.8312617508s|s6141b|6141|rds|local|vector|||5.843||
+social_mods_DistIS_2nets_weibull_varrates|stem|fdd43802396219a7|6d4a8f4ec92427ed|a88af433c7ef8e00|453930652||t20684.8312637062s|s6490b|6490|rds|local|vector|||5.64||
+social_mods_DistIS_AgeIS_2nets_weibull_varrates|stem|98e87d974bbb2eba|7180d24c82d1f462|00113f0f571b0754|2027931052||t20684.8312660513s|s6563b|6563|rds|local|vector|||5.89||
+social_mods_noILVs_2nets_wild_weibull_varrates|stem|dda09ad75ec668fb|98539c86c87ca09b|508e5e9c23aa4286|1004096277||t20684.8313428968s|s10043b|10043|rds|local|vector|||12.609||
+social_mods_DistIS_2nets_wild_weibull_varrates|stem|d2bff33e3245250b|20b63e86f461d0ad|62fce8bd64dde797|1590374597||t20684.8313573592s|s11985b|11985|rds|local|vector|||13.718||
+social_mods_DistI_AgeIS_2nets_wild_weibull_varrates|stem|aa62b2c93d2442fe|2c0f6a0704dfedb7|f6728cb17f40a6f0|508891909||t20684.8313732966s|s11114b|11114|rds|local|vector|||14.734||
+social_mods_DistIS_AgeIS_2nets_wild_weibull_varrates|stem|df130fd482b17943|c6a164155095b20f|84429e06077f1157|-1513128180||t20684.8313746115s|s11813b|11813|rds|local|vector|||14.797||
+soc_filenames_noILVs_2nets_weibull_varrates|stem|046be193e26b38a0|bad2336c18aefa59|2c530c1562a7fbd1|-1325064262||t20689.8431619026s|s216b|216|rds|local|vector|||13.297|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_noILVs_wild_2nets_weibull_varrates|stem|f52be1d2a814c720|a92f8debeb08b378|2c530c1562a7fbd1|-140950643||t20689.8431625396s|s332b|332|rds|local|vector|||13.359|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_DistI_AgeIS_2nets_weibull_varrates|stem|046be193e26b38a0|368657d4cba2b963|2c530c1562a7fbd1|1407812644||t20689.8431634484s|s216b|216|rds|local|vector|||13.484|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_DistIS_AgeIS_2nets_weibull_varrates|stem|046be193e26b38a0|42937b2b59e98723|2c530c1562a7fbd1|-2097158537||t20689.8431631773s|s216b|216|rds|local|vector|||13.359|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_DistIS_2nets_weibull_varrates|stem|046be193e26b38a0|0551c74c26af2cb5|2c530c1562a7fbd1|746953555||t20689.8431649378s|s216b|216|rds|local|vector|||13.484|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_DistIS_2nets_wild_weibull_varrates|stem|f52be1d2a814c720|69fbd351ee7b6b20|2c530c1562a7fbd1|1604449374||t20689.8431655657s|s332b|332|rds|local|vector|||13.484|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+soc_filenames_DistI_AgeIS_2nets_wild_weibull_varrates|stem|f52be1d2a814c720|1a8cdc8fbc9ba322|2c530c1562a7fbd1|-521418966||t20689.8431669141s|s332b|332|rds|local|vector|||0||
+soc_filenames_DistIS_AgeIS_2nets_wild_weibull_varrates|stem|f52be1d2a814c720|7975cdba92c8c1fa|2c530c1562a7fbd1|-423481887||t20689.843167896s|s332b|332|rds|local|vector|||0||
+soc_filenames_DistI_2nets_weibull_varrates|stem|046be193e26b38a0|5700e3153016d666|2c530c1562a7fbd1|-1497241734||t20689.843168633s|s216b|216|rds|local|vector|||0.016||
+social_fits_DistIS_2nets_weibull_varrates|stem|828ee764f1d269b6|dc2f5ec87c275480|63265129cb24c5ad|1600947533||t20689.8431699678s|s53b|53|rds|local|vector|||0.375||
+plotdata_DistIS_weibull_varrates|stem|828ee764f1d269b6|a0df073f334800e5|351124b0e3374a15|-1149590153||t20689.8431716186s|s53b|53|rds|local|vector|||0.063||
+curveplots_DistIS_weibull_varrates|stem|828ee764f1d269b6|adaa0aaf93446f29|c628c984e0aae1d8|-1039341071||t20689.8431728476s|s53b|53|rds|local|vector|||0.016||
+social_fits_noILVs_2nets_weibull_varrates|stem|4e738cf360faa6de|7544b35eb4f6c2f5|135810b64b41f2fe|1166093042||t20689.8432506271s|s51941791b|51941791|rds|local|vector|||3.421||
+plotdata_noILVs_weibull_varrates|stem|1d1c4bcea48fc67e|f3222355b144b2b6|0516a8cfa8012743|-355791618||t20689.8433789351s|s1799276b|1799276|rds|local|vector|||9.218|Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as requir|
+social_fits_DistI_AgeIS_2nets_weibull_varrates|stem|39032a9fbaad52e4|33cb41afccb650a4|fe89b45bf92ca63a|-515176016||t20689.8434325909s|s202924063b|202924063|rds|local|vector|||8.25||
+curveplots_noILVs_weibull_varrates|stem|4532855a69761af3|08cbf45f5b5c817f|be931c2ea316f1d2|1811562232||t20689.8435524395s|s20049208b|20049208|rds|local|vector|||3.296||
+social_fits_DistIS_AgeIS_2nets_weibull_varrates|stem|caa30633b15cc56b|90ab4cf45237e8b5|faf2602d94052dd7|-1062497492||t20689.8435845893s|s353727945b|353727945|rds|local|vector|||11.672||
+plotdata_DistI_AgeIS_weibull_varrates|stem|2189318f6f835c74|bd1b7d22f90a0112|e2c603af6d9b4918|1058598570||t20689.8436014867s|s1851536b|1851536|rds|local|vector|||10.172|Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as requir|
+curveplots_DistI_AgeIS_weibull_varrates|stem|4b406690307cef79|bddba55a9f0a1597|3a29e82cdbf1f79f|1143974600||t20689.8437773103s|s20545182b|20545182|rds|local|vector|||2.812||
+plotdata_DistIS_AgeIS_weibull_varrates|stem|08a449da45d9dfb4|d21beb7cad849680|d21e3a150477b9bd|1300013200||t20689.8438187815s|s1856377b|1856377|rds|local|vector|||10.281|Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as required metadata was removed.. Dropping 'draws_df' class as requir|
+curveplots_DistIS_AgeIS_weibull_varrates|stem|baeba02303008df6|a89c36224958e096|d0e488be7329e92d|-1080786758||t20689.8440059155s|s20567840b|20567840|rds|local|vector|||3.406||
+soc_filenames_DistI_2nets_wild_weibull_varrates|stem|f52be1d2a814c720|fbcad6110e6ea9ab|2c530c1562a7fbd1|-1427157624||t20689.8454703659s|s332b|332|rds|local|vector|||12.875|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+social_fits_DistI_2nets_wild_weibull_varrates|stem|0904c0f92e14ff03|0d607cc68bf88c76|58c8512ec392d811|-356422576||t20689.8475624804s|s290124209b|290124209|rds|local|vector|||10.75||
+social_fits_DistI_AgeIS_2nets_wild_weibull_varrates|stem|28aa5211475b533f|ec99ee56730e1b72|136dc9936750e306|289343940||t20689.8475785583s|s291922797b|291922797|rds|local|vector|||11.109||
+social_fits_DistIS_2nets_wild_weibull_varrates|stem|00744758965947fe|f49dd57f3f328654|01fbf3742108503d|1358032839||t20689.847738097s|s454578237b|454578237|rds|local|vector|||14.312||
+social_fits_DistIS_AgeIS_2nets_wild_weibull_varrates|stem|46c6494bb44998c4|6ccf4820ecee16fb|6e47cff0b4105e59|-1398259777||t20689.8477409728s|s456238137b|456238137|rds|local|vector|||15.078||
+informed|stem|1e48b0e4cb96e892|b2a8ce966816a70d|cac414ebdd50abcb|1272124423||t20693.8894527711s|s31567b|31567|rds|local|vector|||2.36||
+arrival_dyads|stem|ac9fe6019280e8a0|75566a9ce1888fb5|572ebec19e3dee8b|1867336967||t20693.8918682636s|s3071529b|3071529|rds|local|vector|||54.75|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`|
+social_fits_noILVs_2nets_wild_weibull_varrates|stem|error|a1acc0657a592fa8|2c530c1562a7fbd1|1345626471||t20693.9541087392s||0|null|local|vector|||12.969|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|object 'soc_filenames_noILVs_2nets_wild_weibull_varrates' not found
+plotdata_DistI_AgeIS_wild_weibull_varrates|stem|error|3c4b69fe0350f649|ab0ba0a1f5a36915|1255485547||t20693.9541134699s||0|null|local|vector|||0.031||object 'social_fits_DistI_AgeIS_wild_2nets_weibull_varrates' not found
+curveplots_DistI_AgeIS_wild_weibull_varrates|stem|error|b0a09610de1e85ef|d10b11fe06d9a2ac|2078067434||t20693.9541146966s||0|null|local|vector|||0.047||Can't recycle `.x` (size 0) to match `.y` (size 112).
+plotdata_DistIS_AgeIS_wild_weibull_varrates|stem|error|abaf2bdb7f4fd6fc|ab0ba0a1f5a36915|-419566978||t20693.9541148657s||0|null|local|vector|||0.032||object 'social_fits_DistIS_AgeIS_wild_2nets_weibull_varrates' not found
+plotdata_DistI_wild_weibull_varrates|stem|error|ee77b7e2a518c316|ab0ba0a1f5a36915|-283737870||t20693.9541157557s||0|null|local|vector|||0.016||object 'social_fits_DistI_wild_2nets_weibull_varrates' not found
+curveplots_DistIS_AgeIS_wild_weibull_varrates|stem|error|b9d87727dd47e7b8|fa197096711f5ba1|5009107||t20693.9541161474s||0|null|local|vector|||0.047||Can't recycle `.x` (size 0) to match `.y` (size 112).
+plotdata_noILVs_wild_weibull_varrates|stem|error|7ac89ebcb25bfd1e|ab0ba0a1f5a36915|1590623427||t20693.9541163107s||0|null|local|vector|||0.031||object 'social_fits_noILVs_wild_2nets_weibull_varrates' not found
+curveplots_DistI_wild_weibull_varrates|stem|error|e9ec9708b58b7e43|0fc08882c66b5a85|1641431307||t20693.9541168719s||0|null|local|vector|||0.062||Can't recycle `.x` (size 0) to match `.y` (size 112).
+curveplots_noILVs_wild_weibull_varrates|stem|error|f6978f55771b9b65|85c02c416239f0b1|-270347787||t20693.954117616s||0|null|local|vector|||0.047||Can't recycle `.x` (size 0) to match `.y` (size 112).
+plotdata_DistIS_wild_weibull_varrates|stem|error|ca75a70fe2dc73b0|ab0ba0a1f5a36915|-19790185||t20693.9541982284s||0|null|local|vector|||0.031||object 'social_fits_DistIS_wild_2nets_weibull_varrates' not found
+curveplots_DistIS_wild_weibull_varrates|stem|error|e796fdcefe47a463|dd9f0307e84e1829|1848621417||t20693.9541995474s||0|null|local|vector|||0.063||Can't recycle `.x` (size 0) to match `.y` (size 112).
+after_departure|stem|3fa69cf1d2d31be7|e650a78be7d55565|18ada789661266e1|-828275600||t20693.959644071s|s23166787b|23166787|rds|local|vector|||235.969||
+after_departure_interp_only|stem|129f3a227f7a4f94|7383e0f6184f252c|6cbf3e1bf1642c8a|1737218327||t20693.9598213878s|s13598378b|13598378|rds|local|vector|||1.438||
+trajectories_sync|stem|7ff68fcd84c6d5d7|eb3d686c350729f2|b702e06a1742a1b1|-1434952517||t20693.960242746s|s8198203b|8198203|rds|local|vector|||11.922|Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 1 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 14637 of `x` matches multiple rows in `y`. i Row 4135 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 481 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 28920 of `x` matches multiple rows in `y`. i Row 1862 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 1 of `x` matches multiple rows in `y`. i Row 475 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.. Detected an unexpected many-to-many relationship between `x` and `y`. i Row 30667 of `x` matches multiple rows in `y`. i Row 703 of `y` matches multiple rows in `x`. i If a many-to-many relationship is expected, set `relationship =   'many-to-many'` to silence this warning.|
+dyad_flight_stats|stem|a367d392b474b50b|109dd788e38ede68|556cbbe97d80df8a|67825091||t20693.9603405312s|s339176b|339176|rds|local|vector|||5.922||
+max_displs|stem|909b9c00f6796062|9f8fccd181c6dbfb|35f27575b5758c02|-305360093||t20693.9612445907s|s199938b|199938|rds|local|vector|||117.063|There were 480 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 18: `individual_local_identifier = 'A00w'` `date_il = 2022-10-30`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 479 remaining warnings.. There were 260 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2023-02-16`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 259 remaining warnings.. There were 352 warnings in `summarize()`. The first warning was: i In argument: `max_displacement_m = max(displacement, na.rm = T)`. i In group 1: `individual_local_identifier = 'A00w'` `date_il = 2024-03-08`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 351 remaining warnings.|
+first_sightings_carc_date|stem|70a28dd140884931|44afcc099a2e7011|ad7cddf0a1b64b57|1264708234||t20693.961830327s|s283176b|283176|rds|local|vector|||78||
+all_carcasses_forpred|stem|33e1599af74d4ab3|fd2ac8d3c7894bc0|3649ff672aa9cc08|910925422||t20708.8779903008s|s229294b|229294|rds|local|vector|||0.078||
+maxdate_23_lf|stem|a2cfa2f3ebbdb8bf|7a07a7b387d71f88|2c530c1562a7fbd1|-1451201431||t20720.8507484101s|s74b|74|rds|local|vector|||33.406|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+mindate_23_lf|stem|73fca55c0f008ba8|2105e87d72d51ce5|2c530c1562a7fbd1|-360276126||t20720.8507482729s|s74b|74|rds|local|vector|||33.437|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+data_files_2023_lf|stem|bbae7f1af2e71e3b|90034a68e5cf4168|2c530c1562a7fbd1|-207510174||t20720.8623009475s|s152b|152|rds|local|vector|||13.266|package 'data.table' was built under R version 4.5.3. package 'posterior' was built under R version 4.5.3|
+unobs_raw_acc_2023_lf|stem|9a590e1bd0dcab9d|5ca1fa96cf81ab80|bb3eb763dec9cd96|-1847879072||t20720.8628243715s|s7058818b|7058818|rds|local|vector|||3.609||
+acc_2023_flipped_lf|stem|aa1b3316591d67c2|3571dc6082e0eafb|c4dfa19122c67178|-950528145||t20720.862913446s|s7215913b|7215913|rds|local|vector|||0.718||
+splitup_23_lf|stem|7066463249611fb9|c8d7ea216a779f87|1ab1179cf34a5c42|245588625||t20720.8651085883s|s7730231b|7730231|rds|local|vector|||1.047||
+calibrated_23_6_lf|stem|1d51772a44f45e2f|b87362a427cc879d|50129d351739d519|1675929286||t20720.8652009505s|s1664196b|1664196|rds|local|vector|||4.25||
+cal_23_6_lf|stem|1b9799d04ccbb0a1|5221375256568f85|2369f732b9b1d437|2077895969||t20720.8652311982s|s789672b|789672|rds|local|vector|||0.359||
+bo_23_6_lf|stem|b000e223be4ffb87|30e9f0571de2ac8e|362435d9fc20d615|-1361346122||t20720.8652336335s|s5402b|5402|rds|local|vector|||0.063||
+calibrated_23_10_lf|stem|1ea0cf48c4127a36|8790007a6a9a340f|50129d351739d519|-1766720915||t20720.8653533285s|s2684168b|2684168|rds|local|vector|||6.5||
+cal_23_10_lf|stem|fee33b987c97ffa1|7d0d634d290b9220|d017ffc4cac7b7f5|-1871440050||t20720.8653798353s|s1351659b|1351659|rds|local|vector|||0.438||
+bo_23_10_lf|stem|9aa28ac61c6c5a88|759ae88c01fee0d2|7913d6ccb2c6dbb4|74161165||t20720.8653823968s|s7196b|7196|rds|local|vector|||0.046||
+calibrated_23_1_lf|stem|d933e840da7abf5f|0d59c6a0a5f60660|50129d351739d519|-108344437||t20720.8654010586s|s1730843b|1730843|rds|local|vector|||5.406||
+cal_23_1_lf|stem|016102221eaa55fc|e902ed5b736b1be0|ef730f27fc8605c6|836685781||t20720.8654213783s|s849909b|849909|rds|local|vector|||0.313||
+bo_23_1_lf|stem|ce9ef8be4347c304|323d3301f3abdca1|bcd7e02a529dc315|1470787247||t20720.8654240276s|s5522b|5522|rds|local|vector|||0.031||
+calibrated_23_3_lf|stem|db20b78055c9c4e8|f95a458ba245b319|50129d351739d519|-1326178152||t20720.8654560024s|s1562771b|1562771|rds|local|vector|||3.266||
+cal_23_3_lf|stem|c74ae12d1a88b090|28030f380c2cd1d4|44c0ee548768d8b2|916991733||t20720.8654714108s|s755799b|755799|rds|local|vector|||0.359||
+bo_23_3_lf|stem|5f9ceb75316a5fcc|4467218071f0bc9f|4cb05803954e0245|-2018189097||t20720.8654739788s|s4728b|4728|rds|local|vector|||0.047||
+calibrated_23_2_lf|stem|640d40c3436eb9e8|b8102fe405ff3d95|50129d351739d519|1846134992||t20720.8654924899s|s966685b|966685|rds|local|vector|||4.703|There were 12 warnings in `summarise()`. The first warning was: i In argument: `range_x = max(acc_x) - min(acc_x)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 11 remaining warnings.|
+cal_23_2_lf|stem|b7f93eb776e72ef4|c4894fa274bd2e29|a15093f982f785f5|-1067138975||t20720.8655013838s|s472369b|472369|rds|local|vector|||0.203||
+bo_23_2_lf|stem|85108b49b9bccb7d|04770439b89a9aac|8484d3a74e0a19e6|-1126052038||t20720.8655041425s|s3524b|3524|rds|local|vector|||0.125|There were 2 warnings in `summarize()`. The first warning was: i In argument: `start = min(start_int)`. Caused by warning in `min()`: ! no non-missing arguments, returning NA i Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+calibrated_23_4_lf|stem|7e60300158a53bd5|bb369c9682ef7bb2|50129d351739d519|-132528506||t20720.8655289064s|s1918313b|1918313|rds|local|vector|||6.703||
+calibrated_23_7_lf|stem|91d78e54212b643c|c66929f7ce945505|50129d351739d519|-175565807||t20720.8655294244s|s2135747b|2135747|rds|local|vector|||6.625||
+calibrated_23_11_lf|stem|2acc8c48c65aed48|80501292afdb7a54|50129d351739d519|2068279571||t20720.8655361484s|s2698306b|2698306|rds|local|vector|||7.641||
+calibrated_23_13_lf|stem|8ea016018f661d5c|44eb6312ee9e44c0|50129d351739d519|440027192||t20720.8655369285s|s2496531b|2496531|rds|local|vector|||7.641||
+calibrated_23_8_lf|stem|e034e3b9ce3293b6|ec9daa6a76f7df25|50129d351739d519|-442994228||t20720.8655393292s|s2704253b|2704253|rds|local|vector|||5.531||
+calibrated_23_15_lf|stem|dee8a415334840d4|04035708e86c817a|50129d351739d519|1470623965||t20720.8655466456s|s2295044b|2295044|rds|local|vector|||7.093||
+cal_23_4_lf|stem|9a51543a60ca71c1|59b8f317f9fcc2d1|990b65ec0a0930f3|1360934286||t20720.8655511106s|s928245b|928245|rds|local|vector|||0.39||
+cal_23_7_lf|stem|668be1ac86c7a609|fd7ab430fa108250|6b94d48a38aeefbf|1200773353||t20720.8655527112s|s1087038b|1087038|rds|local|vector|||0.391||
+bo_23_4_lf|stem|f8b041b6af60df32|2456b0594b268b70|4a0371be462d84f4|1458301980||t20720.8655533352s|s5871b|5871|rds|local|vector|||0.047||
+bo_23_7_lf|stem|1d97526ee8e03404|0dd9dc47988a99f3|ce996d2060f8388b|786687636||t20720.8655548489s|s6289b|6289|rds|local|vector|||0.063||
+cal_23_13_lf|stem|0b5c7e0e0cbb9ac0|010b7f11b011eee6|5f255ef000c3112c|533794778||t20720.865561585s|s1248258b|1248258|rds|local|vector|||0.437||
+bo_23_13_lf|stem|8cc7eeb10125fb0c|b35000730ac93d6f|ddb784bc87176c2a|-1630277002||t20720.8655648683s|s7146b|7146|rds|local|vector|||0.062||
+cal_23_11_lf|stem|d994b62399cb141c|36fe7817dd28100b|b6640095dae41038|-1308020522||t20720.8655647643s|s1325221b|1325221|rds|local|vector|||0.484||
+cal_23_8_lf|stem|75b1e07847252691|f72d65da06401b5c|f881874e8b32a108|-2082541052||t20720.8655671554s|s1364499b|1364499|rds|local|vector|||0.547||
+bo_23_11_lf|stem|66eb350cd8631f71|cdf8d7544be18e32|7b8041dadb231851|1810949922||t20720.8655677217s|s7631b|7631|rds|local|vector|||0.062||
+bo_23_8_lf|stem|257e61ead1ebd7ab|3726c4970308eb98|d34cfae6fb293a64|-655454236||t20720.8655694897s|s7271b|7271|rds|local|vector|||0.047||
+cal_23_15_lf|stem|f66ad86824606ebf|eefae3b9ef43aef0|c7a6acb5eec6e41c|-199194228||t20720.8655721868s|s1131842b|1131842|rds|local|vector|||0.437||
+sc_23_6_lf|stem|ce0fafaa68a02789|dc3268a3be72abec|d26886585f150526|1585324556||t20720.8655759221s|s15045b|15045|rds|local|vector|||1.265||
+pr_23_6_lf|stem|4bff91c45c83c280|860c40a23f7b0d46|cda093bcd0bfe96f|-687170289||t20720.8655775326s|s786b|786|rds|local|vector|||0.063||
+bo_pr_23_6_lf|stem|c923d3056bc2ffbf|4d12136b67f2489a|1d5e55b19e0053d3|-481798293||t20720.8655796143s|s19074b|19074|rds|local|vector|||0.062||
+sc_23_1_lf|stem|917f6084121532f5|9d013509fe6d2d79|c8f9838676eccd11|-2136756121||t20720.8655871227s|s14316b|14316|rds|local|vector|||1.063||
+sc_23_10_lf|stem|f237ecacce5017d0|d5c1b88bf348e96a|d0f6e93b3faed843|-1437938127||t20720.8655881476s|s19873b|19873|rds|local|vector|||1.375||
+pr_23_1_lf|stem|e1fe5e0baeb8bd63|02085ecabd228c1e|67a5be4e8504dbb3|-1357143535||t20720.8655889449s|s799b|799|rds|local|vector|||0.062||
+pr_23_10_lf|stem|1073a73fbb25a7cb|a1f1d940a919c3fc|1982e8db652f6082|1375838625||t20720.8655896613s|s999b|999|rds|local|vector|||0.063||
+bo_pr_23_10_lf|stem|7d958e41340e9593|69fa3a93d3bc289b|077767b4bef4d6cd|-1118563302||t20720.8655922794s|s24844b|24844|rds|local|vector|||0.078||
+sc_23_2_lf|stem|67ebf513c6f5387c|765ffadd69049116|70698d1cc911ab55|273095509||t20720.8655938394s|s10391b|10391|rds|local|vector|||0.641||
+sc_23_3_lf|stem|f25ca6b154b7c4b6|87c4955672288475|e31963acda7a38c2|2084415354||t20720.8655939319s|s12550b|12550|rds|local|vector|||0.938||
+sc_23_15_lf|stem|32daf9b42586f7c0|78bcde79f5124230|0141bc69e3fb249e|907582915||t20720.8655949532s|s17142b|17142|rds|local|vector|||1.297||
+pr_23_2_lf|stem|bff598c5c7f962b2|cc913dd49075ee99|b57891efb76bfabb|1447605311||t20720.8655950456s|s550b|550|rds|local|vector|||0.031||
+pr_23_3_lf|stem|f9557344971f1642|57b31f2a34fd98f3|d5fd829919847ed5|1041021430||t20720.8655952998s|s762b|762|rds|local|vector|||0.016||
+pr_23_15_lf|stem|997167768730ab44|be41f488aeffcb17|764c7ab1530d0464|1338501796||t20720.8655961203s|s860b|860|rds|local|vector|||0.031||
+bo_pr_23_2_lf|stem|bf2ebbfe6ca2a9d6|4f953ffc37b82e4c|95ea7a6b1c2ebd5e|1722718636||t20720.8655970563s|s13291b|13291|rds|local|vector|||0.047||
+bo_pr_23_1_lf|stem|81ba175463f097c1|c37784d6ae4e5665|9ebfef37ed1c30b7|-1041590767||t20720.8655974492s|s18547b|18547|rds|local|vector|||0.047||
+bo_pr_23_3_lf|stem|c09e51cbe6894863|aea5dd92c26f8fb9|d165753dd8552dc5|-1488408278||t20720.8655978652s|s16154b|16154|rds|local|vector|||0.063||
+calibrated_23_9_lf|stem|de73846c5d8dd46c|d5c175e1069bbb6e|50129d351739d519|-360305393||t20720.8655979692s|s3033656b|3033656|rds|local|vector|||6.125||
+sc_23_4_lf|stem|d62c7fb564dad2ca|ddf5f9018d2b3d9f|30d1535aefea622d|2045821790||t20720.8656107917s|s16926b|16926|rds|local|vector|||1||
+pr_23_4_lf|stem|ba05aa974f16972d|5c4cac01597e41f8|8b3f7ced67c0803a|-122972985||t20720.865612213s|s827b|827|rds|local|vector|||0.031||
+bo_pr_23_4_lf|stem|f7f29e1d5302472e|8210eaf5b119d15b|ec2511631b38f07d|-2027718569||t20720.8656149864s|s21631b|21631|rds|local|vector|||0.062||
+sc_23_7_lf|stem|a4c17213c3bf8f06|0db0219a93795d76|a2bcb2c6470396ca|-873779527||t20720.8656156746s|s15854b|15854|rds|local|vector|||1.063||
+pr_23_7_lf|stem|85114c521ecf22f7|a56671c9f53732c0|ba99ce57f5dc2312|-2003041704||t20720.8656171345s|s853b|853|rds|local|vector|||0.047||
+bo_23_15_lf|stem|4906994df4b01481|e733c8a597ca9698|bc57e8b8f52b4d57|1240321072||t20720.8656173541s|s6452b|6452|rds|local|vector|||0.047||
+bo_pr_23_7_lf|stem|f7f565f2d2d2bc97|666e7ca502d25433|80c28a416533ed6a|-103041087||t20720.8656196318s|s20188b|20188|rds|local|vector|||0.078||
+sc_23_13_lf|stem|2299af2c696aa3a0|ac989d74b85b1a13|db6af48b284f8f43|-1340614089||t20720.8656201168s|s20929b|20929|rds|local|vector|||1.328||
+bo_pr_23_15_lf|stem|57b167530d7bbbfb|7f564e431312cc8b|a4568a41d4c1394d|-18018831||t20720.8656202901s|s21930b|21930|rds|local|vector|||0.062||
+sc_23_8_lf|stem|77df594496ec9a4f|675c3743b5e235fd|fdffd69b794590b6|-39561736||t20720.8656206368s|s21410b|21410|rds|local|vector|||1.36||
+sc_23_11_lf|stem|48e188df23d2244c|ce24fff9b36a01c3|7f3d59984918e93b|-85428382||t20720.8656211452s|s21626b|21626|rds|local|vector|||1.312||
+pr_23_13_lf|stem|c40af9fb6900e3ad|dbc0aed8778fbd67|9b5c1fe5a888ea11|25619880||t20720.8656213763s|s991b|991|rds|local|vector|||0.047||
+pr_23_8_lf|stem|96f284e8956488f7|763547110cfc79a7|99f39363b4c00918|-54467516||t20720.8656217577s|s1015b|1015|rds|local|vector|||0.047||
+pr_23_11_lf|stem|aeac3611106ad716|04c656ae5b721875|c90897934697bed4|1879367908||t20720.8656225088s|s872b|872|rds|local|vector|||0.046||
+bo_pr_23_13_lf|stem|0df4e67af6b057fd|5099fe415a8e07e1|38513846cdd8eeb9|-462646125||t20720.8656233699s|s26095b|26095|rds|local|vector|||0.047||
+bo_pr_23_8_lf|stem|57fd1055230d38fe|c37bf90aba52980f|58ced14d91f49247|-1511014900||t20720.8656239362s|s26531b|26531|rds|local|vector|||0.046||
+bo_pr_23_11_lf|stem|b8b5f20c07e7f39e|da7febbddfc71ed3|fdddd9876a62fa35|348932502||t20720.8656250571s|s27227b|27227|rds|local|vector|||0.047||
+cal_23_9_lf|stem|275a4c998750c6be|159b5dae679124cd|185e6f3f8b49ec49|-1621494443||t20720.8656280974s|s1494854b|1494854|rds|local|vector|||0.562||
+bo_23_9_lf|stem|bf4896c766f5c20a|c6883decffc007b6|c98cc5e3ece09a2b|1247062575||t20720.865630421s|s8017b|8017|rds|local|vector|||0.047||
+calibrated_23_14_lf|stem|d93ef3c26c2944b6|b4e3e9b7adad50a3|50129d351739d519|-1539972041||t20720.8656319695s|s2729686b|2729686|rds|local|vector|||6.735||
+cal_23_14_lf|stem|c977ea03bd58f2ea|a6735afae477f76f|c4d30e68941b481c|1463197431||t20720.8656508708s|s1373465b|1373465|rds|local|vector|||0.485||
+sc_23_9_lf|stem|de8ebe8ce2ddcde0|9187ad7723e182b7|bfc31019788d3419|-1602113478||t20720.8656524424s|s25645b|25645|rds|local|vector|||1.422||
+bo_23_14_lf|stem|a119382e834955d6|23a3c274206614a0|197b4dadbc5c5ed7|-1007022453||t20720.8656537943s|s7335b|7335|rds|local|vector|||0.032||
+pr_23_9_lf|stem|cd8a904786faca2a|c466df479537ec42|e18ccfe390b6ebe8|-1632347601||t20720.865654141s|s1065b|1065|rds|local|vector|||0.047||
+bo_pr_23_9_lf|stem|eb05b4849585fe2a|517e96149da58266|59696c9e2f3da681|-1762339324||t20720.8656565562s|s31593b|31593|rds|local|vector|||0.047||
+calibrated_23_16_lf|stem|226bfc32b3a689e7|e83e10a34d009332|50129d351739d519|834533502||t20720.8656576832s|s5356715b|5356715|rds|local|vector|||15.109||
+calibrated_23_12_lf|stem|74ead9b60ce0ac2a|8c1d48b526a9ec6a|50129d351739d519|397104758||t20720.865673173s|s2737253b|2737253|rds|local|vector|||6.375||
+sc_23_14_lf|stem|238f1efa0f9a902b|0702972fbf83804d|b8ad28c5a7a4f979|-2099639955||t20720.865678655s|s23020b|23020|rds|local|vector|||1.234||
+pr_23_14_lf|stem|f95dc9721a218d0b|1278a06bbf1eac9b|5021b8f1fd649326|-1743845796||t20720.8656804114s|s1007b|1007|rds|local|vector|||0.046||
+bo_pr_23_14_lf|stem|5070b19e46e065b8|1171489484a78a9d|87dd256098854812|840126712||t20720.8656830489s|s28327b|28327|rds|local|vector|||0.063||
+cal_23_12_lf|stem|fa84a2d4b296cf2e|6e8b35c10e7c84f0|152be8d821518a1f|856281181||t20720.8657035479s|s1374297b|1374297|rds|local|vector|||0.437||
+bo_23_12_lf|stem|a0c02e9ecf5c193c|f6fc125b585bec6b|b59b304487e72f72|655736756||t20720.8657062653s|s7718b|7718|rds|local|vector|||0.047||
+cal_23_16_lf|stem|c4e6ab54f8b0d197|6d2d1ccd49f21dcd|28feaa49386aad37|-715398252||t20720.8657143209s|s2787829b|2787829|rds|local|vector|||0.969||
+bo_23_16_lf|stem|d23578298d293875|c9aa4d0ea04db24a|a9045fb602086b04|1709355177||t20720.8657184211s|s16361b|16361|rds|local|vector|||0.063||
+sc_23_12_lf|stem|37e5b8a12f337f02|b11b05cd06bf4cb7|270daee1cc174b36|-1910933723||t20720.8657251204s|s20043b|20043|rds|local|vector|||1.219||
+pr_23_12_lf|stem|add78ef1749847eb|da2ff20018d5fb21|dd9c67cb4fbae190|-105026521||t20720.8657268799s|s1055b|1055|rds|local|vector|||0.047||
+bo_pr_23_12_lf|stem|61c42ce42b733318|f658c5efc035f65c|54cd01a24213e292|321827603||t20720.86572925s|s25610b|25610|rds|local|vector|||0.047||
+sc_23_16_lf|stem|86eeb6a2aeafc93f|4735bb6de50594bf|b531289fe9b5aa05|159479111||t20720.865745284s|s37967b|37967|rds|local|vector|||1.875||
+pr_23_16_lf|stem|48b524a96dbdd89f|f8bcc13f3604bf7f|a28cfc8d7e4aad49|-1933830818||t20720.8657475951s|s1367b|1367|rds|local|vector|||0.094||
+bo_pr_23_16_lf|stem|d9e511d6d38a06bf|8f93f9ddcfb12ad7|7a0c7af8d7cc78cc|2090189758||t20720.8657510575s|s50753b|50753|rds|local|vector|||0.078||
+calibrated_23_5_lf|stem|56d6f49e17f5bf90|11e8bd53410036ca|50129d351739d519|-1077337597||t20720.8659752316s|s14307111b|14307111|rds|local|vector|||33.312|There were 12 warnings in `summarise()`. The first warning was: i In argument: `range_x = max(acc_x) - min(acc_x)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 11 remaining warnings.|
+cal_23_5_lf|stem|1bcbe0228b253f18|8581982d3ba010a2|5bb1ce9081542aba|-1952301049||t20720.8661231591s|s7431661b|7431661|rds|local|vector|||3.265||
+bo_23_5_lf|stem|4bf1f757a2612fd9|b12f7bdc419d0768|4c0a06a3369194cf|-157870458||t20720.8661320469s|s49790b|49790|rds|local|vector|||0.25|There were 2 warnings in `summarize()`. The first warning was: i In argument: `start = min(start_int)`. Caused by warning in `min()`: ! no non-missing arguments, returning NA i Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+sc_23_5_lf|stem|da4622e4d6a0c370|062980f31d6f4bde|a6415ec504280199|-743216977||t20720.8661938521s|s116673b|116673|rds|local|vector|||4.437||
+pr_23_5_lf|stem|9a3e86c553969660|4746c855213d7dea|61e4a1e3f127e76d|1252459701||t20720.8661984124s|s2357b|2357|rds|local|vector|||0.265||
+bo_pr_23_5_lf|stem|2807e6f64990733b|bf473dabc292acbf|5a55cf6e5f33610b|626960223||t20720.8662055292s|s151786b|151786|rds|local|vector|||0.062||
+bo_pr_2023_lf|stem|f9288b00485c5f84|644689d0c20a7021|d1ee1a4cb87ac1fe|910684528||t20720.8662304915s|s465616b|465616|rds|local|vector|||1.891||
+mindate_24_lf|stem|61d5bacc6c3c9e10|7e0ca8c58d4d1949|2c530c1562a7fbd1|1256275598||t20726.9697582327s|s74b|74|rds|local|vector|||16.422||
+maxdate_24_lf|stem|b8e07dce8508b553|f029c87b38ed1d26|2c530c1562a7fbd1|-976512020||t20726.9697586991s|s74b|74|rds|local|vector|||16.485||
+maxdate_22_lf|stem|43a5268b3f276964|f92dda976bcdea81|2c530c1562a7fbd1|-43471294||t20726.9697609595s|s74b|74|rds|local|vector|||16.578||
+mindate_22_lf|stem|218c6be403f3aa7a|262705b5b43c39f2|2c530c1562a7fbd1|-1364770519||t20726.9697649385s|s74b|74|rds|local|vector|||16.891||
+minmax_buff|stem|760387bd6584fdfa|47b25d0e28b5f7fd|97bb4e87a6ae3fb6|-1458743838||t20726.9697697495s|s190b|190|rds|local|vector|||0.125||
+inpa_data_2022|stem|daf6ef674828a5f3|252f8d5479cd2985|2c530c1562a7fbd1|-1210581480||t20726.9894435544s|s1870841b|1870841|rds|local|vector|||18.188||
+inpa_data_2023|stem|9eb1e49638bd3252|8fbd716ce7f95fb2|2c530c1562a7fbd1|-1568963189||t20726.9894503786s|s2154641b|2154641|rds|local|vector|||18.359||
+inpa_data_2024|stem|bf10f7133a5e0636|8631f1074d4f1266|2c530c1562a7fbd1|-1418810284||t20726.9894717479s|s3375114b|3375114|rds|local|vector|||19.5||
+ornitela_data_2024|stem|c5f3c8f22de2be33|63c3560c06642828|2c530c1562a7fbd1|-1421203361||t20726.9894858695s|s4751066b|4751066|rds|local|vector|||19.375||
+ornitela_data_2022|stem|f287fcc3b4ccb3f8|34cccbcff3a06c83|2c530c1562a7fbd1|1584165961||t20726.9894971798s|s5476523b|5476523|rds|local|vector|||19.921||
+ornitela_data_2023|stem|5bc74579096cdcc5|7c9424125a18f0c4|2c530c1562a7fbd1|-431815628||t20726.989526936s|s6964062b|6964062|rds|local|vector|||21.203||
+gps_1|stem|ce9de3c0659a6c88|4d41a6f8c4dcbc6c|72f06e9312aa84e5|1784024678||t20726.9899169681s|s24486332b|24486332|rds|local|vector|||5.125||
+gps|stem|ebe3a725b87f94a2|7da1c0d7495e496c|f57e5c806f7fe6f1|-1034569801||t20726.9902501522s|s31149317b|31149317|rds|local|vector|||0.281||
+gps_focal_indivs|stem|24f3b94f1e2ae7b5|267302e3bf5f25b4|365651b37e4c46d8|1201847583||t20726.9906276613s|s27107615b|27107615|rds|local|vector|||8.547||
 get_trajectories_sync_pair|function|37439e151e611039
 get_at_carcass|function|b8968c714063e9c5
 pool_coefficient|function|a9d3446029c4a20e
@@ -863,14 +1024,14 @@ get_nets|function|2a15a734c6f4639c
 get_plotdata|function|4ae2f220e76c4d11
 fix_names|function|77e88c3c13429084
 exclude_incomplete_bouts|function|285e53585f0e6375
-fit_model|function|9e08394d304e5f2d
+fit_model|function|c6c6c33b8c891491
 get_space_use_pca|function|efcffb85f2309281
 remove_noise|function|70ecb1a97cb8ad12
 get_telems|function|47297fdee2ffcea0
 get_station_bouts|function|b2e8df860673d07b
 prepare_nbda_data|function|46e39efaeecec4e4
 get_constraintsVectMatrix|function|9c3622c78d6b0a2e
-get_informed|function|fc731a4429e03873
+get_informed|function|3791b24bd029ba35
 gpfs|function|16e72778f70a2721
 get_guesses|function|a3a35db662f5a544
 format_event_data|function|ca4694d8d77c7c4d
@@ -951,7 +1112,7 @@ get_fits|function|e1edce82516a1cd4
 get_flight_allday|function|8abfcc7b94557606
 savefit|function|b0b59dba99d6db0e
 get_inpa|function|fa4957082a2b0d54
-get_social|function|2bcd4bfc1def8858
+get_social|function|2a72ccfbdb7d798c
 get_network_metrics|function|9f356285a6b543fa
 assign_time_dist|function|bf1fa419675df4c4
 get_season_names|function|748399ed4fa1ee4a
@@ -971,13 +1132,13 @@ get_firsts|function|ad6319a793f06e9d
 expand_mats|function|b89843db444ed655
 get_metrics_summary|function|c0528d5a3aa70a6a
 get_has_enough_sightings|function|d19a39f7f1207db7
-get_after_departures|function|5a9723ebcb75799a
+get_after_departures|function|11eec928ddfabc33
 get_seeds|function|9d0101c1d3a86a53
 get_gps_flight_hr|function|f4b411be8a81ffb3
 get_new_movement_vars|function|3ee7c964a84f3f05
 compile_areas|function|f51258254a38c148
 get_roost_dates|function|f95c759b9a6a71ba
-get_trajectories_sync|function|1f24d02c0dd34f94
+get_trajectories_sync|function|36890855a44d25b9
 get_model_averaged_estimates|function|900b2fdc2aafe4ce
 get_stat_feats|function|3cca77600c07ddc5
 spaceTimeGroups_new|function|92beca8094521e52
@@ -1000,5 +1161,300 @@ get_fl_bin|function|20c01d64143a18d8
 get_fl_weighted|function|ae1fc292919c8978
 get_fl_bin_list|function|4628e125dc1bec5a
 get_fl_wt_list|function|0efe2bb9cd2fdd12
-carc_summs_stn|stem|feef7f59b54fe55b|2a72577003d28d9c|1cb12ce2ced29ac2|-187412682||t20643.9898866298s|s1437b|1437|rds|local|vector|||0.031||
-carc_summs_wild|stem|2d8a7625b61a3f83|421d4700c07ecefc|bf7c96d31ef214f1|536117994||t20643.989887607s|s2411b|2411|rds|local|vector|||0.031||
+data_files_2024_lf|stem|e1921d7d2e2786b7|5f10da423943d8ec|2c530c1562a7fbd1|-722836556||t20726.9913924091s|s145b|145|rds|local|vector|||16.687||
+data_files_2022_lf|stem|4f262513d3bb5d73|3a28405a9d334f7c|2c530c1562a7fbd1|-2063250239||t20726.9913967584s|s143b|143|rds|local|vector|||17.078||
+inpa_data_2023_lf|stem|3bd500f7b066fc71|1d97e143eaf79f77|2c530c1562a7fbd1|1035338398||t20726.9914731393s|s5961414b|5961414|rds|local|vector|||19.625||
+unobs_raw_acc_2024_lf|stem|7ffb46d7615eb5c6|76b1615c17e304ba|9693d2c708c2f2d6|1315377355||t20726.9915955941s|s16326112b|16326112|rds|local|vector|||7.36||
+ornitela_data_2023_lf|stem|f65a653b10ed5b96|15aaee05016ad256|2c530c1562a7fbd1|342887914||t20726.9916148468s|s17090751b|17090751|rds|local|vector|||24.5||
+acc_2024_flipped_lf|stem|7ffb46d7615eb5c6|1700aead9bd7f49a|9a65f480686dfc48|-243844911||t20726.9917503525s|s16326112b|16326112|rds|local|vector|||0.063||
+splitup_24_lf|stem|c38cdd2b8ff72b22|8f9c0965f44d052e|98cdb7dea25a55a7|140635656||t20726.9919119338s|s17040146b|17040146|rds|local|vector|||1.047||
+gps_1_lf|stem|9011008bb8595786|594c40a106feda82|be30aaeb3ece61ae|946293917||t20726.9919387541s|s23005856b|23005856|rds|local|vector|||4.89||
+unobs_raw_acc_2022_lf|stem|827b71235da8a752|14bdfae156ac7210|202627c39b2561d4|158992833||t20726.992083437s|s71373129b|71373129|rds|local|vector|||14.657||
+calibrated_24_10_lf|stem|2b6f0bbc647b8581|d83c2248d44dcaf9|a20d4f196335b6c8|-1828926245||t20726.9921502193s|s6462527b|6462527|rds|local|vector|||12.234||
+cal_24_10_lf|stem|22313437bafefd60|42cdad356f82aec6|0dee7f63b0f18df4|-1638476277||t20726.9921993173s|s3320344b|3320344|rds|local|vector|||1.031||
+gps_lf|stem|c40981064f80aa8b|58e997bdc2683c14|dce661765d6ea6d5|1659766253||t20726.9922118473s|s29396977b|29396977|rds|local|vector|||0.265||
+sc_24_10_lf|stem|e72a5e8577e3eb65|9bd8276dd24dfe9c|b906d76b47c3bac6|-87994536||t20726.9922324083s|s43570b|43570|rds|local|vector|||2.11||
+pr_24_10_lf|stem|83d326193617fb34|bf7499868eea252a|73116030acf46a29|1909930718||t20726.9922344147s|s2286b|2286|rds|local|vector|||0.093||
+calibrated_24_6_lf|stem|fd183b3517bb73f3|998db53071c62283|a20d4f196335b6c8|715404680||t20726.9923466544s|s2877818b|2877818|rds|local|vector|||6.297|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 124: `device_id = 202398`, `bout_id = 141`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+cal_24_6_lf|stem|bd5307887131bc2a|bdb2962297771b61|33f9c3f0bc6e63e0|1993300898||t20726.9923652447s|s1407064b|1407064|rds|local|vector|||0.454||
+calibrated_24_4_lf|stem|a5fe32b1a737184d|564f6819469b3e43|a20d4f196335b6c8|-61363599||t20726.9923761881s|s4519373b|4519373|rds|local|vector|||11.672||
+sc_24_6_lf|stem|075973ba2518d55e|1059472b1a4e5db2|b5de2e2310c1e8b1|-594736383||t20726.9923860485s|s21418b|21418|rds|local|vector|||1.125||
+pr_24_6_lf|stem|d59086c319efb7e0|cb50fb0fa2efdc0a|bbf557c35016a8d9|-592472312||t20726.9923875307s|s1163b|1163|rds|local|vector|||0.047||
+calibrated_24_16_lf|stem|3363d4d5fea11242|8d9387c314b58b89|a20d4f196335b6c8|-303999006||t20726.992398429s|s4867401b|4867401|rds|local|vector|||7.25||
+calibrated_24_5_lf|stem|a23900c8fa5725d0|6f7253b8b7b8c212|a20d4f196335b6c8|493862312||t20726.9923983592s|s11192231b|11192231|rds|local|vector|||26.328|There were 12 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 71: `device_id = 202391`, `bout_id = 82`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 11 remaining warnings.. There were 12 warnings in `summarise()`. The first warning was: i In argument: `range_x = max(acc_x) - min(acc_x)`. Caused by warning in `max()`: ! no non-missing arguments to max; returning -Inf i Run `dplyr::last_dplyr_warnings()` to see the 11 remaining warnings.|
+calibrated_24_11_lf|stem|1e8ddca1ba24a47e|c0a7519be6681240|a20d4f196335b6c8|-762139715||t20726.9924006828s|s5628746b|5628746|rds|local|vector|||13.391||
+cal_24_4_lf|stem|0c6e666033bafb2c|a26126fc67be3ded|00804bffd12ba4f3|725141138||t20726.9924147879s|s2277451b|2277451|rds|local|vector|||0.781||
+bo_24_4_lf|stem|a7fd330799346bee|963daea1a22863e0|7dc8ad5125c215b1|-796609045||t20726.9924176129s|s17433b|17433|rds|local|vector|||0.063||
+cal_24_16_lf|stem|eef1bfa2aec499ed|1a9f8b9c8c859972|a1e4d67669c69a7e|-212338103||t20726.992428989s|s2524253b|2524253|rds|local|vector|||0.766||
+calibrated_24_2_lf|stem|e60bc34aab919572|5a258a038c66ffc9|a20d4f196335b6c8|-1970095043||t20726.9924312079s|s6478094b|6478094|rds|local|vector|||14.984|There were 6 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 543: `device_id = 202367`, `bout_id = 589`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 5 remaining warnings.. There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 68: `device_id = 202370`, `bout_id = 77`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+cal_24_11_lf|stem|80878d156098c2b0|63e2157be4e2d4f9|88fd09ec9d71779b|-1147223318||t20726.9924448279s|s2890971b|2890971|rds|local|vector|||0.828||
+calibrated_24_13_lf|stem|3632ecd494cbd3da|984929d5cc385747|a20d4f196335b6c8|689749932||t20726.9924457051s|s7036206b|7036206|rds|local|vector|||15.875||
+sc_24_16_lf|stem|159ed3d22a293b7a|9eb86ff1305fdb50|7a94ebdef1238f2d|783788453||t20726.9924514708s|s31871b|31871|rds|local|vector|||1.312||
+pr_24_16_lf|stem|18e9fec022b3f137|522294d527db2fea|27b291dba7207b9c|-886350959||t20726.992453754s|s1495b|1495|rds|local|vector|||0.063||
+sc_24_11_lf|stem|b2149bb2386cd584|430a1a0eb1782451|b34bcf480596a1cd|2001927172||t20726.9924720694s|s41786b|41786|rds|local|vector|||1.719||
+pr_24_11_lf|stem|399d19a46c4c1b3f|e81ff1cdaa75bfb2|a2ff67adaa4ee56e|-1978846302||t20726.9924741039s|s2125b|2125|rds|local|vector|||0.094||
+cal_24_2_lf|stem|d5e7ca393df4e60b|9194cd7480696e25|8b0cc98c05b76c62|-1024956610||t20726.9924842939s|s3308101b|3308101|rds|local|vector|||1.234||
+bo_24_2_lf|stem|c0cc1afbc15a0230|83671ce5dfefb729|9660cf11775d8277|1745410202||t20726.9924879332s|s23304b|23304|rds|local|vector|||0.063||
+cal_24_5_lf|stem|8a81c34b17e377b8|abbcc4fbe81c3490|0ff2dad057408fbc|1090720414||t20726.9924937416s|s5595542b|5595542|rds|local|vector|||2.422||
+cal_24_13_lf|stem|065ed86d5dba1358|43928fa1edac9934|8133cb81fa311d0c|525325681||t20726.9924976987s|s3678130b|3678130|rds|local|vector|||1.062||
+bo_24_5_lf|stem|fe1c978f1e82c791|0c7386a7ab362344|b72b7ecbb5962360|998938639||t20726.9924998192s|s44429b|44429|rds|local|vector|||0.187|There were 2 warnings in `summarize()`. The first warning was: i In argument: `start = min(start_int)`. Caused by warning in `min()`: ! no non-missing arguments, returning NA i Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+bo_24_13_lf|stem|7fbadc9ad7ec3f03|71ff6a9db1aa77d6|efa1168561ef1a00|-1055185978||t20726.9925013472s|s23393b|23393|rds|local|vector|||0.078||
+calibrated_24_7_lf|stem|8b35dda5ad4bf15c|c267492816fb6ddd|a20d4f196335b6c8|-991265201||t20726.9925016246s|s8847083b|8847083|rds|local|vector|||18.907||
+bo_24_10_lf|stem|6e5062e8b09a2d38|a7bf9fc3ab54049c|6b45be7cb9ef1608|156232901||t20726.9925044448s|s21624b|21624|rds|local|vector|||0.063||
+bo_pr_24_10_lf|stem|e4ec873d9e746484|59bd47ecffa00f9b|4b86b8014a46fe2b|800098832||t20726.992507506s|s62891b|62891|rds|local|vector|||0.062||
+bo_24_6_lf|stem|544e97b610eb526f|ede6565fff77c35a|28781d1692851714|-1347992546||t20726.9925098584s|s9903b|9903|rds|local|vector|||0.031||
+bo_pr_24_6_lf|stem|94d50ca5f9897a7f|fe1b250c7f0a78c5|5b17162220c9d80f|-2035316406||t20726.9925121493s|s29623b|29623|rds|local|vector|||0.046||
+sc_24_4_lf|stem|5203b5c67050d233|b1ea1a6fd2ebef5a|39e5582f0070a6e9|-2070916769||t20726.9925368461s|s32358b|32358|rds|local|vector|||1.5||
+pr_24_4_lf|stem|ec02bd6b8d25ffca|1b99af4ef244fa5c|9a7822ec7480784f|-559144606||t20726.992538545s|s1707b|1707|rds|local|vector|||0.078||
+bo_pr_24_4_lf|stem|b3f2fa7fafcb2cba|4429d38d9ec3c4c2|1006c1ea78329d61|-1970905522||t20726.9925407837s|s46816b|46816|rds|local|vector|||0.031||
+bo_24_16_lf|stem|fff911899c0aeb69|9724e15682a5ff7a|67c429f4f58f6359|-806869453||t20726.9925431733s|s18129b|18129|rds|local|vector|||0.031||
+bo_pr_24_16_lf|stem|4aa57a8091f5e94e|f6e3fcc2e46ee9bf|c7e76e07a2feabc3|-1719010745||t20726.9925462392s|s46733b|46733|rds|local|vector|||0.016||
+bo_24_11_lf|stem|41bcf443e5400c5e|bc04c6f049446372|7db1d267f3744187|1282440347||t20726.9925493019s|s18586b|18586|rds|local|vector|||0.047||
+bo_pr_24_11_lf|stem|b6b79be29edcbd41|06920e2d31205ce3|5aaf55cb9ab164ef|-119353863||t20726.9925521703s|s57552b|57552|rds|local|vector|||0.047||
+cal_24_7_lf|stem|9e05c23eba92e2d8|3a1043b63188e28a|e294727bd9e4da6a|1682351252||t20726.9925552532s|s4562361b|4562361|rds|local|vector|||1.375||
+calibrated_24_9_lf|stem|6a8e5672acbacbf6|187fcd3551688efc|a20d4f196335b6c8|664259053||t20726.992578912s|s5385657b|5385657|rds|local|vector|||9.265|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 119: `device_id = 213563`, `bout_id = 120`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+sc_24_2_lf|stem|3e356f53abf63a8c|7741c79f3e88e45d|7d712d86f3c5191b|136669049||t20726.9925806557s|s66746b|66746|rds|local|vector|||1.844||
+pr_24_2_lf|stem|7162fd407f4994cd|b3dc46bed3d45d21|ec627ff4f766d31d|-1853469795||t20726.9925826697s|s1761b|1761|rds|local|vector|||0.109||
+calibrated_24_1_lf|stem|5c20b2b10fea99dc|44b370018bf9e01b|a20d4f196335b6c8|-1687655918||t20726.9925838253s|s2609447b|2609447|rds|local|vector|||4.391||
+bo_pr_24_2_lf|stem|33917ee2d189cc0d|72122676d132560d|3576e8043feac2c9|179835652||t20726.9925855852s|s85076b|85076|rds|local|vector|||0.032||
+sc_24_7_lf|stem|feaafa244fe1e293|c6343b043c26e76b|f33bb4d286afa7a7|-808632931||t20726.9925924428s|s63040b|63040|rds|local|vector|||2.375||
+calibrated_24_15_lf|stem|4c1d4a4116dfced5|04632675f96298e5|a20d4f196335b6c8|1913092283||t20726.9925946378s|s12624466b|12624466|rds|local|vector|||24.125||
+pr_24_7_lf|stem|05e4a051e41a27c3|24dd70f32f2c8628|8ac17c477d0b7bc0|-1821538220||t20726.9925948111s|s2837b|2837|rds|local|vector|||0.125||
+cal_24_1_lf|stem|22efdcdd4f6fa205|2e88235b66f84193|a47feff19828d868|-418308643||t20726.992601116s|s1293762b|1293762|rds|local|vector|||0.406||
+bo_24_1_lf|stem|f017eb61f655e212|aaa989c3a357a155|e8424ef2e23c5e35|-2107006715||t20726.9926032413s|s9481b|9481|rds|local|vector|||0.046||
+bo_24_7_lf|stem|38359814a3c3e454|1938e213a27e91c1|820ac2bb31f243eb|858573098||t20726.9926098397s|s31850b|31850|rds|local|vector|||0.078||
+bo_pr_24_7_lf|stem|a572547c4f2a9ec4|7c1276d438be5237|069da9193680c40c|994450364||t20726.9926137598s|s90081b|90081|rds|local|vector|||0.062||
+sc_24_13_lf|stem|db460679c61919d9|507805deeb467ea7|63dc96197f7d8a3d|706374262||t20726.9926264556s|s53087b|53087|rds|local|vector|||2.093||
+cal_24_9_lf|stem|869266406d69531d|f46a5e970d45f909|c76f9090f5bd8756|-1920442592||t20726.9926277654s|s2787591b|2787591|rds|local|vector|||0.969||
+pr_24_13_lf|stem|8e1c9a59a2c7b0f2|e0f0d8cf502f3c36|36341489e9ceeeea|1048255938||t20726.9926283591s|s2407b|2407|rds|local|vector|||0.093||
+bo_24_9_lf|stem|76a4d7f905857358|68036cb18e4394d9|aa4b4e99bb761cf6|-1962625423||t20726.9926310098s|s17752b|17752|rds|local|vector|||0.078||
+bo_pr_24_13_lf|stem|77ec18f9c5ebdd71|ca52b2c7f2749bec|3369734bbae2d4c7|8931420||t20726.9926315882s|s74609b|74609|rds|local|vector|||0.063||
+sc_24_1_lf|stem|a79fb6171b49b330|459273f43f89a2cf|3e0811f889b8e04b|-1671125131||t20726.9926323867s|s19941b|19941|rds|local|vector|||1.078||
+sc_24_5_lf|stem|45f7ae25559516c1|50a59599e935400b|546e00458a0456c1|-1517159102||t20726.992632745s|s81006b|81006|rds|local|vector|||3.219||
+pr_24_1_lf|stem|002fdee1db92f030|8f5fee2006359af3|b6cf63d56e27c202|-583167001||t20726.9926334498s|s1056b|1056|rds|local|vector|||0.031||
+pr_24_5_lf|stem|db15fd085d9edd9d|5997f09cab056a20|cb74ed71d9d9ec2d|-2024485996||t20726.9926352426s|s2731b|2731|rds|local|vector|||0.14||
+bo_pr_24_1_lf|stem|ab0267a25c85a607|a733c166c6422afa|4e88d0622ff071a8|-2075752691||t20726.9926354271s|s28308b|28308|rds|local|vector|||0.047||
+bo_pr_24_5_lf|stem|570f1b9fc3d400e8|aa7476ca353aa07c|35c9f3f4249f34a6|-1718087091||t20726.992639833s|s112593b|112593|rds|local|vector|||0.031||
+sc_24_9_lf|stem|6931e2621fb721b4|8fe776b21552968b|9a259aa2c30d3f16|794524223||t20726.9926601572s|s40098b|40098|rds|local|vector|||1.891||
+pr_24_9_lf|stem|366f8b5ae56571be|b6a43b3c4c832d5e|ba1d7787b66b9325|19262856||t20726.9926621045s|s1905b|1905|rds|local|vector|||0.063||
+bo_pr_24_9_lf|stem|c5376ea609639bf4|5a42af84659c89c1|8c4910bbd488b34b|-1376766776||t20726.9926652153s|s55963b|55963|rds|local|vector|||0.062||
+cal_24_15_lf|stem|5699e52fd1d74901|a31c499fef24c776|643f44f10c710a3b|173254617||t20726.9926847683s|s6694203b|6694203|rds|local|vector|||1.89||
+bo_24_15_lf|stem|26379a1db51140a2|d5c4bbfaac384ff8|c53999cdedaab940|1822817087||t20726.99269039s|s46736b|46736|rds|local|vector|||0.094||
+calibrated_24_3_lf|stem|1e3c0af912088afc|1aabcb22b8cc4a3a|a20d4f196335b6c8|-1153634418||t20726.9927255357s|s6769754b|6769754|rds|local|vector|||10.734|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 69: `device_id = 202375`, `bout_id = 78`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+sc_24_15_lf|stem|26b8682a8d921fd7|71c35cc21e0ea067|a7d7691e6b498f2b|-1851109961||t20726.9927387885s|s83845b|83845|rds|local|vector|||3.813||
+pr_24_15_lf|stem|48c391368c0c8320|dd035b129a6175a0|acd27d49da782eed|1168682375||t20726.9927420454s|s3900b|3900|rds|local|vector|||0.188||
+bo_pr_24_15_lf|stem|54d8416121def05c|08c8be6f307e7a76|512fb6b9773d8043|-630393745||t20726.9927480826s|s121635b|121635|rds|local|vector|||0.047||
+calibrated_24_8_lf|stem|583657f8d5a59f65|831ac28234cfe23c|a20d4f196335b6c8|-297280190||t20726.9927485957s|s9623799b|9623799|rds|local|vector|||17.203||
+cal_24_3_lf|stem|47817b9296065696|9ca59dddfffa0e91|04383ba3d25bbff4|-1999569944||t20726.9927806505s|s3389085b|3389085|rds|local|vector|||1.093||
+calibrated_24_14_lf|stem|2d21dbffa18af290|c9159db775295019|a20d4f196335b6c8|1345620787||t20726.9927822706s|s11221670b|11221670|rds|local|vector|||16.203||
+bo_24_3_lf|stem|c6fd03bed9d0c5e3|c2baad51bfdeef06|989084faea0609a6|-714350216||t20726.9927849879s|s24970b|24970|rds|local|vector|||0.078||
+acc_2022_flipped_lf|stem|dde69df54ce40884|70f4eb9346c41e86|b11995d0b1cc27d7|1905796517||t20726.9927873743s|s72982074b|72982074|rds|local|vector|||0.906||
+cal_24_8_lf|stem|bee27a80ab75c2b5|4a0124d85480b1b7|5ff11ce61d8d9bb4|-1046726435||t20726.992808906s|s5005560b|5005560|rds|local|vector|||1.578||
+bo_24_8_lf|stem|95090be6134abbd0|cad966f8dc5f5a0f|30727701f9c1b214|1558799421||t20726.9928145034s|s34618b|34618|rds|local|vector|||0.094||
+sc_24_3_lf|stem|1142acc796f44b7c|6486e13f0e7edca4|e380d496c01e0e56|-1546659705||t20726.9928161852s|s53393b|53393|rds|local|vector|||2.312||
+pr_24_3_lf|stem|522115394f2518ab|40147f5586c3eadb|48c4b23050e5e1d7|-1307962984||t20726.9928188098s|s2379b|2379|rds|local|vector|||0.125||
+bo_pr_24_3_lf|stem|d772111aeeacf6ec|99f6102522ab8a8f|3bcee5b1b9f6b954|781692360||t20726.9928227432s|s74340b|74340|rds|local|vector|||0.079||
+calibrated_24_12_lf|stem|63f02f389ed07922|9c3019c0b9b8ea16|a20d4f196335b6c8|-1427919499||t20726.9928411769s|s10117370b|10117370|rds|local|vector|||18.657||
+sc_24_8_lf|stem|1be3ec1c83445f45|da06502d56a818fa|96f845e1eac73d27|-680350373||t20726.9928547723s|s61927b|61927|rds|local|vector|||3.14||
+pr_24_8_lf|stem|1b39ee6dd2c4c0cc|6c4d4110f45bbffb|e29f422da25773d2|322629094||t20726.9928574025s|s2880b|2880|rds|local|vector|||0.157||
+bo_pr_24_8_lf|stem|b340111591a81d0c|e7d40580cff41dcb|d16afdecb050b38e|320089782||t20726.9928632519s|s91559b|91559|rds|local|vector|||0.047||
+cal_24_14_lf|stem|f5166f450ce98f2a|e2f696282b4b8554|c15f600715c1e529|1449529235||t20726.992864687s|s6054955b|6054955|rds|local|vector|||1.89||
+bo_24_14_lf|stem|d3481bab872010cb|3ed13d9ee57d5385|c8b0bba66f2e26a1|1995100608||t20726.9928705312s|s40116b|40116|rds|local|vector|||0.11||
+sc_24_14_lf|stem|60d9a7d15870c178|828b3bf667a48fc6|7b8c143b451826de|-1086407991||t20726.9929197286s|s81802b|81802|rds|local|vector|||3.657||
+cal_24_12_lf|stem|0d6f30d4bf3d26e3|fe4290a65f7dddf0|d45fccdff6cf1cc9|-1803903440||t20726.9929217938s|s5174454b|5174454|rds|local|vector|||1.984||
+pr_24_14_lf|stem|cbca63aa9347a83d|81f648d63de212df|bcc8d86ad8aa56fa|460357960||t20726.9929227232s|s3354b|3354|rds|local|vector|||0.14||
+bo_24_12_lf|stem|1417c8d2246ce0d7|f06289d336a4b47e|41a634c44111c180|-1145139901||t20726.9929271779s|s37378b|37378|rds|local|vector|||0.094||
+bo_pr_24_14_lf|stem|ba3710d878c21f43|5f3b778925d776a3|2412f7385315b19e|-437520406||t20726.9929280238s|s115453b|115453|rds|local|vector|||0.063||
+sc_24_12_lf|stem|a482b02c327706e5|2744dbc0b258061e|fef4bfc7de196f7a|1681237528||t20726.992969414s|s67478b|67478|rds|local|vector|||3.313||
+pr_24_12_lf|stem|c8380c60addb63f7|28984273fdd8aa2e|b4c88210472ee98e|-1059349200||t20726.9929725353s|s3224b|3224|rds|local|vector|||0.141||
+bo_pr_24_12_lf|stem|718e2be12f8139f2|0c91cf1fe9125e6d|4bd881f6e41a914a|1894380669||t20726.9929774967s|s98065b|98065|rds|local|vector|||0.047||
+bo_pr_2024_lf|stem|825074937e2a0a8b|5ffd7470eacfe23a|eaee09b7758c8f6f|-624230214||t20726.9930113894s|s1067132b|1067132|rds|local|vector|||2.406||
+splitup_22_lf|stem|f2cee47b02e68a7f|ea556137ca53e160|098e6e2c9f6a1638|817452196||t20726.9935539028s|s74548944b|74548944|rds|local|vector|||4.781||
+calibrated_22_6_lf|stem|4dfe73638d63222d|38a76e5f0475000b|d45e524b8f50729a|-1610279040||t20726.994241329s|s17952898b|17952898|rds|local|vector|||28.312||
+cal_22_6_lf|stem|90386044ddc0509d|435c9c699a61a3dc|62a29169a124969e|1264380970||t20726.9943762001s|s8926850b|8926850|rds|local|vector|||3.109||
+calibrated_22_2_lf|stem|09c061e43c6417d5|2dc17d9a19ded939|d45e524b8f50729a|-1441818094||t20726.9944175207s|s24652631b|24652631|rds|local|vector|||38.594|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 1020: `device_id = 202366`, `bout_id = 1032`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.. There were 6 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 57: `device_id = 202370`, `bout_id = 57`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 5 remaining warnings.|
+sc_22_6_lf|stem|eb45290d58107630|d33c5ae055da0d8c|01b49c48063c9ef8|-1303593731||t20726.9944424469s|s118564b|118564|rds|local|vector|||4.703||
+pr_22_6_lf|stem|555217bd867d6f1e|ab6a1480e7740bd4|f1d750c25d4f37ce|738585761||t20726.9944463408s|s5696b|5696|rds|local|vector|||0.235||
+calibrated_22_4_lf|stem|0d0b6a6ae2a0256c|74aff60f2923b6a3|d45e524b8f50729a|-198002718||t20726.9944607804s|s25732449b|25732449|rds|local|vector|||41.391||
+calibrated_22_7_lf|stem|f7c7418877800f5e|4aebee372fe509a1|d45e524b8f50729a|224853332||t20726.9944699092s|s26896061b|26896061|rds|local|vector|||41.547|There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  1 failed to parse.. There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  3 failed to parse.|
+calibrated_22_16_lf|stem|9de0283cd9019a7b|72990254f969f9c5|d45e524b8f50729a|-565534013||t20726.9945386494s|s20058825b|20058825|rds|local|vector|||53.609||
+cal_22_2_lf|stem|d3f2110f9d00c713|e713c4fcf2719aeb|4b1805b082e91d1e|-1387003209||t20726.9945961366s|s12469658b|12469658|rds|local|vector|||4.375||
+bo_22_2_lf|stem|bd58dd9a1d4fa181|1a296404b4b66a1e|b45115a433c12cb7|1876330772||t20726.9946057182s|s99279b|99279|rds|local|vector|||0.156||
+calibrated_22_9_lf|stem|0c5b5eb383a00801|4b9b6e485661a4fc|d45e524b8f50729a|662521282||t20726.9946396999s|s33088399b|33088399|rds|local|vector|||51.891||
+cal_22_4_lf|stem|86986ebdbf7a74a4|d467393224206aeb|9f49340c3442cd0c|1055027507||t20726.9946403715s|s12576932b|12576932|rds|local|vector|||4.766||
+bo_22_4_lf|stem|d23fd00ebad73db0|38bc94fad5bc259c|697133703e57cb93|1511897699||t20726.9946499534s|s101898b|101898|rds|local|vector|||0.156||
+cal_22_7_lf|stem|12391407d05ae139|2a2b2db3ac892d92|ec9c9aa1379b73d4|121739687||t20726.9946578494s|s13220464b|13220464|rds|local|vector|||4.797||
+bo_22_7_lf|stem|a1c306d902e2f3ab|c02c75f1f52b9876|36d9af0b5907c4b0|-647376472||t20726.9946677283s|s107549b|107549|rds|local|vector|||0.157||
+cal_22_16_lf|stem|1e090e3c7716e6b5|d552db9c573fc875|b022bd47ba173912|1398448659||t20726.9946737501s|s10206880b|10206880|rds|local|vector|||3.078||
+calibrated_22_15_lf|stem|33a5cc3607da7bb6|ca1795f6d7f62a67|d45e524b8f50729a|-1772181268||t20726.9946965841s|s36333912b|36333912|rds|local|vector|||54.797||
+sc_22_16_lf|stem|5d595cce8dccee1c|79aa9f0dd21c9bb7|d2e458eaeb0b2ea3|2058947885||t20726.9947511001s|s146458b|146458|rds|local|vector|||5.718||
+pr_22_16_lf|stem|4fdd83b00512e0ec|2adad9f375af56a4|f73549a381f7dbaa|-40671764||t20726.9947553585s|s5890b|5890|rds|local|vector|||0.265||
+calibrated_22_10_lf|stem|b6acdbe77ea3f5c3|08a3b12b456c28d2|d45e524b8f50729a|1905496946||t20726.9948488475s|s41575773b|41575773|rds|local|vector|||62.75|There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  1 failed to parse.|
+cal_22_9_lf|stem|3390f1fbbe1d7a54|223a8389a4d06881|eb7ed1989702243c|451823828||t20726.9948709307s|s17252762b|17252762|rds|local|vector|||6.562||
+calibrated_22_13_lf|stem|aa1017177df5f2ef|1138dfdb41c6dff8|d45e524b8f50729a|-912158196||t20726.9949459328s|s45036236b|45036236|rds|local|vector|||67.734||
+cal_22_15_lf|stem|cf537a4c840a1a4f|24d8e406926dd55e|be7be06300cb27b4|741993039||t20726.9949554599s|s18566267b|18566267|rds|local|vector|||7.39||
+bo_22_15_lf|stem|2ebaca82a50ad08a|7a781658b7b19a28|dc65270b84be34fd|472780109||t20726.9949694381s|s144593b|144593|rds|local|vector|||0.203||
+calibrated_22_11_lf|stem|7ffde482bae0f1ea|223d99ce57791741|d45e524b8f50729a|1643937637||t20726.9949754512s|s45704462b|45704462|rds|local|vector|||70.328|There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  37 failed to parse.. There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  11 failed to parse.|
+sc_22_9_lf|stem|f10ef99261ed0efa|f7929a6dd6c5a0f1|1e0f603641746542|1662105898||t20726.994982142s|s239652b|239652|rds|local|vector|||8.344||
+pr_22_9_lf|stem|e2bc316836a956b1|97aefbe7df5f6487|e3c4c9df471fdaaf|1972054033||t20726.9949879281s|s8462b|8462|rds|local|vector|||0.375||
+bo_22_6_lf|stem|85a755d2da1a7aa4|e5f98a984d504797|731b66c96506376d|-321551557||t20726.9949950241s|s73111b|73111|rds|local|vector|||0.125||
+bo_pr_22_6_lf|stem|0e74f22a6190fdbb|a241232cb3db2ae4|60d31546c707ce26|-130702445||t20726.9950018256s|s179069b|179069|rds|local|vector|||0.047||
+sc_22_2_lf|stem|1f0a2d4ee9c6cb6f|fe6d3efb24d09d01|e4db94b9083769bc|-1262394831||t20726.9950925249s|s196060b|196060|rds|local|vector|||6.75||
+pr_22_2_lf|stem|90f42cf03254689e|874309feebd6ac00|d7e13ac7cd0ef3ed|-1015228255||t20726.9950971494s|s7163b|7163|rds|local|vector|||0.297||
+bo_pr_22_2_lf|stem|188b1db3fc8f9500|cb9ae4e0086e799a|8a1b087986aeb006|-1378133347||t20726.9951053472s|s274536b|274536|rds|local|vector|||0.046||
+cal_22_10_lf|stem|527303173013ec57|73b00fb07c5f59c8|27c83f3b75b83dc6|-100748937||t20726.9951372395s|s21346891b|21346891|rds|local|vector|||8.14||
+sc_22_4_lf|stem|5855f14aa8286736|2ef34acde737a526|cedd9c8c49fdbd03|1095278728||t20726.9951940911s|s179154b|179154|rds|local|vector|||6.594||
+pr_22_4_lf|stem|3ea55627ef50a5df|e76af38ec17fc740|040e1f68461501da|778504044||t20726.995200309s|s7020b|7020|rds|local|vector|||0.437||
+bo_pr_22_4_lf|stem|b68af90e80da7d47|3982c48fae761426|f9f4b64c371c05c3|-1082090406||t20726.9952091117s|s261717b|261717|rds|local|vector|||0.062||
+cal_22_13_lf|stem|ad373629a6224db8|13f4dc2b28d79546|ac003a803bd33099|-2137142019||t20726.9952703538s|s23077776b|23077776|rds|local|vector|||9.125||
+sc_22_10_lf|stem|53f6d5cc00db1d08|1b99282c9b26229e|a7643d11c65494ca|322060712||t20726.9952743544s|s284975b|284975|rds|local|vector|||10.406||
+calibrated_22_3_lf|stem|4e71f837f674bb7c|0374547924603b6d|d45e524b8f50729a|1170517603||t20726.99527833s|s18345263b|18345263|rds|local|vector|||25.5|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 967: `device_id = 202374`, `bout_id = 1032`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.. There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 420: `device_id = 202377`, `bout_id = 423`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+pr_22_10_lf|stem|aff50ae96e67b7b7|66900a687baced78|e03e9c7bacc4a50b|-1505519083||t20726.9952814234s|s10653b|10653|rds|local|vector|||0.485||
+bo_22_13_lf|stem|bda68ca45c361f2a|0092473e0de42eb3|59bcb658b70cba44|1462620910||t20726.9952861189s|s177309b|177309|rds|local|vector|||0.25||
+bo_22_16_lf|stem|0229741583e5bb2d|5b48357ef70e817b|c842df0750e9e883|-748982185||t20726.9952909143s|s63316b|63316|rds|local|vector|||0.328||
+cal_22_11_lf|stem|856e95bb10ca6cb7|0e968279b5251879|4bcea8de8f0d7b7f|-2128038625||t20726.9952924009s|s23635323b|23635323|rds|local|vector|||9.094||
+bo_22_9_lf|stem|08a3faec9e025f54|c48620859cbd5269|dead7ff058e2d75d|-1741873030||t20726.99529851s|s128417b|128417|rds|local|vector|||0.204||
+bo_pr_22_16_lf|stem|acd4377a23ce4ab6|cc4398070d534c35|f7b230e6b5426793|1874555889||t20726.9952989678s|s206070b|206070|rds|local|vector|||0.109||
+sc_22_7_lf|stem|fc753fd62db467c7|00924ca20bf4801f|f2474471b0229f03|-1933302865||t20726.9952989794s|s198275b|198275|rds|local|vector|||6.687||
+pr_22_7_lf|stem|37b2015c0688c216|058722bfd9b6962f|149f275ef2733f0c|-645090354||t20726.9953039419s|s7641b|7641|rds|local|vector|||0.313||
+bo_pr_22_9_lf|stem|351a71d0c010e6a6|56e775d8564cbd20|0f0586388d1a8f68|1377630320||t20726.995309211s|s339262b|339262|rds|local|vector|||0.078||
+bo_pr_22_7_lf|stem|d988329616fc4836|9efd1a996f7828d6|f6c72e4153f1a4b9|-2146183681||t20726.995312898s|s284001b|284001|rds|local|vector|||0.063||
+bo_22_10_lf|stem|50845c89725339f2|1f6f9a29ee097d0e|83ffd44cb46042d1|698993010||t20726.9953233943s|s163744b|163744|rds|local|vector|||0.235||
+bo_pr_22_10_lf|stem|2e9141e4eb3263de|57647886e37287eb|b647ca3717b7e132|340335349||t20726.9953368183s|s416642b|416642|rds|local|vector|||0.062||
+bo_22_11_lf|stem|153704a06772701b|8d2e9ead8bc4e5c7|784a9e01b6870d92|-1205510275||t20726.9953553405s|s178295b|178295|rds|local|vector|||0.281||
+cal_22_3_lf|stem|331c44e05af5b41a|38804e463a4c9300|73102be10901fb69|478340920||t20726.9953940279s|s9116062b|9116062|rds|local|vector|||3.031||
+bo_22_3_lf|stem|033229327d9d391c|0324cf2fd14a560b|265388e30a37d381|-1737873445||t20726.9954014332s|s71751b|71751|rds|local|vector|||0.125||
+calibrated_22_1_lf|stem|3254a36d229bd4de|c582b28093a5be86|d45e524b8f50729a|1754201221||t20726.9954168173s|s24792687b|24792687|rds|local|vector|||35|There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 112: `device_id = 202359`, `bout_id = 113`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.. There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  20 failed to parse.. There were 9 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 871: `device_id = 202362`, `bout_id = 872`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 8 remaining warnings.. There were 3 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 2442: `device_id = 202364`, `bout_id = 2457`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 2 remaining warnings.|
+sc_22_15_lf|stem|620328f984f6cb95|dcfbdb093e11043f|e7f00510d668a669|1067311624||t20726.9954243163s|s246614b|246614|rds|local|vector|||9.5||
+pr_22_15_lf|stem|6fef832f82c185de|0d93a4539915dc34|ba4ccb47c4291840|293806923||t20726.9954304433s|s9330b|9330|rds|local|vector|||0.421||
+bo_pr_22_15_lf|stem|0c2014ef1a106ce8|e9a5d036885bc278|6fba5e1b0feb1ddf|2060755633||t20726.9954416032s|s362223b|362223|rds|local|vector|||0.047||
+sc_22_11_lf|stem|fcbeb988b77632f9|0ccbd185c6c8f06a|edf00db8d946ef3d|-444787479||t20726.9954446212s|s320985b|320985|rds|local|vector|||11.609||
+pr_22_11_lf|stem|798ba95550d760e6|78f5d62e0c3890cb|750af88b18bcd0e4|-573225843||t20726.9954546903s|s11250b|11250|rds|local|vector|||0.75||
+sc_22_13_lf|stem|d6d646d22b785bd3|0271e3eb5029d914|b1e7cfcd1474295e|2014586773||t20726.995464989s|s321484b|321484|rds|local|vector|||11.625||
+sc_22_3_lf|stem|540c91788ea0f8a2|58cffbeaefffd273|907d9bc82bc57ad6|-651683361||t20726.9954670676s|s128468b|128468|rds|local|vector|||5.313||
+bo_pr_22_11_lf|stem|ed29598c5a5ab1f2|e2137dbc2ae8affb|439f5ccd9d456aa2|728466691||t20726.9954697024s|s461321b|461321|rds|local|vector|||0.063||
+pr_22_3_lf|stem|fec0da15b380816a|3c258ea3b096be71|1f3c3e2e645b42ba|2082141327||t20726.9954710656s|s5686b|5686|rds|local|vector|||0.266||
+pr_22_13_lf|stem|e3b58daef33e50a4|95993e9818b73914|a84472e1009bc5f4|1086165995||t20726.9954725378s|s11482b|11482|rds|local|vector|||0.531||
+bo_pr_22_3_lf|stem|5bd44b14b6926ccf|20d8bee463a9ddbf|a129e2fda57969cc|-1232313795||t20726.995478466s|s188201b|188201|rds|local|vector|||0.046||
+bo_pr_22_13_lf|stem|346a17d23de43a5f|05955fe0b05aa119|c58319edb2fd5a85|421038027||t20726.9954892373s|s466327b|466327|rds|local|vector|||0.062||
+calibrated_22_5_lf|stem|f36ba8d8a892006e|a272c8a1363f7efe|d45e524b8f50729a|811861994||t20726.9955838182s|s17301086b|17301086|rds|local|vector|||24.609||
+calibrated_22_8_lf|stem|e8b96e97af9ce432|183d2ffe71277011|d45e524b8f50729a|322617302||t20726.9955950452s|s36846558b|36846558|rds|local|vector|||54.125|There were 6 warnings in `summarise()`. The first warning was: i In argument: `cor_x_y = cor(acc_x, acc_y)`. i In group 1541: `device_id = 202409`, `bout_id = 1561`. Caused by warning in `cor()`: ! the standard deviation is zero i Run `dplyr::last_dplyr_warnings()` to see the 5 remaining warnings.|
+cal_22_1_lf|stem|9f25f8ca87cbe9d6|0c782fc6842df25e|e0bda74b30725a14|292753388||t20726.9956041672s|s12259917b|12259917|rds|local|vector|||4.765||
+bo_22_1_lf|stem|480c14c4eca1c0d2|5184a80061ac33bf|5f2252b3747a44c9|367081109||t20726.9956153058s|s101615b|101615|rds|local|vector|||0.141||
+sc_22_1_lf|stem|6cc496c0c2ce77c1|b0cfcd6633c74800|4af90dc63351c692|-1236398423||t20726.995698058s|s166081b|166081|rds|local|vector|||7.047||
+pr_22_1_lf|stem|2ed30d7a647d1a2e|c31d1ebafc8c4065|8b77e7078bc0027d|1576261253||t20726.9957035732s|s6677b|6677|rds|local|vector|||0.328||
+bo_pr_22_1_lf|stem|8f2573bbc0515c93|618f8465dbbfae9d|74b752c66c74ee84|1289076256||t20726.9957139609s|s248389b|248389|rds|local|vector|||0.063||
+cal_22_5_lf|stem|50c38bf91aa3a199|905ae435329926a6|4eecfea19f93a5a0|-2043032045||t20726.9957171326s|s8560009b|8560009|rds|local|vector|||3.14||
+bo_22_5_lf|stem|ec71e3abb6dc702f|6b52557cbe8b72fe|a8d6ed4fa7ec96e9|-2050950443||t20726.9957258808s|s68237b|68237|rds|local|vector|||0.125||
+calibrated_22_14_lf|stem|4a33d83e5d0dab98|ac3b179b8e1e2809|d45e524b8f50729a|1154427766||t20726.9957742655s|s38513894b|38513894|rds|local|vector|||50.172|There was 1 warning in `mutate()`. i In argument: `UTC_datetime = lubridate::ymd_hms(UTC_datetime, tz = 'UTC')`. Caused by warning: !  10 failed to parse.|
+sc_22_5_lf|stem|1be6f8584b286c0a|a00cbb09dbe8b021|6661cfbed69a3b76|-1900074016||t20726.9957834125s|s114045b|114045|rds|local|vector|||4.719||
+pr_22_5_lf|stem|671d71237c4db313|a85d743a534efe7d|5551e4f30079b1c5|807299307||t20726.9957873484s|s4044b|4044|rds|local|vector|||0.219||
+bo_pr_22_5_lf|stem|b0b3dd06aa8604ba|e48b698f5b7461c0|722a3006ce47ceb2|2030785597||t20726.9957941554s|s170152b|170152|rds|local|vector|||0.047||
+calibrated_22_12_lf|stem|af643e3bf995d020|8591b352a394b064|d45e524b8f50729a|567963040||t20726.9958419189s|s36090713b|36090713|rds|local|vector|||50.063||
+cal_22_8_lf|stem|02eb1fcd5e77525d|ab98fb2249ca8798|4b9072a7e799e960|-181867042||t20726.9958532751s|s19350314b|19350314|rds|local|vector|||7.265||
+bo_22_8_lf|stem|f3452f79745b7097|d8a7d946edbe12fa|4262dd8a127513d1|504385216||t20726.9958667106s|s146688b|146688|rds|local|vector|||0.203||
+sc_22_8_lf|stem|e8f2b35a428f8a40|688337825c4e9d28|1d2575b2b918426d|2099409931||t20726.9959892075s|s247761b|247761|rds|local|vector|||10.281||
+pr_22_8_lf|stem|423a6b08c02518ee|56fc651faa869109|1c4964f4845dba61|334254406||t20726.9959964448s|s9217b|9217|rds|local|vector|||0.484||
+bo_pr_22_8_lf|stem|42a1b8cb6550c711|9198906cb87d5c7d|201ed142f808936e|1886108790||t20726.9960098736s|s367704b|367704|rds|local|vector|||0.046||
+cal_22_14_lf|stem|bf887be07389ae5b|55fdcac842151b86|d4d6836a3b17bda8|315297812||t20726.9960598395s|s19802509b|19802509|rds|local|vector|||8||
+bo_22_14_lf|stem|3b69339102860559|f095ddd859c85211|5bc8637eb132425b|-1750590396||t20726.9960760921s|s150700b|150700|rds|local|vector|||0.203||
+cal_22_12_lf|stem|24666279c9f60d09|0d822adc4cf6048a|7ba55ebd8d64cd5e|1148511565||t20726.9960981198s|s18204287b|18204287|rds|local|vector|||7.297||
+bo_22_12_lf|stem|a7556788cb6b9b5b|8d59a59bec786538|d63aea036ce4bbad|1415958235||t20726.9961146879s|s141693b|141693|rds|local|vector|||0.235||
+sc_22_14_lf|stem|fabdc7dfa75280dc|f7d4b544c5eb825a|423f1b1c3ea10c97|-1017474258||t20726.9961983484s|s253519b|253519|rds|local|vector|||10.515||
+pr_22_14_lf|stem|aacc4d2dca3c13bf|862d0f381f08a991|dd9069dd8c925a2d|1070497669||t20726.9962059204s|s10419b|10419|rds|local|vector|||0.469||
+bo_pr_22_14_lf|stem|0b4eb7b0f886f7d9|ee3a7b57e73360f1|7b767ab2a2f858e3|925393445||t20726.9962201313s|s375693b|375693|rds|local|vector|||0.047||
+sc_22_12_lf|stem|a6722334f40c738d|6e5eebf631361b68|3da628377ae70873|1663783452||t20726.996226176s|s230512b|230512|rds|local|vector|||9.61||
+pr_22_12_lf|stem|d2a2dbb4afa832b4|6a6c8378e295e62c|305ad14c7f5adf02|1949228157||t20726.9962338322s|s8686b|8686|rds|local|vector|||0.516||
+bo_pr_22_12_lf|stem|e2b63617a2142236|1e8ba9d58ed55899|d1ac196f1b051f77|-1605445946||t20726.9962484506s|s344879b|344879|rds|local|vector|||0.063||
+bo_pr_2022_lf|stem|bb00ae8176c05721|942316506b22a6b6|513a0d252b773f9b|1397534793||t20726.9963372214s|s4465774b|4465774|rds|local|vector|||6.203|There was 1 warning in `mutate()`. i In argument: `end = lubridate::ymd_hms(end)`. Caused by warning: !  1 failed to parse.. There was 1 warning in `mutate()`. i In argument: `start = lubridate::ymd_hms(start)`. Caused by warning: !  1 failed to parse.. There was 1 warning in `mutate()`. i In argument: `end = lubridate::ymd_hms(end)`. Caused by warning: !  1 failed to parse.. There was 1 warning in `mutate()`. i In argument: `start = lubridate::ymd_hms(start)`. Caused by warning: !  1 failed to parse.. There was 1 warning in `mutate()`. i In argument: `start = lubridate::ymd_hms(start)`. Caused by warning: !  1 failed to parse.|
+device_ids_lf|stem|8853634054543daa|ed7e603171d1e675|dc677977848d39ed|374422342||t20726.9963408628s|s347b|347|rds|local|vector|||0||
+gps_focal_indivs_lf|stem|a90260c842ec0bd6|763edf438b4a3093|10f3334419d08bfb|150847488||t20726.9970822969s|s68946539b|68946539|rds|local|vector|||18.015||
+wg23_3_lf|stem|ba38ec57f5538e0a|10807243e822496c|a56ef1bcfa342db7|1216400381||t20726.9973018497s|s15198b|15198|rds|local|vector|||3.438||
+wg23_1_lf|stem|0ce96964cf5e6e78|cd1316288b847926|a56ef1bcfa342db7|1575675162||t20726.9973672071s|s29040b|29040|rds|local|vector|||9.734||
+wg23_14_lf|stem|16f5ba497adba1e4|f23596bf7a4e5913|a56ef1bcfa342db7|-240902408||t20726.9973802096s|s30021b|30021|rds|local|vector|||11.172||
+wg23_15_lf|stem|f2aa985d3427e037|633f112682b8415b|a56ef1bcfa342db7|307342499||t20726.9973930413s|s33358b|33358|rds|local|vector|||12.61||
+wg24_15_lf|stem|7a1015ef3d307655|da361c4eca0d3f29|6241c23952a30ba1|-1923480545||t20726.9975040015s|s238b|238|rds|local|vector|||21.14||
+wg23_26_lf|stem|df42ee2b3441067e|e900414c4eabdfdf|a56ef1bcfa342db7|1416482482||t20726.9976802015s|s45172b|45172|rds|local|vector|||18.468||
+wg24_14_lf|stem|7a1015ef3d307655|608d9607ce89b91b|6241c23952a30ba1|-298687265||t20726.9977004714s|s238b|238|rds|local|vector|||14.485||
+wg24_3_lf|stem|7a1015ef3d307655|6e79eb1699eeca74|6241c23952a30ba1|1918142866||t20726.99770098s|s238b|238|rds|local|vector|||13.438||
+wg23_6_lf|stem|63b94a5219c5d437|0625af23a2d13e28|a56ef1bcfa342db7|442964016||t20726.9977439794s|s24455b|24455|rds|local|vector|||6.672||
+wg24_1_lf|stem|7a1015ef3d307655|2b53a329a61821c9|6241c23952a30ba1|-1819370453||t20726.9979984217s|s238b|238|rds|local|vector|||11.797||
+wg23_17_lf|stem|609ad377d784342c|728f10d64ce55219|a56ef1bcfa342db7|-19376310||t20726.9980593985s|s34168b|34168|rds|local|vector|||13.234||
+wg22_1_lf|stem|1cdfd27d37cc049b|183e5e39057619cc|60cb48388e1e31b5|633565948||t20726.9982093113s|s54985b|54985|rds|local|vector|||82.781||
+wg24_26_lf|stem|097dc1da94fbfa69|7ed33eae58f42eda|6241c23952a30ba1|-601479579||t20726.9982308197s|s235b|235|rds|local|vector|||35.297||
+wg24_6_lf|stem|7a1015ef3d307655|88515409b7c255a2|6241c23952a30ba1|890545268||t20726.9983424692s|s238b|238|rds|local|vector|||10.813||
+wg24_17_lf|stem|7a1015ef3d307655|a44c70135ea10951|6241c23952a30ba1|16453201||t20726.9984499413s|s238b|238|rds|local|vector|||25.11||
+wg23_9_lf|stem|7b86a413f90cab9d|5182cf8ad780095d|a56ef1bcfa342db7|1314143039||t20726.9984535483s|s23245b|23245|rds|local|vector|||8.704||
+wg24_9_lf|stem|7a1015ef3d307655|5e3773541a1929e0|6241c23952a30ba1|-1074142177||t20726.9985072847s|s238b|238|rds|local|vector|||11.688||
+wg22_9_lf|stem|630133b647d09ed1|7c48d307936b1be6|60cb48388e1e31b5|1049183111||t20726.9986979276s|s46942b|46942|rds|local|vector|||72.141||
+wg23_21_lf|stem|d32f7c303a282e3e|006024e21538185e|a56ef1bcfa342db7|-1031044640||t20726.998735934s|s26722b|26722|rds|local|vector|||10.828||
+wg22_3_lf|stem|c582f5937ca29536|e83ee0362c85fdce|60cb48388e1e31b5|-1581025036||t20726.9987985322s|s74587b|74587|rds|local|vector|||133.625||
+wg22_6_lf|stem|000eb4e9b53ab998|ff64f131d7babce1|60cb48388e1e31b5|-1279562445||t20726.9988489022s|s78431b|78431|rds|local|vector|||137.156||
+wg24_21_lf|stem|7a1015ef3d307655|0b594a3c32daf057|6241c23952a30ba1|797673250||t20726.998980396s|s238b|238|rds|local|vector|||28.922||
+wg23_16_lf|stem|e92868389a589c56|6e5a5543502b6813|a56ef1bcfa342db7|-1008461461||t20726.9991261139s|s34363b|34363|rds|local|vector|||13.234||
+wg22_14_lf|stem|76060a8ffd9cc01e|0455d4c0bbb8e0d2|60cb48388e1e31b5|-91449758||t20726.9992053684s|s106571b|106571|rds|local|vector|||169.296||
+wg23_20_lf|stem|9d5e8be413af894f|31ce99591f108676|a56ef1bcfa342db7|-214600091||t20726.9992976867s|s32956b|32956|rds|local|vector|||15.156||
+wg23_4_lf|stem|d04ea9fee8bc338a|ed4555c3af7926a0|a56ef1bcfa342db7|1531252717||t20726.9995270339s|s24879b|24879|rds|local|vector|||7.844||
+wg24_16_lf|stem|7a1015ef3d307655|f6bf0e62c6521a4f|6241c23952a30ba1|700221691||t20726.9996224641s|s238b|238|rds|local|vector|||30.094||
+wg22_4_lf|stem|46e8a42fabb23dbb|cbbe73751345ec57|60cb48388e1e31b5|845399438||t20726.999707152s|s46448b|46448|rds|local|vector|||73.187||
+wg22_17_lf|stem|248903068728a0ca|70c758a45bb9fdf4|60cb48388e1e31b5|803412849||t20726.9997621822s|s124044b|124044|rds|local|vector|||190.313||
+wg22_26_lf|stem|b7e71015cdd27633|f4a5b52e3af7bde7|60cb48388e1e31b5|-1748239640||t20727.0000727862s|s333700b|333700|rds|local|vector|||242.641||
+wg23_19_lf|stem|871a1f85fa77995b|c39ed0c093ee9d8a|a56ef1bcfa342db7|-1195752921||t20727.0001011295s|s32859b|32859|rds|local|vector|||17.203||
+wg24_20_lf|stem|7a1015ef3d307655|f715f83ddfc76f60|6241c23952a30ba1|574739270||t20727.0003459112s|s238b|238|rds|local|vector|||58.594||
+wg23_2_lf|stem|f6fa4f5b2c200749|e19685048e2727df|a56ef1bcfa342db7|-1849914538||t20727.0003476802s|s24337b|24337|rds|local|vector|||11.235||
+wg22_2_lf|stem|57ede2251a0812ba|899594cf6d45810a|60cb48388e1e31b5|1609909740||t20727.000380648s|s77606b|77606|rds|local|vector|||119.688||
+wg23_23_lf|stem|8e825b408331c9a4|2cfaf5b0803abcdd|a56ef1bcfa342db7|-2116512088||t20727.0004089359s|s32792b|32792|rds|local|vector|||14.937||
+wg22_20_lf|stem|14767c83d42f411a|7d1f6c8538162e46|60cb48388e1e31b5|-123844663||t20727.0004870454s|s95377b|95377|rds|local|vector|||137.562||
+wg22_16_lf|stem|d4e5fdea698704e2|13914aac67511e56|60cb48388e1e31b5|1965335945||t20727.0006000634s|s100995b|100995|rds|local|vector|||173.484||
+wg24_4_lf|stem|7a1015ef3d307655|6919db8ee92cdeea|6241c23952a30ba1|-751366495||t20727.0007843911s|s238b|238|rds|local|vector|||25.734||
+wg24_19_lf|stem|7a1015ef3d307655|0826fdfe22b65410|6241c23952a30ba1|-256741500||t20727.0008618664s|s238b|238|rds|local|vector|||32.265||
+wg22_21_lf|stem|470cc3e2a5671e6d|85e18ec75f9ed97b|60cb48388e1e31b5|1973040419||t20727.0010783343s|s128372b|128372|rds|local|vector|||222.203||
+wg24_23_lf|stem|7a1015ef3d307655|5c970cb2a514cda2|6241c23952a30ba1|-933530283||t20727.0010873418s|s238b|238|rds|local|vector|||37.969||
+wg24_2_lf|stem|7a1015ef3d307655|a451a2600657a023|6241c23952a30ba1|-1972998894||t20727.0011113291s|s238b|238|rds|local|vector|||32.078||
+wg23_18_lf|stem|2387a1f830803e7c|8c6bf1558020aae3|a56ef1bcfa342db7|-1682726917||t20727.00111494s|s31423b|31423|rds|local|vector|||16.406||
+wg22_7_lf|stem|fb35380a6f93ac24|eadb84cd6d06d67f|60cb48388e1e31b5|-1432628181||t20727.0012600885s|s71154b|71154|rds|local|vector|||126.593||
+wg23_11_lf|stem|c2b07e54ad37e07b|4e40919fc919d029|a56ef1bcfa342db7|696601604||t20727.0014344473s|s34104b|34104|rds|local|vector|||16.046||
+wg24_18_lf|stem|7a1015ef3d307655|5591420246460a11|6241c23952a30ba1|-679089940||t20727.0014736534s|s238b|238|rds|local|vector|||21.688||
+wg24_7_lf|stem|7a1015ef3d307655|4b1c3bad6d52e8b9|6241c23952a30ba1|-1477458960||t20727.0015058638s|s238b|238|rds|local|vector|||22.234||
+wg22_19_lf|stem|2d8a8cac78bf554d|4f0356bd156ab06c|60cb48388e1e31b5|-802859541||t20727.0016526092s|s128984b|128984|rds|local|vector|||199.016||
+wg24_11_lf|stem|7a1015ef3d307655|74c77dcb7698cf02|6241c23952a30ba1|1011044150||t20727.0016722483s|s238b|238|rds|local|vector|||36.141||
+wg23_10_lf|stem|8d57d1ea9be88831|0c555e79416d8b71|a56ef1bcfa342db7|-1631936933||t20727.0017404753s|s24289b|24289|rds|local|vector|||11.047||
+wg23_22_lf|stem|052fe9949e49b815|de66e516e09bc657|a56ef1bcfa342db7|1262655581||t20727.0018143536s|s33237b|33237|rds|local|vector|||12.579||
+wg22_23_lf|stem|af1e23af0958a30a|f74857e62cbdf587|60cb48388e1e31b5|-1075855983||t20727.0020494931s|s129331b|129331|rds|local|vector|||188.187||
+wg24_10_lf|stem|7a1015ef3d307655|1490c8a617b97a10|6241c23952a30ba1|-1460803337||t20727.0020784821s|s238b|238|rds|local|vector|||24.797||
+wg23_7_lf|stem|493886632217fb44|3a89e9fa904eadbd|a56ef1bcfa342db7|-1636537800||t20727.0021428333s|s47337b|47337|rds|local|vector|||137.969||
+wg24_22_lf|stem|7a1015ef3d307655|fa722620c3902e7d|6241c23952a30ba1|-834237669||t20727.0023893012s|s238b|238|rds|local|vector|||44.312||
+wg23_13_lf|stem|dd989155bc997042|04f82f1a13e643a9|a56ef1bcfa342db7|1185535528||t20727.0023943877s|s33717b|33717|rds|local|vector|||15.594||
+wg22_10_lf|stem|e5bf59c4048f05b2|a42e90a7c112f64e|60cb48388e1e31b5|1315402903||t20727.002460192s|s50641b|50641|rds|local|vector|||88.797||
+wg22_11_lf|stem|9479033c5260c80a|2cbafa1796cc2079|60cb48388e1e31b5|45246966||t20727.0025902067s|s70505b|70505|rds|local|vector|||137.156||
+wg23_5_lf|stem|b20a70f344030b36|e912586127964905|a56ef1bcfa342db7|-776756692||t20727.0026530597s|s31277b|31277|rds|local|vector|||10.203||
+wg23_25_lf|stem|4712cc04afe6ac9d|0a46a1754409cf38|a56ef1bcfa342db7|-1016611305||t20727.0027273839s|s37941b|37941|rds|local|vector|||38.391||
+wg22_5_lf|stem|7f5bb3696aaee631|2d05a81beef4e6e6|60cb48388e1e31b5|1488655196||t20727.0029015252s|s49710b|49710|rds|local|vector|||80.171||
+wg24_13_lf|stem|7a1015ef3d307655|ba3d72d07b9b3689|6241c23952a30ba1|1207091306||t20727.0029291771s|s238b|238|rds|local|vector|||34.594||
+wg23_24_lf|stem|d518d5237725d161|68e6e35378d87fa9|a56ef1bcfa342db7|931429690||t20727.0030007234s|s22781b|22781|rds|local|vector|||11.86||
+wg23_8_lf|stem|cb7849d7a3b79eb3|4d2d4a250c2107f1|a56ef1bcfa342db7|1656565617||t20727.0031173483s|s20994b|20994|rds|local|vector|||4.313||
+wg22_18_lf|stem|3958a7ca9f51dbf9|cc50f37df93f5f05|60cb48388e1e31b5|101120695||t20727.0031819555s|s127360b|127360|rds|local|vector|||229.625||
+wg22_8_lf|stem|ae671653095aa35f|b40a5ebf7e382da0|60cb48388e1e31b5|-1631966996||t20727.0032274019s|s48393b|48393|rds|local|vector|||42.625||
+wg24_25_lf|stem|7a1015ef3d307655|e900f02fea7f9423|6241c23952a30ba1|-1125412396||t20727.0033157743s|s238b|238|rds|local|vector|||58.766||
+wg24_5_lf|stem|7a1015ef3d307655|54294cafe8376823|6241c23952a30ba1|739893642||t20727.0034057555s|s238b|238|rds|local|vector|||28.359||
+wg23_12_lf|stem|0c2a0a830e7d5aaf|7e75e7566762a0df|a56ef1bcfa342db7|-1461924014||t20727.0035550834s|s34370b|34370|rds|local|vector|||16.109||
+with_gps_2023_lf|stem|16848ca8ceaaedd2|b31a96892630b95b|eaa8a5cfbb182caa|-407507045||t20727.00356066s|s788404b|788404|rds|local|vector|||0||
+full_2023_lf|stem|600d4438e7c9c418|7599d039d8d80d82|7877f91ae0352fb5|-1735673083||t20727.0035889344s|s1277831b|1277831|rds|local|vector|||1.859||
+feeding_bo_2023_lf|stem|3af84afda61940f0|2d8389c19e4c5809|2b74f7090006dd8e|1146592001||t20727.0035947781s|s54705b|54705|rds|local|vector|||0.219||
+wg22_13_lf|stem|1675a0f72baeb552|15eb3dd771124eda|60cb48388e1e31b5|-1437831923||t20727.0035970263s|s104143b|104143|rds|local|vector|||154.109||
+wg24_24_lf|stem|7a1015ef3d307655|7de0ddbee2f12cfc|6241c23952a30ba1|-11272543||t20727.0037400174s|s238b|238|rds|local|vector|||51.765||
+wg22_22_lf|stem|a61096010f272521|ab94fc311ab335a1|60cb48388e1e31b5|1010952257||t20727.0038177797s|s126870b|126870|rds|local|vector|||193.984||
+wg22_25_lf|stem|8020eec4343afc32|8271913f8542044d|60cb48388e1e31b5|-1505815724||t20727.003950078s|s86818b|86818|rds|local|vector|||151.938||
+wg24_8_lf|stem|7a1015ef3d307655|39afbfe5340ac2f6|6241c23952a30ba1|-142120503||t20727.0042516112s|s238b|238|rds|local|vector|||78.297||
+wg24_12_lf|stem|7a1015ef3d307655|2855f86ae2576729|6241c23952a30ba1|-1309429190||t20727.0042639565s|s238b|238|rds|local|vector|||66.969||
+with_gps_2024_lf|stem|08310b96662a5b28|48c7151990c89183|d217f4615411991a|-1572205580||t20727.0042652616s|s382b|382|rds|local|vector|||0||
+full_2024_lf|stem|6616d3976f1afbeb|4fe86ff62adc8024|d3ae39875184c93b|-1987651952||t20727.0042814341s|s1088390b|1088390|rds|local|vector|||1.016||
+feeding_bo_2024_lf|stem|2a7ecf7cc3f27a7d|d5b589e284ff127c|55416169f6194a24|-1694335190||t20727.0042852025s|s741b|741|rds|local|vector|||0.172||
+wg22_12_lf|stem|1e6492b342f655a9|f6ae524e2f666f13|60cb48388e1e31b5|-1878955452||t20727.004494822s|s56359b|56359|rds|local|vector|||103.547||
+wg22_15_lf|stem|282752c26e7f9480|8aca6ae838718d17|60cb48388e1e31b5|1695061493||t20727.0045628135s|s73348b|73348|rds|local|vector|||87.281||
+wg22_24_lf|stem|38fa335db5a98f6e|be4e34d9b92f86d4|60cb48388e1e31b5|1017107230||t20727.0050583095s|s110676b|110676|rds|local|vector|||194.781||
+with_gps_2022_lf|stem|a9eb87876e1f1e68|5898fc307cea502b|cdb42b60503af0ac|-251483946||t20727.0050792742s|s2503939b|2503939|rds|local|vector|||0.016||
+full_2022_lf|stem|2b1fe5b15a1b2c52|fa0dd9046e4b6687|ac58ef85ba3c1d56|1714908607||t20727.0051607368s|s7254489b|7254489|rds|local|vector|||4.187||
+feeding_bo_2022_lf|stem|f4960ee23f843286|23d069dcc4277be0|f7f87e0207b45bfc|1399052844||t20727.0051783888s|s153464b|153464|rds|local|vector|||0.297||
+feeding_bouts_lf|stem|4a5732dc6e51c183|4b57a3f3a4e403c0|bebd5d814787c442|1200062208||t20727.0051815405s|s115584b|115584|rds|local|vector|||0.031||
+feeding_bo_spatial_lf|stem|6bceb75e8fd13159|52882fb883ef5f78|43b1e110b8250210|1192872692||t20727.0051839541s|s117022b|117022|rds|local|vector|||0.047||

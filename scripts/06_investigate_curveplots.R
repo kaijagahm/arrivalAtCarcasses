@@ -16,6 +16,7 @@ nit <- 500
 # Get plotdata
 tar_load(plotdata_noILVs)
 tar_load(plotdata_DistI)
+tar_load(plotdata_DistI_weibull_varrates)
 tar_load(plotdata_DistIS)
 tar_load(plotdata_DistI_AgeIS)
 tar_load(plotdata_DistIS_AgeIS)
@@ -29,6 +30,7 @@ tar_load(plotdata_DistIS_AgeIS_wild)
 # Save curveplots
 tar_load(curveplots_noILVs)
 tar_load(curveplots_DistI)
+tar_load(curveplots_DistI_weibull_varrates)
 tar_load(curveplots_DistIS)
 tar_load(curveplots_DistI_AgeIS)
 tar_load(curveplots_DistIS_AgeIS)
@@ -50,6 +52,7 @@ tar_load(wild_carcs)
 
 walk2(curveplots_noILVs, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/noILVs_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistI, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
+walk2(curveplots_DistI_weibull_varrates, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_2nets_weibull_varrates/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistI_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistI_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
 walk2(curveplots_DistIS_AgeIS, padded, ~{ggsave(.x, file = paste0("data/saved_fits/station/DistIS_AgeIS_2nets/curveplots/curveplot_", .y, ".png"), width = 6, height = 5)})
@@ -565,4 +568,15 @@ cors %>%
   scale_fill_gradient2(low = "white", high = "dodgerblue3")+
   labs(y = "Obs-pred correlation", x = "Prop. pts inside 95% CI", fill = "Prop. underpredicted")+
   theme(text = element_text(size = 16))
+
+
+# Compare weibull vs. normal curveplots -----------------------------------
+tar_load(curveplots_DistI_weibull_varrates)
+tar_load(curveplots_DistI)
+
+
+
+curveplots_combined <- map2(curveplots_DistI, curveplots_DistI_weibull_varrates, ~{
+  .x / .y
+})
 

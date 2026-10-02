@@ -33,7 +33,16 @@ pred <- readRDS("data/created/predictability_results.RDS")
 
 mae <- left_join(mae, pred, by = c("carcID", "carcType"))
 
-# Moment of truth ---------------------------------------------------------
+# Meta-regression and/or WLS ----------------------------------------------
+# simple WLS model
+forWLS_flight <- mae %>% filter(coef_label == "s_net1") %>% select(carcID, Median, MAD, CI_Lower, CI_Upper, carcType, prop_days_covered)
+
+forWLS_roost <- mae %>% filter(coef_label == "s_net2") %>% select(carcID, Median, MAD, CI_Lower, CI_Upper, carcType, prop_days_covered)
+
+# meta-regression with metafor
+
+
+# Moment of truth (for ISBE) ---------------------------------------------------------
 # Median %ST by carcass type
 # Have not yet excluded the ones where it wasn't valid
 carcasscolors <- c("#DE9C0D", "#16697A")

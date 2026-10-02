@@ -1992,16 +1992,16 @@ get_asocial <- function(x){
     return(mod)
   }else{return(NULL)}}
 
-get_social <- function(x){
+get_social <- function(x, ...){
   if(!is.null(x)){
-    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T))
+    mod <- suppressMessages(STbayes::generate_STb_model(x, gq = T, est_acqTime = T, ...))
     return(mod)
   }else{return(NULL)}
 }
 
-fit_model <- function(mod, dl, n_iter = 1000){
+fit_model <- function(mod, dl, n_iter = 1000, ...){
   if(!is.null(mod)){
-    social_fit <- fit_STb(dl, mod, iter = n_iter)
+    social_fit <- fit_STb(dl, mod, iter = n_iter, ...)
     return(social_fit)
   }else{return(NULL)}
 }
@@ -2257,6 +2257,7 @@ get_after_departures <- function(data_rejoined, gps_spd, sync_departures_df){
       dplyr::select(individual_local_identifier, date_il, year, timestamp_il, ground_speed, interp, roost_X, roost_Y, roostID, roostID_gps, in_a_roost, left_roost) %>% 
       dplyr::ungroup() %>% 
       dplyr::mutate(flight = ground_speed > gps_spd) %>% 
+      dplyr::filter(lubridate::hour(timestamp_il) < 22) %>%   # <-- add filter to remove any movement points after 10pm
       arrange(individual_local_identifier, timestamp_il) %>% 
       tidyr::fill(date_il) %>% 
       dplyr::group_by(individual_local_identifier, date_il) %>% 
@@ -2288,8 +2289,7 @@ get_trajectories_sync <- function(after_departure_interp_only, sync_departures_d
   trajectories_sync_2023 <- purrr::list_rbind(trajectories_sync_list_2023)
   trajectories_sync_2024 <- purrr::list_rbind(trajectories_sync_list_2024)
   
-  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year") %>%
-    mutate(date_il = lubridate::date(timestamp_il))
+  trajectories_sync <- purrr::list_rbind(setNames(list(trajectories_sync_2022, trajectories_sync_2023, trajectories_sync_2024), c("2022", "2023", "2024")), names_to = "year")
   return(trajectories_sync)
 }
 
@@ -2381,17 +2381,26 @@ get_informed <- function(informed_stn, informed_wild, stn_carcs_modified, wild_c
     select(-sighted) %>%
     mutate(informed_previous = lag(informed)) %>%
     select(-informed) %>%
-    ungroup()
+    ungroup() %>%
+    left_join(purrr::list_rbind(stn_carcs_modified) %>% 
+                mutate(carcID = as.character(carcID)) %>% 
+                select(carcID, "carcass_date" = date), by = "carcID") %>%
+    mutate(date = carcass_date + lubridate::days(day))
   
   iwlong <- purrr::list_rbind(informed_wild, names_to = "carcID") %>%
     pivot_longer(cols = starts_with("s"), names_to = "day", values_to = "sighted") %>%
     mutate(day = as.numeric(str_remove(day, "s"))) %>%
     arrange(carcID, id, day) %>%
+    group_by(carcID, id) %>%
     mutate(informed = cumsum(sighted) > 0) %>%
     select(-sighted) %>%
     mutate(informed_previous = lag(informed)) %>%
     select(-informed) %>%
-    ungroup()
+    ungroup() %>%
+    left_join(purrr::list_rbind(wild_carcs) %>% 
+                mutate(carcID = as.character(carcID)) %>% 
+                select(carcID, "carcass_date" = date), by = "carcID") %>%
+    mutate(date = carcass_date + lubridate::days(day))
   
   informed <- bind_rows(islong, iwlong) %>%
     mutate(informed_previous = case_when(is.na(informed_previous) & day == 0 ~ F, .default = informed_previous))
