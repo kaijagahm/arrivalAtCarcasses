@@ -332,9 +332,11 @@ arrive_lookback %>%
 arrive_lookback %>%
   filter(dyad_type == "One informed") %>%
   ggplot(aes(x = mean_flight_dist_km, y = arrive_time_diff_hrs, color = carcType))+
-  geom_point(pch = 1)+
-  geom_smooth(method = "lm")+
-  theme_minimal() # positive relationship, obviously
+  geom_point(pch = 1, size = 1.5, alpha = 0.7)+
+  geom_smooth(method = "lm", alpha = 0.5)+
+  theme_minimal()+ # positive relationship, obviously
+  labs(x = "Mean distance apart in flight (km)",
+       y = "Arrival time difference (hrs)")
 
 # Only those arriving within 2hr
 arrive_lookback %>%
@@ -342,19 +344,16 @@ arrive_lookback %>%
   ggplot(aes(x = mean_flight_dist_km, y = arrive_time_diff_hrs, color = carcType))+
   geom_point(pch = 1)+
   geom_smooth(method = "lm")+
-  theme_minimal() # positive relationship, obviously
+  theme_minimal()+ # positive relationship, obviously
+  labs(x = "Mean distance apart in flight (km)",
+       y = "Arrival time difference (hrs)",
+       title = "Arrival time vs. flight dist, <=2hr only")
 
 # Clearly we are not accurately measuring following events. Need to look at the trajectories more clearly on a map.
 tar_load(trajectories_sync)
 
 oneinformed_toview <- arrive_lookback %>% filter(dyad_type == "One informed", departed_together) %>%
   select(date_il, carcID, day, id1, id2, arrive_time_diff_hrs)
-
-idx <- sample(1:nrow(oneinformed_toview), 1)
-traj <- trajectories_sync %>%
-  filter(id1 == oneinformed_toview$id1[idx],
-         id2 == oneinformed_toview$id2[idx],
-         date_il == oneinformed_toview$date_il[idx])
 
 get_dyad_coords <- function(idx, oneinformed_toview, after_departure_interp_only) {
   row <- oneinformed_toview[idx, ]
@@ -385,13 +384,22 @@ get_dyad_coords <- function(idx, oneinformed_toview, after_departure_interp_only
   return(mv_df)
 }
 
+idx <- sample(1:nrow(oneinformed_toview), 1)
+traj <- trajectories_sync %>%
+  filter(id1 == oneinformed_toview$id1[idx],
+         id2 == oneinformed_toview$id2[idx],
+         date_il == oneinformed_toview$date_il[idx])
+
 dyad_coords <- get_dyad_coords(idx, oneinformed_toview, after_departure_interp_only)
 
 dyad_coords %>%
+  filter(!is.na(X) & !is.na(Y)) %>%
+  sf::st_as_sf(coords = c("X", "Y"), crs = 32636) %>%
+  st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
   mutate(ts = as.numeric(factor(timestamp_il))) %>%
   ggplot(aes(x = X, y = Y, color = ts)) +
   geom_path() +
-  geom_point(alpha = 0.5) +
+  geom_point(alpha = 0.5, aes(shape = individual_local_identifier)) +
   theme_minimal() +
   coord_equal() +
   labs(title = paste("Dyad trajectory:", oneinformed_toview$id1[idx], "&", oneinformed_toview$id2[idx],
@@ -469,7 +477,3 @@ joined_daylight %>%
        title = "In-flight separation after sync. departure",
        subtitle = "After sync departure from same roost (<10min)",
        caption = "Each line is a co-departing dyad.\nExcluded distances > 100km for visual clarity.\nOnly timepoints when both individuals were in flight are shown.\nOnly dates/dyads when both indivs flew >= 15km.")
-
-
-  
-  

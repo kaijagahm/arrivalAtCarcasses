@@ -73,6 +73,7 @@ carcs_buffered <-  st_buffer(carcs_simple, 8000) # 8km radius
 carcs_buffered <- carcs_buffered %>%
   mutate(end_date = date+lubridate::days(3)) %>%
   glimpse()
+write_rds(carcs_buffered, file = "data/created/carcs_buffered.RDS")
 
 all_carcasses_forpred <- all_carcasses_forpred %>%
   mutate(end_date = date + lubridate::days(3))
@@ -216,9 +217,9 @@ vectors_16km <- get_activity_vectors(neighbor_list_16km)
 all(map_lgl(vectors_16km, ~all(.x>=0))) # TRUE
 glimpse(acf(vectors_4km[[1]]))
 
-acfs_lag1_4km <- purrr::map_dbl(vectors_4km, ~if(sum(.x)>0){acf(.x)$acf[2]}else{NA})
-acfs_lag1_8km <- purrr::map_dbl(vectors_8km, ~if(sum(.x)>0){acf(.x)$acf[2]}else{NA})
-acfs_lag1_16km <- purrr::map_dbl(vectors_16km, ~if(sum(.x)>0){acf(.x)$acf[2]}else{NA})
+acfs_lag1_4km <- purrr::map_dbl(vectors_4km, ~{if(sum(.x)>0){acf(.x)$acf[2]}else{NA}})
+acfs_lag1_8km <- purrr::map_dbl(vectors_8km, ~{if(sum(.x)>0){acf(.x)$acf[2]}else{NA}})
+acfs_lag1_16km <- purrr::map_dbl(vectors_16km, ~{if(sum(.x)>0){acf(.x)$acf[2]}else{NA}})
 
 # Okay, so these produce reasonable outputs. Would need to decide which lag to use if I wanted this to be useful at all.
 
@@ -364,8 +365,6 @@ which(ranges > 200 & ranges < 2000)
 plot(vgm_emps[[42]], vgm_fits[[42]]) # looks like this one doesn't really level off, which would indicate that the pattern isn't stationary--varying over time. Maybe need to take variogram of the residuals? But maybe not, since we do care about what's been happening over time.
 
 # Examining predictability results ----------------------------------------
-
-
 predictability_results %>%
   mutate(carcType = case_when(carcType == "stn" ~ "SFS",
                               carcType == "wild" ~ "Non-SFS",
