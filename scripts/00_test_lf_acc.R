@@ -34,25 +34,33 @@ bouts_2023_lf <- purrr::list_rbind(full_2023_lf) %>%
   mutate(which_prob = str_remove(which_prob, ".pred_"))
 
 all <- bind_rows(
-  bouts_2023 %>% mutate(period = "2023"),
+  bouts_2023 %>% mutate(period = "2023",
+                        across(where(~ is.integer(.x) || inherits(.x, "integer64")), as.numeric)),
   bouts_2023_lf %>% mutate(
     period = "2023_lf",
     across(where(~ is.integer(.x) || inherits(.x, "integer64")), as.numeric)
   )
-)
+) %>% mutate(pd = case_when(period == "2023" ~ "HF ACC",
+                              period == "2023_lf" ~ "LF ACC",
+                              .default = NA))
 
 all %>%
   filter(which_prob == pred) %>%
   ggplot(aes(x = prob, color = pred, fill = pred))+
-  geom_density()+
-  facet_wrap(~period) # luckily, I don't see any systemic differences in the classification probabilities of different behaviors between these two datasets.
+  geom_density(alpha = 0.7)+ theme_bw()+
+  facet_wrap(~pd*pred, scales = "free_y", nrow = 2, ncol = 6)+ # luckily, I don't see any systemic differences in the classification probabilities of different behaviors between these two datasets.
+  labs(y = "Density", x = "Classification probability")+
+  theme(legend.position = "none", text = element_text(size = 18))
 
 all %>%
   filter(which_prob == pred, pred == "Eating") %>%
   ggplot(aes(x = prob, color = pred, fill = pred))+
   geom_density()+
-  facet_wrap(~period)+ 
-  geom_vline(aes(xintercept = 0.5), color = "blue", linetype = 2) # okay, so with an 0.5 threshold, we should still be getting quite a few bouts, which lines up with what we see above.
+  facet_wrap(~pd)+ 
+  geom_vline(aes(xintercept = 0.5), color = "blue", linetype = 2)+ # okay, so with an 0.5 threshold, we should still be getting quite a few bouts, which lines up with what we see above.
+  theme_bw()+
+  theme(text = element_text(size = 18))+
+  labs(x = "Classification probability", y = "Density")
 
 # Okay, so we know that this method can successfully identify and localize feeding bouts, just fewer of them. That's good! Some options:
 
@@ -89,13 +97,18 @@ feeding_sf <- all %>% dplyr::select(bout_id, device_id, pred, start, end, locati
   dplyr::select(-which_prob)
 
 feeding_sf %>%
+  mutate(pd = case_when(period == 1 ~ "Period 1 (LF)",
+                        period == 2 ~ "Period 2 (HF)",
+                        period == 3 ~ "Period 3 (HF)")) %>%
   filter(prob > 0.5) %>%
   ggplot(aes(color = prob))+
-  geom_sf()+
-  facet_wrap(~factor(period))+
+  geom_sf(pch = 1, size = 3, alpha = 0.7)+
+  facet_wrap(~factor(pd))+
   scale_color_viridis_c()+ # OH HECK YEAH!! This is awesome.
   labs(y = "Latitude", x = "Longitude",
-       color = "P(Eating)")
+       color = "P(Eating)")+
+  theme_bw()+
+  theme(legend.position = "bottom")
 
 # Some Claude-written, me-edited code for transforming these points into a raster
 
@@ -180,33 +193,33 @@ scale_factor <- 10  # prob resolution ~= 1/scale_factor; raise for finer weighti
 coords <- map(feeding_proj, st_coordinates)
 coords_subsample_2 <- map(random_subsets_p2, st_coordinates)
 coords_subsample_3 <- map(random_subsets_p3, st_coordinates)
-n_rep  <- map(feeding_proj, ~{round(.x$prob * scale_factor)})
-n_rep_subsample_2  <- map(random_subsets_p2, ~{round(.x$prob * scale_factor)})
-n_rep_subsample_3  <- map(random_subsets_p3, ~{round(.x$prob * scale_factor)})
-keep   <- map(n_rep, ~.x > 0)
-keep_subsample_2   <- map(n_rep_subsample_2, ~.x > 0)
-keep_subsample_3   <- map(n_rep_subsample_3, ~.x > 0)
-
-rep_idx    <- map2(keep, n_rep, ~{rep(which(.x), times = .y[.x])})
-rep_idx_subsample_2    <- map2(keep_subsample_2, n_rep_subsample_2, ~{rep(which(.x), times = .y[.x])})
-rep_idx_subsample_3    <- map2(keep_subsample_3, n_rep_subsample_3, ~{rep(which(.x), times = .y[.x])})
-
-coords_rep <- map2(rep_idx, coords, ~{.y[.x, , drop = FALSE]})
-coords_rep_subsample_2 <- map2(rep_idx_subsample_2, coords_subsample_2, ~{.y[.x, , drop = FALSE]})
-coords_rep_subsample_3 <- map2(rep_idx_subsample_3, coords_subsample_3, ~{.y[.x, , drop = FALSE]})
-
-
-map_dbl(coords_rep, nrow)  # sanity check before running kernelUD on this many points
-map_dbl(coords_rep_subsample_2, nrow)
-map_dbl(coords_rep_subsample_3, nrow)
+# n_rep  <- map(feeding_proj, ~{round(.x$prob * scale_factor)})
+# n_rep_subsample_2  <- map(random_subsets_p2, ~{round(.x$prob * scale_factor)})
+# n_rep_subsample_3  <- map(random_subsets_p3, ~{round(.x$prob * scale_factor)})
+# keep   <- map(n_rep, ~.x > 0)
+# keep_subsample_2   <- map(n_rep_subsample_2, ~.x > 0)
+# keep_subsample_3   <- map(n_rep_subsample_3, ~.x > 0)
+# 
+# rep_idx    <- map2(keep, n_rep, ~{rep(which(.x), times = .y[.x])})
+# rep_idx_subsample_2    <- map2(keep_subsample_2, n_rep_subsample_2, ~{rep(which(.x), times = .y[.x])})
+# rep_idx_subsample_3    <- map2(keep_subsample_3, n_rep_subsample_3, ~{rep(which(.x), times = .y[.x])})
+# 
+# coords_rep <- map2(rep_idx, coords, ~{.y[.x, , drop = FALSE]})
+# coords_rep_subsample_2 <- map2(rep_idx_subsample_2, coords_subsample_2, ~{.y[.x, , drop = FALSE]})
+# coords_rep_subsample_3 <- map2(rep_idx_subsample_3, coords_subsample_3, ~{.y[.x, , drop = FALSE]})
+# 
+# 
+# map_dbl(coords_rep, nrow)  # sanity check before running kernelUD on this many points
+# map_dbl(coords_rep_subsample_2, nrow)
+# map_dbl(coords_rep_subsample_3, nrow)
 
 # ---------------------------------------------------------------
 # 4. Build sp::SpatialPoints (what kernelUD expects)
 # ---------------------------------------------------------------
-xy <- map(coords_rep, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
+xy <- map(coords, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
 
-xy_subsample_2 <- map(coords_rep_subsample_2, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
-xy_subsample_3 <- map(coords_rep_subsample_3, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
+xy_subsample_2 <- map(coords_subsample_2, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
+xy_subsample_3 <- map(coords_subsample_3, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
 
 # ---------------------------------------------------------------
 # 5. Kernel UD estimation.
@@ -215,16 +228,16 @@ xy_subsample_3 <- map(coords_rep_subsample_3, ~{SpatialPoints(.x, proj4string = 
 #    `grid = common_grid` in place of `grid = 100, extent = 1`, so
 #    every period is evaluated on the identical spatial grid.
 # ---------------------------------------------------------------
-# kud <- map(xy, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
-# #map_dbl(kud, ~.x@h$h)  # inspect the bandwidth actually used
-# 
-# kud_subsample_2 <- map(xy_subsample_2, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
-# 
-# kud_subsample_3 <- map(xy_subsample_3, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
-# 
-# write_rds(kud, file = "data/created/kud.RDS")
-# write_rds(kud_subsample_2, file = "data/created/kud_subsample_2.RDS")
-# write_rds(kud_subsample_3, file = "data/created/kud_subsample_3.RDS")
+kud <- map(xy, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
+#map_dbl(kud, ~.x@h$h)  # inspect the bandwidth actually used
+
+kud_subsample_2 <- map(xy_subsample_2, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
+
+kud_subsample_3 <- map(xy_subsample_3, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
+
+write_rds(kud, file = "data/created/kud.RDS")
+write_rds(kud_subsample_2, file = "data/created/kud_subsample_2.RDS")
+write_rds(kud_subsample_3, file = "data/created/kud_subsample_3.RDS")
 
 kud <- readRDS("data/created/kud.RDS")
 kud_subsample_2 <- readRDS("data/created/kud_subsample_2.RDS")
@@ -271,6 +284,8 @@ length(r_norm_subsample_2)
 plot(r_norm[[2]])
 plot(r_norm_subsample_2[[1]])
 
+plot(r_norm[[1]])
+
 cors_2 <- map_dbl(r_norm_subsample_2, ~cor(values(.x), values(r_norm[[2]]), use = "complete.obs"))
 cors_3 <- map_dbl(r_norm_subsample_3, ~cor(values(.x), values(r_norm[[3]]), use = "complete.obs"))
 
@@ -281,8 +296,8 @@ cors_df %>%
   ggplot(aes(x = cor, fill = period, color = period))+
   geom_density(alpha = 0.5)+
   theme_minimal()+
-  ggtitle("Subsampling feeding bouts represents their full distribution very well")
-
+  labs(x = "Correlation (subsample vs. full)", y = "Density", caption = "Correlation between normalized KUDs created from a) all feeding bouts (high-frequency ACC) vs. b) 100 5% subsamples from the same period.")+
+  theme(text = element_text(size = 18), plot.caption = element_text(size = 10, hjust = 1))
 # Compare period 1 normalized to distributions of period 2 and period 3 subsampled
 ## Expect: lower correlation than comparing periods to themselves, but still similar, since it's only a <1mo difference
 cors_1_2 <- map_dbl(r_norm_subsample_2, ~cor(values(.x), values(r_norm[[1]]), use = "complete.obs"))
@@ -373,10 +388,6 @@ buff_period3 <- buff %>%
   filter(end_date >= range(feeding_proj[[3]]$start)[1],
          date <= range(feeding_proj[[3]]$start)[2])
 
-# 100 random subsets of feeding bouts (period 2 and period 3)
-random_subsets_p2
-random_subsets_p3
-
 # Join these together by space and time
 join_space_time <- function(polys, pts) {
   
@@ -424,45 +435,74 @@ join_space_time <- function(polys, pts) {
 # Apply to all 100 subsets, stacking results with a subset identifier
 results_all_p2 <- imap(
   random_subsets_p2,
-  \(pts, i) {
-    join_space_time(buff_period2, pts) |>
-      mutate(subset = i, .before = 1)
-  }
+  \(pts, i) join_space_time(buff_period2, pts) |>
+    mutate(subset = i, .before = 1)
 ) |>
-  bind_rows() %>%
-  ungroup()
+  bind_rows() |>
+  ungroup() |>
+  mutate(bout_id_unique = if_else(is.na(bout_id), NA_character_,
+                                  paste(bout_id, device_id, sep = ".")))
 
 results_all_p3 <- imap(
   random_subsets_p3,
-  \(pts, i) {
-    join_space_time(buff_period3, pts) |>
-      mutate(subset = i, .before = 1)
-  }
+  \(pts, i) join_space_time(buff_period3, pts) |>
+    mutate(subset = i, .before = 1)
 ) |>
-  bind_rows() %>%
-  ungroup()
+  bind_rows() |>
+  ungroup() |>
+  mutate(bout_id_unique = if_else(is.na(bout_id), NA_character_,
+                                  paste(bout_id, device_id, sep = ".")))
 
-
-summ_p2 <- results_all_p2 %>%
-  group_by(carcID, carcType, subset) %>%
-  summarize(n_bouts = length(unique(bout_id))) %>%
-  ungroup() %>%
+summ_p2 <- results_all_p2 |>
+  st_drop_geometry() |>
+  group_by(carcID, carcType, subset) |>
+  summarize(n_bouts = n_distinct(bout_id_unique, na.rm = TRUE), .groups = "drop") |>
   mutate(period = 2)
 
-summ_p3 <- results_all_p3 %>%
-  group_by(carcID, carcType, subset) %>%
-  summarize(n_bouts = length(unique(bout_id))) %>%
-  ungroup() %>%
+summ_p3 <- results_all_p3 |>
+  st_drop_geometry() |>
+  group_by(carcID, carcType, subset) |>
+  summarize(n_bouts = n_distinct(bout_id_unique, na.rm = TRUE), .groups = "drop") |>
   mutate(period = 3)
 
-summ <- bind_rows(summ_p2, summ_p3) %>%
+summ <- bind_rows(summ_p2, summ_p3) |>
   mutate(carcID = factor(carcID))
 
-summ %>%
-  filter(n_bouts < 10) %>%
-  ggplot(aes(x = carcID, y = n_bouts))+
-  geom_boxplot(outlier.shape = NA)+
-  theme_minimal()+
-  facet_wrap(~period*carcType, scales = "free_x") # What's going on here? Why do some of the wild carcasses have zero feeding bouts at all? They were defined by the presence of feeding bouts, so how is this possible? I guess it's technically possible that none of the subsets happened to sample the feeding bouts that were used for this particular carcass, but that seems pretty unlikely to happen over and over.
+summ |> filter(n_bouts == 0)
 
-# I think I need to pick a single one and try to drill down and figure it out. Ugh.
+summ %>%
+  mutate(period = paste("Period", period, sep = " ")) %>%
+  ggplot(aes(x = carcID, y = n_bouts))+
+  geom_boxplot(outlier.shape = NA, aes(fill = carcType))+
+  theme_minimal()+
+  facet_wrap(~period*carcType, scales = "free_x")+ 
+  theme(legend.position = "none", axis.text.x = element_blank(), text = element_text(size = 18))+
+  geom_hline(aes(yintercept = 0), color = "gold")+
+  labs(y = "# feeding bouts within 8km", x = "Carcass") # some carcasses are getting missed, but not most of them!
+
+summ %>%
+  filter(n_bouts <= 10) %>%
+  mutate(period = paste("Period", period, sep = " ")) %>%
+  ggplot(aes(x = carcID, y = n_bouts))+
+  geom_boxplot(outlier.shape = NA, aes(fill = carcType))+
+  theme_minimal()+
+  facet_wrap(~period*carcType, scales = "free_x")+ 
+  theme(legend.position = "none", axis.text.x = element_blank(), text = element_text(size = 18))+
+  geom_hline(aes(yintercept = 0), color = "gold")+
+  labs(y = "# feeding bouts within 8km", x = "Carcass")
+
+# For each carcass: in what proportion of the 100 subsets does it get zero bouts?
+## Can think of this as a proxy for the likelihood of missing the carcass
+summ %>%
+  st_drop_geometry() %>%
+  group_by(period, carcID, carcType) %>%
+  summarize(prop_subsets_zero = mean(n_bouts == 0), .groups = "drop") %>%
+  arrange(desc(prop_subsets_zero)) %>%
+  print(n = 20) %>%
+  ggplot(aes(x = prop_subsets_zero*100, fill = carcType))+
+  geom_histogram(breaks = seq(from = 0, to = 100, by = 10))+
+  facet_wrap(~factor(period)*carcType)+
+  theme_bw()+
+  geom_vline(aes(xintercept = 50), color = "gold", lwd = 1.5)+
+  theme(legend.position = "none", text = element_text(size = 18))+
+  labs(y = "# Carcasses", x = "% chance of missing carcass with LF ACC")

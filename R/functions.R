@@ -3,6 +3,28 @@ get_acc_data <- function(data_files){
   return(out)
 }
 
+get_acc_data_2 <- function(data_files) {
+  cols <- c("Latitude", "Longitude", "UTC_datetime", "UTC_date", "UTC_time",
+            "datatype", "device_id", "acc_x", "acc_y", "acc_z")
+  
+  purrr::map(data_files, ~{
+    d <- data.table::fread(.x, select = cols)
+    d <- d[!is.na(datatype)]  # filter early, so less data to carry around
+    
+    # Convert IDate -> Date by changing storage type only (no string parsing)
+    if (inherits(d$UTC_date, "IDate")) {
+      data.table::set(d, j = "UTC_date",
+                      value = structure(as.numeric(unclass(d$UTC_date)), class = "Date"))
+    } else if (!inherits(d$UTC_date, "Date")) {
+      # fallback for files where the column was read as logical/character
+      data.table::set(d, j = "UTC_date", value = as.Date(d$UTC_date))
+    }
+    
+    as.data.frame(d)
+  }) |>
+    purrr::list_rbind()
+}
+
 flip_devices <- function(unobs_raw_acc){
   toflip_y <- unobs_raw_acc %>%
     group_by(device_id) %>%
