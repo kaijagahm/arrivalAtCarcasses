@@ -399,6 +399,7 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
     out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
+      select(-c("location_long", "location_lat")) %>%
       rename("location_long" = X, "location_lat" = Y)
     gps_all[[i]] <- out
     cat("done with", i, "\n")
@@ -1611,6 +1612,14 @@ fix_names_ages <- function(gps_combined, ww_file){
     mutate(Nili_id = case_when(is.na(Nili_id) & individual_local_identifier == "E60w" ~ "gili", .default = Nili_id),
            birth_year = case_when(individual_local_identifier == "E60w" ~ ww$birth_year[ww$Nili_id == "gili"], .default = birth_year))
   
+  manual_birth_years <- c("B36w" = 2018, "B39w" = 2005)
+  
+  out <- out %>%
+    mutate(birth_year = case_when(
+      is.na(birth_year) & individual_local_identifier %in% names(manual_birth_years) ~
+        unname(manual_birth_years[individual_local_identifier]),
+      .default = birth_year))
+  
   out <- out %>%
     mutate(age_2022 = 2022-birth_year,
            age_2023 = 2023-birth_year,
@@ -2581,4 +2590,11 @@ get_model_averaged_estimates <- function(fits, names){
 get_carc_stats <- function(carcs_list){
   summ <- purrr::list_rbind(carcs_list) %>% group_by(trial) %>% summarize(n_total = n(), n_seeds = sum(time == 0), n_right_censored = sum(time > t_end), n_found = n_total-n_right_censored) %>% mutate(prop_found = n_found/n_total, prop_seeds = n_seeds/n_total, prop_right_censored = n_right_censored/n_total)
   return(summ)
+}
+
+fixgeom_validation <- function(validation){
+  out <- sf::st_zm(validation) %>%
+    sf::st_transform(32636) %>%
+    dplyr::bind_cols(sf::st_coordinates(.)) 
+  return(out)
 }
