@@ -6,35 +6,82 @@ library(igraph)
 library(tidyverse)
 library(patchwork)
 
+idx <- 1:10
+
 tar_load(event_data)
+tar_load(event_data_wild)
 tar_load(networks_long_combined)
+tar_load(networks_long_combined_wild)
 tar_load(ILV_c)
+tar_load(ILV_c_wild)
 tar_load(ILV_tv)
+tar_load(ILV_tv_wild)
+
+## Need to join age ILV to time-varying ILVs since we're going to be running all of the diffusions together
+ILV_tv_new <- purrr::map2(ILV_c, ILV_tv, ~{
+  if(!is.null(.y)){
+    out <- .y %>%
+      left_join(.x, by = "id")
+    return(out)
+  }else{
+    return(NULL)
+  }
+})
+
+ILV_tv_new_wild <- purrr::map2(ILV_c_wild, ILV_tv_wild, ~{
+  if(!is.null(.y)){
+    out <- .y %>%
+      left_join(.x, by = "id")
+    return(out)
+  }else{
+    return(NULL)
+  }
+})
+
 which_valid <- which(map_dbl(networks_long_combined, nrow) > 0)
+which_valid_wild <- which(map_dbl(networks_long_combined_wild, nrow) > 0)
 event_data <- event_data[which_valid]
+event_data_wild <- event_data_wild[which_valid_wild]
 # Adding zero dyads to fill out networks that are missing any dyads
-all_individuals <- purrr::list_rbind(event_data) %>% pull(id) %>% unique() %>% sort()
+# after the which_valid filtering of all lists:
+# after the which_valid filtering of all lists:
+all_individuals      <- list_rbind(event_data[idx])      %>% pull(id) %>% unique() %>% sort()
+all_individuals_wild <- list_rbind(event_data_wild[idx]) %>% pull(id) %>% unique() %>% sort()
 all_dyads <- expand_grid("focal" = all_individuals, "other" = all_individuals)
+all_dyads_wild <- expand_grid("focal" = all_individuals_wild, "other" = all_individuals_wild)
 
 networks_long_combined <- networks_long_combined[which_valid]
-ILV_tv <- ILV_tv[which_valid]
+networks_long_combined_wild <- networks_long_combined_wild[which_valid_wild]
+ILV_tv_new <- ILV_tv_new[which_valid]
+ILV_tv_new_wild <- ILV_tv_new_wild[which_valid_wild]
 
-event_data_all_test <- purrr::list_rbind(event_data[1:4]) %>% mutate(trial = as.character(trial)) %>% mutate(time = time/1000, t_end = t_end/1000)
-# this did not throw an error for 1:2 or 1:3, but for 1:4 it did. On inspection, 
-map_dbl(event_data[1:4], nrow)
+event_data_all <- purrr::list_rbind(event_data[idx]) %>% mutate(trial = as.character(trial)) %>% mutate(time = time/1000, t_end = t_end/1000) 
+event_data_all_wild <- purrr::list_rbind(event_data_wild[idx]) %>% mutate(trial = as.character(trial)) %>% mutate(time = time/1000, t_end = t_end/1000)
+
+map_dbl(event_data[idx], nrow)
+map_dbl(event_data_wild[idx], nrow)
 # [1] 130 130 130 129. Different total number of individuals in the diffusions.
 # seems like I need to add all individuals to the networks, just set to 0.
-networks_long_combined_all_test <- purrr::list_rbind(networks_long_combined[1:4]) %>%
+networks_long_combined_all <- purrr::list_rbind(networks_long_combined[idx]) %>%
   mutate(trial = as.character(trial)) %>%
-  select(-roost_together) # there seems to be a bug in how STbayes handles two networks, so let's just do one for now.
-ILV_tv_all_test <- purrr::list_rbind(ILV_tv[1:4]) %>% mutate(trial = as.character(trial))
+  dplyr::select(-roost_together)
+networks_long_combined_all_wild <- purrr::list_rbind(networks_long_combined_wild[idx]) %>%
+  mutate(trial = as.character(trial)) %>%
+  dplyr::select(-roost_together)
+ILV_tv_new_all <- purrr::list_rbind(ILV_tv_new[idx]) %>% mutate(trial = as.character(trial))
+ILV_tv_new_all_wild <- purrr::list_rbind(ILV_tv_new_wild[idx]) %>% mutate(trial = as.character(trial))
 
+ILV_tv_new_combined <- bind_rows(ILV_tv_new_all, ILV_tv_new_all_wild)
 
 # ---- 1. Remove self-dyads from both data frames ----
-networks_clean <- networks_long_combined_all_test %>%
+networks_clean <- networks_long_combined_all %>%
+  filter(focal != other)
+networks_clean_wild <- networks_long_combined_all_wild %>%
   filter(focal != other)
 
 all_dyads_clean <- all_dyads %>%
+  filter(focal != other)
+all_dyads_clean_wild <- all_dyads_wild %>%
   filter(focal != other)
 
 # ---- 2. Symmetrize the existing network data ----
@@ -42,8 +89,12 @@ all_dyads_clean <- all_dyads %>%
 # mirrored (trial, time, other, focal, values) also exists.
 mirrored <- networks_clean %>%
   rename(focal = other, other = focal)  # swap columns
+mirrored_wild <- networks_clean_wild %>%
+  rename(focal = other, other = focal)  # swap columns
 
 networks_symmetric <- bind_rows(networks_clean, mirrored) %>%
+  distinct(trial, time, focal, other, .keep_all = TRUE)
+networks_symmetric_wild <- bind_rows(networks_clean_wild, mirrored_wild) %>%
   distinct(trial, time, focal, other, .keep_all = TRUE)
 
 # Sanity check: should now be perfectly symmetric
@@ -55,12 +106,24 @@ stopifnot(
     { all(. == 2) }
 )
 
+stopifnot(
+  networks_symmetric_wild %>%
+    mutate(pair_id = paste(pmin(focal, other), pmax(focal, other), time, trial)) %>%
+    count(pair_id) %>%
+    pull(n) %>%
+    { all(. == 2) }
+)
+
 # ---- 3. Build the full expected set of trial x time x dyad ----
 trial_time_combos <- networks_symmetric %>%
+  distinct(trial, time)
+trial_time_combos_wild <- networks_symmetric_wild %>%
   distinct(trial, time)
 
 expected_full <- trial_time_combos %>%
   cross_join(all_dyads_clean)   # every dyad for every trial-time combo
+expected_full_wild <- trial_time_combos_wild %>%
+  cross_join(all_dyads_clean_wild) 
 
 # ---- 4. Find missing dyads and fill with zeros ----
 missing_dyads <- anti_join(
@@ -72,36 +135,88 @@ missing_dyads <- anti_join(
     flight_sri_scaled = 0
   )
 
+missing_dyads_wild <- anti_join(
+  expected_full_wild, networks_symmetric_wild,
+  by = c("trial", "time", "focal", "other")
+) %>%
+  mutate(
+    #roost_together = 0,
+    flight_sri_scaled = 0
+  )
+
 networks_filled <- bind_rows(networks_symmetric, missing_dyads) %>%
+  arrange(trial, time, focal, other)
+networks_filled_wild <- bind_rows(networks_symmetric_wild, missing_dyads_wild) %>%
   arrange(trial, time, focal, other)
 
 # ---- Sanity checks ----
 n_dyads <- nrow(all_dyads_clean)
+n_dyads_wild <- nrow(all_dyads_clean_wild)
 n_trial_time <- nrow(trial_time_combos)
+n_trial_time_wild <- nrow(trial_time_combos_wild)
 
 nrow(networks_filled) == n_dyads * n_trial_time  # should be TRUE
+nrow(networks_filled_wild) == n_dyads_wild * n_trial_time_wild
 
-ed_test <- event_data_all_test
-n_test <- networks_filled
+ed <- event_data_all
+ed_wild <- event_data_all_wild
+n <- networks_filled
+n_wild <- networks_filled_wild
 
-data_list_test <- STbayes::import_user_STb(event_data = ed_test,
-                                           networks = n_test,
-                                           network_type = "undirected")
+ed_all <- bind_rows(ed, ed_wild)
+n_all <- bind_rows(n, n_wild)
 
-write_rds(ed_test, file = "data/created/ed_test.RDS")
-write_rds(n_test, file = "data/created/n_test.RDS")
-write_rds(data_list_test, file = "data/created/data_list_test.RDS")
+# Pad out networks with age values for all individuals
+global_ids <- sort(unique(c(ed_all$id, n_all$focal, n_all$other)))
 
-mod_test <- generate_STb_model(
-  data_list_test,
+age_lookup <- ILV_tv_new_combined %>% # absent individuals get their most common age value across all the trials--shouldn't matter because these won't be used anyway. 
+  count(id, age) %>%
+  group_by(id) %>% slice_max(n, n = 1, with_ties = FALSE) %>%
+  ungroup() %>% select(id, age)
+
+full_keys <- ILV_tv_new_combined %>%
+  distinct(trial, time) %>%
+  cross_join(tibble(id = global_ids))
+
+pad_rows <- full_keys %>%
+  anti_join(ILV_tv_new_combined, by = c("trial", "time", "id")) %>%
+  left_join(age_lookup, by = "id") %>%
+  mutate(mean_dist_to_carcass_norm = 0)
+
+ILV_tv_padded <- bind_rows(ILV_tv_new_combined, pad_rows) %>%
+  arrange(trial, time, id)
+
+ILV_tv_padded %>% count(trial, time) %>% count(n)   # one row: n = 135
+anyNA(ILV_tv_padded)                                # FALSE
+
+anyNA(ILV_tv_padded)                                         # FALSE
+anyDuplicated(ILV_tv_padded[c("trial", "id", "time")])       # 0
+nrow(ILV_tv_padded) == nrow(net_keys)                        # TRUE
+ILV_tv_padded %>% group_by(trial) %>%
+  summarise(n_ids = n_distinct(id), n_t = n_distinct(time), .groups = "drop")
+
+data_list <- STbayes::import_user_STb(
+  event_data = ed_all,
+  networks = n_all,
+  network_type = "undirected",
+  ILV_tv = ILV_tv_padded,
+  ILVi = c("age", "mean_dist_to_carcass_norm"),   # ILVs acting on the intrinsic rate
+  ILVs = c("age")   # ILVs acting on the social rate
+)
+
+write_rds(ed_all, file = "data/created/ed_all.RDS")
+write_rds(n_all, file = "data/created/n_all.RDS")
+write_rds(data_list, file = "data/created/data_list.RDS")
+
+mod <- generate_STb_model(
+  data_list,
   est_acqTime = TRUE,
   veff_params = c("lambda_0", "s"),
   veff_type = "trial"
 )
 
-
-fit_test <- fit_STb(
-  data_list_test, mod_test,
+fit <- fit_STb(
+  data_list, mod,
   chains = 4,
   parallel_chains = 4,
   iter = 250,
@@ -110,15 +225,14 @@ fit_test <- fit_STb(
   seed = 1
 )
 
-#STb_save(fit_test, output_dir = "data/saved_fits", name="fit_test")
-sm <- STb_summary(fit_test, digits = 3) # for some reason, we still only have one percent_ST value, not four. I don't know what's going on with that. Another bug?
+#STb_save(fit, output_dir = "data/saved_fits", name="fit")
+sm <- STb_summary(fit, digits = 3) # for some reason, we still only have one percent_ST value, not four. I don't know what's going on with that. Another bug?
 sm
 
 
 # Plot PPCs (from Weibull vignette)
-# Something is deeply wrong here...
 # we need to store num inds per trial to refer to later
-event_data <- ed_test %>%
+event_data <- ed_all %>%
   mutate(trial = as.numeric(factor(trial))) %>%
   group_by(trial) %>%
   mutate(n_trial = n())
@@ -132,7 +246,7 @@ plot_data_obs <- event_data %>%
     cum_prop = row_number() / n_trial, # denominator needs to be the number of individuals per trial
     type = "observed"
   ) %>%
-  select(trial, time, cum_prop, type) %>%
+  dplyr::select(trial, time, cum_prop, type) %>%
   ungroup()
 
 # add in 0,0 starting point for diffusions w/o demonstrators
@@ -146,11 +260,11 @@ starting_points <- plot_data_obs %>%
 plot_data_obs <- bind_rows(plot_data_obs, starting_points) %>%
   arrange(trial, time)
 
-draws_df <- as_draws_df(fit_test$draws(variables = "acquisition_time", inc_warmup = FALSE))
+draws_df <- as_draws_df(fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
 
 # pivot longer
 ppc_long <- draws_df %>%
-  select(starts_with("acquisition_time[")) %>%
+  dplyr::select(starts_with("acquisition_time[")) %>%
   pivot_longer(
     cols = everything(),
     names_to = c("trial", "ind"),
@@ -357,12 +471,13 @@ STb_trial_summary <- function(fit, data_list, prob = 0.95,
 
 # Example:
 # source("STb_trial_summary.R")
-# STb_trial_summary(fit_test, data_list_test)
+#STb_trial_summary(fit, data_list)
 
-trial_summ <- STb_trial_summary(fit_test, data_list_test)
+trial_summ <- STb_trial_summary(fit, data_list)
 
 ## Forest plot: s
 forest_s <- trial_summ %>%
+  # filter(s_median < 100) %>%
   ggplot(aes(x = trial_label))+
   geom_pointrange(aes(y = s_median, ymax = s_hi, ymin = s_lo))+
   geom_hline(aes(yintercept = 0), linetype = 2, color = "blue")+
@@ -370,6 +485,7 @@ forest_s <- trial_summ %>%
   labs(y = "s", x = "Trial")+
   coord_flip()+
   theme(text = element_text(size = 18)) # finally, here's a results forest plot!
+forest_s # this really sucks--s is almost never above 0. is this true? am i interpreting the results correctly?
 
 ## Forest plot: %ST
 forest_pctst <- trial_summ %>%
@@ -380,5 +496,6 @@ forest_pctst <- trial_summ %>%
   labs(y = "%ST", x = "Trial")+
   coord_flip()+
   theme(text = element_text(size = 18))
+forest_pctst
 forest_s + forest_pctst # cool! These look like actual results.
 

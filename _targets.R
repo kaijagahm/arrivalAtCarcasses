@@ -956,12 +956,12 @@ list(
                                                         eps = wild_dist,
                                                         eps_t = wild_time_hrs*60*60,
                                                         minpts = wild_min_pts)),
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
+  tar_target(wild_carcasses, mutate(get_wild_carcasses(wild_carcass_bo_df), X_rounded = round(X, digits = 0), Y_rounded = round(Y, digits = 0))),
   tar_target(validation, filter(sf::st_read("data/raw/wildCarcassValidation/cluster_centroids_200m_24hr_min3_2022_2023_2024_NOCLIFFS_withnames.kml"), Name != "")), # ids won't match wild_carcasses because of fixing indexing bug, so we use geographic match in the next step
   tar_target(validation_geographic_matched, fixgeom_validation(validation)), # making the coords comparable
   tar_target(validation_cleaned, mutate(separate_wider_delim(separate_wider_delim(validation_geographic_matched, cols = "Name", delim = "_", names = c("carcIDs", "status")), cols = "carcIDs", delim = "(", names = c("carcID", "carcID_old"), too_few = "align_start"), carcID_old = str_remove_all(carcID_old, "\\)"))),
-  tar_target(validation_tojoin, dplyr::mutate(dplyr::filter(dplyr::select(validation_cleaned, carcID, status, X, Y), status == "valid"), carcID = as.integer(carcID))), # XXX 2026-10-07 start here--update this so it joins by x and y instead of joining by carcID.
-  tar_target(wild_carcasses_validated, left_join(validation_tojoin, wild_carcasses, by = "carcID")),
+  tar_target(validation_tojoin, dplyr::mutate(dplyr::filter(dplyr::select(validation_cleaned, carcID, status, X, Y), status == "valid"), carcID = as.integer(carcID), X_rounded = round(X, digits = 0), Y_rounded = round(Y, digits = 0))), 
+  tar_target(wild_carcasses_validated, rename(select(filter(left_join(validation_tojoin, wild_carcasses, by = c("X_rounded", "Y_rounded")), !is.na(nBouts)), -c("X.y", "Y.y", "carcID.x")), "X" = "X.x", "Y" = "Y.x", "carcID" = "carcID.y")), # remove the two that were "valid" from earlier but are now going to be considered NA b/c not enough bouts. Retain the carcID from the new clustering rather than the old validation. 
   # ## Combine wild and stn carcasses
   tar_target(all_carcasses, bind_rows(carcasses_focal %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
   tar_target(all_carcasses_forpred, bind_rows(carcasses_audited %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
@@ -1244,7 +1244,7 @@ list(
   tar_target(nr3_wild, purrr::map2(roosts_wild[38:56], all_indivs_sorted_wild[38:56], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(nr4_wild, purrr::map2(roosts_wild[57:75], all_indivs_sorted_wild[57:75], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(nr5_wild, purrr::map2(roosts_wild[76:94], all_indivs_sorted_wild[76:94], ~arrange_roost_nets(.x, .y, roost_threshold))),
-  tar_target(nr6_wild, purrr::map2(roosts_wild[95:112], all_indivs_sorted_wild[95:112], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6_wild, purrr::map2(roosts_wild[95:length(roosts_wild)], all_indivs_sorted_wild[95:length(all_indivs_sorted_wild)], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(networks_long_roost_1_wild, c(nr1_wild, nr2_wild, nr3_wild, nr4_wild, nr5_wild, nr6_wild)),
   
   tar_target(networks_long_roost_2_wild, purrr::map2(networks_long_roost_1_wild, map_dbl(wild_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
@@ -1515,7 +1515,7 @@ list(
   tar_target(gps_withdaylight_wild_5, purrr::map2(wild_gps_30days[59:73], wild_carcs[59:73], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_6, purrr::map2(wild_gps_30days[74:88], wild_carcs[74:88], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_7, purrr::map2(wild_gps_30days[89:103], wild_carcs[89:103], ~get_daylight_hours(.x, .y), .progress = T)),
-  tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:112], wild_carcs[104:112], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:length(wild_gps_30days)], wild_carcs[104:length(wild_carcs)], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(seeds_wild_1, purrr::map(gps_withdaylight_wild_1, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_2, purrr::map(gps_withdaylight_wild_2, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_3, purrr::map(gps_withdaylight_wild_3, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
@@ -1605,7 +1605,7 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dn11_wild, purrr::map(gps_list_fixed_wild[101:110], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dn12_wild, purrr::map(gps_list_fixed_wild[111:112], ~purrr::map(.x, ~{
+  tar_target(dn12_wild, purrr::map(gps_list_fixed_wild[111:length(gps_list_fixed_wild)], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild, dn12_wild)),
   
@@ -2125,7 +2125,7 @@ list(
   tar_target(vlw3, purrr::map(gps_mts_wild2[40:59], get_vulture_lines)),
   tar_target(vlw4, purrr::map(gps_mts_wild2[60:79], get_vulture_lines)),
   tar_target(vlw5, purrr::map(gps_mts_wild2[80:99], get_vulture_lines)),
-  tar_target(vlw6, purrr::map(gps_mts_wild2[100:112], get_vulture_lines)),
+  tar_target(vlw6, purrr::map(gps_mts_wild2[100:length(gps_mts_wild2)], get_vulture_lines)),
   tar_target(vulture_lines_wild, c(vlw1, vlw2, vlw3, vlw4, vlw5, vlw6)),
   
   # Buffered carcass locations
