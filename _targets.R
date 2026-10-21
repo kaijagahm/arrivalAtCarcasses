@@ -1047,7 +1047,7 @@ list(
   tar_target(wild_gps_30days, get_gps_all(wild_carcs, downsampled, days_after, dbf)),
   
   tar_target(stn_gps_forroosts, map(stn_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
-  tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
+  tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(.x, date_il %in% tail(sort(unique(.x$date_il)), 6)))),
   
   tar_target(idname, "individual_local_identifier"),
   tar_target(tsname, "timestamp_il"),
@@ -1557,18 +1557,20 @@ list(
   tar_target(gps_fornetwork_wild, purrr::map2(gps_diffusion_wild, wild_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints_wild, purrr::map(event_data_wild, ~unique(.x$time))),
-  tar_target(cutpoints2_wild, purrr::map(cutpoints_wild, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  tar_target(cutpoints2_wild, purrr::map(cutpoints_wild, ~{if(!(0 %in% .x[!is.na(.x)])){return(c(0, .x[!is.na(.x)]))}else{return(.x[!is.na(.x)])}})),
   tar_target(bins_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{sort(unique(cut(.x$time, breaks = .y)))})),
   
   tar_target(gps_fornetwork2_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{
-    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
+    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else if(length(.y) == 1){return(NULL)}else{
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
   })),
   tar_target(missing_intervals_wild, purrr::map(gps_fornetwork2_wild, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add_wild, purrr::map(missing_intervals_wild, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3_wild, purrr::map2(gps_fornetwork2_wild, to_add_wild, ~{
-    if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
+    if(is.null(.x)|is.null(.y)){
+      return(NULL)
+    }else if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
       return(dplyr::bind_rows(.x, .y))
     }else if(!is.null(.x) & nrow(.y) == 0){
       return(.x)
@@ -1605,9 +1607,7 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dn11_wild, purrr::map(gps_list_fixed_wild[101:110], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dn12_wild, purrr::map(gps_list_fixed_wild[111:length(gps_list_fixed_wild)], ~purrr::map(.x, ~{
-    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild, dn12_wild)),
+  tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild)),
   
   tar_target(dynamic_networks_fixed_wild, purrr::map2(dynamic_networks_wild, all_indivs_sorted_wild, ~fix_nets(.x, indivs = .y))),
   

@@ -171,49 +171,32 @@ ac %>%
 
 # Range = temporal persistence, and sill = magnitude of temporal variation. We have some with very high temporal persistence and also high temporal variation, but the vast majority of them have low temporal persistence. The main axis of variability seems to be temporal variation (sill)
 
-# Let's investigate those high outliers some more.
-which(ranges > 100)
-plot(vgm_emps[[44]], vgm_fits[[44]]) # this looks bad
-plot(vgm_emps[[56]], vgm_fits[[56]]) # also bad
-plot(vgm_emps[[57]], vgm_fits[[57]]) # also bad
-# these all look the same
-
-vectors_4km[[44]]
-vectors_4km[[56]]
-vectors_4km[[57]] # some of the others were bad when there was a fundamental shift over time, but this looks different. is it just... too constant?
-
 # Is there a way to categorize the big outliers numerically?
 ac %>%
-  ggplot(aes(x = range, y = sill, color = err))+
+  ggplot(aes(x = range_6mos, y = sill_6mos, color = err_6mos))+
   geom_point(size = 3, alpha = 0.9)+
   theme_minimal()+
   scale_color_viridis_c() # the outliers do have much higher error than the others! Why?
 
-# So I guess for now I'm just going to exclude those carcasses? Not sure what else to do.
+ac %>%
+  ggplot(aes(x = range_hfonly, y = sill_hfonly, color = err_hfonly))+
+  geom_point(size = 3, alpha = 0.9)+
+  theme_minimal()+
+  scale_color_viridis_c()
 
-# Let me look at which stations these are and see if it makes sense.
+# Now let's compare the 1-month periods to the 6-month periods and see how good of a proxy the 1-month periods would be.
 
 ac %>%
-  ggplot(aes(x = range, y = sill, color = stationName))+
-  geom_point(pch = 1, size = 1.5, alpha = 0.9)+
-  theme_minimal()+
-  facet_wrap(~carcType) # It looks like the outliers are from Hever, which still doesn't tell me all that much.
+  filter(range_6mos < 500) %>% 
+  ggplot(aes(x = sill_hfonly, y = sill_6mos))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  theme_minimal() # oh hey, this is a decent proxy actually!!
 
 ac %>%
-  filter(range < 100, sill < 2) %>%
-  ggplot(aes(x = factor(year), y = range))+
-  geom_violin(alpha = 0.5, fill = "gray")+
-  theme_minimal()+
-  labs(y = "Temporal persistence (variogram range)", x = "Year", color = "Type", fill = "Type") # there's not a lot of variation in range. Maybe sill is what we'll want to focus on.
-
-ac %>%
-  filter(range < 100, sill < 2) %>%
-  ggplot(aes(x = factor(year), y = sill))+
-  geom_violin(alpha = 0.5, fill = "gray")+
-  theme_minimal()+
-  labs(y = "Temporal variation (variogram sill)", x = "Year", color = "Type", fill = "Type") # definitely more variation in sill.
-
-# This was looking just at station carcasses. 6-month variograms for station carcasses only.
-
-# Next step: look at variograms over just the 1-month high-frequency periods
+  filter(range_6mos < 500) %>% 
+  ggplot(aes(x = range_hfonly, y = range_6mos))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  theme_minimal() # not a very good proxy. But we're interested more in sill than range so this might actually be okay.
 
