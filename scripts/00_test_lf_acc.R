@@ -41,8 +41,11 @@ all <- bind_rows(
     across(where(~ is.integer(.x) || inherits(.x, "integer64")), as.numeric)
   )
 ) %>% mutate(pd = case_when(period == "2023" ~ "HF ACC",
-                              period == "2023_lf" ~ "LF ACC",
-                              .default = NA))
+                            period == "2023_lf" ~ "LF ACC",
+                            .default = NA)) %>%
+  sf::st_as_sf(crs = "WGS84") %>%
+  sf::st_transform(32636) %>%
+  st_crop(., bbox_south_big)
 
 all %>%
   filter(which_prob == pred) %>%
@@ -104,7 +107,7 @@ feeding_sf %>%
   ggplot(aes(color = prob))+
   geom_sf(pch = 1, size = 3, alpha = 0.7)+
   facet_wrap(~factor(pd))+
-  scale_color_viridis_c()+ # OH HECK YEAH!! This is awesome.
+  scale_color_viridis_c()+
   labs(y = "Latitude", x = "Longitude",
        color = "P(Eating)")+
   theme_bw()+
@@ -304,7 +307,7 @@ cors_1_2 <- map_dbl(r_norm_subsample_2, ~cor(values(.x), values(r_norm[[1]]), us
 cors_1_3 <- map_dbl(r_norm_subsample_3, ~cor(values(.x), values(r_norm[[1]]), use = "complete.obs"))
 
 cors_df_crossperiod <- data.frame(period = rep(c(2, 3), each = 100),
-                      cor = c(cors_1_2, cors_1_3)) %>%
+                                  cor = c(cors_1_2, cors_1_3)) %>%
   mutate(comparison_period = factor(period))
 
 cors_df_crossperiod %>%
@@ -357,7 +360,7 @@ write_rds(kud_carcs, file = "data/created/kud_carcs.RDS")
 kud_carcasses <- readRDS("data/created/kud_carcs.RDS")
 
 # convert to terra spatraster
-r_carcs <- map(kud_carcs, ~rast(raster(.x)))
+r_carcs <- map(kud_carcasses, ~rast(raster(.x)))
 r_carcs <- map(r_carcs, ~{crs(.x) <- paste0("EPSG:", utm_crs); .x})
 
 # normalize
@@ -506,3 +509,533 @@ summ %>%
   geom_vline(aes(xintercept = 50), color = "gold", lwd = 1.5)+
   theme(legend.position = "none", text = element_text(size = 18))+
   labs(y = "# Carcasses", x = "% chance of missing carcass with LF ACC")
+
+# Identifying carcasses by landings instead of feeding bouts --------------
+tar_load(downsampled)
+downsampled <- st_crop(downsampled, bbox_south_big)
+gps_p1 <- downsampled %>% filter(date_il >= lubridate::ymd("2023-03-01") & date_il < lubridate::ymd("2023-03-15"))
+gps_p2 <- downsampled %>% filter(date_il >= lubridate::ymd("2023-03-15") & date_il < lubridate::ymd("2023-03-31"))
+gps_p3 <- downsampled %>% filter(date_il >= lubridate::ymd("2023-03-31") & date_il < lubridate::ymd("2023-04-15"))
+gpses <- list(gps_p1, gps_p2, gps_p3)
+
+rm(downsampled)
+
+stationaries <- map(gpses, ~filter(.x, ground_speed < 5))
+map_dbl(stationaries, nrow) #[1] 39630 52760 53018
+stationaries_sf <- purrr::map(stationaries, ~sf::st_as_sf(.x, crs = 32636))
+tar_load(slopes_layer)
+stationaries_sf_nocliffs <- purrr::map(stationaries_sf, ~{
+  keep <- sf::st_intersects(.x, slopes_layer) %>% as.numeric() %>% is.na()
+  return(.x[keep,])
+})
+map_dbl(stationaries_sf_nocliffs, nrow) # [1] 5381 8446 5262
+
+mapview(stationaries_sf_nocliffs[[1]])
+
+# Let's see how the landings correspond to carcasses
+buff_p2 <- buff %>%
+  filter(end_date >= lubridate::ymd("2023-03-15") & date < lubridate::ymd("2023-03-31"))
+buff_p3 <- buff %>%
+  filter(end_date >= lubridate::ymd("2023-03-31") & date < lubridate::ymd("2023-04-15"))
+stationaries_sf_nocliffs <- map(stationaries_sf_nocliffs, ~{.x <- mutate(.x, start = timestamp_il) %>% select(ground_speed, timestamp, individual_local_identifier, location_long, location_lat, Nili_id, timestamp_il, date_il, start)})
+
+results_landings_p2 <- join_space_time(buff_p2, stationaries_sf_nocliffs[[2]]) %>% mutate(period = 2, .before = 1)
+results_landings_p3 <- join_space_time(buff_p3, stationaries_sf_nocliffs[[3]]) %>% mutate(period = 3, .before = 1)
+
+results_landings <- bind_rows(results_landings_p2, results_landings_p3) |>
+  ungroup() %>%
+  mutate(landing_id = paste(individual_local_identifier, timestamp_il, sep = "."))
+
+results_landings_summ <- results_landings %>%
+  sf::st_drop_geometry() %>%
+  group_by(period, carcID, carcType) %>%
+  summarize(n_landings = length(unique(landing_id[!(str_detect(landing_id, "NA"))])))
+
+results_landings_summ %>%
+  ggplot(aes(x = interaction(carcType, factor(period)), y = n_landings, fill = factor(period)))+
+  geom_boxplot(outlier.shape = NA)+
+  geom_jitter(width = 0.1, size = 4, alpha = 0.7, pch = 1)+
+  theme_bw()+
+  labs(y = "Landings per carcass",
+       x = "2-week period")+
+  theme(legend.position = "none")
+
+# How many carcasses have 0 landings associated?
+results_landings_summ %>%
+  filter(n_landings < 1)
+problem_ids <- results_landings_summ %>%
+  filter(n_landings < 1) %>% pull(carcID)
+
+# do those have landings in the other period? i.e. are they temporal edge cases?
+results_landings_summ %>%
+  filter(carcID %in% problem_ids) %>%
+  arrange(carcID, period) # yes, in all cases the ones that have no landings in one period do have landings in the other period. So we do not have any carcasses that are completely unassociated with any landings.
+
+# But of course, there are also many landings not associated with carcasses!
+# Let's see if the raster of landings matches the raster of carcasses.
+
+# Make landing rasters
+# grid: we can use the same common grid from above
+coords_landings <- map(stationaries_sf_nocliffs, ~st_coordinates(.x)[,1:2])
+
+# build spatialpoints for kud
+xy_landings <- map(coords_landings, ~{SpatialPoints(.x, proj4string = CRS(paste0("EPSG:", utm_crs)))})
+
+# kud with same grid as previous
+kud_landings <- map(xy_landings, ~{kernelUD(.x, h = 2000, grid = common_grid)}, .progress = T)
+
+write_rds(kud_landings, file = "data/created/kud_landings.RDS")
+
+kud_landings <- readRDS("data/created/kud_landings.RDS")
+
+# convert to terra spatraster
+r_landings <- map(kud_landings, ~rast(raster(.x)))
+r_landings <- map(r_landings, ~{crs(.x) <- paste0("EPSG:", utm_crs); .x})
+
+# normalize
+total_landings  <- map(r_landings, ~global(.x, "sum", na.rm = TRUE)[1, 1])
+r_norm_landings <- map2(r_landings, total_landings, ~.x / .y)
+
+plot(r_norm_landings[[1]]) # period 1 raster from landings
+plot(r_norm[[1]]) # period 1 raster from feeding bouts # these are quite similar!
+
+plot(r_norm_landings[[2]]) # period 2 raster from landings
+plot(r_norm[[2]]) # period 2 raster from feeding bouts # these are quite similar!
+plot(r_norm_carcs[[1]]) # period 2 raster from carcasses
+cor(values(r_norm_landings[[2]]), values(r_norm_carcs[[1]])) #55% correlation for period 2
+
+plot(r_norm_landings[[3]]) # period 3 raster from landings
+plot(r_norm[[3]]) # period 3 raster from feeding bouts # these are quite similar!
+plot(r_norm_carcs[[2]]) # period 3 raster from carcasses
+cor(values(r_norm_landings[[3]]), values(r_norm_carcs[[2]])) #39% correlation for period 2
+
+# correlation between landings and feeding bouts:
+cor(values(r_norm_landings[[1]]), values(r_norm[[1]])) #76%
+cor(values(r_norm_landings[[2]]), values(r_norm[[2]])) #95%
+cor(values(r_norm_landings[[3]]), values(r_norm[[3]])) #82%
+# fairly high correlation between landings and feeding bouts, which is logical
+
+plot(r_norm_landings[[2]]) # period 3 raster from landings
+plot(r_norm[[3]]) # period 3 raster from feeding bouts
+cor(values(r_norm_landings[[2]]), values(r_norm[[3]]))
+
+# Instead of continuous values getting normalized, just make it 0/1 discretized. Size of raster is going to affect correlation a lot. 
+# Eyeball instead of correlating. 
+r_landings_bin <- map(r_landings, ~{.x > 0 * 1})
+r_carcs_bin <- map(r_carcs, ~{.x > 0*1})
+plot(r_carcs_bin[[1]])
+plot(r_landings_bin[[2]])
+cor(values(r_carcs_bin[[1]]), values(r_landings_bin[[2]])) #55%
+
+plot(r_carcs_bin[[2]])
+plot(r_landings_bin[[3]])
+cor(values(r_carcs_bin[[2]]), values(r_landings_bin[[3]])) #58%
+
+# play with smoothing, value size, etc. to get the correlation to make sense.
+
+h_vals <- c(250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250)
+kuds_carcs <- vector(mode = "list", length = length(h_vals))
+kuds_landings <- vector(mode = "list", length = length(h_vals))
+for(i in 1:length(h_vals)){
+  kuds_carcs[[i]] <- map(xy_carcs, ~{kernelUD(.x, h = h_vals[i], grid = common_grid)}, .progress = T)
+  kuds_landings[[i]] <- map(xy_landings, ~{kernelUD(.x, h = h_vals[i], grid = common_grid)}, .progress = T)
+  cat("done with h=", h_vals[i], "\n")
+}
+
+# convert to terra spatraster
+rs_carcs <- map(kuds_carcs, ~map(.x, ~rast(raster(.x))))
+rs_landings <- map(kuds_landings, ~map(.x, ~rast(raster(.x))))
+rs_landings <- map(rs_landings, ~.x[2:3]) # take only second and third elements, to match rs_carcs
+binarize <- function(mylist){
+  out <- map(mylist, ~{.x > 0*1})
+  return(out)
+}
+
+rs_carcs_bin <- map(rs_carcs, binarize)
+rs_landings_bin <- map(rs_landings, binarize)
+cp2 <- map(rs_carcs_bin, 1)
+cp3 <- map(rs_carcs_bin, 2)
+lp2 <- map(rs_landings_bin, 1)
+lp3 <- map(rs_landings_bin, 2)
+
+# Extract values once as plain numeric vectors
+valsCp2 <- lapply(cp2, function(r) values(r, mat = FALSE))
+valsCp3 <- lapply(cp3, function(r) values(r, mat = FALSE))
+valsLp2 <- lapply(lp2, function(r) values(r, mat = FALSE))
+valsLp3 <- lapply(lp3, function(r) values(r, mat = FALSE))
+
+# All pairs, directly in long format
+res_p2 <- expand.grid(carcs = seq_along(valsCp2),
+                      landings = seq_along(valsLp2))
+res_p3 <- expand.grid(carcs = seq_along(valsCp3),
+                      landings = seq_along(valsLp3))
+
+res_p2$cor <- mapply(
+  function(i, j) cor(valsCp2[[i]], valsLp2[[j]], use = "complete.obs"),
+  res_p2$carcs, res_p2$landings
+)
+res_p2$carcs <- h_vals[res_p2$carcs]
+res_p2$landings <- h_vals[res_p2$landings]
+res_p2$period <- 2
+
+res_p3$cor <- mapply(
+  function(i, j) cor(valsCp3[[i]], valsLp3[[j]], use = "complete.obs"),
+  res_p3$carcs, res_p3$landings
+)
+
+res_p3$carcs <- h_vals[res_p3$carcs]
+res_p3$landings <- h_vals[res_p3$landings]
+res_p3$period <- 3
+
+res <- bind_rows(res_p2, res_p3)
+
+res %>%
+  ggplot(aes(x = carcs, y = landings, fill = cor))+
+  geom_raster()+
+  scale_fill_viridis_c()+ 
+  facet_wrap(~period) # interesting! the sweet spot seems to be having the carcass raster at 2250 and the landings raster at 1000, and both periods pretty much agree on that. I'm not sure if this is telling us something or if it would just keep getting better the higher we went with the carcasses. Like is this an optimum or are we just maxing out?
+
+res %>%
+  ggplot(aes(x = carcs, y = cor, color = factor(landings), group = factor(landings)))+
+  geom_line()+
+  facet_wrap(~period)+
+  labs(y = "Correlation", x = "h for carcass raster",
+       col = "h for landings raster") # hmm this makes it pretty clear that there isn't a single best one, the correlations just get huge at some point.
+
+par(mfrow = c(1, 2))
+plot(cp2[[9]]); plot(lp2[[4]])
+dev.off()
+
+
+cors <- map2(rs_carcs_bin, rs_landings_bin, ~data.frame(period = 2:3, cor = map2_dbl(.x, .y, ~{
+  cor(values(.x), values(.y))
+})))
+names(cors) <- h_vals
+cors_df <- purrr::list_rbind(cors, names_to = "hval") %>% mutate(hval = as.numeric(hval))
+cors_df %>%
+  ggplot(aes(x = hval, y = cor, color = factor(period)))+
+  geom_point()+
+  geom_line()
+
+# Ok, I think this raster approach is not helping me. We need to go back to basics--what so we actually need? We need to be able to construct the variograms. We need to measure carcass presence, including magnitude and variability over time. And we need an indicator that matches this especially well. (There's no guarantee that even if the overall rasters were correlated, that the time series and variograms would be correlated as well)
+# 1. Construct some sample ground truth variograms for one of the real periods (I guess let's do period 3, 2 weeks back? That's the best I can do I guess.)
+carcs_simple <- readRDS("data/created/carcs_simple.RDS")
+
+carcs_simple_p2 <- carcs_simple %>%
+  filter(date >= lubridate::ymd("2023-03-15") & date < lubridate::ymd("2023-03-31"))
+carcs_simple_p3 <- carcs_simple %>%
+  filter(date >= lubridate::ymd("2023-04-01") & date < lubridate::ymd("2023-04-16"))
+
+neighbor_list_16km_p3 <- sf::st_is_within_distance(carcs_simple_p3, carcs_simple, dist = 16000)
+length(neighbor_list_16km_p3) #26
+
+get_activity_vectors <- function(neighbor_list, days_back = 14, days_active = 3, all = carcs_simple){
+  out <- purrr::imap(neighbor_list, function(idx, i) {
+    focal_date   <- as.Date(all$date[i])
+    window_start <- focal_date - lubridate::days(days_back)
+    window_end   <- focal_date - lubridate::days(1)
+    window_len   <- as.integer(window_end - window_start) + 1L  # 180
+    
+    neighbors <- all[idx, ]
+    
+    act_start <- as.Date(neighbors$date)
+    act_end   <- act_start + lubridate::days(days_active-1)  # active for 3 days: date, date+1, date+2
+    
+    # keep only carcasses whose active window overlaps the 180-day lookback
+    keep <- act_start <= window_end & act_end >= window_start
+    act_start <- act_start[keep]
+    act_end   <- act_end[keep]
+    
+    if (length(act_start) == 0) return(rep(0L, window_len))
+    
+    # clip active intervals to the lookback window, convert to day-offsets
+    clipped_start <- pmax(act_start, window_start)
+    clipped_end   <- pmin(act_end, window_end)
+    start_idx <- as.integer(clipped_start - window_start) + 1L
+    end_idx   <- as.integer(clipped_end   - window_start) + 1L
+    
+    # diff-array: +1 at each interval start, -1 just after each interval end,
+    # then cumsum gives the running count — no per-day loops, no seq()
+    delta <- tabulate(start_idx, nbins = window_len + 1L) -
+      tabulate(end_idx + 1L, nbins = window_len + 1L)
+    
+    as.integer(cumsum(delta[1:window_len]))
+  })
+  return(out)
+}
+vectors_16km <- get_activity_vectors(neighbor_list_16km_p3, days_back = 14, days_active = 3, all = carcs_simple) # this will only be valid for the carcasses for which we actually have data 
+vectors_16km
+
+vectors_8km <- get_activity_vectors(neighbor_list_8km_p3, days_back = 14, days_active = 3, all = carcs_simple) # this will only be valid for the carcasses for which we actually have data 
+vectors_8km
+
+carcs_buffered_p3_16km <- st_buffer(carcs_simple_p3, 16000)
+carcs_buffered_p3_8km <- st_buffer(carcs_simple_p3, 8000)
+dates <- carcs_simple_p3$date
+carcIDs <- carcs_simple_p3$carcID
+stationaries <- bind_rows(stationaries_sf_nocliffs)
+
+intersections_16 <- st_intersects(carcs_buffered_p3_16km, stationaries)
+intersections_8 <- st_intersects(carcs_buffered_p3_8km, stationaries)
+landings_in_range_16 <- map(intersections_16, ~st_drop_geometry(stationaries[.x,])) %>%
+  map2(., dates, ~{
+    filter(.x, date_il >= .y-lubridate::days(14) & date_il < .y)
+  })
+landings_in_range_8 <- map(intersections_8, ~st_drop_geometry(stationaries[.x,])) %>%
+  map2(., dates, ~{
+    filter(.x, date_il >= .y-lubridate::days(14) & date_il < .y)
+  })
+
+daily_stats_16 <- map2(landings_in_range_16, dates, ~{
+  min_date <- .y-lubridate::days(14)
+  max_date <- .y-lubridate::days(1)
+  all_dates <- seq.Date(from = min_date, to = max_date)
+  out <- .x %>% group_by(date_il) %>% 
+    summarize(n_landings = n(),
+              n_indivs = length(unique(individual_local_identifier))) 
+  out <- full_join(out, data.frame(date_il = all_dates), 
+                   by = "date_il") %>%
+    mutate(across(everything(), ~replace_na(.x, 0))) %>%
+    arrange(date_il) %>%
+    mutate(idx = row_number())
+})
+
+daily_stats_8 <- map2(landings_in_range_8, dates, ~{
+  min_date <- .y-lubridate::days(14)
+  max_date <- .y-lubridate::days(1)
+  all_dates <- seq.Date(from = min_date, to = max_date)
+  out <- .x %>% group_by(date_il) %>% 
+    summarize(n_landings = n(),
+              n_indivs = length(unique(individual_local_identifier))) 
+  out <- full_join(out, data.frame(date_il = all_dates), 
+                   by = "date_il") %>%
+    mutate(across(everything(), ~replace_na(.x, 0))) %>%
+    arrange(date_il) %>%
+    mutate(idx = row_number())
+})
+
+daily_stats_16 <- map2(daily_stats_16, vectors_16km, ~{
+  .x %>% mutate(n_carcs = .y) %>%
+    mutate(landings_presence = n_landings > 0) %>%
+    mutate(km = 16)
+})
+1
+daily_stats_8 <- map2(daily_stats_8, vectors_8km, ~{
+  .x %>% mutate(n_carcs = .y) %>%
+    mutate(landings_presence = n_landings > 0) %>%
+    mutate(km = 8)
+})
+
+names(daily_stats_16) <- carcIDs
+names(daily_stats_8) <- carcIDs
+
+daily_stats <- purrr::list_rbind(daily_stats_16, names_to = "carcID") %>% bind_rows(purrr::list_rbind(daily_stats_8, names_to = "carcID"))
+
+daily_stats_long <- daily_stats %>%
+  pivot_longer(cols = c("n_landings", "n_indivs", "n_carcs", "landings_presence"), names_to = "measure", values_to = "value")
+
+daily_stats_long %>%
+  filter(km == 16) %>%
+  ggplot(aes(x = idx, y = value, color = measure))+
+  geom_line()+
+  facet_wrap(~carcID)
+
+indices <- c("n_landings", "n_indivs", "landings_presence")  # add your other indices here
+max_lag <- 2
+
+# If you have number of tracked birds per day, normalize here, e.g.:
+# daily_stats <- daily_stats |> mutate(n_landings = n_landings / n_tracked,
+#                                      n_indivs   = n_indivs   / n_tracked)
+
+dat <- daily_stats |>
+  mutate(landings_presence = as.numeric(landings_presence)) |>
+  arrange(carcID, km, idx)
+
+# ---------- STEP 1: index x lag x radius screening ----------
+# Lag k pairs the index on day t with carcasses on day t-k (landings trail carcasses)
+
+auc <- function(score, present) {
+  r <- rank(score); n1 <- sum(present); n0 <- sum(!present)
+  if (n1 == 0 || n0 == 0) return(NA_real_)
+  (sum(r[present]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
+screen_one <- function(ix, k) {
+  d <- dat |>
+    mutate(val = .data[[ix]]) |>
+    group_by(carcID, km) |>
+    mutate(carc_lag = dplyr::lag(n_carcs, k)) |>
+    ungroup() |>
+    filter(!is.na(carc_lag))
+  
+  # per-area correlations (NA if either series is constant)
+  per_area <- d |>
+    group_by(km, carcID) |>
+    summarise(
+      rho = suppressWarnings(cor(val, carc_lag, method = "spearman")),
+      .groups = "drop")
+  
+  d |>
+    group_by(km) |>
+    summarise(
+      rho_pooled   = suppressWarnings(cor(val, carc_lag, method = "spearman")),
+      auc_presence = auc(val, carc_lag > 0),
+      .groups = "drop") |>
+    left_join(
+      per_area |>
+        group_by(km) |>
+        summarise(rho_median = median(rho, na.rm = TRUE), .groups = "drop"),
+      by = "km") |>
+    mutate(index = ix, lag = k, .before = 1)
+}
+
+screen <- expand_grid(index = indices, lag = 0:max_lag) |>
+  pmap_dfr(\(index, lag) screen_one(index, lag)) |>
+  arrange(desc(abs(rho_pooled)))
+
+print(screen, n = 30)
+
+# Quick visual check: z-scored index vs carcass count over time
+dat |>
+  filter(km == min(km)) |>   # pick a radius
+  group_by(carcID) |>
+  mutate(across(c(n_carcs, all_of(indices)), \(x) as.numeric(scale(x)))) |>
+  ungroup() |>
+  pivot_longer(c(n_carcs, all_of(indices))) |>
+  ggplot(aes(idx, value, colour = name)) +
+  geom_line() + facet_wrap(~carcID) + theme_minimal()
+
+# ---------- STEP 2: quantile matching ----------
+# Pool carcass counts within a radius, then map each index value to the
+# carcass value at the same quantile.
+
+qmatch <- function(index_vals, carc_vals) {
+  p <- (rank(index_vals, ties.method = "average") - 0.5) / length(index_vals)
+  as.numeric(quantile(carc_vals, probs = p, type = 1))
+}
+
+best_index <- "n_indivs"   # <- choose after Step 1
+best_lag   <- 0
+
+proxy <- dat |>
+  group_by(km) |>
+  mutate(proxy = qmatch(.data[[best_index]], n_carcs)) |>
+  ungroup()
+
+# ---------- STEP 3: compare temporal variograms ----------
+semivar <- function(x, lags = 1:5) {
+  map_dbl(lags, \(h) {
+    d <- x[(1 + h):length(x)] - x[1:(length(x) - h)]
+    mean(0.5 * d^2, na.rm = TRUE)
+  })
+}
+
+vario <- proxy |>
+  group_by(carcID, km) |>
+  summarise(
+    lag = list(1:5),
+    carcass = list(semivar(n_carcs)),
+    proxy   = list(semivar(proxy)),
+    raw_idx = list(semivar(as.numeric(scale(.data[[best_index]])))),
+    .groups = "drop") |>
+  unnest(c(lag, carcass, proxy, raw_idx)) |>
+  pivot_longer(c(carcass, proxy, raw_idx), names_to = "series", values_to = "gamma")
+
+ggplot(vario, aes(lag, gamma, colour = series, group = interaction(carcID, series))) +
+  geom_line(alpha = .5) + facet_wrap(~km) + theme_minimal()
+
+# Numeric summary: error between proxy and carcass variograms
+vario |>
+  pivot_wider(names_from = series, values_from = gamma) |>
+  group_by(km) |>
+  summarise(rmse_proxy = sqrt(mean((proxy - carcass)^2)),
+            cor_proxy  = cor(proxy, carcass))
+
+library(zoo)
+
+# 1. Compare day-to-day persistence: lag-1 autocorrelation of carcasses vs proxy
+acf1 <- function(x) suppressWarnings(cor(x[-1], x[-length(x)]))
+
+proxy |>
+  group_by(carcID, km) |>
+  summarise(acf_carc  = acf1(n_carcs),
+            acf_proxy = acf1(proxy),
+            acf_index = acf1(.data[[best_index]]),
+            .groups = "drop") |>
+  group_by(km) |>
+  summarise(across(starts_with("acf"), \(x) median(x, na.rm = TRUE)))
+
+# 2. Add smoothed versions of each index (trailing window = carcass persistence)
+dat <- dat |>
+  group_by(carcID, km) |>
+  mutate(across(all_of(indices),
+                list(w3 = \(x) rollapplyr(x, 3, mean, partial = TRUE),
+                     w5 = \(x) rollapplyr(x, 5, mean, partial = TRUE)),
+                .names = "{.col}_{.fn}")) |>
+  ungroup()
+
+indices2 <- c(indices, paste0(rep(indices, each = 2), c("_w3", "_w5")))
+# rerun screen with indices <- indices2, then repeat the quantile matching and variogram step
+
+screen <- expand_grid(index = indices2, lag = 0:max_lag) |>
+  pmap_dfr(\(index, lag) screen_one(index, lag)) |>
+  arrange(desc(abs(rho_pooled)))
+
+print(screen, n = 30)
+
+# Quick visual check: z-scored index vs carcass count over time
+dat |>
+  filter(km == max(km)) |>   # pick a radius
+  group_by(carcID) |>
+  mutate(across(c(n_carcs, all_of(indices2)), \(x) as.numeric(scale(x)))) |>
+  ungroup() |>
+  pivot_longer(c(n_carcs, all_of(indices2))) |>
+  ggplot(aes(idx, value, colour = name)) +
+  geom_line() + facet_wrap(~carcID) + theme_minimal()
+
+# ---------- STEP 2: quantile matching ----------
+# Pool carcass counts within a radius, then map each index value to the
+# carcass value at the same quantile.
+
+qmatch <- function(index_vals, carc_vals) {
+  p <- (rank(index_vals, ties.method = "average") - 0.5) / length(index_vals)
+  as.numeric(quantile(carc_vals, probs = p, type = 1))
+}
+
+best_index <- "n_indivs_w3"   # <- choose after Step 1
+best_lag   <- 0
+
+proxy <- dat |>
+  group_by(km) |>
+  mutate(proxy = qmatch(.data[[best_index]], n_carcs)) |>
+  ungroup()
+
+# ---------- STEP 3: compare temporal variograms ----------
+semivar <- function(x, lags = 1:5) {
+  map_dbl(lags, \(h) {
+    d <- x[(1 + h):length(x)] - x[1:(length(x) - h)]
+    mean(0.5 * d^2, na.rm = TRUE)
+  })
+}
+
+vario <- proxy |>
+  group_by(carcID, km) |>
+  summarise(
+    lag = list(1:5),
+    carcass = list(semivar(n_carcs)),
+    proxy   = list(semivar(proxy)),
+    raw_idx = list(semivar(as.numeric(scale(.data[[best_index]])))),
+    .groups = "drop") |>
+  unnest(c(lag, carcass, proxy, raw_idx)) |>
+  pivot_longer(c(carcass, proxy, raw_idx), names_to = "series", values_to = "gamma")
+
+ggplot(vario, aes(lag, gamma, colour = series, group = interaction(carcID, series))) +
+  geom_line(alpha = .5) + facet_wrap(~km) + theme_minimal()
+
+# Numeric summary: error between proxy and carcass variograms
+vario |>
+  pivot_wider(names_from = series, values_from = gamma) |>
+  group_by(km) |>
+  summarise(rmse_proxy = sqrt(mean((proxy - carcass)^2)),
+            cor_proxy  = cor(proxy, carcass))
+
