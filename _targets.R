@@ -51,9 +51,9 @@ list(
   tar_target(data_files_2022_lf, list.files(here("data/ACC/2022_lf/raw/"), full.names = T, pattern = ".csv")),
   tar_target(data_files_2023_lf, list.files(here("data/ACC/2023_lf/raw/"), full.names = T, pattern = ".csv")),
   tar_target(data_files_2024_lf, list.files(here("data/ACC/2024_lf/raw/"), full.names = T, pattern = ".csv")),
-  tar_target(unobs_raw_acc_2022, get_acc_data(data_files_2022)),
-  tar_target(unobs_raw_acc_2023, get_acc_data(data_files_2023)),
-  tar_target(unobs_raw_acc_2024, get_acc_data(data_files_2024)),
+  tar_target(unobs_raw_acc_2022, get_acc_data_2(data_files_2022)),
+  tar_target(unobs_raw_acc_2023, get_acc_data_2(data_files_2023)),
+  tar_target(unobs_raw_acc_2024, get_acc_data_2(data_files_2024)),
   tar_target(unobs_raw_acc_2022_lf, get_acc_data(data_files_2022_lf)),
   tar_target(unobs_raw_acc_2023_lf, get_acc_data(data_files_2023_lf)),
   tar_target(unobs_raw_acc_2024_lf, get_acc_data(data_files_2024_lf)),
@@ -80,7 +80,7 @@ list(
   tar_target(calibrated_22_6, caldev(splitup_22[26:30], cal_data)),
   tar_target(calibrated_22_7, caldev(splitup_22[31:35], cal_data)),
   tar_target(calibrated_22_8, caldev(splitup_22[36:40], cal_data)),
-  tar_target(calibrated_22_9, caldev(splitup_22[41:46], cal_data)),
+  tar_target(calibrated_22_9, caldev(splitup_22[41:45], cal_data)),
   tar_target(calibrated_22_10, caldev(splitup_22[46:50], cal_data)),
   tar_target(calibrated_22_11, caldev(splitup_22[51:55], cal_data)),
   tar_target(calibrated_22_12, caldev(splitup_22[56:60], cal_data)),
@@ -97,7 +97,7 @@ list(
   tar_target(calibrated_23_6, caldev(splitup_23[26:30], cal_data)),
   tar_target(calibrated_23_7, caldev(splitup_23[31:35], cal_data)),
   tar_target(calibrated_23_8, caldev(splitup_23[36:40], cal_data)),
-  tar_target(calibrated_23_9, caldev(splitup_23[41:46], cal_data)),
+  tar_target(calibrated_23_9, caldev(splitup_23[41:45], cal_data)),
   tar_target(calibrated_23_10, caldev(splitup_23[46:50], cal_data)),
   tar_target(calibrated_23_11, caldev(splitup_23[51:55], cal_data)),
   tar_target(calibrated_23_12, caldev(splitup_23[56:60], cal_data)),
@@ -114,7 +114,7 @@ list(
   tar_target(calibrated_24_6, caldev(splitup_24[26:30], cal_data)),
   tar_target(calibrated_24_7, caldev(splitup_24[31:35], cal_data)),
   tar_target(calibrated_24_8, caldev(splitup_24[36:40], cal_data)),
-  tar_target(calibrated_24_9, caldev(splitup_24[41:46], cal_data)),
+  tar_target(calibrated_24_9, caldev(splitup_24[41:45], cal_data)),
   tar_target(calibrated_24_10, caldev(splitup_24[46:50], cal_data)),
   tar_target(calibrated_24_11, caldev(splitup_24[51:55], cal_data)),
   tar_target(calibrated_24_12, caldev(splitup_24[56:60], cal_data)),
@@ -131,7 +131,7 @@ list(
   tar_target(calibrated_22_6_lf, caldev(splitup_22_lf[26:30], cal_data)),
   tar_target(calibrated_22_7_lf, caldev(splitup_22_lf[31:35], cal_data)),
   tar_target(calibrated_22_8_lf, caldev(splitup_22_lf[36:40], cal_data)),
-  tar_target(calibrated_22_9_lf, caldev(splitup_22_lf[41:46], cal_data)),
+  tar_target(calibrated_22_9_lf, caldev(splitup_22_lf[41:45], cal_data)),
   tar_target(calibrated_22_10_lf, caldev(splitup_22_lf[46:50], cal_data)),
   tar_target(calibrated_22_11_lf, caldev(splitup_22_lf[51:55], cal_data)),
   tar_target(calibrated_22_12_lf, caldev(splitup_22_lf[56:60], cal_data)),
@@ -148,7 +148,7 @@ list(
   tar_target(calibrated_23_6_lf, caldev(splitup_23_lf[26:30], cal_data)),
   tar_target(calibrated_23_7_lf, caldev(splitup_23_lf[31:35], cal_data)),
   tar_target(calibrated_23_8_lf, caldev(splitup_23_lf[36:40], cal_data)),
-  tar_target(calibrated_23_9_lf, caldev(splitup_23_lf[41:46], cal_data)),
+  tar_target(calibrated_23_9_lf, caldev(splitup_23_lf[41:45], cal_data)),
   tar_target(calibrated_23_10_lf, caldev(splitup_23_lf[46:50], cal_data)),
   tar_target(calibrated_23_11_lf, caldev(splitup_23_lf[51:55], cal_data)),
   tar_target(calibrated_23_12_lf, caldev(splitup_23_lf[56:60], cal_data)),
@@ -165,7 +165,7 @@ list(
   tar_target(calibrated_24_6_lf, caldev(splitup_24_lf[26:30], cal_data)),
   tar_target(calibrated_24_7_lf, caldev(splitup_24_lf[31:35], cal_data)),
   tar_target(calibrated_24_8_lf, caldev(splitup_24_lf[36:40], cal_data)),
-  tar_target(calibrated_24_9_lf, caldev(splitup_24_lf[41:46], cal_data)),
+  tar_target(calibrated_24_9_lf, caldev(splitup_24_lf[41:45], cal_data)),
   tar_target(calibrated_24_10_lf, caldev(splitup_24_lf[46:50], cal_data)),
   tar_target(calibrated_24_11_lf, caldev(splitup_24_lf[51:55], cal_data)),
   tar_target(calibrated_24_12_lf, caldev(splitup_24_lf[56:60], cal_data)),
@@ -739,8 +739,7 @@ list(
   tar_target(wg22_22, purrr::map2(bo_pr_2022[64:66], gps_focal_indivs[[1]][64:66], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg22_23, purrr::map2(bo_pr_2022[67:69], gps_focal_indivs[[1]][67:69], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg22_24, purrr::map2(bo_pr_2022[70:72], gps_focal_indivs[[1]][70:72], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg22_25, purrr::map2(bo_pr_2022[73:75], gps_focal_indivs[[1]][73:75], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg22_26, purrr::map2(bo_pr_2022[76:length(bo_pr_2022)], gps_focal_indivs[[1]][76:length(gps_focal_indivs[[1]])], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg22_25, purrr::map2(bo_pr_2022[73:length(bo_pr_2022)], gps_focal_indivs[[1]][73:length(gps_focal_indivs[[1]])], ~get_matches(.x, .y, gps_spd))),
   
   tar_target(wg23_1, purrr::map2(bo_pr_2023[1:3], gps_focal_indivs[[2]][1:3], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg23_2, purrr::map2(bo_pr_2023[4:6], gps_focal_indivs[[2]][4:6], ~get_matches(.x, .y, gps_spd))),
@@ -820,8 +819,7 @@ list(
   tar_target(wg22_22_lf, purrr::map2(bo_pr_2022_lf[64:66], gps_focal_indivs_lf[[1]][64:66], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg22_23_lf, purrr::map2(bo_pr_2022_lf[67:69], gps_focal_indivs_lf[[1]][67:69], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg22_24_lf, purrr::map2(bo_pr_2022_lf[70:72], gps_focal_indivs_lf[[1]][70:72], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg22_25_lf, purrr::map2(bo_pr_2022_lf[73:75], gps_focal_indivs_lf[[1]][73:75], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg22_26_lf, purrr::map2(bo_pr_2022_lf[76:length(bo_pr_2022_lf)], gps_focal_indivs_lf[[1]][76:length(gps_focal_indivs_lf[[1]])], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg22_25_lf, purrr::map2(bo_pr_2022_lf[73:length(bo_pr_2022_lf)], gps_focal_indivs_lf[[1]][73:length(bo_pr_2022_lf)], ~get_matches(.x, .y, gps_spd))),
   
   tar_target(wg23_1_lf, purrr::map2(bo_pr_2023_lf[1:3], gps_focal_indivs_lf[[2]][1:3], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg23_2_lf, purrr::map2(bo_pr_2023_lf[4:6], gps_focal_indivs_lf[[2]][4:6], ~get_matches(.x, .y, gps_spd))),
@@ -874,15 +872,14 @@ list(
   tar_target(wg24_22_lf, purrr::map2(bo_pr_2024_lf[64:66], gps_focal_indivs_lf[[3]][64:66], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg24_23_lf, purrr::map2(bo_pr_2024_lf[67:69], gps_focal_indivs_lf[[3]][67:69], ~get_matches(.x, .y, gps_spd))),
   tar_target(wg24_24_lf, purrr::map2(bo_pr_2024_lf[70:72], gps_focal_indivs_lf[[3]][70:72], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg24_25_lf, purrr::map2(bo_pr_2024_lf[73:75], gps_focal_indivs_lf[[3]][73:75], ~get_matches(.x, .y, gps_spd))),
-  tar_target(wg24_26_lf, purrr::map2(bo_pr_2024_lf[76:length(bo_pr_2024_lf)], gps_focal_indivs_lf[[3]][76:length(gps_focal_indivs_lf[[3]])], ~get_matches(.x, .y, gps_spd))),
+  tar_target(wg24_25_lf, purrr::map2(bo_pr_2024_lf[73:length(bo_pr_2024_lf)], gps_focal_indivs_lf[[3]][73:length(gps_focal_indivs_lf[[3]])], ~get_matches(.x, .y, gps_spd))),
   
-  tar_target(with_gps_2022, c(wg22_1, wg22_2, wg22_3, wg22_4, wg22_5, wg22_6, wg22_7, wg22_8, wg22_9, wg22_10, wg22_11, wg22_12, wg22_13, wg22_14, wg22_15, wg22_16, wg22_17, wg22_18, wg22_19, wg22_20, wg22_21, wg22_22, wg22_23, wg22_24, wg22_25, wg22_26)),
+  tar_target(with_gps_2022, c(wg22_1, wg22_2, wg22_3, wg22_4, wg22_5, wg22_6, wg22_7, wg22_8, wg22_9, wg22_10, wg22_11, wg22_12, wg22_13, wg22_14, wg22_15, wg22_16, wg22_17, wg22_18, wg22_19, wg22_20, wg22_21, wg22_22, wg22_23, wg22_24, wg22_25)),
   tar_target(with_gps_2023, c(wg23_1, wg23_2, wg23_3, wg23_4, wg23_5, wg23_6, wg23_7, wg23_8, wg23_9, wg23_10, wg23_11, wg23_12, wg23_13, wg23_14, wg23_15, wg23_16, wg23_17, wg23_18, wg23_19, wg23_20, wg23_21, wg23_22, wg23_23, wg23_24, wg23_25, wg23_26)),
   tar_target(with_gps_2024, c(wg24_1, wg24_2, wg24_3, wg24_4, wg24_5, wg24_6, wg24_7, wg24_8, wg24_9, wg24_10, wg24_11, wg24_12, wg24_13, wg24_14, wg24_15, wg24_16, wg24_17, wg24_18, wg24_19, wg24_20, wg24_21, wg24_22, wg24_23, wg24_24, wg24_25, wg24_26)),
-  tar_target(with_gps_2022_lf, c(wg22_1_lf, wg22_2_lf, wg22_3_lf, wg22_4_lf, wg22_5_lf, wg22_6_lf, wg22_7_lf, wg22_8_lf, wg22_9_lf, wg22_10_lf, wg22_11_lf, wg22_12_lf, wg22_13_lf, wg22_14_lf, wg22_15_lf, wg22_16_lf, wg22_17_lf, wg22_18_lf, wg22_19_lf, wg22_20_lf, wg22_21_lf, wg22_22_lf, wg22_23_lf, wg22_24_lf, wg22_25_lf, wg22_26_lf)),
+  tar_target(with_gps_2022_lf, c(wg22_1_lf, wg22_2_lf, wg22_3_lf, wg22_4_lf, wg22_5_lf, wg22_6_lf, wg22_7_lf, wg22_8_lf, wg22_9_lf, wg22_10_lf, wg22_11_lf, wg22_12_lf, wg22_13_lf, wg22_14_lf, wg22_15_lf, wg22_16_lf, wg22_17_lf, wg22_18_lf, wg22_19_lf, wg22_20_lf, wg22_21_lf, wg22_22_lf, wg22_23_lf, wg22_24_lf, wg22_25_lf)),
   tar_target(with_gps_2023_lf, c(wg23_1_lf, wg23_2_lf, wg23_3_lf, wg23_4_lf, wg23_5_lf, wg23_6_lf, wg23_7_lf, wg23_8_lf, wg23_9_lf, wg23_10_lf, wg23_11_lf, wg23_12_lf, wg23_13_lf, wg23_14_lf, wg23_15_lf, wg23_16_lf, wg23_17_lf, wg23_18_lf, wg23_19_lf, wg23_20_lf, wg23_21_lf, wg23_22_lf, wg23_23_lf, wg23_24_lf, wg23_25_lf, wg23_26_lf)),
-  tar_target(with_gps_2024_lf, c(wg24_1_lf, wg24_2_lf, wg24_3_lf, wg24_4_lf, wg24_5_lf, wg24_6_lf, wg24_7_lf, wg24_8_lf, wg24_9_lf, wg24_10_lf, wg24_11_lf, wg24_12_lf, wg24_13_lf, wg24_14_lf, wg24_15_lf, wg24_16_lf, wg24_17_lf, wg24_18_lf, wg24_19_lf, wg24_20_lf, wg24_21_lf, wg24_22_lf, wg24_23_lf, wg24_24_lf, wg24_25_lf, wg24_26_lf)),
+  tar_target(with_gps_2024_lf, c(wg24_1_lf, wg24_2_lf, wg24_3_lf, wg24_4_lf, wg24_5_lf, wg24_6_lf, wg24_7_lf, wg24_8_lf, wg24_9_lf, wg24_10_lf, wg24_11_lf, wg24_12_lf, wg24_13_lf, wg24_14_lf, wg24_15_lf, wg24_16_lf, wg24_17_lf, wg24_18_lf, wg24_19_lf, wg24_20_lf, wg24_21_lf, wg24_22_lf, wg24_23_lf, wg24_24_lf, wg24_25_lf)),
   
   ## Attach the gps data back to the bouts and predictions
   tar_target(full_2022, map2(bo_pr_2022, with_gps_2022, ~join_gps_bouts(.x, .y))),
@@ -959,11 +956,12 @@ list(
                                                         eps = wild_dist,
                                                         eps_t = wild_time_hrs*60*60,
                                                         minpts = wild_min_pts)),
-  tar_target(wild_carcasses, get_wild_carcasses(wild_carcass_bo_df)),
-  tar_target(validation, filter(sf::st_read("data/raw/wildCarcassValidation/cluster_centroids_200m_24hr_min3_2022_2023_2024_NOCLIFFS_withnames.kml"), Name != "")),
-  tar_target(validation_cleaned, mutate(separate_wider_delim(separate_wider_delim(validation, cols = "Name", delim = "_", names = c("carcIDs", "status")), cols = "carcIDs", delim = "(", names = c("carcID", "carcID_old"), too_few = "align_start"), carcID_old = str_remove_all(carcID_old, "\\)"))),
-  tar_target(validation_tojoin, dplyr::mutate(dplyr::filter(dplyr::select(validation_cleaned, carcID, status), status == "valid"), carcID = as.integer(carcID))),
-  tar_target(wild_carcasses_validated, left_join(validation_tojoin, wild_carcasses, by = "carcID")),
+  tar_target(wild_carcasses, mutate(get_wild_carcasses(wild_carcass_bo_df), X_rounded = round(X, digits = 0), Y_rounded = round(Y, digits = 0))),
+  tar_target(validation, filter(sf::st_read("data/raw/wildCarcassValidation/cluster_centroids_200m_24hr_min3_2022_2023_2024_NOCLIFFS_withnames.kml"), Name != "")), # ids won't match wild_carcasses because of fixing indexing bug, so we use geographic match in the next step
+  tar_target(validation_geographic_matched, fixgeom_validation(validation)), # making the coords comparable
+  tar_target(validation_cleaned, mutate(separate_wider_delim(separate_wider_delim(validation_geographic_matched, cols = "Name", delim = "_", names = c("carcIDs", "status")), cols = "carcIDs", delim = "(", names = c("carcID", "carcID_old"), too_few = "align_start"), carcID_old = str_remove_all(carcID_old, "\\)"))),
+  tar_target(validation_tojoin, dplyr::mutate(dplyr::filter(dplyr::select(validation_cleaned, carcID, status, X, Y), status == "valid"), carcID = as.integer(carcID), X_rounded = round(X, digits = 0), Y_rounded = round(Y, digits = 0))), 
+  tar_target(wild_carcasses_validated, rename(select(filter(left_join(validation_tojoin, wild_carcasses, by = c("X_rounded", "Y_rounded")), !is.na(nBouts)), -c("X.y", "Y.y", "carcID.x")), "X" = "X.x", "Y" = "Y.x", "carcID" = "carcID.y")), # remove the two that were "valid" from earlier but are now going to be considered NA b/c not enough bouts. Retain the carcID from the new clustering rather than the old validation. 
   # ## Combine wild and stn carcasses
   tar_target(all_carcasses, bind_rows(carcasses_focal %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
   tar_target(all_carcasses_forpred, bind_rows(carcasses_audited %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
@@ -1049,7 +1047,7 @@ list(
   tar_target(wild_gps_30days, get_gps_all(wild_carcs, downsampled, days_after, dbf)),
   
   tar_target(stn_gps_forroosts, map(stn_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
-  tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
+  tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(.x, date_il %in% tail(sort(unique(.x$date_il)), 6)))),
   
   tar_target(idname, "individual_local_identifier"),
   tar_target(tsname, "timestamp_il"),
@@ -1246,7 +1244,7 @@ list(
   tar_target(nr3_wild, purrr::map2(roosts_wild[38:56], all_indivs_sorted_wild[38:56], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(nr4_wild, purrr::map2(roosts_wild[57:75], all_indivs_sorted_wild[57:75], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(nr5_wild, purrr::map2(roosts_wild[76:94], all_indivs_sorted_wild[76:94], ~arrange_roost_nets(.x, .y, roost_threshold))),
-  tar_target(nr6_wild, purrr::map2(roosts_wild[95:112], all_indivs_sorted_wild[95:112], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6_wild, purrr::map2(roosts_wild[95:length(roosts_wild)], all_indivs_sorted_wild[95:length(all_indivs_sorted_wild)], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(networks_long_roost_1_wild, c(nr1_wild, nr2_wild, nr3_wild, nr4_wild, nr5_wild, nr6_wild)),
   
   tar_target(networks_long_roost_2_wild, purrr::map2(networks_long_roost_1_wild, map_dbl(wild_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
@@ -1385,25 +1383,75 @@ list(
                                ILVi = c("mean_dist_to_carcass_norm", "age"),
                                ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
   
-  # ILVs
-  tar_target(age_ilv, purrr::pmap(list("gd" = gps_diffusion_modified, "sc" = stn_carcs_modified, "ais" = all_indivs_sorted), function(gd, sc, ais){
+  tar_target(birth_lookup, {
+    fixed_names_ages %>%
+      sf::st_drop_geometry() %>%
+      transmute(id = as.character(individual_local_identifier), birth_year) %>%
+      group_by(id) %>%
+      summarise(n_distinct_by = n_distinct(birth_year, na.rm = TRUE),
+                birth_year = if (all(is.na(birth_year))) NA_real_ else first(na.omit(birth_year)),
+                .groups = "drop")
+  }),
+  
+  tar_target(birth_lookup_wild, {
+    fixed_names_ages %>%
+      sf::st_drop_geometry() %>%
+      transmute(id = as.character(individual_local_identifier), birth_year) %>%
+      group_by(id) %>%
+      summarise(n_distinct_by = n_distinct(birth_year, na.rm = TRUE),
+                birth_year = if (all(is.na(birth_year))) NA_real_ else first(na.omit(birth_year)),
+                .groups = "drop")
+  }),
+  
+  tar_target(age_ilv_new, purrr::map2(stn_carcs_modified, all_indivs_sorted, function(sc, ais){
     yr <- sc$year
-    col_to_select <- paste0("age_", yr)
-    out <- gd %>% st_drop_geometry() %>%
-      dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
-      dplyr::distinct() %>%
-      dplyr::rename("age_continuous" = col_to_select) %>%
-      dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
-                                               .default = age_continuous)) %>%
-      dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
-                                                age_continuous > 0 & age_continuous < 5 ~ "sub",
-                                                age_continuous >= 5 ~ "adult",
-                                                .default = NA))
-    missing <- ais[!(ais %in% out$individual_local_identifier)]
-    toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
-    out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
-    return(out)
+    tibble(individual_local_identifier = ais) %>%
+      left_join(birth_lookup, by = c("individual_local_identifier" = "id")) %>%
+      mutate(age_continuous = yr - birth_year,
+             age_continuous = if_else(is.na(age_continuous),
+                                      mean(age_continuous, na.rm = TRUE), age_continuous),
+             age_categorical = case_when(age_continuous == 0 ~ "juv",
+                                         age_continuous > 0 & age_continuous < 5 ~ "sub",
+                                         age_continuous >= 5 ~ "adult",
+                                         .default = NA),
+             age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult"))) %>%
+      select(individual_local_identifier, age_continuous, age_categorical)
   })),
+  
+  tar_target(age_ilv_new_wild, purrr::map2(wild_carcs, all_indivs_sorted_wild, function(sc, ais){
+    yr <- sc$year
+    tibble(individual_local_identifier = ais) %>%
+      left_join(birth_lookup_wild, by = c("individual_local_identifier" = "id")) %>%
+      mutate(age_continuous = yr - birth_year,
+             age_continuous = if_else(is.na(age_continuous),
+                                      mean(age_continuous, na.rm = TRUE), age_continuous),
+             age_categorical = case_when(age_continuous == 0 ~ "juv",
+                                         age_continuous > 0 & age_continuous < 5 ~ "sub",
+                                         age_continuous >= 5 ~ "adult",
+                                         .default = NA),
+             age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult"))) %>%
+      select(individual_local_identifier, age_continuous, age_categorical)
+  })),
+  
+  # ILVs
+  # tar_target(age_ilv, purrr::pmap(list("gd" = gps_diffusion_modified, "sc" = stn_carcs_modified, "ais" = all_indivs_sorted), function(gd, sc, ais){
+  #   yr <- sc$year
+  #   col_to_select <- paste0("age_", yr)
+  #   out <- gd %>% st_drop_geometry() %>%
+  #     dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
+  #     dplyr::distinct() %>%
+  #     dplyr::rename("age_continuous" = col_to_select) %>%
+  #     dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
+  #                                              .default = age_continuous)) %>%
+  #     dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
+  #                                               age_continuous > 0 & age_continuous < 5 ~ "sub",
+  #                                               age_continuous >= 5 ~ "adult",
+  #                                               .default = NA))
+  #   missing <- ais[!(ais %in% out$individual_local_identifier)]
+  #   toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
+  #   out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
+  #   return(out)
+  # })),
   
   tar_target(dists_dyn, purrr::map2(gps_list_fixed, all_indivs_sorted, ~{ # Added ~ here
     ais <- .y
@@ -1443,7 +1491,7 @@ list(
   })
   ),
   
-  tar_target(ILV_c, purrr::map(age_ilv, ~{
+  tar_target(ILV_c, purrr::map(age_ilv_new, ~{
     .x %>% dplyr::rename("id" = individual_local_identifier,
                          "age" = age_categorical) %>%
       dplyr::select(id, age)
@@ -1467,7 +1515,7 @@ list(
   tar_target(gps_withdaylight_wild_5, purrr::map2(wild_gps_30days[59:73], wild_carcs[59:73], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_6, purrr::map2(wild_gps_30days[74:88], wild_carcs[74:88], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(gps_withdaylight_wild_7, purrr::map2(wild_gps_30days[89:103], wild_carcs[89:103], ~get_daylight_hours(.x, .y), .progress = T)),
-  tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:112], wild_carcs[104:112], ~get_daylight_hours(.x, .y), .progress = T)),
+  tar_target(gps_withdaylight_wild_8, purrr::map2(wild_gps_30days[104:length(wild_gps_30days)], wild_carcs[104:length(wild_carcs)], ~get_daylight_hours(.x, .y), .progress = T)),
   tar_target(seeds_wild_1, purrr::map(gps_withdaylight_wild_1, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_2, purrr::map(gps_withdaylight_wild_2, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   tar_target(seeds_wild_3, purrr::map(gps_withdaylight_wild_3, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
@@ -1509,18 +1557,20 @@ list(
   tar_target(gps_fornetwork_wild, purrr::map2(gps_diffusion_wild, wild_carcs, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints_wild, purrr::map(event_data_wild, ~unique(.x$time))),
-  tar_target(cutpoints2_wild, purrr::map(cutpoints_wild, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  tar_target(cutpoints2_wild, purrr::map(cutpoints_wild, ~{if(!(0 %in% .x[!is.na(.x)])){return(c(0, .x[!is.na(.x)]))}else{return(.x[!is.na(.x)])}})),
   tar_target(bins_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{sort(unique(cut(.x$time, breaks = .y)))})),
   
   tar_target(gps_fornetwork2_wild, purrr::map2(gps_fornetwork_wild, cutpoints2_wild, ~{
-    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else{
+    if(length(.y) == 1 & is.na(.y[1])){return(NULL)}else if(length(.y) == 1){return(NULL)}else{
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
   })),
   tar_target(missing_intervals_wild, purrr::map(gps_fornetwork2_wild, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add_wild, purrr::map(missing_intervals_wild, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3_wild, purrr::map2(gps_fornetwork2_wild, to_add_wild, ~{
-    if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
+    if(is.null(.x)|is.null(.y)){
+      return(NULL)
+    }else if(!is.null(.x) & nrow(.y) > 0 & nrow(.x) > 0){
       return(dplyr::bind_rows(.x, .y))
     }else if(!is.null(.x) & nrow(.y) == 0){
       return(.x)
@@ -1557,9 +1607,7 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dn11_wild, purrr::map(gps_list_fixed_wild[101:110], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dn12_wild, purrr::map(gps_list_fixed_wild[111:112], ~purrr::map(.x, ~{
-    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
-  tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild, dn12_wild)),
+  tar_target(dynamic_networks_wild, c(dn1_wild, dn2_wild, dn3_wild, dn4_wild, dn5_wild, dn6_wild, dn7_wild, dn8_wild, dn9_wild, dn10_wild, dn11_wild)),
   
   tar_target(dynamic_networks_fixed_wild, purrr::map2(dynamic_networks_wild, all_indivs_sorted_wild, ~fix_nets(.x, indivs = .y))),
   
@@ -1658,24 +1706,24 @@ list(
                                ILVs = c("mean_dist_to_carcass_norm", "age"))}else{NULL}})),
   
   # ILVs
-  tar_target(age_ilv_wild, purrr::pmap(list("gd" = gps_diffusion_wild, "sc" = wild_carcs, "ais" = all_indivs_sorted_wild), function(gd, sc, ais){
-    yr <- sc$year
-    col_to_select <- paste0("age_", yr)
-    out <- gd %>% st_drop_geometry() %>%
-      dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
-      dplyr::distinct() %>%
-      dplyr::rename("age_continuous" = col_to_select) %>%
-      dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
-                                               .default = age_continuous)) %>%
-      dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
-                                                age_continuous > 0 & age_continuous < 5 ~ "sub",
-                                                age_continuous >= 5 ~ "adult",
-                                                .default = NA))
-    missing <- ais[!(ais %in% out$individual_local_identifier)]
-    toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
-    out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
-    return(out)
-  })),
+  # tar_target(age_ilv_wild, purrr::pmap(list("gd" = gps_diffusion_wild, "sc" = wild_carcs, "ais" = all_indivs_sorted_wild), function(gd, sc, ais){
+  #   yr <- sc$year
+  #   col_to_select <- paste0("age_", yr)
+  #   out <- gd %>% st_drop_geometry() %>%
+  #     dplyr::select(individual_local_identifier, all_of(col_to_select)) %>%
+  #     dplyr::distinct() %>%
+  #     dplyr::rename("age_continuous" = col_to_select) %>%
+  #     dplyr::mutate(age_continuous = case_when(is.na(age_continuous) ~ mean(age_continuous, na.rm = T),
+  #                                              .default = age_continuous)) %>%
+  #     dplyr::mutate(age_categorical = case_when(age_continuous == 0 ~ "juv",
+  #                                               age_continuous > 0 & age_continuous < 5 ~ "sub",
+  #                                               age_continuous >= 5 ~ "adult",
+  #                                               .default = NA))
+  #   missing <- ais[!(ais %in% out$individual_local_identifier)]
+  #   toadd <- data.frame(individual_local_identifier = missing, age_continuous = 6, age_categorical = "adult")
+  #   out <- bind_rows(out, toadd) %>% mutate(age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult")))
+  #   return(out)
+  # })),
   
   tar_target(dists_dyn_wild, purrr::map2(gps_list_fixed_wild, all_indivs_sorted_wild, ~{ # Added ~ here
     ais <- .y
@@ -1715,7 +1763,7 @@ list(
   })
   ),
   
-  tar_target(ILV_c_wild, purrr::map(age_ilv_wild, ~{
+  tar_target(ILV_c_wild, purrr::map(age_ilv_new_wild, ~{
     .x %>% dplyr::rename("id" = individual_local_identifier,
                          "age" = age_categorical) %>%
       dplyr::select(id, age)
@@ -2077,7 +2125,7 @@ list(
   tar_target(vlw3, purrr::map(gps_mts_wild2[40:59], get_vulture_lines)),
   tar_target(vlw4, purrr::map(gps_mts_wild2[60:79], get_vulture_lines)),
   tar_target(vlw5, purrr::map(gps_mts_wild2[80:99], get_vulture_lines)),
-  tar_target(vlw6, purrr::map(gps_mts_wild2[100:112], get_vulture_lines)),
+  tar_target(vlw6, purrr::map(gps_mts_wild2[100:length(gps_mts_wild2)], get_vulture_lines)),
   tar_target(vulture_lines_wild, c(vlw1, vlw2, vlw3, vlw4, vlw5, vlw6)),
   
   # Buffered carcass locations
