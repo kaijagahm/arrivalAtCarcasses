@@ -167,7 +167,39 @@ ac %>%
   ggplot(aes(x = range_6mos, y = sill_6mos))+
   geom_point(pch = 1, size = 1.5, alpha = 0.9)+
   theme_minimal()  # just a few outliers!
-# XXX start here 2026-10-21
+
+ac %>%
+  filter(range_6mos < 600) %>%
+  ggplot(aes(x = sill_6mos))+
+  geom_histogram(fill = "skyblue", color = "black", breaks = seq(from = 0, to = 1.4, by = 0.2)) + theme_bw()+
+  labs(x = "Sill: Temporal variation (units ??)", y = "Count", title = "6mo back, stn only")+
+  theme(text = element_text(size = 18))+
+  facet_wrap(~year)
+
+ac %>%
+  filter(range_6mos < 600) %>%
+  ggplot(aes(x = sill_hfonly))+
+  geom_histogram(fill = "skyblue", color = "black", breaks = seq(from = 0, to = 1.4, by = 0.2)) + theme_bw()+
+  labs(x = "Sill: Temporal variation (units ??)", y = "Count", title = "HF period, stn only")+
+  theme(text = element_text(size = 18))+
+  facet_wrap(~year)
+
+ac %>%
+  filter(range_6mos < 20) %>%
+  ggplot(aes(x = range_6mos))+
+  geom_histogram(fill = "brown", color = "black", breaks = seq(from = 1, to = 10, by = 0.5)) + theme_bw()+
+  labs(x = "Range: Temporal persistence (days)", y = "Count", title = "6mo back, stn only")+
+  theme(text = element_text(size = 18))+
+  facet_wrap(~factor(year))
+
+ac %>%
+  filter(range_6mos < 600) %>%
+  ggplot(aes(x = range_hfonly))+
+  geom_histogram(fill = "brown", color = "black", breaks = seq(from = 1, to = 10, by = 0.5)) + theme_bw()+
+  labs(x = "Range: Temporal persistence (days)", y = "Count", title = "HF period, stn only")+
+  theme(text = element_text(size = 18))+
+  facet_wrap(~factor(year))+
+  scale_y_continuous(breaks = 1:9)
 
 # Range = temporal persistence, and sill = magnitude of temporal variation. We have some with very high temporal persistence and also high temporal variation, but the vast majority of them have low temporal persistence. The main axis of variability seems to be temporal variation (sill)
 
@@ -187,16 +219,62 @@ ac %>%
 # Now let's compare the 1-month periods to the 6-month periods and see how good of a proxy the 1-month periods would be.
 
 ac %>%
+  arrange(date) %>%
+  group_by(year) %>%
+  mutate(idx = 1:n()) %>%
   filter(range_6mos < 500) %>% 
-  ggplot(aes(x = sill_hfonly, y = sill_6mos))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  theme_minimal() # oh hey, this is a decent proxy actually!!
+  ggplot(aes(x = sill_hfonly, y = sill_6mos, color = idx))+
+  geom_smooth(method = "lm", color = "black", alpha = 0.2, lwd = 0.5)+
+  geom_point(size = 3, alpha = 0.7)+
+  theme_minimal()+
+  scale_color_viridis_c()+
+  facet_wrap(~factor(year), scales = "free_x")+
+  labs(y = "Sill (variation), 6mo back, stn only",
+       x = "Sill (variation), HF period, stn only", color = "Index\nwithin\nperiod")+
+  theme_bw()+
+  theme(text = element_text(size = 18))
+# This is a decent proxy, actually (positive slope, fairly tight standard error)
+# No clear relationship between position in the time period and goodness of the proxy
+# Somewhat different year to year but not drastically
+
+# What about stationName?
+ac %>%
+  arrange(date) %>%
+  group_by(year) %>%
+  mutate(idx = 1:n()) %>%
+  filter(range_6mos < 500) %>% 
+  ggplot(aes(x = sill_hfonly, y = sill_6mos, color = stationName))+
+  geom_smooth(method = "lm", color = "black", alpha = 0.2, lwd = 0.5)+
+  geom_point(size = 3, alpha = 0.7)+
+  theme_minimal()+
+  scale_color_viridis_d(option = "B")+
+  facet_wrap(~factor(year), scales = "free_x")+
+  labs(y = "Sill (variation), 6mo back, stn only",
+       x = "Sill (variation), HF period, stn only", color = "Station")+
+  theme_bw()+
+  theme(text = element_text(size = 18))
+
+outliers_removed <- ac %>% filter(range_6mos < 500)
+mod_sill <- lm(sill_6mos ~ sill_hfonly, data = outliers_removed)
+summary(mod_sill) # R^2 is only 0.38, but I guess that's not the worst I've ever seen
+cor_sill <- cor(outliers_removed$sill_6mos, outliers_removed$sill_hfonly) # cor = 0.63
 
 ac %>%
+  arrange(date) %>%
+  group_by(year) %>%
+  mutate(idx = 1:n()) %>%
   filter(range_6mos < 500) %>% 
-  ggplot(aes(x = range_hfonly, y = range_6mos))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  theme_minimal() # not a very good proxy. But we're interested more in sill than range so this might actually be okay.
-
+  ggplot(aes(x = range_hfonly, y = range_6mos, color = stationName))+
+  geom_smooth(method = "lm", color = "black", alpha = 0.2, lwd = 0.5)+
+  geom_point(size = 3, alpha = 0.7)+
+  theme_minimal()+
+  scale_color_viridis_d(option = "B")+
+  facet_wrap(~factor(year), scales = "free_x")+
+  labs(y = "Range (persistence), 6mo back, stn only",
+       x = "Range (persistence), HF period, stn only", color = "Station")+
+  theme_bw()+
+  theme(text = element_text(size = 18)) # really bad proxy for this
+mod_range <- lm(range_6mos ~ range_hfonly, data = outliers_removed)
+summary(mod_range) # R^2 is basically 0
+cor_range <- cor(outliers_removed$range_6mos, outliers_removed$range_hfonly) 
+cor_range # cor = -0.11. Absolutely cannot use hf range as a proxy for 6mo range.

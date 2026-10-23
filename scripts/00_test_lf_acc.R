@@ -537,7 +537,7 @@ buff_p2 <- buff %>%
   filter(end_date >= lubridate::ymd("2023-03-15") & date < lubridate::ymd("2023-03-31"))
 buff_p3 <- buff %>%
   filter(end_date >= lubridate::ymd("2023-03-31") & date < lubridate::ymd("2023-04-15"))
-stationaries_sf_nocliffs <- map(stationaries_sf_nocliffs, ~{.x <- mutate(.x, start = timestamp_il) %>% select(ground_speed, timestamp, individual_local_identifier, location_long, location_lat, Nili_id, timestamp_il, date_il, start)})
+stationaries_sf_nocliffs <- map(stationaries_sf_nocliffs, ~{.x <- mutate(.x, start = timestamp_il) %>% dplyr::select(ground_speed, timestamp, individual_local_identifier, location_long, location_lat, Nili_id, timestamp_il, date_il, start)})
 
 results_landings_p2 <- join_space_time(buff_p2, stationaries_sf_nocliffs[[2]]) %>% mutate(period = 2, .before = 1)
 results_landings_p3 <- join_space_time(buff_p3, stationaries_sf_nocliffs[[3]]) %>% mutate(period = 3, .before = 1)
@@ -558,7 +558,8 @@ results_landings_summ %>%
   theme_bw()+
   labs(y = "Landings per carcass",
        x = "2-week period")+
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        text = element_text(size = 18))
 
 # How many carcasses have 0 landings associated?
 results_landings_summ %>%
@@ -692,8 +693,13 @@ res <- bind_rows(res_p2, res_p3)
 res %>%
   ggplot(aes(x = carcs, y = landings, fill = cor))+
   geom_raster()+
-  scale_fill_viridis_c()+ 
-  facet_wrap(~period) # interesting! the sweet spot seems to be having the carcass raster at 2250 and the landings raster at 1000, and both periods pretty much agree on that. I'm not sure if this is telling us something or if it would just keep getting better the higher we went with the carcasses. Like is this an optimum or are we just maxing out?
+  scale_fill_viridis_c(limits = c(0, 1))+ 
+  facet_wrap(~period)+
+  labs(y = "Smoothing parameter h (landings)",
+       x = "Smoothing parameter h (carcasses)",
+       fill = "Correlation")+
+  theme_bw()+
+  theme(text = element_text(size = 18))# interesting! the sweet spot seems to be having the carcass raster at 2250 and the landings raster at 1000, and both periods pretty much agree on that. I'm not sure if this is telling us something or if it would just keep getting better the higher we went with the carcasses. Like is this an optimum or are we just maxing out?
 
 res %>%
   ggplot(aes(x = carcs, y = cor, color = factor(landings), group = factor(landings)))+
@@ -728,6 +734,9 @@ carcs_simple_p3 <- carcs_simple %>%
 
 neighbor_list_16km_p3 <- sf::st_is_within_distance(carcs_simple_p3, carcs_simple, dist = 16000)
 length(neighbor_list_16km_p3) #26
+
+neighbor_list_8km_p3 <- sf::st_is_within_distance(carcs_simple_p3, carcs_simple, dist = 8000)
+length(neighbor_list_8km_p3) #26
 
 get_activity_vectors <- function(neighbor_list, days_back = 14, days_active = 3, all = carcs_simple){
   out <- purrr::imap(neighbor_list, function(idx, i) {
@@ -816,13 +825,15 @@ daily_stats_8 <- map2(landings_in_range_8, dates, ~{
 
 daily_stats_16 <- map2(daily_stats_16, vectors_16km, ~{
   .x %>% mutate(n_carcs = .y) %>%
-    mutate(landings_presence = n_landings > 0) %>%
+    mutate(landings_presence = n_landings > 0,
+           n_landings_scaled = scale(n_landings), n_indivs_scaled = scale(n_indivs), n_carcs_scaled = scale(n_carcs)) %>%
     mutate(km = 16)
 })
-1
+
 daily_stats_8 <- map2(daily_stats_8, vectors_8km, ~{
   .x %>% mutate(n_carcs = .y) %>%
-    mutate(landings_presence = n_landings > 0) %>%
+    mutate(landings_presence = n_landings > 0,
+           n_landings_scaled = scale(n_landings), n_indivs_scaled = scale(n_indivs), n_carcs_scaled = scale(n_carcs)) %>%
     mutate(km = 8)
 })
 
@@ -832,13 +843,21 @@ names(daily_stats_8) <- carcIDs
 daily_stats <- purrr::list_rbind(daily_stats_16, names_to = "carcID") %>% bind_rows(purrr::list_rbind(daily_stats_8, names_to = "carcID"))
 
 daily_stats_long <- daily_stats %>%
-  pivot_longer(cols = c("n_landings", "n_indivs", "n_carcs", "landings_presence"), names_to = "measure", values_to = "value")
+  pivot_longer(cols = c("n_landings", "n_indivs", "n_carcs", "n_landings_scaled", "n_indivs_scaled", "n_carcs_scaled", "landings_presence"), names_to = "measure", values_to = "value")
 
 daily_stats_long %>%
-  filter(km == 16) %>%
+  mutate(is_carcs = case_when(measure == "n_carcs_scaled" ~ T, .default = F)) %>%
+  filter(km == 16, !(measure %in% c("n_landings", "n_indivs", "n_carcs"))) %>%
   ggplot(aes(x = idx, y = value, color = measure))+
-  geom_line()+
-  facet_wrap(~carcID)
+  geom_line(aes(linewidth = is_carcs))+
+  facet_wrap(~carcID, ncol = 7)+
+  theme_minimal()+
+  scale_linewidth_manual(values = c(0.5, 1))+
+  labs(y = "Value", x = "Days before carcass",
+       color = "Measure", linewidth = NULL)+
+  scale_x_continuous(breaks = seq(from = 0, to = 14, by = 2))+
+  guides(linewidth = "none")+
+  theme(text = element_text(size = 16), legend.position = "bottom")
 
 indices <- c("n_landings", "n_indivs", "landings_presence")  # add your other indices here
 max_lag <- 2
