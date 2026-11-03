@@ -38,6 +38,12 @@ ornitela_data_2024_lf <- move2::movebank_download_study(1252551761,
                                                         timestamp_start = minmax_buff[[11]],
                                                         timestamp_end = minmax_buff[[12]])
 
+# Download all of the GPS data for the entire time, so we can look at more station carcasses
+ornitela_data_all <- move2::movebank_download_study(1252551761,
+                                                sensor_type_id = "gps",
+                                                timestamp_start = minmax_buff[[1]],
+                                                timestamp_end = minmax_buff[[6]])
+
 inpa_data_2022 <- move2::movebank_download_study(6071688,
                                           sensor_type_id = "gps",
                                           timestamp_start = minmax_buff[[1]],
@@ -63,16 +69,24 @@ inpa_data_2024_lf <- move2::movebank_download_study(6071688,
                                                     timestamp_start = minmax_buff[[11]],
                                                     timestamp_end = minmax_buff[[12]])
 
+# Download all of the GPS data for the entire time, so we can look at more station carcasses
+inpa_data_all <- move2::movebank_download_study(6071688,
+                                                 sensor_type_id = "gps",
+                                                 timestamp_start = minmax_buff[[1]],
+                                                 timestamp_end = minmax_buff[[6]])
+
 od22 <- left_join(ornitela_data_2022, mt_track_data(ornitela_data_2022))
 od23 <- left_join(ornitela_data_2023, mt_track_data(ornitela_data_2023))
 od24 <- left_join(ornitela_data_2024, mt_track_data(ornitela_data_2024))
 od22_lf <- left_join(ornitela_data_2022_lf, mt_track_data(ornitela_data_2022_lf))
 od23_lf <- left_join(ornitela_data_2023_lf, mt_track_data(ornitela_data_2023_lf))
 od24_lf <- left_join(ornitela_data_2024_lf, mt_track_data(ornitela_data_2024_lf))
+od_all <- left_join(ornitela_data_all, mt_track_data(ornitela_data_all))
 
 id22 <- left_join(inpa_data_2022, mt_track_data(inpa_data_2022))
 id23 <- left_join(inpa_data_2023, mt_track_data(inpa_data_2023))
 id24 <- left_join(inpa_data_2024, mt_track_data(inpa_data_2024))
+id_all <- left_join(inpa_data_all, mt_track_data(inpa_data_all))
 id22_lf <- left_join(inpa_data_2022_lf, mt_track_data(inpa_data_2022_lf))
 id23_lf <- left_join(inpa_data_2023_lf, mt_track_data(inpa_data_2023_lf))
 id24_lf <- left_join(inpa_data_2024_lf, mt_track_data(inpa_data_2024_lf))
@@ -83,12 +97,14 @@ toremove <- c("sensor_type_id", "acceleration_raw_x", "acceleration_raw_y", "acc
 od22 <- od22 %>% dplyr::select(-any_of(toremove))
 od23 <- od23 %>% dplyr::select(-any_of(toremove))
 od24 <- od24 %>% dplyr::select(-any_of(toremove))
+od_all <- od_all %>% dplyr::select(-any_of(toremove))
 od22_lf <- od22_lf %>% dplyr::select(-any_of(toremove))
 od23_lf <- od23_lf %>% dplyr::select(-any_of(toremove))
 od24_lf <- od24_lf %>% dplyr::select(-any_of(toremove))
 id22 <- id22 %>% dplyr::select(-any_of(toremove))
 id23 <- id23 %>% dplyr::select(-any_of(toremove))
 id24 <- id24 %>% dplyr::select(-any_of(toremove))
+id_all <- id_all %>% dplyr::select(-any_of(toremove))
 id22_lf <- id22_lf %>% dplyr::select(-any_of(toremove))
 id23_lf <- id23_lf %>% dplyr::select(-any_of(toremove))
 id24_lf <- id24_lf %>% dplyr::select(-any_of(toremove))
@@ -99,9 +115,12 @@ id24_lf <- id24_lf %>% dplyr::select(-any_of(toremove))
 write_rds(od22_lf, file = here("data/download_gps_data/ornitela_data_2022_lf_version2026-09-30.RDS"))
 write_rds(od23_lf, file = here("data/download_gps_data/ornitela_data_2023_lf_version2026-09-30.RDS"))
 write_rds(od24_lf, file = here("data/download_gps_data/ornitela_data_2024_lf_version2026-09-30.RDS"))
+write_rds(od_all, file = here("data/download_gps_data/ornitela_data_all_version2026-10-27.RDS"))
 # write_rds(id22, file = here("data/download_gps_data/inpa_data_2022_version2025-09-21.RDS"))
 # write_rds(id23, file = here("data/download_gps_data/inpa_data_2023_version2025-09-21.RDS"))
 # write_rds(id24, file = here("data/download_gps_data/inpa_data_2024_version2025-09-21.RDS"))
 write_rds(id22_lf, file = here("data/download_gps_data/inpa_data_2022_lf_version2026-09-30.RDS"))
 write_rds(id23_lf, file = here("data/download_gps_data/inpa_data_2023_lf_version2026-09-30.RDS"))
 write_rds(id24_lf, file = here("data/download_gps_data/inpa_data_2024_lf_version2026-09-30.RDS"))
+write_rds(id_all, file = here("data/download_gps_data/inpa_data_all_version2026-10-27.RDS"))
+

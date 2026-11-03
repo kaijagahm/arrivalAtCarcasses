@@ -398,9 +398,13 @@ get_gps_all <- function(carcs, gps_combined, days_after, days_before){
       mutate(dist_to_carcass = as.numeric(st_distance(., ic)),
              time_since_carcass = difftime(timestamp, carcass_datetime, units = "hours"),
              carcID = cid)
-    out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% bind_cols(st_coordinates(.)) %>%
-      select(-c("location_long", "location_lat")) %>%
-      rename("location_long" = X, "location_lat" = Y)
+    out <- sf::st_as_sf(out, crs = 32636) %>% st_transform("WGS84") %>% 
+      bind_cols(., st_coordinates(.)) %>%
+      dplyr::select(-c("location_long", "location_lat"))
+    if("X" %in% names(out) & "Y" %in% names(out)){
+      out <- out %>%
+        rename("location_long" = X, "location_lat" = Y)
+    }
     gps_all[[i]] <- out
     cat("done with", i, "\n")
   }
@@ -1439,11 +1443,14 @@ get_roosts <- function(dat, id){
 }
 
 NEW_get_roosts <- function(dat, id, ts = "timestamp_il", tz = "Israel"){
-  roosts <- purrr::map(dat, ~NEW_get_roosts_df(df = .x, id = id, timestamp = ts, timestamp_tz = tz))
-  roosts <- roosts %>%
-    purrr::map(., ~st_as_sf(.x, crs = "WGS84", 
-                            coords = c("location_long", "location_lat"), 
-                            remove = F), .progress = T)
+  roosts <- purrr::map(dat, ~{
+    if(is.null(.x)){roosts <- NULL}else{
+      roosts <- NEW_get_roosts_df(df = .x, id = id, timestamp = ts, timestamp_tz = tz)
+      roosts <- sf::st_as_sf(roosts, crs = "WGS84", 
+                     coords = c("location_long", "location_lat"), 
+                     remove = F)
+    }})
+  
   return(roosts)
 }
 
@@ -2456,7 +2463,7 @@ get_after_departures <- function(data_rejoined, gps_spd, sync_departures_df){
       dplyr::ungroup() %>% dplyr::select(-after)})
   return(after_departure)
 }
-  
+
 get_trajectories_sync <- function(after_departure_interp_only, sync_departures_df){
   sync_departures_list <- sync_departures_df %>%
     group_by(year) %>%
@@ -2526,7 +2533,7 @@ get_arrival_dyads <- function(first_sightings_carc_date, stn_carcs_modified, wil
       select(-geometry_1, -geometry_2)
     return(pairs)
   }, .progress = T)
-
+  
   arrival_dyads <- purrr::list_rbind(carc_date_pairs) %>%
     select(date_il, carcID, id1, id2, timestamp_il_1, timestamp_il_2, timestamp_diff, time_since_carcass_1, time_since_carcass_2, time_since_carcass_diff, daytime_since_carcass_1, daytime_since_carcass_2, daytime_since_carcass_diff, dist_to_carcass_1, dist_to_carcass_2, dist_to_carcass_diff, dist_apart, ground_speed_1, ground_speed_2, ground_speed_diff)
   
