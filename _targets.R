@@ -965,6 +965,7 @@ list(
   # ## Combine wild and stn carcasses
   tar_target(all_carcasses, bind_rows(carcasses_focal %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))), 
   tar_target(all_carcasses_forpred, bind_rows(carcasses_audited %>% mutate(carcType = "stn", year = lubridate::year(date)), wild_carcasses_validated %>% dplyr::mutate("date" = lubridate::ymd(dateOnly)) %>% dplyr::select(-dateOnly))),
+  tar_target(all_carcasses_total, mutate(carcasses_audited, carcType = "stn", year = lubridate::year(date))),
   tar_target(bbox_south_big, sf::st_transform(
     st_as_sfc(st_set_crs(st_bbox(c("xmin" = 34.205, "xmax" = 35.787,
                                    "ymin" = 29.478, "ymax" = 31.775)),
@@ -978,9 +979,12 @@ list(
   # tar_target(days_before_wild, 3),
   ## 1. Get carcasses and restrict to south
   tar_target(all_carcasses_south, filter(all_carcasses, Y < jerusalem_northing_36n)),
+  tar_target(all_carcasses_south_total, filter(all_carcasses_total, Y < jerusalem_northing_36n)),
   ## 2. Separate stn and wild
   tar_target(stn, filter(all_carcasses_south, carcType == "stn")),
   tar_target(stn_carcs, group_split(group_by(stn, carcID))),
+  tar_target(stn_total, filter(all_carcasses_south_total, carcType == "stn")),
+  tar_target(stn_carcs_total, group_split(group_by(filter(stn_total, date >= minmax_buff[[1]], date <= minmax_buff[[6]]), carcID))),
   tar_target(wild, filter(all_carcasses_south, carcType == "wild")),
   tar_target(wild_carcs, group_split(group_by(wild, carcID))),
   
@@ -991,24 +995,30 @@ list(
   tar_target(ornitela_data_2022_lf, readRDS(here("data/download_gps_data/ornitela_data_2022_lf_version2026-09-30.RDS"))),
   tar_target(ornitela_data_2023_lf, readRDS(here("data/download_gps_data/ornitela_data_2023_lf_version2026-09-30.RDS"))),
   tar_target(ornitela_data_2024_lf, readRDS(here("data/download_gps_data/ornitela_data_2024_lf_version2026-09-30.RDS"))),
+  tar_target(ornitela_data_all, readRDS(here("data/download_gps_data/ornitela_data_all_version2026-10-27.RDS"))),
   tar_target(inpa_data_2022, readRDS(here("data/download_gps_data/inpa_data_2022_version2025-09-21.RDS"))),
   tar_target(inpa_data_2023, readRDS(here("data/download_gps_data/inpa_data_2023_version2025-09-21.RDS"))),
   tar_target(inpa_data_2024, readRDS(here("data/download_gps_data/inpa_data_2024_version2025-09-21.RDS"))),
   tar_target(inpa_data_2022_lf, readRDS(here("data/download_gps_data/inpa_data_2022_lf_version2026-09-30.RDS"))),
   tar_target(inpa_data_2023_lf, readRDS(here("data/download_gps_data/inpa_data_2023_lf_version2026-09-30.RDS"))),
   tar_target(inpa_data_2024_lf, readRDS(here("data/download_gps_data/inpa_data_2024_lf_version2026-09-30.RDS"))),
+  tar_target(inpa_data_all, readRDS(here("data/download_gps_data/inpa_data_all_version2026-10-27.RDS"))),
   
   tar_target(gps_1, purrr::map2(.x = list(ornitela_data_2022, ornitela_data_2023, ornitela_data_2024), .y = list(inpa_data_2022, inpa_data_2023, inpa_data_2024), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs = "WGS84"))),
   tar_target(gps_1_lf, purrr::map2(.x = list(ornitela_data_2023_lf), .y = list(inpa_data_2023_lf), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs = "WGS84"))),
+  tar_target(gps_1_total, purrr::map2(.x = list(ornitela_data_all), .y = list(inpa_data_all), ~st_as_sf(bind_rows(as.data.frame(.x), as.data.frame(.y)), crs ="WGS84"))),
   
   tar_target(gps, purrr::map(gps_1, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
   tar_target(gps_lf, purrr::map(gps_1_lf, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
+  tar_target(gps_total, purrr::map(gps_1_total, ~dplyr::bind_cols(.x, setNames(as.data.frame(sf::st_coordinates(.x)), c("location_long", "location_lat"))))),
   
   tar_target(gps_combined, st_transform(st_as_sf(mutate(purrr::list_rbind(gps), ground_speed = as.numeric(ground_speed))), 32636)),
   tar_target(gps_combined_lf, st_transform(st_as_sf(mutate(purrr::list_rbind(gps_lf), ground_speed = as.numeric(ground_speed))), 32636)),
+  tar_target(gps_combined_total, st_transform(st_as_sf(mutate(purrr::list_rbind(gps_total), ground_speed = as.numeric(ground_speed))), 32636)),
   
   tar_target(fixed_names_ages, fix_names_ages(gps_combined, ww_file)),
   tar_target(fixed_names_ages_lf, fix_names_ages(gps_combined_lf, ww_file)),
+  tar_target(fixed_names_ages_total, fix_names_ages(gps_combined_total, ww_file)),
   
   # Data cleaning -----------------------------------------------------------
   tar_target(ww_file, "data/raw/whoswho_vultures_20250422_new.xlsx", format = "file"), # DONE
@@ -1023,18 +1033,26 @@ list(
                                                              default_end_date = as.Date("2025-09-21"),
                                                              verbose = TRUE)),
   
+  tar_target(removed_beforeafter_deploy_total, process_deployments(ww_file,
+                                                                fixed_names_ages_total,
+                                                                default_end_date = as.Date("2025-09-21"),
+                                                                verbose = TRUE)),
+  
   ## Clean the data with the various steps in the vultureUtils::cleanData function
   tar_target(cleaned, clean_data(removed_beforeafter_deploy)),
   tar_target(cleaned_lf, clean_data(removed_beforeafter_deploy_lf)),
+  tar_target(cleaned_total, clean_data(removed_beforeafter_deploy_total)),
   
   # Note: we decided NOT to mask the data to the israel region because we don't need to limit the area in which social interactions could have occurred. We did mask the carcasses, though, taking only the ones south of Jerusalem. In addition, Shaked and I used visual inspection to classify wild carcasses only in the Israel/Jordan area and not farther out. To compare, can look at the original wild_carcasses file and then the validated one, and notice that the ones that didn't have a "status" assigned were outside of the geographic area. There weren't any edge cases.
   ## If any vultures have too *high* a fix rate, downsample it to every 10 minutes so it's easier to work with.
   tar_target(downsampled, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
   tar_target(downsampled_lf, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned_lf), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
+  tar_target(downsampled_total, mutate(sf::st_transform(sf::st_as_sf(downsample_10min(cleaned_total), coords = c("location_long", "location_lat"), crs = "WGS84"), 32636), timestamp_il = lubridate::with_tz(timestamp, tzone = "Israel"), date_il = lubridate::date(timestamp_il))),
   
   # Remove hospital/invalid periods
   tar_target(removed_periods, remove_periods(ww_file, downsampled)),
   tar_target(removed_periods_lf, remove_periods(ww_file, downsampled_lf)),
+  tar_target(removed_periods_total, remove_periods(ww_file, downsampled_total)),
   # (End data cleaning) -----------------------------------------------------
   
   # Preparing data for NBDA -------------------------------------------------
@@ -1045,9 +1063,11 @@ list(
   tar_target(dbf, 30), # days before carcass to get data for longer-term networks
   tar_target(stn_gps_30days, get_gps_all(stn_carcs, downsampled, days_after, dbf)),
   tar_target(wild_gps_30days, get_gps_all(wild_carcs, downsampled, days_after, dbf)),
+  tar_target(stn_gps_30days_total, get_gps_all(stn_carcs_total, downsampled_total, days_after, dbf)), 
   
   tar_target(stn_gps_forroosts, map(stn_gps_30days, ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
   tar_target(wild_gps_forroosts, map(wild_gps_30days, ~filter(.x, date_il %in% tail(sort(unique(.x$date_il)), 6)))),
+  tar_target(stn_gps_forroosts_total, map(stn_gps_30days_total[total_tokeep], ~filter(arrange(.x, date_il), date_il %in% tail(unique(date_il), 6)))),
   
   tar_target(idname, "individual_local_identifier"),
   tar_target(tsname, "timestamp_il"),
@@ -1061,6 +1081,15 @@ list(
   tar_target(roosts_stn_5, NEW_get_roosts(stn_gps_forroosts[41:50], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_stn_6, NEW_get_roosts(stn_gps_forroosts[51:length(stn_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
   
+  tar_target(roosts_all_total, sf::st_as_sf(NEW_get_roosts(list(downsampled_total), id = idname, ts = tsname, tz = tzname)[[1]])),
+  tar_target(roosts_stn_1_total, NEW_get_roosts(stn_gps_forroosts_total[1:50], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_2_total, NEW_get_roosts(stn_gps_forroosts_total[51:100], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_3_total, NEW_get_roosts(stn_gps_forroosts_total[101:150], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_4_total, NEW_get_roosts(stn_gps_forroosts_total[151:200], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_5_total, NEW_get_roosts(stn_gps_forroosts_total[201:250], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_6_total, NEW_get_roosts(stn_gps_forroosts_total[251:300], id = idname, ts = tsname, tz = tzname)),
+  tar_target(roosts_stn_7_total, NEW_get_roosts(stn_gps_forroosts_total[301:length(stn_gps_forroosts_total)], id = idname, ts = tsname, tz = tzname)),
+  
   tar_target(roosts_wild_1, NEW_get_roosts(wild_gps_forroosts[1:10], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_2, NEW_get_roosts(wild_gps_forroosts[11:20], id = idname, ts = tsname, tz = tzname)),
   tar_target(roosts_wild_3, NEW_get_roosts(wild_gps_forroosts[21:30], id = idname, ts = tsname, tz = tzname)),
@@ -1068,6 +1097,7 @@ list(
   tar_target(roosts_wild_5, NEW_get_roosts(wild_gps_forroosts[41:length(wild_gps_forroosts)], id = idname, ts = tsname, tz = tzname)),
   
   tar_target(roosts_stn, c(roosts_stn_1, roosts_stn_2, roosts_stn_3, roosts_stn_4, roosts_stn_5, roosts_stn_6)),
+  tar_target(roosts_stn_total, c(roosts_stn_1_total, roosts_stn_2_total, roosts_stn_3_total, roosts_stn_4_total, roosts_stn_5_total, roosts_stn_6_total, roosts_stn_7_total)),
   tar_target(roosts_wild, c(roosts_wild_1, roosts_wild_2, roosts_wild_3, roosts_wild_4, roosts_wild_5)),
   
   # Manual calculation of co-departures from roosts and following
@@ -1086,18 +1116,32 @@ list(
   # stBayes: dynamic
   ## stn
   tar_target(gps_withdaylight, purrr::map2(stn_gps_30days, stn_carcs, ~get_daylight_hours(.x, .y))),
+  tar_target(gps_withdaylight_total, purrr::map2(stn_gps_30days_total, stn_carcs_total, ~get_daylight_hours(.x, .y))),
   
   tar_target(seeds, purrr::map(gps_withdaylight, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),# still using time_since_carcass since it goes back farther than daytime_since_carcass.
+  tar_target(seeds_total, purrr::map(gps_withdaylight_total, ~get_seeds(.x, ddf, dds, gps_spd, time_col = "time_since_carcass", stb_mins = stb_mins))),
   
   tar_target(all_indivs_sorted, purrr::map(gps_withdaylight, ~sort(unique(as.character(.x$individual_local_identifier))))),
+  tar_target(all_indivs_sorted_total, purrr::map(gps_withdaylight_total[total_tokeep], ~sort(unique(as.character(.x$individual_local_identifier))))),
   
   tar_target(gps_diffusion, purrr::map(gps_withdaylight, ~dplyr::filter(.x, time_since_carcass >= 0))),
+  tar_target(gps_diffusion_total, purrr::map(gps_withdaylight_total, ~dplyr::filter(.x, time_since_carcass >= 0))),
   tar_target(first_sightings, purrr::map2(gps_diffusion, seeds, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(first_sightings_total, purrr::map2(gps_diffusion_total, seeds_total, ~get_first_sightings(.x, hours_after_carcass, gps_spd, ddf, dds, .y))),
+  tar_target(total_tokeep, which(map_dbl(first_sightings_total, nrow) >= 5)),
   # Modify to set stn carcs as "starting" at the first sighting instead of when they were placed.
   tar_target(offset_amount, map(first_sightings, ~.x$time_since_carcass[1])),
+  tar_target(offset_amount_total, map(first_sightings_total[total_tokeep], ~.x$time_since_carcass[1])),
   tar_target(stn_carcs_modified, purrr::map2(stn_carcs, offset_amount, ~{
     .x %>% rename("datetime_il_old" = datetime_il) %>% mutate(datetime_il = datetime_il_old+.y)})),
+  tar_target(stn_carcs_modified_total, purrr::map2(stn_carcs_total[total_tokeep], offset_amount_total, ~{
+    .x %>% rename("datetime_il_old" = datetime_il) %>% mutate(datetime_il = datetime_il_old+.y)})),
   tar_target(first_sightings_modified, purrr::map2(first_sightings, offset_amount, ~{
+    .x %>% mutate(daytime_since_carcass = daytime_since_carcass -as.numeric(.y),
+                  time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
+      filter(daytime_since_carcass > 0)
+  })),
+  tar_target(first_sightings_modified_total, purrr::map2(first_sightings_total[total_tokeep], offset_amount_total, ~{
     .x %>% mutate(daytime_since_carcass = daytime_since_carcass -as.numeric(.y),
                   time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
       filter(daytime_since_carcass > 0)
@@ -1107,25 +1151,51 @@ list(
                   time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
       filter(daytime_since_carcass >= 0)
   })),
+  tar_target(gps_diffusion_modified_total, purrr::map2(gps_diffusion_total[total_tokeep], offset_amount_total, ~{
+    .x %>% mutate(daytime_since_carcass = daytime_since_carcass - as.numeric(.y),
+                  time_since_carcass = time_since_carcass - as.numeric(.y)) %>%
+      filter(daytime_since_carcass >= 0)
+  })),
   tar_target(seeds_modified, purrr::map2(seeds, first_sightings, ~{
+    return(c(.x, .y$individual_local_identifier[1]))})),
+  tar_target(seeds_modified_total, purrr::map2(seeds_total[total_tokeep], first_sightings_total[total_tokeep], ~{
     return(c(.x, .y$individual_local_identifier[1]))})),
   
   tar_target(event_data, purrr::pmap(list(first_sightings_modified, seeds_modified, all_indivs_sorted, stn_carcs_modified),
                                      ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)
   )),
+  tar_target(event_data_total, purrr::pmap(list(first_sightings_modified_total, seeds_modified_total, all_indivs_sorted_total, stn_carcs_modified_total),
+                                     ~format_event_data(first_sightings = ..1, seeds = ..2, all_indivs_sorted = ..3, time_col = "daytime_since_carcass", carc = ..4)
+  )),
   tar_target(gps_fornetwork, purrr::map2(gps_diffusion_modified, stn_carcs_modified, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
+  tar_target(gps_fornetwork_total, purrr::map2(gps_diffusion_modified_total, stn_carcs_modified_total, ~filter(mutate(filter(.x, timestamp_il %in% .y$date:(.y$date+lubridate::hours(hours_after_carcass))), time = as.numeric(daytime_since_carcass)*60*60), time >= 0))),
   
   tar_target(cutpoints, purrr::map(event_data, ~unique(.x$time))),
+  tar_target(cutpoints_total, purrr::map(event_data_total, ~unique(.x$time))),
   tar_target(cutpoints2, purrr::map(cutpoints, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
+  tar_target(cutpoints2_total, purrr::map(cutpoints_total, ~{if(!(0 %in% .x)){return(c(0, .x))}else{return(.x)}})),
   
   tar_target(gps_fornetwork2, purrr::map2(gps_fornetwork, cutpoints2, ~{
     if(length(.y) %in% 1:2 & is.na(.y[1])){return(NULL)}else{
       out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
       return(out)}
   })),
+  tar_target(gps_fornetwork2_total, purrr::map2(gps_fornetwork_total, cutpoints2_total, ~{
+    if(length(.y) %in% 1:2 & is.na(.y[1])){return(NULL)}else{
+      out <- dplyr::filter(dplyr::mutate(.x, network = cut(time, breaks = .y)), !is.na(network))
+      return(out)}
+  })),
   tar_target(missing_intervals, purrr::map(gps_fornetwork2, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
+  tar_target(missing_intervals_total, purrr::map(gps_fornetwork2_total, ~{levels(.x$network)[!(levels(.x$network) %in% .x$network)]})),
   tar_target(to_add, purrr::map(missing_intervals, ~data.frame(network = .x))),
+  tar_target(to_add_total, purrr::map(missing_intervals_total, ~data.frame(network = .x))),
   tar_target(gps_fornetwork3, purrr::map2(gps_fornetwork2, to_add, ~{
+    if(!is.null(.x) & nrow(.y) > 0){
+      return(dplyr::bind_rows(.x, .y))
+    }else if(!is.null(.x) & nrow(.y) == 0){
+      return(.x)
+    }else{NULL}})),
+  tar_target(gps_fornetwork3_total, purrr::map2(gps_fornetwork2_total, to_add_total, ~{
     if(!is.null(.x) & nrow(.y) > 0){
       return(dplyr::bind_rows(.x, .y))
     }else if(!is.null(.x) & nrow(.y) == 0){
@@ -1135,12 +1205,22 @@ list(
     if(!is.null(.x)){
       dplyr::group_split(dplyr::arrange(.x, network), network, .keep = T)}else{NULL}
   })),
+  tar_target(gps_list_total, purrr::map(gps_fornetwork3_total, ~{
+    if(!is.null(.x)){
+      dplyr::group_split(dplyr::arrange(.x, network), network, .keep = T)}else{NULL}
+  })),
   tar_target(gps_list_fixed, purrr::map(gps_list, ~purrr::map(.x, ~{
     if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
       return(.x[0,])}else if(is.null(.x)){
         return(NULL)}else{
           return(.x)}
   }))),
+  tar_target(gps_list_fixed_total, purrr::map(gps_list_total, ~purrr::map(.x, ~{
+    if(nrow(.x) == 1 & all(is.na(.x$individual_local_identifier))){
+      return(.x[0,])}else if(is.null(.x)){
+        return(NULL)}else{
+          return(.x)}
+  }))), # XXX start here
   tar_target(dn1, purrr::map(gps_list_fixed[1:10], ~purrr::map(.x, ~{
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dn2, purrr::map(gps_list_fixed[11:20], ~purrr::map(.x, ~{
@@ -1155,6 +1235,22 @@ list(
     get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
   tar_target(dynamic_networks, c(dn1, dn2, dn3, dn4, dn5, dn6)),
   
+  tar_target(dn1_total, purrr::map(gps_list_fixed_total[1:50], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn2_total, purrr::map(gps_list_fixed_total[51:100], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn3_total, purrr::map(gps_list_fixed_total[101:150], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn4_total, purrr::map(gps_list_fixed_total[151:200], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn5_total, purrr::map(gps_list_fixed_total[201:250], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn6_total, purrr::map(gps_list_fixed_total[251:300], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))),
+  tar_target(dn7_total, purrr::map(gps_list_fixed_total[301:length(gps_list_fixed_total)], ~purrr::map(.x, ~{
+    get_fl_weighted(dat = .x, dist = ddf, rp = rp, spd = gps_spd)}))), 
+  tar_target(dynamic_networks_total, c(dn1_total, dn2_total, dn3_total, dn4_total, dn5_total, dn6_total, dn7_total)),
+  
   tar_target(roost_threshold, 500),
   tar_target(nr1, purrr::map2(roosts_stn[1:10], all_indivs_sorted[1:10], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(nr2, purrr::map2(roosts_stn[11:20], all_indivs_sorted[11:20], ~arrange_roost_nets(.x, .y, roost_threshold))),
@@ -1164,7 +1260,17 @@ list(
   tar_target(nr6, purrr::map2(roosts_stn[51:60], all_indivs_sorted[51:60], ~arrange_roost_nets(.x, .y, roost_threshold))),
   tar_target(networks_long_roost_1, c(nr1, nr2, nr3, nr4, nr5, nr6)),
   
+  tar_target(nr1_total, purrr::map2(roosts_stn_total[1:50], all_indivs_sorted_total[1:50], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr2_total, purrr::map2(roosts_stn_total[51:100], all_indivs_sorted_total[51:100], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr3_total, purrr::map2(roosts_stn_total[101:150], all_indivs_sorted_total[101:150], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr4_total, purrr::map2(roosts_stn_total[151:200], all_indivs_sorted_total[151:200], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr5_total, purrr::map2(roosts_stn_total[201:250], all_indivs_sorted_total[201:250], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr6_total, purrr::map2(roosts_stn_total[251:300], all_indivs_sorted_total[251:300], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(nr7_total, purrr::map2(roosts_stn_total[301:length(roosts_stn_total)], all_indivs_sorted_total[301:length(all_indivs_sorted_total)], ~arrange_roost_nets(.x, .y, roost_threshold))),
+  tar_target(networks_long_roost_1_total, c(nr1_total, nr2_total, nr3_total, nr4_total, nr5_total, nr6_total, nr7_total)),
+  
   tar_target(networks_long_roost_2, purrr::map2(networks_long_roost_1, map_dbl(stn_carcs_modified, "carcID"), ~{mutate(.x, "trial" = .y)})),
+  tar_target(networks_long_roost_2_total, purrr::map2(networks_long_roost_1_total, map_dbl(stn_carcs_modified_total, "carcID"), ~{mutate(.x, "trial" = .y)})),
   
   tar_target(equivalence_tables, purrr::map(first_sightings_modified, ~{
     if(nrow(.x) > 0){
@@ -1173,7 +1279,26 @@ list(
     }else{NULL}
   })),
   
+  tar_target(equivalence_tables_total, purrr::map(first_sightings_modified_total, ~{
+    if(nrow(.x) > 0){
+      .x %>% st_drop_geometry() %>% mutate(time_secs = daytime_since_carcass*60*60) %>%
+        mutate(time = 1:n(), date = lubridate::date(timestamp_il)) %>% select(date, time) %>% mutate(roost_date = date-lubridate::days(1)) 
+    }else{NULL}
+  })),
+  
   tar_target(equivalence_tables_fixed, purrr::pmap(list("ed" = event_data, "gd" = gps_diffusion_modified, "et" = equivalence_tables), function(ed, gd, et){
+    if(!is.null(et)){
+      t_last <- min(ed$time[ed$time > ed$t_end])/60/60
+      idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
+      final_datetime <- gd$timestamp_il[idx]
+      final_date <- lubridate::date(final_datetime)
+      final_roost_date <- final_date - lubridate::days(1)
+      et_fixed <- et %>% add_row(date = final_date, time = max(et$time)+1, roost_date = final_roost_date)
+      return(et_fixed)
+    }else{NULL}
+  })),
+  
+  tar_target(equivalence_tables_fixed_total, purrr::pmap(list("ed" = event_data_total, "gd" = gps_diffusion_modified_total, "et" = equivalence_tables_total), function(ed, gd, et){
     if(!is.null(et)){
       t_last <- min(ed$time[ed$time > ed$t_end])/60/60
       idx <- which.min(abs(difftime(t_last, gd$daytime_since_carcass)))
@@ -1203,12 +1328,18 @@ list(
       return(et_fixed)
     }else{NULL}
   })),
+  # XXX start here
   
   
   # Break roost nets into a list by date and set names accordingly.
   tar_target(net_lists_1, purrr::map(networks_long_roost_2, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists_1_total, purrr::map(networks_long_roost_2_total, ~group_split(group_by(.x, date)))),
   tar_target(net_lists_1_wild, purrr::map(networks_long_roost_2_wild, ~group_split(group_by(.x, date)))),
   tar_target(net_lists, purrr::map(net_lists_1, ~{
+    names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
+    return(.x)
+  })),
+  tar_target(net_lists_total, purrr::map(net_lists_1_total, ~{
     names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
     return(.x)
   })),
@@ -1217,6 +1348,17 @@ list(
     return(.x)
   })),
   tar_target(roostlong, purrr::map2(equivalence_tables_fixed, net_lists, ~{
+    if(!is.null(.x) & !is.null(.y)){
+      newlist <- vector(mode = "list", length = nrow(.x))
+      for(i in 1:nrow(.x)){
+        date <- as.character(.x$roost_date[i])
+        newlist[[i]] <- .y[[date]]
+      }
+      out <- purrr::list_rbind(newlist, names_to = "time")
+      return(out)
+    }else{NULL}
+  })),
+  tar_target(roostlong_total, purrr::map2(equivalence_tables_fixed_total, net_lists_total, ~{
     if(!is.null(.x) & !is.null(.y)){
       newlist <- vector(mode = "list", length = nrow(.x))
       for(i in 1:nrow(.x)){
@@ -1250,12 +1392,31 @@ list(
   tar_target(networks_long_roost_2_wild, purrr::map2(networks_long_roost_1_wild, map_dbl(wild_carcs, "carcID"), ~{mutate(.x, "trial" = .y)})),
   
   tar_target(dynamic_networks_fixed, purrr::map2(dynamic_networks, all_indivs_sorted, ~fix_nets(.x, indivs = .y))),
+  tar_target(dynamic_networks_fixed_total, purrr::map2(dynamic_networks_total, all_indivs_sorted_total, ~fix_nets(.x, indivs = .y))),
   
   tar_target(networks_long_dynamic, purrr::map2(dynamic_networks_fixed, stn_carcs_modified, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
   }), names_to = "time"), trial = .y$carcID[1]))),
   
+  tar_target(networks_long_dynamic_total, purrr::map2(dynamic_networks_fixed_total, stn_carcs_modified_total, ~mutate(purrr::list_rbind(purrr::map(.x, ~{
+    out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
+  }), names_to = "time"), trial = .y$carcID[1]))),
+  
   tar_target(networks_long_combined, purrr::map2(networks_long_dynamic, roostlong, ~{
+    if(!is.null(.y)){
+      left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
+        mutate(flight_sri_scaled = flight_sri/max(flight_sri),
+               flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0, .default = flight_sri_scaled)) %>% # scaling to a 0-1 scale
+        select(-flight_sri) %>%
+        # Set roost edges to 0 if it's anything but the first time slice of the day:
+        group_by(date) %>%
+        mutate(roost_together = case_when(time == min(time) ~ roost_together,
+                                          .default = 0)) %>%
+        ungroup() %>%
+        select(-date)
+    }else{.x}
+  })),
+  tar_target(networks_long_combined_total, purrr::map2(networks_long_dynamic_total, roostlong_total, ~{
     if(!is.null(.y)){
       left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
         mutate(flight_sri_scaled = flight_sri/max(flight_sri),
@@ -1392,6 +1553,15 @@ list(
                 birth_year = if (all(is.na(birth_year))) NA_real_ else first(na.omit(birth_year)),
                 .groups = "drop")
   }),
+  tar_target(birth_lookup_total, {
+    fixed_names_ages_total %>%
+      sf::st_drop_geometry() %>%
+      transmute(id = as.character(individual_local_identifier), birth_year) %>%
+      group_by(id) %>%
+      summarise(n_distinct_by = n_distinct(birth_year, na.rm = TRUE),
+                birth_year = if (all(is.na(birth_year))) NA_real_ else first(na.omit(birth_year)),
+                .groups = "drop")
+  }),
   
   tar_target(birth_lookup_wild, {
     fixed_names_ages %>%
@@ -1404,6 +1574,21 @@ list(
   }),
   
   tar_target(age_ilv_new, purrr::map2(stn_carcs_modified, all_indivs_sorted, function(sc, ais){
+    yr <- sc$year
+    tibble(individual_local_identifier = ais) %>%
+      left_join(birth_lookup, by = c("individual_local_identifier" = "id")) %>%
+      mutate(age_continuous = yr - birth_year,
+             age_continuous = if_else(is.na(age_continuous),
+                                      mean(age_continuous, na.rm = TRUE), age_continuous),
+             age_categorical = case_when(age_continuous == 0 ~ "juv",
+                                         age_continuous > 0 & age_continuous < 5 ~ "sub",
+                                         age_continuous >= 5 ~ "adult",
+                                         .default = NA),
+             age_categorical = factor(age_categorical, levels = c("juv", "sub", "adult"))) %>%
+      select(individual_local_identifier, age_continuous, age_categorical)
+  })),
+  
+  tar_target(age_ilv_new_total, purrr::map2(stn_carcs_modified_total, all_indivs_sorted_total, function(sc, ais){
     yr <- sc$year
     tibble(individual_local_identifier = ais) %>%
       left_join(birth_lookup, by = c("individual_local_identifier" = "id")) %>%
@@ -1491,6 +1676,46 @@ list(
   })
   ),
   
+  tar_target(dists_dyn_total, purrr::map2(gps_list_fixed_total, all_indivs_sorted_total, ~{ # Added ~ here
+    ais <- .y
+    if(length(.x) != 0){
+      # Inner map
+      res <- purrr::map(.x, ~{
+        step1 <- .x %>%
+          sf::st_drop_geometry() %>%
+          dplyr::arrange(individual_local_identifier, time_since_carcass) %>%
+          dplyr::group_by(individual_local_identifier) %>%
+          dplyr::summarize(mean_dist_to_carcass = mean(dist_to_carcass, na.rm = TRUE))
+        
+        missing <- ais[!(ais %in% step1$individual_local_identifier)]
+        
+        # Use NA_real_ to match the numeric type of mean_dist_to_carcass
+        missing_df <- data.frame(
+          individual_local_identifier = missing
+        )
+        if(nrow(missing_df) > 0){
+          missing_df <- missing_df %>% mutate(mean_dist_to_carcass = NA_real_)
+        }
+        
+        step2 <- dplyr::bind_rows(step1, missing_df) %>%
+          dplyr::filter(!is.na(individual_local_identifier))
+        
+        return(step2)
+      }) %>% 
+        purrr::list_rbind(names_to = "time") %>%
+        dplyr::mutate(
+          # Use as.vector to strip matrix attributes from scale()
+          mean_dist_to_carcass_norm = as.vector(scale(log(mean_dist_to_carcass), center = TRUE, scale = TRUE)),
+          mean_dist_to_carcass_norm = tidyr::replace_na(mean_dist_to_carcass_norm, 0) # Added tidyr::
+        )
+      return(res) # Ensure the result of the mutate chain is returned
+      
+    }else{
+      return(NULL)
+    }
+  })
+  ),
+  
   tar_target(ILV_c, purrr::map(age_ilv_new, ~{
     .x %>% dplyr::rename("id" = individual_local_identifier,
                          "age" = age_categorical) %>%
@@ -1498,6 +1723,22 @@ list(
   })),
   
   tar_target(ILV_tv, purrr::map2(dists_dyn, purrr::map_dbl(stn_carcs_modified, "carcID"), ~{
+    if(!is.null(.x)){
+      .x %>% dplyr::select("id" = individual_local_identifier,
+                           time, mean_dist_to_carcass_norm) %>%
+        dplyr::mutate(trial = .y) %>%
+        dplyr::select(trial, id, time, mean_dist_to_carcass_norm) %>%
+        mutate(mean_dist_to_carcass_norm = replace_na(mean_dist_to_carcass_norm, 0))
+    }else{return(NULL)}
+  })),
+  
+  tar_target(ILV_c_total, purrr::map(age_ilv_new_total, ~{
+    .x %>% dplyr::rename("id" = individual_local_identifier,
+                         "age" = age_categorical) %>%
+      dplyr::select(id, age)
+  })),
+  
+  tar_target(ILV_tv_total, purrr::map2(dists_dyn_total, purrr::map_dbl(stn_carcs_modified_total, "carcID"), ~{
     if(!is.null(.x)){
       .x %>% dplyr::select("id" = individual_local_identifier,
                            time, mean_dist_to_carcass_norm) %>%
