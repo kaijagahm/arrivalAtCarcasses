@@ -1333,7 +1333,7 @@ list(
   
   # Break roost nets into a list by date and set names accordingly.
   tar_target(net_lists_1, purrr::map(networks_long_roost_2, ~group_split(group_by(.x, date)))),
-  tar_target(net_lists_1_total, purrr::map(networks_long_roost_2_total, ~group_split(group_by(.x, date)))),
+  tar_target(net_lists_1_total, purrr::map(networks_long_roost_2_total, ~group_split(group_by(.x, date)))), #  these dates only go back to the date of the carcass, but they need to go back one date farther. where does this problem get introduced? Come back to it. 2026-11-04
   tar_target(net_lists_1_wild, purrr::map(networks_long_roost_2_wild, ~group_split(group_by(.x, date)))),
   tar_target(net_lists, purrr::map(net_lists_1, ~{
     names(.x) <- map_chr(.x, ~as.character(.x$date[1]))
@@ -1348,37 +1348,46 @@ list(
     return(.x)
   })),
   tar_target(roostlong, purrr::map2(equivalence_tables_fixed, net_lists, ~{
-    if(!is.null(.x) & !is.null(.y)){
-      newlist <- vector(mode = "list", length = nrow(.x))
-      for(i in 1:nrow(.x)){
-        date <- as.character(.x$roost_date[i])
-        newlist[[i]] <- .y[[date]]
+    eq <- .x; nl <- .y
+    if(!is.null(eq) & !is.null(nl)){
+      newlist <- vector(mode = "list", length = nrow(eq))
+      for(i in seq_len(nrow(eq))){
+        key       <- as.character(eq$roost_date[i])
+        this_date <- eq$date[i]
+        this_roost <- eq$roost_date[i]
+        newlist[[i]] <- nl[[key]] %>%
+          dplyr::mutate(date = this_date, roost_date = this_roost)
       }
-      out <- purrr::list_rbind(newlist, names_to = "time")
-      return(out)
-    }else{NULL}
+      purrr::list_rbind(newlist, names_to = "time")
+    } else NULL
   })),
   tar_target(roostlong_total, purrr::map2(equivalence_tables_fixed_total, net_lists_total, ~{
-    if(!is.null(.x) & !is.null(.y)){
-      newlist <- vector(mode = "list", length = nrow(.x))
-      for(i in 1:nrow(.x)){
-        date <- as.character(.x$roost_date[i])
-        newlist[[i]] <- .y[[date]]
+    eq <- .x; nl <- .y
+    if(!is.null(eq) & !is.null(nl)){
+      newlist <- vector(mode = "list", length = nrow(eq))
+      for(i in seq_len(nrow(eq))){
+        key       <- as.character(eq$roost_date[i])
+        this_date <- eq$date[i]
+        this_roost <- eq$roost_date[i]
+        newlist[[i]] <- nl[[key]] %>%
+          dplyr::mutate(date = this_date, roost_date = this_roost)
       }
-      out <- purrr::list_rbind(newlist, names_to = "time")
-      return(out)
-    }else{NULL}
+      purrr::list_rbind(newlist, names_to = "time")
+    } else NULL
   })),
   tar_target(roostlong_wild, purrr::map2(equivalence_tables_fixed_wild, net_lists_wild, ~{
-    if(!is.null(.x) & !is.null(.y)){
-      newlist <- vector(mode = "list", length = nrow(.x))
-      for(i in 1:nrow(.x)){
-        date <- as.character(.x$roost_date[i])
-        newlist[[i]] <- .y[[date]]
+    eq <- .x; nl <- .y
+    if(!is.null(eq) & !is.null(nl)){
+      newlist <- vector(mode = "list", length = nrow(eq))
+      for(i in seq_len(nrow(eq))){
+        key       <- as.character(eq$roost_date[i])
+        this_date <- eq$date[i]
+        this_roost <- eq$roost_date[i]
+        newlist[[i]] <- nl[[key]] %>%
+          dplyr::mutate(date = this_date, roost_date = this_roost)
       }
-      out <- purrr::list_rbind(newlist, names_to = "time")
-      return(out)
-    }else{NULL}
+      purrr::list_rbind(newlist, names_to = "time")
+    } else NULL
   })),
   
   tar_target(nr1_wild, purrr::map2(roosts_wild[1:18], all_indivs_sorted_wild[1:18], ~arrange_roost_nets(.x, .y, roost_threshold))),
@@ -1402,48 +1411,57 @@ list(
     out <- rownames_to_column(.x, var = "focal") %>% pivot_longer(cols = -focal, names_to = "other", values_to = "flight_sri")
   }), names_to = "time"), trial = .y$carcID[1]))),
   
-  tar_target(networks_long_combined, purrr::map2(networks_long_dynamic, roostlong, ~{
-    if(!is.null(.y)){
-      left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
-        mutate(flight_sri_scaled = flight_sri/max(flight_sri),
-               flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0, .default = flight_sri_scaled)) %>% # scaling to a 0-1 scale
-        select(-flight_sri) %>%
-        # Set roost edges to 0 if it's anything but the first time slice of the day:
-        group_by(date) %>%
-        mutate(roost_together = case_when(time == min(time) ~ roost_together,
-                                          .default = 0)) %>%
-        ungroup() %>%
-        select(-date)
-    }else{.x}
-  })),
-  tar_target(networks_long_combined_total, purrr::map2(networks_long_dynamic_total, roostlong_total, ~{
-    if(!is.null(.y)){
-      left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
-        mutate(flight_sri_scaled = flight_sri/max(flight_sri),
-               flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0, .default = flight_sri_scaled)) %>% # scaling to a 0-1 scale
-        select(-flight_sri) %>%
-        # Set roost edges to 0 if it's anything but the first time slice of the day:
-        group_by(date) %>%
-        mutate(roost_together = case_when(time == min(time) ~ roost_together,
-                                          .default = 0)) %>%
-        ungroup() %>%
-        select(-date)
-    }else{.x}
-  })),
-  tar_target(networks_long_combined_wild, purrr::map2(networks_long_dynamic_wild, roostlong_wild, ~{
-    if(!is.null(.y)){
-      left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
-        mutate(flight_sri_scaled = flight_sri/max(flight_sri),
-               flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0, .default = flight_sri_scaled)) %>%
-        select(-flight_sri) %>%
-        # Set roost edges to 0 if it's anything but the first time slice of the day:
-        group_by(date) %>%
-        mutate(roost_together = case_when(time == min(time) ~ roost_together,
-                                          .default = 0)) %>%
-        ungroup() %>%
-        select(-date)
-    }else{.x}
-  })),
+  tar_target(networks_long_combined,
+             purrr::pmap(list(networks_long_dynamic, roostlong, stn_carcs_modified), function(.x, .y, carc) {
+               if(!is.null(.y)){
+                 start_date <- as.Date(carc$date)
+                 
+                 left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
+                   mutate(flight_sri_scaled = flight_sri/max(flight_sri),
+                          flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0,
+                                                        .default = flight_sri_scaled)) %>%
+                   select(-flight_sri) %>%
+                   group_by(date) %>%
+                   mutate(roost_together = case_when(date == start_date ~ 0, # carcass not on the landscape yet
+                                                     .default = roost_together)) %>%
+                   ungroup() %>%
+                   select(-date)
+               } else .x
+             })), #xxx TEST THIS AND PROPAGATE IT TO THE OTHER TWO
+  tar_target(networks_long_combined_total,
+             purrr::pmap(list(networks_long_dynamic_total, roostlong_total, stn_carcs_modified_total), function(.x, .y, carc) {
+               if(!is.null(.y)){
+                 start_date <- as.Date(carc$date)
+                 
+                 left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
+                   mutate(flight_sri_scaled = flight_sri/max(flight_sri),
+                          flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0,
+                                                        .default = flight_sri_scaled)) %>%
+                   select(-flight_sri) %>%
+                   group_by(date) %>%
+                   mutate(roost_together = case_when(date == start_date ~ 0, # carcass not on the landscape yet
+                                                     .default = roost_together)) %>%
+                   ungroup() %>%
+                   select(-date)
+               } else .x
+             })),
+  tar_target(networks_long_combined_wild,
+             purrr::pmap(list(networks_long_dynamic_wild, roostlong_wild, wild_carcs), function(.x, .y, carc) {
+               if(!is.null(.y)){
+                 start_date <- as.Date(carc$date)
+                 
+                 left_join(.x, .y, by = c("time", "focal", "other", "trial")) %>%
+                   mutate(flight_sri_scaled = flight_sri/max(flight_sri),
+                          flight_sri_scaled = case_when(is.na(flight_sri_scaled) | is.nan(flight_sri_scaled) ~ 0,
+                                                        .default = flight_sri_scaled)) %>%
+                   select(-flight_sri) %>%
+                   group_by(date) %>%
+                   mutate(roost_together = case_when(date == start_date ~ 0, # carcass not on the landscape yet
+                                                     .default = roost_together)) %>%
+                   ungroup() %>%
+                   select(-date)
+               } else .x
+             })), #xxx TEST THIS AND PROPAGATE IT TO THE OTHER TWO
   
   # tar_target(data_lists_noILVs, purrr::pmap(list("ev" = event_data, "nld" = networks_long_dynamic), function(ev, nld){
   #   if(nrow(nld) > 0){
